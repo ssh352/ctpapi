@@ -1,6 +1,8 @@
 ﻿{
   'targets' : [
     {
+      'target_name' : 'tradeapi',
+      'type' : 'none',
       'variables': {
         'variables': {
           'conditions': [
@@ -15,10 +17,6 @@
           ]
         },
         'lib_dir_for_target_arch%': '<(lib_dir_for_target_arch)',
-      },
-      'target_name' : 'tradeapi',
-      'type' : 'none',
-      'variables' : {
       },
       'sources' : [
         '<!@(python <(DEPTH)/build/glob_files.py inlcude/tradeapi *.h)',
