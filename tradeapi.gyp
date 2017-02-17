@@ -21,14 +21,6 @@
       'sources' : [
         '<!@(python <(DEPTH)/build/glob_files.py inlcude/tradeapi *.h)',
       ],
-      'dependencies' : [
-      ],
-      'defines' : [
-      ],
-      'includes' : [
-      ],
-      'include_dirs' : [
-      ],
       'link_settings': {
         'libraries': [
           '-lthosttraderapi',
@@ -38,6 +30,10 @@
           'lib/<(lib_dir_for_target_arch)',
         ]
       },
+      'direct_dependent_settings': {
+        'include_dirs': [
+          'include',
+        ],
     },
   ]
 }
