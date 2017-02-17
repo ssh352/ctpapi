@@ -8,10 +8,10 @@
               'lib_dir_for_target_arch%': 'win/x64',
             }, {
               'lib_dir_for_target_arch%': 'win/x86',
-            },]
+            },],
             ['OS=="linux"', {
               'lib_dir_for_target_arch%': 'linux',
-            }]
+            }],
           ]
         },
         'lib_dir_for_target_arch%': '<(lib_dir_for_target_arch)',
