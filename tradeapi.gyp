@@ -34,6 +34,7 @@
         'include_dirs': [
           'include',
         ],
+      ],
     },
   ]
 }
