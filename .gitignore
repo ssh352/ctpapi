@@ -27,3 +27,6 @@
 xcuserdata/
 /build/*.xcodeproj
 /build/*.xcworkspace
+
+#CTP
+*.con

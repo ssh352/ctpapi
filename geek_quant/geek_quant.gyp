@@ -7,6 +7,8 @@
       },
       'sources' : [
         'main.cc',
+        'follow_strategy.h',
+        'caf_defines.h',
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
@@ -15,6 +17,9 @@
       'defines' : [
       ],
       'includes' : [
+      ],
+      'include_dirs': [
+        '..',
       ],
     },
     {
