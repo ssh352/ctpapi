@@ -1,24 +1,23 @@
 #ifndef CTP_TRADER_H
 #define CTP_TRADER_H
+#include "geek_quant/caf_defines.h"
 
-class CTpTrader : public CThostFtdcTraderSpi {
-public:
-  CTPTradingSpi(actor_system& system) : system_(system) {
+class CtpTrader : public CThostFtdcTraderSpi {
+ public:
+  CtpTrader(caf::strong_actor_ptr observer) : observer_(observer) {
     cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
   }
- 
 
   void LoginServer(const std::string& front_server,
                    const std::string& broker_id,
                    const std::string& user_id,
                    const std::string& password) {
-    broker_ = actor_cast<strong_actor_ptr>(system_.spawn(CtpBroker));
     broker_id_ = broker_id;
     user_id_ = user_id;
     password_ = password;
 
     cta_api_->RegisterSpi(this);
-    char front_server_buffer[256] = { 0 };
+    char front_server_buffer[256] = {0};
     strcpy(front_server_buffer, front_server.c_str());
 
     cta_api_->RegisterFront(front_server_buffer);
@@ -28,11 +27,9 @@ public:
     cta_api_->Init();
   }
 
-  void Join() {
-    cta_api_->Join();
-  }
+  void Join() { cta_api_->Join(); }
 
-	virtual void OnFrontConnected() override {
+  virtual void OnFrontConnected() override {
     std::cout << "OnFrontConnected\n";
     CThostFtdcReqUserLoginField req;
     memset(&req, 0, sizeof(req));
@@ -42,20 +39,17 @@ public:
     int iResult = cta_api_->ReqUserLogin(&req, 0);
   };
 
-  virtual void OnFrontDisconnected(int nReason) override {
-    
-  }
+  virtual void OnFrontDisconnected(int nReason) override {}
 
-  virtual void OnRspUserLogin(CThostFtdcRspUserLoginField *pRspUserLogin,
-                               CThostFtdcRspInfoField *pRspInfo,
-                               int nRequestID,
-                               bool bIsLast) override {
-
-    anon_send(actor_cast<actor>(broker_), LoginAtom::value);
+  virtual void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
+                              CThostFtdcRspInfoField* pRspInfo,
+                              int nRequestID,
+                              bool bIsLast) override {
+    anon_send(caf::actor_cast<CtpObserver::pointer>(observer_),
+              LoginAtom::value);
     if (pRspInfo->ErrorID == 0) {
-
       std::cout << "OnRspUserLogin\n";
-      
+
       // CThostFtdcQrySettlementInfoField req = { 0 };
       // strcpy(req.BrokerID, broker_id_.c_str());
       // strcpy(req.TradingDay, "20170217");
@@ -65,63 +59,74 @@ public:
     }
   }
 
-	///报单录入请求响应
-	virtual void OnRspOrderInsert(CThostFtdcInputOrderField *pInputOrder, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+  virtual void OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                CThostFtdcRspInfoField* pRspInfo,
+                                int nRequestID,
+                                bool bIsLast) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	///报单操作请求响应
-	virtual void OnRspOrderAction(CThostFtdcInputOrderActionField *pInputOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+  virtual void OnRspOrderAction(
+      CThostFtdcInputOrderActionField* pInputOrderAction,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	///批量报单操作请求响应
-	virtual void OnRspBatchOrderAction(CThostFtdcInputBatchOrderActionField *pInputBatchOrderAction, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
-    std::cout << __FUNCTION__ << "\n";
-  };
-  
-	///请求查询报单响应
-	virtual void OnRspQryOrder(CThostFtdcOrderField *pOrder, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
-    std::cout << __FUNCTION__ << "\n";
-  };
-
-	///报单通知
-	virtual void OnRtnOrder(CThostFtdcOrderField *pOrder) {
-    follow_strategy_->HandleRtnOrder(pOrder);
-    if (pOrder->OrderSource == THOST_FTDC_OST_NoTradeQueueing) {
-    }
-  };
-  
-	///成交通知
-	virtual void OnRtnTrade(CThostFtdcTradeField *pTrade) {
+  virtual void OnRspBatchOrderAction(
+      CThostFtdcInputBatchOrderActionField* pInputBatchOrderAction,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	///报单录入错误回报
-	virtual void OnErrRtnOrderInsert(CThostFtdcInputOrderField *pInputOrder, CThostFtdcRspInfoField *pRspInfo) {
+  virtual void OnRspQryOrder(CThostFtdcOrderField* pOrder,
+                             CThostFtdcRspInfoField* pRspInfo,
+                             int nRequestID,
+                             bool bIsLast) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	///报单操作错误回报
-	virtual void OnErrRtnOrderAction(CThostFtdcOrderActionField *pOrderAction, CThostFtdcRspInfoField *pRspInfo) {
+  virtual void OnRtnOrder(CThostFtdcOrderField* pOrder) {
+    anon_send(caf::actor_cast<CtpObserver::pointer>(observer_),
+              RtnOrderAtom::value, CThostFtdcOrderField(*pOrder));
+  };
+
+  virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	///批量报单操作错误回报
-	virtual void OnErrRtnBatchOrderAction(CThostFtdcBatchOrderActionField *pBatchOrderAction, CThostFtdcRspInfoField *pRspInfo) {
+  virtual void OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                   CThostFtdcRspInfoField* pRspInfo) {
     std::cout << __FUNCTION__ << "\n";
   };
 
-	virtual void OnRspQrySettlementInfo(CThostFtdcSettlementInfoField *pSettlementInfo, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {
+  virtual void OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
+                                   CThostFtdcRspInfoField* pRspInfo) {
+    std::cout << __FUNCTION__ << "\n";
+  };
+
+  virtual void OnErrRtnBatchOrderAction(
+      CThostFtdcBatchOrderActionField* pBatchOrderAction,
+      CThostFtdcRspInfoField* pRspInfo) {
+    std::cout << __FUNCTION__ << "\n";
+  };
+
+  virtual void OnRspQrySettlementInfo(
+      CThostFtdcSettlementInfoField* pSettlementInfo,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) {
     std::cout << pSettlementInfo->Content << "\n";
   };
-private:
-  actor_system& system_;
+
+ private:
   CThostFtdcTraderApi* cta_api_;
   CThostFtdcTraderApi* follower_api_;
+  caf::strong_actor_ptr observer_;
   // OrderNo -> ASDF
-  std::map<std::string, > map_;
-  strong_actor_ptr broker_;
   std::string broker_id_;
   std::string user_id_;
   std::string password_;
