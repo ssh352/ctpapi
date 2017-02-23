@@ -10,7 +10,7 @@ class FollowStrategy : public CtpObserver::base {
 
   virtual CtpObserver::behavior_type make_behavior() override;
  private:
-  std::map<std::string, std::shared_ptr<CThostFtdcOrderField> > enqueue_orders_;
+  std::map<std::string, CThostFtdcOrderField> enqueue_orders_;
   std::vector<caf::strong_actor_ptr> listeners_;
 };
 

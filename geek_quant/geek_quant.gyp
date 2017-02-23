@@ -9,6 +9,7 @@
         'main.cc',
       ],
       'dependencies' : [
+        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '<(DEPTH)/third_party/tradeapi/tradeapi.gyp:*',
       ],
       'defines' : [

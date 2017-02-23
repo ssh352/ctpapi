@@ -4,14 +4,44 @@
 #include "caf/all.hpp"
 #include "tradeapi/ThostFtdcTraderApi.h"
 
-using LoginAtom = caf::atom_constant<caf::atom("Login")>;
-using RtnOrderAtom = caf::atom_constant<caf::atom("RtnOrder")>;
+enum OrderDirection {
+  kBuy,
+  kSell,
+};
+
+enum OrderAction {
+  kOpen,
+  kClose,
+  kCancel,
+};
+
+using CtpLoginAtom = caf::atom_constant<caf::atom("CtpLogin")>;
+using CtpRtnOrderAtom = caf::atom_constant<caf::atom("CtpRO")>;
+
 using AddListenerAtom = caf::atom_constant<caf::atom("AddListen")>;
+using OpenOrderAtom = caf::atom_constant<caf::atom("OpenOrd")>;
+using CloseOrderAtom = caf::atom_constant<caf::atom("CloseOrd")>;
+using CancelOrderAtom = caf::atom_constant<caf::atom("CancelOrd")>;
 
 using CtpObserver =
-    caf::typed_actor<caf::reacts_to<LoginAtom>,
-                     caf::reacts_to<RtnOrderAtom, CThostFtdcOrderField>,
+    caf::typed_actor<caf::reacts_to<CtpLoginAtom>,
+                     caf::reacts_to<CtpRtnOrderAtom, CThostFtdcOrderField>,
                      caf::reacts_to<AddListenerAtom, caf::strong_actor_ptr> >;
+
+using StrategyOrderAction =
+    caf::typed_actor<caf::reacts_to<OpenOrderAtom,
+                                    std::string,
+                                    std::string,
+                                    OrderDirection,
+                                    double,
+                                    int>,
+                     caf::reacts_to<CloseOrderAtom,
+                                    std::string,
+                                    std::string,
+                                    OrderDirection,
+                                    double,
+                                    int>,
+                     caf::reacts_to<CancelOrderAtom, std::string> >;
 
 // foo needs to be serializable
 template <class Inspector>
@@ -33,10 +63,4 @@ typename Inspector::result_type inspect(Inspector& f, CThostFtdcOrderField& x) {
       x.ZCETotalTradedVolume, x.IsSwapOrder, x.BranchID, x.InvestUnitID,
       x.AccountID, x.CurrencyID, x.IPAddress, x.MacAddress);
 }
-
-enum Direction {
-  kDirectionBuy,
-  kDirectionSell,
-};
-
 #endif /* CAF_DEFINES_H */
