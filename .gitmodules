@@ -4,3 +4,6 @@
 [submodule "third_party\\tradeapi"]
 	path = third_party/tradeapi
   url = d:\\Dropbox\\gitrepo\\third_party\\tradeapi.git\\
+[submodule "tools\\gyp"]
+	path = tools\\gyp
+	url = d:\\Dropbox\\gitrepo\\tools\\gyp\\
