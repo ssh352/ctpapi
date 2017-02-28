@@ -1,9 +1,0 @@
-[submodule "third_party/actor-framework"]
-	path = third_party/actor-framework
-	url = https://github.com/yjqpro/actor-framework.git
-[submodule "third_party\\tradeapi"]
-	path = third_party/tradeapi
-  url = d:\\Dropbox\\gitrepo\\third_party\\tradeapi.git\\
-[submodule "tools\\gyp"]
-	path = tools\\gyp
-	url = d:\\Dropbox\\gitrepo\\tools\\gyp\\
