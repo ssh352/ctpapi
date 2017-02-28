@@ -10,7 +10,7 @@
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/tradeapi/tradeapi.gyp:*',
+        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
       ],
       'defines' : [
       ],
@@ -33,7 +33,7 @@
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/tradeapi/tradeapi.gyp:*',
+        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
       ],
       'defines' : [
       ],
@@ -56,7 +56,7 @@
         '<(DEPTH)/testing/gtest.gyp:gtest',
         '<(DEPTH)/testing/gtest.gyp:gtest_main',
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/tradeapi/tradeapi.gyp:*',
+        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
       ],
       'defines' : [
       ],

@@ -2,7 +2,7 @@
 #define CAF_DEFINES_H
 
 #include "caf/all.hpp"
-#include "tradeapi/ThostFtdcTraderApi.h"
+#include "ctpapi/ThostFtdcTraderApi.h"
 
 enum OrderDirection {
   kBuy,
