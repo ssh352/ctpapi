@@ -7,6 +7,7 @@
       },
       'sources' : [
         'main.cc',
+        'ctp_trader.h',
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
@@ -29,7 +30,6 @@
         'follow_strategy.h',
         'follow_strategy.cc',
         'caf_defines.h',
-        'ctp_trader.h',
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',

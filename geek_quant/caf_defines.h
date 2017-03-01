@@ -2,65 +2,106 @@
 #define CAF_DEFINES_H
 
 #include "caf/all.hpp"
-#include "ctpapi/ThostFtdcTraderApi.h"
 
 enum OrderDirection {
-  kBuy,
-  kSell,
+  kODInvalid,
+  kODBuy,
+  kODSell,
 };
 
-enum OrderAction {
-  kOpen,
-  kClose,
-  kCancel,
+enum EnterOrderAction {
+  kEOAInvalid,
+  kEOAOpen,
+  kEOAClose,
+  kEOACancelForTest,
 };
 
-using CtpLoginAtom = caf::atom_constant<caf::atom("CtpLogin")>;
-using CtpRtnOrderAtom = caf::atom_constant<caf::atom("CtpRO")>;
+enum OrderStatus {
+  kOSInvalid,
+  kOSOpening,
+  kOSCloseing,
+  kOSOpened,
+  kOSClosed,
+};
 
-using AddListenerAtom = caf::atom_constant<caf::atom("AddListen")>;
-using OpenOrderAtom = caf::atom_constant<caf::atom("OpenOrd")>;
-using CloseOrderAtom = caf::atom_constant<caf::atom("CloseOrd")>;
-using CancelOrderAtom = caf::atom_constant<caf::atom("CancelOrd")>;
+struct OrderPositionData {
+  OrderPositionData() {
+    order_direction = kODInvalid;
+    volume = 0;
+  }
+  std::string instrument;
+  OrderDirection order_direction;
+  double volume;
+};
 
-using CtpObserver =
-    caf::typed_actor<caf::reacts_to<CtpLoginAtom>,
-                     caf::reacts_to<CtpRtnOrderAtom, CThostFtdcOrderField>,
-                     caf::reacts_to<AddListenerAtom, caf::strong_actor_ptr> >;
+struct OrderRtnData {
+  OrderRtnData() {
+    order_status = kOSInvalid;
+    order_direction = kODInvalid;
+    order_price = 0.0;
+    volume = 0;
+  }
+  std::string order_no;
+  std::string instrument;
+  OrderDirection order_direction;
+  OrderStatus order_status;
+  double order_price;
+  int volume;
+};
 
-using StrategyOrderAction =
-    caf::typed_actor<caf::reacts_to<OpenOrderAtom,
-                                    std::string,
-                                    std::string,
-                                    OrderDirection,
-                                    double,
-                                    int>,
-                     caf::reacts_to<CloseOrderAtom,
-                                    std::string,
-                                    std::string,
-                                    OrderDirection,
-                                    double,
-                                    int>,
+struct EnterOrderData {
+  EnterOrderData() {
+    action = kEOAInvalid;
+    order_direction = kODInvalid;
+    order_price = 0.0;
+    volume = 0;
+  }
+  std::string order_no;
+  std::string instrument;
+  EnterOrderAction action;
+  OrderDirection order_direction;
+  double order_price;
+  int volume;
+};
+
+// using TALoginAtom = caf::atom_constant<caf::atom("login")>;
+using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
+using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
+using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
+
+using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
+using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
+
+using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
+
+using TASubscriberActor = caf::typed_actor<
+    caf::reacts_to<TAPositionAtom, std::vector<OrderPositionData> >,
+    caf::reacts_to<TAUnfillOrdersAtom, std::vector<OrderRtnData> >,
+    caf::reacts_to<TARtnOrderAtom, OrderRtnData> >;
+
+using StrategySubscriberActor =
+    caf::typed_actor<caf::reacts_to<EnterOrderAtom, EnterOrderData>,
                      caf::reacts_to<CancelOrderAtom, std::string> >;
 
-// foo needs to be serializable
+using FollowTAStrategyActor = TASubscriberActor::extend<
+    caf::reacts_to<AddStrategySubscriberAtom, StrategySubscriberActor> >;
+
 template <class Inspector>
-typename Inspector::result_type inspect(Inspector& f, CThostFtdcOrderField& x) {
-  return f(
-      meta::type_name("CThostFtdcOrderField"), x.BrokerID, x.InvestorID,
-      x.InstrumentID, x.OrderRef, x.UserID, x.OrderPriceType, x.Direction,
-      x.CombOffsetFlag, x.CombHedgeFlag, x.LimitPrice, x.VolumeTotalOriginal,
-      x.TimeCondition, x.GTDDate, x.VolumeCondition, x.MinVolume,
-      x.ContingentCondition, x.StopPrice, x.ForceCloseReason, x.IsAutoSuspend,
-      x.BusinessUnit, x.RequestID, x.OrderLocalID, x.ExchangeID,
-      x.ParticipantID, x.ClientID, x.ExchangeInstID, x.TraderID, x.InstallID,
-      x.OrderSubmitStatus, x.NotifySequence, x.TradingDay, x.SettlementID,
-      x.OrderSysID, x.OrderSource, x.OrderStatus, x.OrderType, x.VolumeTraded,
-      x.VolumeTotal, x.InsertDate, x.InsertTime, x.ActiveTime, x.SuspendTime,
-      x.UpdateTime, x.CancelTime, x.ActiveTraderID, x.ClearingPartID,
-      x.SequenceNo, x.FrontID, x.SessionID, x.UserProductInfo, x.StatusMsg,
-      x.UserForceClose, x.ActiveUserID, x.BrokerOrderSeq, x.RelativeOrderSysID,
-      x.ZCETotalTradedVolume, x.IsSwapOrder, x.BranchID, x.InvestUnitID,
-      x.AccountID, x.CurrencyID, x.IPAddress, x.MacAddress);
+typename Inspector::result_type inspect(Inspector& f, OrderPositionData& x) {
+  return f(meta::type_name("OrderPositionData"), x.instrument,
+           x.order_direction, x.volume);
 }
+
+template <class Inspector>
+typename Inspector::result_type inspect(Inspector& f, OrderRtnData& x) {
+  return f(meta::type_name("OrderRtnData"), x.instrument, x.order_no,
+           x.order_status, x.order_direction, x.order_price, x.volume);
+}
+
+template <class Inspector>
+typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {
+  return f(meta::type_name("EnterOrderData"), x.instrument, x.order_no,
+           x.action, x.order_direction, x.order_price, x.volume);
+}
+
 #endif /* CAF_DEFINES_H */

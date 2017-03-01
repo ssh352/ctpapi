@@ -12,6 +12,9 @@ using std::string;
 
 using namespace caf;
 
+/*
+
+
 behavior StrategyListener(event_based_actor* self,
                           const CtpObserver& observer_actor) {
   self->request(observer_actor, caf::infinite, AddListenerAtom::value,
@@ -60,3 +63,5 @@ int main() {
     }
   }
 }
+
+*/
