@@ -407,3 +407,34 @@ TEST_F(CtaFollowOrderStrategyFixture, IncreaseOpenOrder) {
   EXPECT_EQ(5, old_volume_test);
   EXPECT_TRUE(receive);
 }
+
+TEST_F(CtaFollowOrderStrategyFixture, CancelOrder) {
+  // Open order
+  {
+    OrderRtnData order;
+    order.instrument = "abc";
+    order.order_no = "0001";
+    order.order_direction = OrderDirection::kODBuy;
+    order.order_status = OrderStatus::kOSOpening;
+    order.order_price = 1234.1;
+    order.volume = 5;
+    anon_send(strategy_actor, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+  EXPECT_TRUE(receive);
+
+  // Cancel order
+  {
+    OrderRtnData order;
+    order.instrument = "abc";
+    order.order_no = "0001";
+    order.order_direction = OrderDirection::kODBuy;
+    order.order_status = OrderStatus::kOSCancel;
+    order.order_price = 1234.1;
+    order.volume = 5;
+    anon_send(strategy_actor, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+  EXPECT_TRUE(receive);
+  EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
+}

@@ -14,6 +14,7 @@ class FollowStrategy : public FollowTAStrategyActor::base {
   void HandleCloseing(const OrderRtnData& order);
   void HandleOpened(const OrderRtnData& order);
   void HandleClosed(const OrderRtnData& order);
+  void HandleCancel(const OrderRtnData& order);
   std::vector<StrategySubscriberActor> subscribers_;
   std::vector<OrderRtnData> unfill_orders_;
   std::vector<PositionData> positions_;

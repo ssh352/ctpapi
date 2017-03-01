@@ -26,6 +26,7 @@ enum OrderStatus {
   kOSCloseing,
   kOSOpened,
   kOSClosed,
+  kOSCancel,
 };
 
 struct PositionData {

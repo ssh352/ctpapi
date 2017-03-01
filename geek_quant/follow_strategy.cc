@@ -33,6 +33,9 @@ FollowTAStrategyActor::behavior_type FollowStrategy::make_behavior() {
           case OrderStatus::kOSClosed:
             HandleClosed(order);
             break;
+          case OrderStatus::kOSCancel:
+            HandleCancel(order);
+            break;
           default:
             break;
         }
@@ -215,5 +218,19 @@ void FollowStrategy::HandleClosed(const OrderRtnData& order) {
   enter_order.action = EnterOrderAction::kEOACloseConfirm;
   for (auto subscriber : subscribers_) {
     send(subscriber, EnterOrderAtom::value, enter_order);
+  }
+}
+
+void FollowStrategy::HandleCancel(const OrderRtnData& order) {
+  auto it_unfill = std::find_if(
+      unfill_orders_.begin(), unfill_orders_.end(), [&](auto unfill_order) {
+        return order.order_no == unfill_order.order_no;
+      });
+  if (it_unfill == unfill_orders_.end()) {
+    // TODO:ASSERT(FALSE);
+    return;
+  }
+  for (auto subscriber : subscribers_) {
+    send(subscriber, CancelOrderAtom::value, order.order_no);
   }
 }
