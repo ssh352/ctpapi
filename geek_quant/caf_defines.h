@@ -13,6 +13,10 @@ enum EnterOrderAction {
   kEOAInvalid,
   kEOAOpen,
   kEOAClose,
+  kEOAOpenConfirm,
+  kEOACloseConfirm,
+  kEOAOpenReverseOrder, 
+  kEOAOpenReverseOrderConfirm, 
   kEOACancelForTest,
 };
 
@@ -24,8 +28,8 @@ enum OrderStatus {
   kOSClosed,
 };
 
-struct OrderPositionData {
-  OrderPositionData() {
+struct PositionData {
+  PositionData() {
     order_direction = kODInvalid;
     volume = 0;
   }
@@ -54,6 +58,7 @@ struct EnterOrderData {
     action = kEOAInvalid;
     order_direction = kODInvalid;
     order_price = 0.0;
+    old_volume = 0.0;
     volume = 0;
   }
   std::string order_no;
@@ -61,6 +66,7 @@ struct EnterOrderData {
   EnterOrderAction action;
   OrderDirection order_direction;
   double order_price;
+  int old_volume;
   int volume;
 };
 
@@ -75,7 +81,7 @@ using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
 
 using TASubscriberActor = caf::typed_actor<
-    caf::reacts_to<TAPositionAtom, std::vector<OrderPositionData> >,
+    caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
     caf::reacts_to<TAUnfillOrdersAtom, std::vector<OrderRtnData> >,
     caf::reacts_to<TARtnOrderAtom, OrderRtnData> >;
 
@@ -87,20 +93,20 @@ using FollowTAStrategyActor = TASubscriberActor::extend<
     caf::reacts_to<AddStrategySubscriberAtom, StrategySubscriberActor> >;
 
 template <class Inspector>
-typename Inspector::result_type inspect(Inspector& f, OrderPositionData& x) {
-  return f(meta::type_name("OrderPositionData"), x.instrument,
+typename Inspector::result_type inspect(Inspector& f, PositionData& x) {
+  return f(caf::meta::type_name("OrderPositionData"), x.instrument,
            x.order_direction, x.volume);
 }
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderRtnData& x) {
-  return f(meta::type_name("OrderRtnData"), x.instrument, x.order_no,
+  return f(caf::meta::type_name("OrderRtnData"), x.instrument, x.order_no,
            x.order_status, x.order_direction, x.order_price, x.volume);
 }
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {
-  return f(meta::type_name("EnterOrderData"), x.instrument, x.order_no,
+  return f(caf::meta::type_name("EnterOrderData"), x.instrument, x.order_no,
            x.action, x.order_direction, x.order_price, x.volume);
 }
 
