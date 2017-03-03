@@ -45,10 +45,10 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
   }
 
  protected:
-    FollowTAStrategyActor strategy_actor;
-    typedef std::function<typename OrderSubscriberActor::behavior_type(
-        OrderSubscriberActor::pointer self)>
-        DummyType;
+  FollowTAStrategyActor strategy_actor;
+  typedef std::function<typename OrderSubscriberActor::behavior_type(
+      OrderSubscriberActor::pointer self)>
+      DummyType;
   DummyType dummy_listenr;
   OrderAgentActor order_agent;
   std::string instrument_test;
@@ -80,5 +80,64 @@ TEST_F(CtaOrderAgentFixture, OpenOrder) {
   EXPECT_EQ(EnterOrderAction::kEOAOpen, order_action_test);
   EXPECT_EQ(1234.1, order_price_test);
   EXPECT_EQ(10, volume_test);
+  EXPECT_TRUE(receive);
+}
+
+TEST_F(CtaOrderAgentFixture, CloseOrder) {
+  {
+    OrderRtnData order;
+    order.instrument = "abc";
+    order.order_no = "0001";
+    order.order_direction = OrderDirection::kODBuy;
+    order.order_status = OrderStatus::kOSOpened;
+    order.order_price = 1234.1;
+    order.volume = 10;
+    anon_send(order_agent, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+  receive = false;
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAClose;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_no = "0002";
+    order.order_price = 1235.1;
+    order.volume = 20;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+
+  EXPECT_EQ("abc", instrument_test);
+  EXPECT_EQ("0002", order_no_test);
+  EXPECT_EQ(OrderDirection::kODSell, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOAClose, order_action_test);
+  EXPECT_EQ(1235.1, order_price_test);
+  EXPECT_EQ(10, volume_test);
+  EXPECT_TRUE(receive);
+}
+
+TEST_F(CtaOrderAgentFixture, CancelOrder) {
+  {
+    OrderRtnData order;
+    order.instrument = "abc";
+    order.order_no = "0001";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_status = OrderStatus::kOSOpening;
+    order.order_price = 1234.1;
+    order.volume = 10;
+    anon_send(order_agent, TAUnfillOrdersAtom::value,
+              std::vector<OrderRtnData>{order});
+    sched.run();
+  }
+
+  EXPECT_FALSE(receive);
+  receive = false;
+  {
+    anon_send(order_agent, CancelOrderAtom::value, "0001");
+    sched.run();
+  }
+  EXPECT_EQ("0001", order_no_test);
+  EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
   EXPECT_TRUE(receive);
 }

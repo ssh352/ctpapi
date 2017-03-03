@@ -9,8 +9,10 @@ class OrderAgent : public OrderAgentActor::base {
 
 
 private:
-  OrderSubscriberActor subscriber_;
   void HandleOpened(const OrderRtnData& order);
+  void HandleCancel(const OrderRtnData& order);
+  OrderSubscriberActor subscriber_;
+  std::vector<OrderRtnData> pending_orders_;
   std::vector<PositionData> positions_;
 };
 
