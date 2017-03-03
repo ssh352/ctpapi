@@ -10,6 +10,8 @@ class OrderAgent : public OrderAgentActor::base {
 
 private:
   OrderSubscriberActor subscriber_;
+  void HandleOpened(const OrderRtnData& order);
+  std::vector<PositionData> positions_;
 };
 
 #endif  // STRATEGY_UNITTEST_ORDER_AGENT_H

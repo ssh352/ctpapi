@@ -74,5 +74,11 @@ TEST_F(CtaOrderAgentFixture, OpenOrder) {
     sched.run();
   }
 
+  EXPECT_EQ("abc", instrument_test);
+  EXPECT_EQ("0001", order_no_test);
+  EXPECT_EQ(OrderDirection::kODBuy, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOAOpen, order_action_test);
+  EXPECT_EQ(1234.1, order_price_test);
+  EXPECT_EQ(10, volume_test);
   EXPECT_TRUE(receive);
 }
