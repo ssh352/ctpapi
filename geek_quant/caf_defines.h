@@ -30,10 +30,11 @@ enum OrderStatus {
 };
 
 struct PositionData {
-  PositionData() {
-    order_direction = kODInvalid;
-    volume = 0;
-  }
+  // PositionData() = delete;
+  // PositionData() {
+  //   order_direction = kODInvalid;
+  //   volume = 0;
+  // }
   std::string instrument;
   OrderDirection order_direction;
   double volume;
