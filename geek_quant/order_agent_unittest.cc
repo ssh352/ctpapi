@@ -45,6 +45,10 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
   }
 
  protected:
+  void SendEmptyUnfillOrders() {
+    anon_send(order_agent, TAUnfillOrdersAtom::value,
+              std::vector<OrderRtnData>{});
+  }
   FollowTAStrategyActor strategy_actor;
   typedef std::function<typename OrderSubscriberActor::behavior_type(
       OrderSubscriberActor::pointer self)>
@@ -62,6 +66,7 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
 };
 
 TEST_F(CtaOrderAgentFixture, OpenOrder) {
+  SendEmptyUnfillOrders();
   {
     EnterOrderData order;
     order.action = EnterOrderAction::kEOAOpen;
@@ -84,6 +89,19 @@ TEST_F(CtaOrderAgentFixture, OpenOrder) {
 }
 
 TEST_F(CtaOrderAgentFixture, CloseOrder) {
+  SendEmptyUnfillOrders();
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAOpen;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODBuy;
+    order.order_no = "0001";
+    order.order_price = 1234.1;
+    order.volume = 10;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+  receive = false;
   {
     OrderRtnData order;
     order.instrument = "abc";
@@ -117,7 +135,41 @@ TEST_F(CtaOrderAgentFixture, CloseOrder) {
   EXPECT_TRUE(receive);
 }
 
+TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
+  SendEmptyUnfillOrders();
+  {
+    PositionData position;
+    position.instrument = "abc";
+    position.order_direction = OrderDirection::kODBuy;
+    position.volume = 10;
+    anon_send(order_agent, TAPositionAtom::value,
+              std::vector<PositionData>{position});
+    sched.run();
+  }
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAOpenReverseOrder;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_no = "0002";
+    order.order_price = 1235.1;
+    order.volume = 10;
+    order.old_volume = 10;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+
+  EXPECT_EQ("abc", instrument_test);
+  EXPECT_EQ("0002", order_no_test);
+  EXPECT_EQ(OrderDirection::kODSell, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOAOpenReverseOrder, order_action_test);
+  EXPECT_EQ(1235.1, order_price_test);
+  EXPECT_EQ(10, volume_test);
+  EXPECT_TRUE(receive);
+}
+
 TEST_F(CtaOrderAgentFixture, CancelOrder) {
+  SendEmptyUnfillOrders();
   {
     OrderRtnData order;
     order.instrument = "abc";
@@ -140,4 +192,59 @@ TEST_F(CtaOrderAgentFixture, CancelOrder) {
   EXPECT_EQ("0001", order_no_test);
   EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
   EXPECT_TRUE(receive);
+}
+
+TEST_F(CtaOrderAgentFixture, TestClosedOrder) {
+  SendEmptyUnfillOrders();
+  {
+    PositionData position;
+    position.instrument = "abc";
+    position.order_direction = OrderDirection::kODBuy;
+    position.volume = 10;
+    anon_send(order_agent, TAPositionAtom::value,
+              std::vector<PositionData>{position});
+    sched.run();
+  }
+
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAClose;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_no = "0002";
+    order.order_price = 1235.1;
+    order.volume = 10;
+    order.old_volume = 0;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+  EXPECT_TRUE(receive);
+  receive = false;
+
+  {
+    OrderRtnData order;
+    order.instrument = "abc";
+    order.order_no = "0002";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_status = OrderStatus::kOSClosed;
+    order.order_price = 1235.1;
+    order.volume = 10;
+    anon_send(order_agent, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAClose;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_no = "0003";
+    order.order_price = 1235.1;
+    order.volume = 10;
+    order.old_volume = 0;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+
+  EXPECT_FALSE(receive);
 }
