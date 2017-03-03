@@ -2,12 +2,14 @@
 
 OrderAgentActor::behavior_type OrderAgent::make_behavior() {
   return {[=](TAPositionAtom, std::vector<PositionData> positions) {
+            wait_for_until_receive_positions_ = true;
             positions_ = positions;
+            TryProcessPendingEnterOrder();
           },
           [=](TAUnfillOrdersAtom, std::vector<OrderRtnData> orders) {
             pending_orders_ = orders;
-            wait_for_unfill_orders_ = true;
-            ProcessPendingEnterOrder();
+            wait_for_until_receive_unfill_orders_ = true;
+            TryProcessPendingEnterOrder();
           },
           [=](TARtnOrderAtom, OrderRtnData order) {
             switch (order.order_status) {
@@ -29,7 +31,7 @@ OrderAgentActor::behavior_type OrderAgent::make_behavior() {
             }
           },
           [=](EnterOrderAtom, EnterOrderData enter_order) {
-            if (!wait_for_unfill_orders_) {
+            if (!ReadyToEnterOrder()) {
               pending_enter_orders_.push_back(enter_order);
               return;
             }
@@ -69,7 +71,10 @@ void OrderAgent::OnOrderOpened(const OrderRtnData& order) {
 
 void OrderAgent::OnOrderCanceled(const OrderRtnData& order) {}
 
-void OrderAgent::ProcessPendingEnterOrder() {
+void OrderAgent::TryProcessPendingEnterOrder() {
+  if (!ReadyToEnterOrder()) {
+    return;
+  }
   std::for_each(
       pending_enter_orders_.begin(), pending_enter_orders_.end(),
       [=](auto enter_order) {
@@ -81,6 +86,11 @@ void OrderAgent::ProcessPendingEnterOrder() {
         }
       });
   pending_enter_orders_.clear();
+}
+
+bool OrderAgent::ReadyToEnterOrder() const {
+  return wait_for_until_receive_unfill_orders_ &&
+         wait_for_until_receive_positions_;
 }
 
 void OrderAgent::OnOrderClosed(const OrderRtnData& order) {

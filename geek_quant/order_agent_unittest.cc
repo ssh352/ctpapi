@@ -45,9 +45,12 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
   }
 
  protected:
-  void SendEmptyUnfillOrders() {
+  void SendEmptyUnfillOrdersAndPositions() {
     anon_send(order_agent, TAUnfillOrdersAtom::value,
               std::vector<OrderRtnData>{});
+    anon_send(order_agent, TAPositionAtom::value,
+              std::vector<PositionData>{});
+    sched.run();
   }
   FollowTAStrategyActor strategy_actor;
   typedef std::function<typename OrderSubscriberActor::behavior_type(
@@ -66,7 +69,7 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
 };
 
 TEST_F(CtaOrderAgentFixture, OpenOrder) {
-  SendEmptyUnfillOrders();
+  SendEmptyUnfillOrdersAndPositions();
   {
     EnterOrderData order;
     order.action = EnterOrderAction::kEOAOpen;
@@ -89,7 +92,7 @@ TEST_F(CtaOrderAgentFixture, OpenOrder) {
 }
 
 TEST_F(CtaOrderAgentFixture, CloseOrder) {
-  SendEmptyUnfillOrders();
+  SendEmptyUnfillOrdersAndPositions();
   {
     EnterOrderData order;
     order.action = EnterOrderAction::kEOAOpen;
@@ -136,7 +139,7 @@ TEST_F(CtaOrderAgentFixture, CloseOrder) {
 }
 
 TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
-  SendEmptyUnfillOrders();
+  SendEmptyUnfillOrdersAndPositions();
   {
     PositionData position;
     position.instrument = "abc";
@@ -169,7 +172,7 @@ TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
 }
 
 TEST_F(CtaOrderAgentFixture, CancelOrder) {
-  SendEmptyUnfillOrders();
+  SendEmptyUnfillOrdersAndPositions();
   {
     OrderRtnData order;
     order.instrument = "abc";
@@ -195,7 +198,7 @@ TEST_F(CtaOrderAgentFixture, CancelOrder) {
 }
 
 TEST_F(CtaOrderAgentFixture, TestClosedOrder) {
-  SendEmptyUnfillOrders();
+  SendEmptyUnfillOrdersAndPositions();
   {
     PositionData position;
     position.instrument = "abc";
