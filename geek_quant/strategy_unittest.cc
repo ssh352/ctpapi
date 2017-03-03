@@ -1,25 +1,10 @@
 #include "gtest/gtest.h"
 #include "caf/all.hpp"
 #include "geek_quant/follow_strategy.h"
+#include "caf_test_fixture.h"
 
 using namespace caf;
 
-class CafTestCoordinatorFixture : public testing::Test {
-  using ConfigType = caf::actor_system_config;
-  using SchedulerType = caf::scheduler::test_coordinator;
-
- public:
-  CafTestCoordinatorFixture()
-      : sys((cfg.scheduler_policy = caf::atom("testing"), cfg)),
-        self(sys),
-        sched(dynamic_cast<SchedulerType&>(sys.scheduler())) {}
-
- protected:
-  ConfigType cfg;
-  caf::actor_system sys;
-  caf::scoped_actor self;
-  SchedulerType& sched;
-};
 
 class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
  public:
@@ -310,7 +295,6 @@ TEST_F(CtaFollowOrderStrategyFixture, PartCloseTrade) {
   EXPECT_EQ(5, volume_test);
   EXPECT_EQ(10, old_volume_test);
   EXPECT_TRUE(receive);
-
 
   // Close order part 2
   {
