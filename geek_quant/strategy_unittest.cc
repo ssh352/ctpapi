@@ -20,8 +20,8 @@ class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
   virtual void SetUp() {
     strategy_actor = sys.spawn<FollowStrategy>();
     sched.run();
-    dummy_listenr = [&](StrategySubscriberActor::pointer self)
-        -> StrategySubscriberActor::behavior_type {
+    dummy_listenr = [&](OrderSubscriberActor::pointer self)
+        -> OrderSubscriberActor::behavior_type {
       return {
           [&](EnterOrderAtom, EnterOrderData order) {
             instrument_test = order.instrument;
@@ -40,7 +40,7 @@ class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
           },
       };
     };
-    StrategySubscriberActor actor = sys.spawn(dummy_listenr);
+    OrderSubscriberActor actor = sys.spawn(dummy_listenr);
     sched.run();
     anon_send(strategy_actor, AddStrategySubscriberAtom::value, actor);
     sched.run();
@@ -48,8 +48,8 @@ class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
 
  protected:
   FollowTAStrategyActor strategy_actor;
-  typedef std::function<typename StrategySubscriberActor::behavior_type(
-      StrategySubscriberActor::pointer self)>
+  typedef std::function<typename OrderSubscriberActor::behavior_type(
+      OrderSubscriberActor::pointer self)>
       DummyType;
   // typedef typename
   // StrategySubscriberActor::behavior_type(*DummyType)(event_based_actor*);

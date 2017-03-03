@@ -30,6 +30,8 @@
         'follow_strategy.h',
         'follow_strategy.cc',
         'caf_defines.h',
+        'order_agent.h',
+        'order_agent.cc',
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',

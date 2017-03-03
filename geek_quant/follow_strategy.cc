@@ -8,7 +8,7 @@ FollowStrategy::~FollowStrategy() {}
 
 FollowTAStrategyActor::behavior_type FollowStrategy::make_behavior() {
   return {
-      [&](AddStrategySubscriberAtom, StrategySubscriberActor subscriber) {
+      [&](AddStrategySubscriberAtom, OrderSubscriberActor subscriber) {
         subscribers_.push_back(subscriber);
       },
       [=](TAPositionAtom, std::vector<PositionData> positions) {

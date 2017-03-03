@@ -15,8 +15,8 @@ enum EnterOrderAction {
   kEOAClose,
   kEOAOpenConfirm,
   kEOACloseConfirm,
-  kEOAOpenReverseOrder, 
-  kEOAOpenReverseOrderConfirm, 
+  kEOAOpenReverseOrder,
+  kEOAOpenReverseOrderConfirm,
   kEOACancelForTest,
 };
 
@@ -79,19 +79,22 @@ using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
 using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 
+
 using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
 
 using TASubscriberActor = caf::typed_actor<
-    caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
+  caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
     caf::reacts_to<TAUnfillOrdersAtom, std::vector<OrderRtnData> >,
     caf::reacts_to<TARtnOrderAtom, OrderRtnData> >;
 
-using StrategySubscriberActor =
+using OrderSubscriberActor =
     caf::typed_actor<caf::reacts_to<EnterOrderAtom, EnterOrderData>,
                      caf::reacts_to<CancelOrderAtom, std::string> >;
 
 using FollowTAStrategyActor = TASubscriberActor::extend<
-    caf::reacts_to<AddStrategySubscriberAtom, StrategySubscriberActor> >;
+    caf::reacts_to<AddStrategySubscriberAtom, OrderSubscriberActor> >;
+
+using OrderAgentActor = TASubscriberActor::extend_with<OrderSubscriberActor>;
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, PositionData& x) {
