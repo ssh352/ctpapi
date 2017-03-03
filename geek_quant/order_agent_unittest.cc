@@ -48,10 +48,47 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
   void SendEmptyUnfillOrdersAndPositions() {
     anon_send(order_agent, TAUnfillOrdersAtom::value,
               std::vector<OrderRtnData>{});
-    anon_send(order_agent, TAPositionAtom::value,
-              std::vector<PositionData>{});
+    anon_send(order_agent, TAPositionAtom::value, std::vector<PositionData>{});
     sched.run();
   }
+  void SendEnterOrder(const char* order_no,
+                      EnterOrderAction order_action,
+                      OrderDirection order_direction,
+                      const char* instrument = "abc",
+                      double order_price = 1234.1,
+                      int volume = 10,
+                      int old_volume = 0) {
+    receive = false;
+    EnterOrderData order;
+    order.action = order_action;
+    order.order_direction = order_direction;
+    order.instrument = instrument;
+    order.order_no = order_no;
+    order.order_price = order_price;
+    order.volume = volume;
+    order.old_volume = old_volume;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+    sched.run();
+  }
+
+  void SendOrderRtn(const char* order_no,
+                    OrderStatus order_status,
+                    OrderDirection order_direction,
+                    const char* instrument = "abc",
+                    double order_price = 1234.1,
+                    int volume = 10,
+                    int old_volume = 0) {
+    OrderRtnData order;
+    order.instrument = instrument;
+    order.order_no = order_no;
+    order.order_direction = order_direction;
+    order.order_status = order_status;
+    order.order_price = order_price;
+    order.volume = volume;
+    anon_send(order_agent, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+
   FollowTAStrategyActor strategy_actor;
   typedef std::function<typename OrderSubscriberActor::behavior_type(
       OrderSubscriberActor::pointer self)>
@@ -250,4 +287,19 @@ TEST_F(CtaOrderAgentFixture, TestClosedOrder) {
   }
 
   EXPECT_FALSE(receive);
+}
+
+TEST_F(CtaOrderAgentFixture, CancelAlreadyClosedOrder) {
+  SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy);
+  anon_send(order_agent, CancelOrderAtom::value, "0001");
+  sched.run();
+
+  EXPECT_EQ("abc", instrument_test);
+  EXPECT_EQ("0001", order_no_test);
+  EXPECT_EQ(OrderDirection::kODSell, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOAClose, order_action_test);
+  EXPECT_EQ(1234.1, order_price_test);
+  EXPECT_EQ(10, volume_test);
+  EXPECT_TRUE(receive);
 }

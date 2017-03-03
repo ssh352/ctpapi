@@ -44,6 +44,8 @@ OrderAgentActor::behavior_type OrderAgent::make_behavior() {
             if (it != pending_orders_.end()) {
               send(subscriber_, CancelOrderAtom::value, order_no);
               pending_orders_.erase(it);
+            } else {
+              // TODO 
             }
           },
           [=](AddStrategySubscriberAtom, OrderSubscriberActor actor) {
@@ -69,7 +71,17 @@ void OrderAgent::OnOrderOpened(const OrderRtnData& order) {
   positions_.push_back(position);
 }
 
-void OrderAgent::OnOrderCanceled(const OrderRtnData& order) {}
+void OrderAgent::OnOrderCanceled(const OrderRtnData& order) {
+  auto it = std::find_if(pending_orders_.begin(), pending_orders_.end(),
+                         [&](auto pending_order) {
+                           return pending_order.order_no == order.order_no;
+                         });
+
+  // ASSERT(it != pending_orders_.end())
+  if (it != pending_orders_.end()) {
+    pending_orders_.erase(it);
+  }
+}
 
 void OrderAgent::TryProcessPendingEnterOrder() {
   if (!ReadyToEnterOrder()) {
