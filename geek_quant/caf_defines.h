@@ -94,7 +94,7 @@ using OrderSubscriberActor =
 using FollowTAStrategyActor = TASubscriberActor::extend<
     caf::reacts_to<AddStrategySubscriberAtom, OrderSubscriberActor> >;
 
-using OrderAgentActor = TASubscriberActor::extend_with<OrderSubscriberActor>;
+using OrderAgentActor = FollowTAStrategyActor::extend_with<OrderSubscriberActor>;
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, PositionData& x) {

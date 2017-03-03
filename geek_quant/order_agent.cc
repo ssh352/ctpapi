@@ -8,6 +8,11 @@ OrderAgentActor::behavior_type OrderAgent::make_behavior() {
 
           },
           [](TARtnOrderAtom, OrderRtnData order) {},
-          [](EnterOrderAtom, EnterOrderData enter_order) {},
-          [](CancelOrderAtom, std::string order_no) {}};
+          [=](EnterOrderAtom, EnterOrderData enter_order) {
+            send(subscriber_, EnterOrderAtom::value, enter_order);
+          },
+          [](CancelOrderAtom, std::string order_no) {},
+          [=](AddStrategySubscriberAtom, OrderSubscriberActor actor) {
+            subscriber_ = actor;
+          }};
 }

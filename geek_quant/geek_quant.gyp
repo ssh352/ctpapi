@@ -53,6 +53,7 @@
       },
       'sources' : [
         'strategy_unittest.cc',
+        'order_agent_unittest.cc',
       ],
       'dependencies' : [
         'libgeekquant',
