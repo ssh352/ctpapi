@@ -31,8 +31,9 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
             order_action_test = order.action;
             receive = true;
           },
-          [&](CancelOrderAtom, std::string order_no) {
+          [&](CancelOrderAtom, std::string instrument, std::string order_no) {
             order_no_test = order_no;
+            instrument_test = instrument;
             order_action_test = EnterOrderAction::kEOACancelForTest;
             receive = true;
           },
@@ -97,9 +98,9 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
     sched.run();
   }
 
-  void CancelOrder(const char* order_no) {
+  void CancelOrder(const char* order_no, const char* instrument="abc") {
     receive = false;
-    anon_send(order_agent, CancelOrderAtom::value, "0001");
+    anon_send(order_agent, CancelOrderAtom::value, instrument, order_no);
     sched.run();
   }
 
@@ -167,9 +168,7 @@ TEST_F(CtaOrderAgentFixture, CloseOrder) {
   EXPECT_TRUE(receive);
 }
 
-TEST_F(CtaOrderAgentFixture, PartCloseOrder) {
-
-}
+TEST_F(CtaOrderAgentFixture, PartCloseOrder) {}
 
 TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
   SendEmptyUnfillOrders();
@@ -204,11 +203,11 @@ TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
   EXPECT_TRUE(receive);
 }
 
-
 TEST_F(CtaOrderAgentFixture, OpenReverseOrderForPartyFill) {
   SendEmptyUnfillOrdersAndPositions();
   SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
-  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc", 1234.1, 5);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc",
+               1234.1, 5);
   {
     EnterOrderData order;
     order.action = EnterOrderAction::kEOAOpenReverseOrder;
@@ -236,10 +235,8 @@ TEST_F(CtaOrderAgentFixture, OpenReverseOrderForPartyFill) {
   EXPECT_TRUE(receive);
 }
 
-
-
 TEST_F(CtaOrderAgentFixture, CancelOrder) {
-  SendEmptyUnfillOrdersAndPositions();
+  SendEmptyPositions();
   {
     OrderRtnData order;
     order.instrument = "abc";
@@ -256,7 +253,7 @@ TEST_F(CtaOrderAgentFixture, CancelOrder) {
   EXPECT_FALSE(receive);
   receive = false;
   {
-    anon_send(order_agent, CancelOrderAtom::value, "0001");
+    anon_send(order_agent, CancelOrderAtom::value, "abc", "0001");
     sched.run();
   }
   EXPECT_EQ("0001", order_no_test);
@@ -331,7 +328,8 @@ TEST_F(CtaOrderAgentFixture, CancelAlreadyOpenedOrder) {
 TEST_F(CtaOrderAgentFixture, CancelPartOpenedOrder) {
   SendEmptyUnfillOrdersAndPositions();
   SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
-  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc",1234.1, 5);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc",
+               1234.1, 5);
   CancelOrder("0001");
 
   EXPECT_EQ("abc", instrument_test);

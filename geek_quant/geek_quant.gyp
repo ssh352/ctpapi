@@ -32,6 +32,8 @@
         'caf_defines.h',
         'order_agent.h',
         'order_agent.cc',
+        'instrument_order_agent.h',
+        'instrument_order_agent.cc',
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',

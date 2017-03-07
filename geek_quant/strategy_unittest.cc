@@ -5,7 +5,6 @@
 
 using namespace caf;
 
-
 class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
  public:
   CtaFollowOrderStrategyFixture() {
@@ -33,7 +32,7 @@ class CtaFollowOrderStrategyFixture : public CafTestCoordinatorFixture {
             order_action_test = order.action;
             receive = true;
           },
-          [&](CancelOrderAtom, std::string order_no) {
+          [&](CancelOrderAtom, std::string instrument, std::string order_no) {
             order_no_test = order_no;
             order_action_test = EnterOrderAction::kEOACancelForTest;
             receive = true;

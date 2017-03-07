@@ -231,6 +231,6 @@ void FollowStrategy::HandleCancel(const OrderRtnData& order) {
     return;
   }
   for (auto subscriber : subscribers_) {
-    send(subscriber, CancelOrderAtom::value, order.order_no);
+    send(subscriber, CancelOrderAtom::value, order.instrument, order.order_no);
   }
 }

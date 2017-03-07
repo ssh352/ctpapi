@@ -90,7 +90,7 @@ using TASubscriberActor = caf::typed_actor<
 
 using OrderSubscriberActor =
     caf::typed_actor<caf::reacts_to<EnterOrderAtom, EnterOrderData>,
-                     caf::reacts_to<CancelOrderAtom, std::string> >;
+                     caf::reacts_to<CancelOrderAtom, std::string, std::string> >;
 
 using FollowTAStrategyActor = TASubscriberActor::extend<
     caf::reacts_to<AddStrategySubscriberAtom, OrderSubscriberActor> >;

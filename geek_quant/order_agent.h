@@ -1,6 +1,7 @@
 #ifndef STRATEGY_UNITTEST_ORDER_AGENT_H
 #define STRATEGY_UNITTEST_ORDER_AGENT_H
 #include "caf_defines.h"
+#include "instrument_order_agent.h"
 
 class OrderAgent : public OrderAgentActor::base {
  public:
@@ -17,9 +18,7 @@ class OrderAgent : public OrderAgentActor::base {
   void OnOrderClosed(const OrderRtnData& order);
   void TryProcessPendingEnterOrder();
   OrderSubscriberActor subscriber_;
-  std::vector<OrderRtnData> pending_orders_;
-  std::vector<EnterOrderData> pending_enter_orders_;
-  std::vector<PositionData> positions_;
+  std::vector<InstrumentOrderAgent> instrument_orders_;
   bool wait_for_until_receive_unfill_orders_;
   bool wait_for_until_receive_positions_;
   bool ReadyToEnterOrder() const;
