@@ -76,8 +76,8 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
                     OrderDirection order_direction,
                     const char* instrument = "abc",
                     double order_price = 1234.1,
-                    int volume = 10,
-                    int old_volume = 0) {
+                    int volume = 10) {
+    receive = false;
     OrderRtnData order;
     order.instrument = instrument;
     order.order_no = order_no;
@@ -86,6 +86,12 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
     order.order_price = order_price;
     order.volume = volume;
     anon_send(order_agent, TARtnOrderAtom::value, order);
+    sched.run();
+  }
+
+  void CancelOrder(const char* order_no) {
+    receive = false;
+    anon_send(order_agent, CancelOrderAtom::value, "0001");
     sched.run();
   }
 
@@ -289,17 +295,23 @@ TEST_F(CtaOrderAgentFixture, TestClosedOrder) {
   EXPECT_FALSE(receive);
 }
 
-TEST_F(CtaOrderAgentFixture, CancelAlreadyClosedOrder) {
+TEST_F(CtaOrderAgentFixture, CancelAlreadyOpenedOrder) {
+  SendEmptyUnfillOrdersAndPositions();
   SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
   SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy);
-  anon_send(order_agent, CancelOrderAtom::value, "0001");
-  sched.run();
+  CancelOrder("0001");
+
+  EXPECT_FALSE(receive);
+}
+
+TEST_F(CtaOrderAgentFixture, CancelPartOpenedOrder) {
+  SendEmptyUnfillOrdersAndPositions();
+  SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc",1234.1, 5);
+  CancelOrder("0001");
 
   EXPECT_EQ("abc", instrument_test);
   EXPECT_EQ("0001", order_no_test);
-  EXPECT_EQ(OrderDirection::kODSell, direction_test);
-  EXPECT_EQ(EnterOrderAction::kEOAClose, order_action_test);
-  EXPECT_EQ(1234.1, order_price_test);
-  EXPECT_EQ(10, volume_test);
-  EXPECT_TRUE(receive);
+  EXPECT_EQ(OrderDirection::kODBuy, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
 }

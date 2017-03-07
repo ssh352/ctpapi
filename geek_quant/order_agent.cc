@@ -63,12 +63,46 @@ void OrderAgent::OnOrderOpened(const OrderRtnData& order) {
   if (it == pending_orders_.end()) {
     return;
   }
-  pending_orders_.erase(it);
+
+  it->volume -= order.volume;
+  if (it->volume <= 0) {
+    pending_orders_.erase(it);
+  }
   PositionData position;
   position.instrument = order.instrument;
   position.order_direction = order.order_direction;
   position.volume = order.volume;
   positions_.push_back(position);
+}
+
+void OrderAgent::OnOrderClosed(const OrderRtnData& order) {
+  auto it = std::find_if(pending_orders_.begin(), pending_orders_.end(),
+                         [&](auto pending_order) {
+                           return pending_order.order_no == order.order_no;
+                         });
+  if (it != pending_orders_.end()) {
+    auto it_pos =
+        std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
+          return pos.instrument == order.instrument &&
+                 pos.order_direction != order.order_direction;
+        });
+    if (it_pos != positions_.end()) {
+      it_pos->volume -= order.volume;
+      // ASSERT(it_pos->volume>=0)
+      if (it_pos->volume <= 0) {
+        positions_.erase(it_pos);
+      }
+    } else {
+      // TODO:ASSERT
+    }
+
+    it->volume -= order.volume;
+    if (it->volume <= 0) {
+      pending_orders_.erase(it);
+    }
+  } else {
+    // TODO: ASSERT
+  }
 }
 
 void OrderAgent::OnOrderCanceled(const OrderRtnData& order) {
@@ -105,31 +139,6 @@ bool OrderAgent::ReadyToEnterOrder() const {
          wait_for_until_receive_positions_;
 }
 
-void OrderAgent::OnOrderClosed(const OrderRtnData& order) {
-  auto it = std::find_if(pending_orders_.begin(), pending_orders_.end(),
-                         [&](auto pending_order) {
-                           return pending_order.order_no == order.order_no;
-                         });
-  if (it != pending_orders_.end()) {
-    auto it_pos =
-        std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
-          return pos.instrument == order.instrument &&
-                 pos.order_direction != order.order_direction;
-        });
-    if (it_pos != positions_.end()) {
-      it_pos->volume -= order.volume;
-      // ASSERT(it_pos->volume>=0)
-      if (it_pos->volume <= 0) {
-        positions_.erase(it_pos);
-      }
-    } else {
-      // TODO:ASSERT
-    }
-    pending_orders_.erase(it);
-  } else {
-    // TODO: ASSERT
-  }
-}
 
 void OrderAgent::HandleEnterOrder(const EnterOrderData& enter_order) {
   switch (enter_order.action) {
