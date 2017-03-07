@@ -46,8 +46,16 @@ class CtaOrderAgentFixture : public CafTestCoordinatorFixture {
 
  protected:
   void SendEmptyUnfillOrdersAndPositions() {
+    SendEmptyUnfillOrders();
+    SendEmptyPositions();
+  }
+  void SendEmptyUnfillOrders() {
     anon_send(order_agent, TAUnfillOrdersAtom::value,
               std::vector<OrderRtnData>{});
+    sched.run();
+  }
+
+  void SendEmptyPositions() {
     anon_send(order_agent, TAPositionAtom::value, std::vector<PositionData>{});
     sched.run();
   }
@@ -136,30 +144,8 @@ TEST_F(CtaOrderAgentFixture, OpenOrder) {
 
 TEST_F(CtaOrderAgentFixture, CloseOrder) {
   SendEmptyUnfillOrdersAndPositions();
-  {
-    EnterOrderData order;
-    order.action = EnterOrderAction::kEOAOpen;
-    order.instrument = "abc";
-    order.order_direction = OrderDirection::kODBuy;
-    order.order_no = "0001";
-    order.order_price = 1234.1;
-    order.volume = 10;
-    anon_send(order_agent, EnterOrderAtom::value, order);
-    sched.run();
-  }
-  receive = false;
-  {
-    OrderRtnData order;
-    order.instrument = "abc";
-    order.order_no = "0001";
-    order.order_direction = OrderDirection::kODBuy;
-    order.order_status = OrderStatus::kOSOpened;
-    order.order_price = 1234.1;
-    order.volume = 10;
-    anon_send(order_agent, TARtnOrderAtom::value, order);
-    sched.run();
-  }
-  receive = false;
+  SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy);
   {
     EnterOrderData order;
     order.action = EnterOrderAction::kEOAClose;
@@ -181,8 +167,12 @@ TEST_F(CtaOrderAgentFixture, CloseOrder) {
   EXPECT_TRUE(receive);
 }
 
+TEST_F(CtaOrderAgentFixture, PartCloseOrder) {
+
+}
+
 TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
-  SendEmptyUnfillOrdersAndPositions();
+  SendEmptyUnfillOrders();
   {
     PositionData position;
     position.instrument = "abc";
@@ -213,6 +203,40 @@ TEST_F(CtaOrderAgentFixture, OpenReverseOrder) {
   EXPECT_EQ(10, volume_test);
   EXPECT_TRUE(receive);
 }
+
+
+TEST_F(CtaOrderAgentFixture, OpenReverseOrderForPartyFill) {
+  SendEmptyUnfillOrdersAndPositions();
+  SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
+  SendOrderRtn("0001", OrderStatus::kOSOpened, OrderDirection::kODBuy, "abc", 1234.1, 5);
+  {
+    EnterOrderData order;
+    order.action = EnterOrderAction::kEOAOpenReverseOrder;
+    order.instrument = "abc";
+    order.order_direction = OrderDirection::kODSell;
+    order.order_no = "0002";
+    order.order_price = 1235.0;
+    order.volume = 10;
+    order.old_volume = 10;
+    anon_send(order_agent, EnterOrderAtom::value, order);
+  }
+  sched.run_once();
+  sched.run_once();
+  EXPECT_EQ("abc", instrument_test);
+  EXPECT_EQ("0002", order_no_test);
+  EXPECT_EQ(OrderDirection::kODSell, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOAOpenReverseOrder, order_action_test);
+  EXPECT_EQ(1235.0, order_price_test);
+  EXPECT_EQ(5, volume_test);
+  EXPECT_TRUE(receive);
+  sched.run();
+  EXPECT_EQ("0001", order_no_test);
+  EXPECT_EQ(OrderDirection::kODSell, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
+  EXPECT_TRUE(receive);
+}
+
+
 
 TEST_F(CtaOrderAgentFixture, CancelOrder) {
   SendEmptyUnfillOrdersAndPositions();

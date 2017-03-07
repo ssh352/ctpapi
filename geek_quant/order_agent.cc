@@ -45,7 +45,7 @@ OrderAgentActor::behavior_type OrderAgent::make_behavior() {
               send(subscriber_, CancelOrderAtom::value, order_no);
               pending_orders_.erase(it);
             } else {
-              // TODO 
+              // TODO
             }
           },
           [=](AddStrategySubscriberAtom, OrderSubscriberActor actor) {
@@ -139,7 +139,6 @@ bool OrderAgent::ReadyToEnterOrder() const {
          wait_for_until_receive_positions_;
 }
 
-
 void OrderAgent::HandleEnterOrder(const EnterOrderData& enter_order) {
   switch (enter_order.action) {
     case kEOAOpen: {
@@ -184,10 +183,41 @@ void OrderAgent::HandleEnterOrder(const EnterOrderData& enter_order) {
       if (it_pos != positions_.end()) {
         if (enter_order.old_volume == it_pos->volume) {
           send(subscriber_, EnterOrderAtom::value, enter_order);
-        } else {
+        } else if (enter_order.old_volume < enter_order.volume) {
           EnterOrderData real_enter_order(enter_order);
-          real_enter_order.volume = it_pos->volume;
+          real_enter_order.volume =
+              it_pos->volume + (enter_order.old_volume - enter_order.volume);
           send(subscriber_, EnterOrderAtom::value, real_enter_order);
+        } else {
+          if (enter_order.volume > it_pos->volume) {
+            EnterOrderData real_enter_order(enter_order);
+            real_enter_order.volume = it_pos->volume;
+            send(subscriber_, EnterOrderAtom::value, real_enter_order);
+            auto pending_order = std::find_if(
+                pending_orders_.begin(), pending_orders_.end(),
+                [&](auto order) {
+                  return order.instrument == enter_order.instrument &&
+                         order.order_direction != enter_order.order_direction;
+                });
+            if (pending_order != pending_orders_.end()) {
+              if (pending_order->volume ==
+                  enter_order.volume - it_pos->volume) {
+                send(subscriber_, CancelOrderAtom::value,
+                     pending_order->order_no);
+                pending_orders_.erase(pending_order);
+              } else {
+                // TODO:ASSERT()
+              }
+            } else {
+              // TODO:ASSERT()
+            }
+          } else {
+            // enter_order.volume < it_pos->volume
+            EnterOrderData real_enter_order(enter_order);
+            real_enter_order.volume =
+                it_pos->volume - (enter_order.old_volume - enter_order.volume);
+            send(subscriber_, EnterOrderAtom::value, real_enter_order);
+          }
         }
       }
     } break;
