@@ -95,7 +95,6 @@ void InstrumentOrderAgent::HandleEnterOrder(const EnterOrderData& enter_order) {
     case kEOAOpenConfirm:
     case kEOACloseConfirm:
     case kEOAOpenReverseOrderConfirm:
-    case kEOACancelForTest:
     default:
       break;
   }
@@ -143,6 +142,20 @@ void InstrumentOrderAgent::HandleEnterOrderForOpenReverseOrder(
         real_enter_order.volume =
             it_pos->volume - (enter_order.old_volume - enter_order.volume);
         delegate_->send(subscriber_, EnterOrderAtom::value, real_enter_order);
+      }
+    }
+  } else {
+    while (true) {
+      auto pending_order = std::find_if(
+          pending_orders_.begin(), pending_orders_.end(), [&](auto order) {
+            return order.order_direction != enter_order.order_direction;
+          });
+      if (pending_order != pending_orders_.end()) {
+        delegate_->send(subscriber_, CancelOrderAtom::value,
+                        pending_order->instrument, pending_order->order_no);
+        pending_orders_.erase(pending_order);
+      } else {
+        break;
       }
     }
   }

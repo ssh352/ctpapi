@@ -235,6 +235,15 @@ TEST_F(CtaOrderAgentFixture, OpenReverseOrderForPartyFill) {
   EXPECT_TRUE(receive);
 }
 
+TEST_F(CtaOrderAgentFixture, OpenReverseOrderToCancel) {
+  SendEmptyUnfillOrdersAndPositions();
+  SendEnterOrder("0001", EnterOrderAction::kEOAOpen, OrderDirection::kODBuy);
+  SendEnterOrder("0002", EnterOrderAction::kEOAOpenReverseOrder, OrderDirection::kODSell);
+  EXPECT_EQ("0001", order_no_test);
+  EXPECT_EQ(OrderDirection::kODBuy, direction_test);
+  EXPECT_EQ(EnterOrderAction::kEOACancelForTest, order_action_test);
+}
+
 TEST_F(CtaOrderAgentFixture, CancelOrder) {
   SendEmptyPositions();
   {
