@@ -25,6 +25,12 @@ class InstrumentOrderAgent {
 
   void HandleEnterOrder(const EnterOrderData& enter_order);
 
+  void HandleEnterOrderForOpenReverseOrder(const EnterOrderData &enter_order);
+
+  void HandleEnterOrderForClose(const EnterOrderData &enter_order);
+
+  void HandleEnterOrderForOpen(const EnterOrderData &enter_order);
+
   void HandleCancelOrder(const std::string& instrument,
                          const std::string& order_no);
 
@@ -34,10 +40,10 @@ class InstrumentOrderAgent {
 
  private:
   std::string instrument_;
+
   std::vector<OrderRtnData> pending_orders_;
   std::vector<EnterOrderData> pending_enter_orders_;
   std::vector<PositionData> positions_;
-
   OrderAgentActor::base* delegate_;
   OrderSubscriberActor subscriber_;
 };
