@@ -1,6 +1,7 @@
 #ifndef FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
 #define FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
 #include "geek_quant/caf_defines.h"
+#include "geek_quant/order_follow.h"
 
 class InstrumentFollow {
  public:
@@ -16,15 +17,7 @@ class InstrumentFollow {
   int UnfillVolume() const;
   int PositionVolume() const;
 
-  struct FollowOrder {
-    std::string order_no;
-    int total_volume;
-    int position_volume;
-    int canceling_volume;
-    int canceled_volume;
-    FollowOrder() = delete;
-  };
-  std::vector<FollowOrder> follow_orders_;
+  std::vector<OrderFollow> order_follows_;
 };
 
 #endif  // FOLLOW_TRADE_INSTRUMENT_FOLLOW_H

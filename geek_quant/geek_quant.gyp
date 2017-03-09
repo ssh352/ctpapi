@@ -1,4 +1,7 @@
 ﻿{
+  'includes':[
+    '../build/win_precompile.gypi',
+  ],
   'targets' : [
   {
     'target_name' : 'follow_trade',
@@ -10,6 +13,8 @@
       'follow_trade_actor.cc',
       'instrument_follow.h',
       'instrument_follow.cc',
+      'order_follow.h',
+      'order_follow.cc',
       'caf_defines.h',
     ],
     'dependencies' : [

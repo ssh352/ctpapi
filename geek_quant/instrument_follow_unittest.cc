@@ -182,7 +182,7 @@ TEST_F(InstrumentFollowFixture, PartFillCase2) {
 
   instrument_follow.HandleOrderRtnForFollow(
       MakeOrderRtnData("0001", OrderDirection::kODBuy, OrderStatus::kOSOpened,
-                       6),            
+                       6),
       &enter_order, &cancel_order_no_list);
 
   // reset test prevent write value from above
@@ -208,7 +208,7 @@ TEST_F(InstrumentFollowFixture, PartFillCase2) {
 
   EXPECT_EQ(0, cancel_order_no_list.size());
   EXPECT_EQ("0003", enter_order.order_no);
-  EXPECT_EQ(4, enter_order.volume);
+  EXPECT_EQ(5, enter_order.volume);
 }
 
 // Mutl Open Order with one Close
