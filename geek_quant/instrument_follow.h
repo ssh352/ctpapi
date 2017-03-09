@@ -20,6 +20,8 @@ class InstrumentFollow {
     std::string order_no;
     int total_volume;
     int position_volume;
+    int canceling_volume;
+    int canceled_volume;
     FollowOrder() = delete;
   };
   std::vector<FollowOrder> follow_orders_;

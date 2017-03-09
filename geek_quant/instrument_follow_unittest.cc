@@ -147,13 +147,23 @@ TEST_F(InstrumentFollowFixture, PartFillCase1) {
   // Follow left 4 unfill
   // Trade part close 4 volume left 6 volume
   instrument_follow.HandleOrderRtnForTrader(
-      MakeOrderRtnData("0002", OrderDirection::kODSell, OrderStatus::kOSCloseing, 4),
+      MakeOrderRtnData("0002", OrderDirection::kODSell,
+                       OrderStatus::kOSCloseing, 4),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ(1, cancel_order_no_list.size());
   EXPECT_EQ("0001", cancel_order_no_list.at(0));
   EXPECT_EQ("", enter_order.order_no);
 
+  cancel_order_no_list.clear();
+
+  instrument_follow.HandleOrderRtnForTrader(
+      MakeOrderRtnData("0003", OrderDirection::kODSell,
+                       OrderStatus::kOSCloseing, 6),
+      &enter_order, &cancel_order_no_list);
+
+  EXPECT_EQ(0, cancel_order_no_list.size());
+  EXPECT_EQ("0003", enter_order.order_no);
 }
 
 TEST_F(InstrumentFollowFixture, PartFillCase2) {
@@ -172,7 +182,7 @@ TEST_F(InstrumentFollowFixture, PartFillCase2) {
 
   instrument_follow.HandleOrderRtnForFollow(
       MakeOrderRtnData("0001", OrderDirection::kODBuy, OrderStatus::kOSOpened,
-                       6),
+                       6),            
       &enter_order, &cancel_order_no_list);
 
   // reset test prevent write value from above
@@ -181,13 +191,24 @@ TEST_F(InstrumentFollowFixture, PartFillCase2) {
   // Follow left 4 unfill
   // Trade part close 5 volume left 5 volume
   instrument_follow.HandleOrderRtnForTrader(
-      MakeOrderRtnData("0002", OrderDirection::kODSell, OrderStatus::kOSCloseing, 5),
+      MakeOrderRtnData("0002", OrderDirection::kODSell,
+                       OrderStatus::kOSCloseing, 5),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ(1, cancel_order_no_list.size());
   EXPECT_EQ("0001", cancel_order_no_list.at(0));
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(1, enter_order.volume);
+
+  cancel_order_no_list.clear();
+  instrument_follow.HandleOrderRtnForTrader(
+      MakeOrderRtnData("0003", OrderDirection::kODSell,
+                       OrderStatus::kOSCloseing, 5),
+      &enter_order, &cancel_order_no_list);
+
+  EXPECT_EQ(0, cancel_order_no_list.size());
+  EXPECT_EQ("0003", enter_order.order_no);
+  EXPECT_EQ(4, enter_order.volume);
 }
 
 // Mutl Open Order with one Close
@@ -280,7 +301,6 @@ TEST_F(InstrumentFollowFixture, PartFillMutilOrder) {
   EXPECT_EQ(16, enter_order.volume);
 }
 
-
 TEST_F(InstrumentFollowFixture, CancelMutlOrder) {
   InstrumentFollow instrument_follow;
   EnterOrderData enter_order;
@@ -316,5 +336,4 @@ TEST_F(InstrumentFollowFixture, CancelMutlOrder) {
   EXPECT_EQ("0001", cancel_order_no_list.at(0));
   EXPECT_EQ("0002", cancel_order_no_list.at(1));
   EXPECT_EQ("", enter_order.order_no);
-
 }
