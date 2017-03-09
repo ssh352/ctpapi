@@ -3,6 +3,12 @@
 
 #include "caf/all.hpp"
 
+enum OrderRtnFrom {
+  kORFInvalid,
+  kORFSource,
+  kORFDest,
+};
+
 enum OrderDirection {
   kODInvalid,
   kODBuy,

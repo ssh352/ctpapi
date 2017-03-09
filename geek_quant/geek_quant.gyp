@@ -1,76 +1,53 @@
 ﻿{
   'targets' : [
-    {
-      'target_name' : 'geek_quant_demo',
-      'type' : 'executable',
-      'variables' : {
-      },
-      'sources' : [
-        'main.cc',
-        'ctp_trader.h',
-      ],
-      'dependencies' : [
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      ],
-      'defines' : [
-      ],
-      'includes' : [
-      ],
-      'include_dirs': [
-        '..',
-      ],
+  {
+    'target_name' : 'follow_trade',
+    'type' : '<(component)',
+    'variables' : {
     },
-    {
-      'target_name' : 'libgeekquant',
-      'type' : '<(component)',
-      'variables' : {
-      },
-      'sources' : [
-        'follow_strategy.h',
-        'follow_strategy.cc',
-        'caf_defines.h',
-        'order_agent.h',
-        'order_agent.cc',
-        'instrument_order_agent.h',
-        'instrument_order_agent.cc',
-      ],
-      'dependencies' : [
-        '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      ],
-      'defines' : [
-      ],
-      'includes' : [
-      ],
-      'include_dirs' : [
-        '..',
-      ],
+    'sources' : [
+      'follow_trade_actor.h',
+      'follow_trade_actor.cc',
+      'instrument_follow.h',
+      'instrument_follow.cc',
+      'caf_defines.h',
+    ],
+    'dependencies' : [
+      #'<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',
+      '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
+      '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+    ],
+    'defines' : [
+    ],
+    'includes' : [
+    ],
+    'include_dirs' : [
+      '..',
+    ],
+  },
+  {
+    'target_name' : 'follow_trade_unittest',
+    'type' : 'executable',
+    'variables' : {
     },
-    {
-      'target_name' : 'strategy_unittest',
-      'type' : 'executable',
-      'variables' : {
-      },
-      'sources' : [
-        'strategy_unittest.cc',
-        'order_agent_unittest.cc',
-      ],
-      'dependencies' : [
-        'libgeekquant',
-        '<(DEPTH)/testing/gtest.gyp:gtest',
-        '<(DEPTH)/testing/gtest.gyp:gtest_main',
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-        '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      ],
-      'defines' : [
-      ],
-      'includes' : [
-      ],
-      'include_dirs' : [
-        '..',
-      ],
-    }
+    'sources' : [
+      'follow_trade_unittest.cc',
+      'instrument_follow_unittest.cc',
+    ],
+    'dependencies' : [
+      'follow_trade',
+      '<(DEPTH)/testing/gtest.gyp:gtest',
+      '<(DEPTH)/testing/gtest.gyp:gtest_main',
+      '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
+      '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+    ],
+    'defines' : [
+    ],
+    'includes' : [
+    ],
+    'include_dirs' : [
+      '..',
+    ],
+  }
   ]
 }     
