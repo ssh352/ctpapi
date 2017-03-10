@@ -1,9 +1,13 @@
 #include "order_follow.h"
 
-OrderFollow::OrderFollow(const std::string& order_no, int total_volume)
+OrderFollow::OrderFollow(const std::string& order_no,
+                         int total_volume,
+                         OrderDirection order_direction)
     : trade_order_no_(order_no),
       follow_order_no_(order_no),
-      total_volume_for_follow_(total_volume) {}
+      total_volume_for_trade_(total_volume),
+      total_volume_for_follow_(total_volume),
+      order_direction_(order_direction) {}
 
 int OrderFollow::CancelableVolume() const {
   return total_volume_for_follow_ - position_volume_for_follow_;

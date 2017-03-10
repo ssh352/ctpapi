@@ -10,7 +10,7 @@ enum OrderRtnFrom {
 };
 
 enum OrderDirection {
-  kODInvalid,
+  kODUnkown,
   kODBuy,
   kODSell,
 };
@@ -49,7 +49,7 @@ struct PositionData {
 struct OrderRtnData {
   OrderRtnData() {
     order_status = kOSInvalid;
-    order_direction = kODInvalid;
+    order_direction = kODUnkown;
     order_price = 0.0;
     volume = 0;
   }
@@ -64,7 +64,7 @@ struct OrderRtnData {
 struct EnterOrderData {
   EnterOrderData() {
     action = kEOAInvalid;
-    order_direction = kODInvalid;
+    order_direction = kODUnkown;
     order_price = 0.0;
     old_volume = 0.0;
     volume = 0;
