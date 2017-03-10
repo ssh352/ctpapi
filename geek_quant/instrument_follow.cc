@@ -42,19 +42,6 @@ void InstrumentFollow::HandleOrderRtnForTrader(
         enter_order->volume = close_volume;
         enter_order->action = EnterOrderAction::kEOAClose;
       }
-    /*
-    int pending_cancel_volume = order.volume - PositionVolume();
-    for (auto& forder : order_follows_) {
-      int canceling_volume = forder.CancelableVolume();
-      if (canceling_volume > 0) {
-        pending_cancel_volume -= canceling_volume;
-        forder.CancelOrder();
-      }
-      if (pending_cancel_volume <= 0) {
-        break;
-      }
-    }
-    */
   } else if (order.order_status == OrderStatus::kOSCanceling) {
     cancel_order_no_list->push_back(order.order_no);
   } else {
@@ -76,17 +63,4 @@ void InstrumentFollow::HandleOrderRtnForFollow(
   if (order.order_status == OrderStatus::kOSOpened) {
     it->FillOpenOrderForFollow(order.volume);
   }
-}
-
-int InstrumentFollow::UnfillVolume() const {
-  return std::accumulate(
-      order_follows_.begin(), order_follows_.end(), 0,
-      [&](int pre_sum, auto order) { return pre_sum + order.UnfillVolume(); });
-}
-
-int InstrumentFollow::PositionVolume() const {
-  return std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                         [&](int pre_sum, auto order) {
-                           return pre_sum + order.position_volume();
-                         });
 }

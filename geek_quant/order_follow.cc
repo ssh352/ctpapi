@@ -25,10 +25,6 @@ void OrderFollow::FillOpenOrderForFollow(int volume) {
   position_volume_for_follow_ += volume;
 }
 
-int OrderFollow::UnfillVolume() const {
-  return total_volume_for_follow_ - position_volume_for_follow_;
-}
-
 int OrderFollow::ProcessCloseOrder(const std::string& order_no,
                                    int close_volume,
                                    int* follow_close_volume,

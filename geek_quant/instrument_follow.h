@@ -14,9 +14,6 @@ class InstrumentFollow {
                                std::vector<std::string>* cancel_order_no_list);
 
  private:
-  int UnfillVolume() const;
-  int PositionVolume() const;
-
   std::vector<OrderFollow> order_follows_;
 };
 

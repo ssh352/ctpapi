@@ -11,13 +11,9 @@ class OrderFollow {
 
   const std::string& follow_order_no() const;
 
-  int position_volume() const { return position_volume_for_follow_; }
-
   void FillOpenOrderForTrade(int volume);
 
   void FillOpenOrderForFollow(int volume);
-
-  int UnfillVolume() const;
 
   int ProcessCloseOrder(const std::string& order_no,
                         int close_volume,
