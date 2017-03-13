@@ -14,17 +14,17 @@ void InstrumentFollow::HandleOrderRtnForTrader(
       // Open Reverse Order
       int volume = CalcOrderReverseVolume(order.volume);
 
-      order_direction_ = order.order_direction;
-      enter_order->order_no = order.order_no;
-      enter_order->instrument = order.instrument;
-      enter_order->order_direction = order.order_direction;
-      enter_order->order_price = order.order_price;
-      enter_order->volume = volume;
-      enter_order->action = EnterOrderAction::kEOAOpen;
-      order_follows_.push_back(
-          OrderFollow{order.order_no, order.volume, order.order_direction});
+      if (volume > 0) {
+        enter_order->order_no = order.order_no;
+        enter_order->instrument = order.instrument;
+        enter_order->order_direction = order.order_direction;
+        enter_order->order_price = order.order_price;
+        enter_order->volume = volume;
+        enter_order->action = EnterOrderAction::kEOAOpen;
+        order_follows_.push_back(
+            OrderFollow{order.order_no, order.volume, order.order_direction});
+      }
     } else {
-      order_direction_ = order.order_direction;
       enter_order->order_no = order.order_no;
       enter_order->instrument = order.instrument;
       enter_order->order_direction = order.order_direction;
@@ -43,6 +43,7 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     } else {
       // ASSERT(FALSE)
     }
+    ResetOrderDirectionIfNeed(order);
   } else if (order.order_status == OrderStatus::kOSCloseing) {
     int outstanding_close_volume = order.volume;
     int close_volume = 0;
@@ -68,6 +69,7 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     }
   } else if (order.order_status == OrderStatus::kOSCanceling) {
     cancel_order_no_list->push_back(order.order_no);
+  } else if (order.order_status == OrderStatus::kOSClosed) {
   } else {
   }
 }
@@ -131,4 +133,41 @@ int InstrumentFollow::CalcOrderReverseVolume(int order_volume) const {
       (trade_position_volume - trade_reverse_volume) - order_volume;
   return follow_position_volume - follow_reverse_volume -
          trade_left_unlock_volume;
+}
+
+void InstrumentFollow::ResetOrderDirectionIfNeed(const OrderRtnData& order) {
+  if (order_direction_ == kODUnkown) {
+    order_direction_ = order.order_direction;
+    return;
+  }
+
+  if (order_direction_ == order.order_direction) {
+    return;
+  }
+
+  int positive_pos =
+      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
+                      [=](int value, auto follow) {
+                        if (follow.order_direction() == order_direction_) {
+                          return value + follow.position_volume_for_trade();
+                        }
+                        return 0;
+                      });
+  int negative_pos =
+      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
+                      [=](int value, auto follow) {
+                        if (follow.order_direction() != order_direction_) {
+                          return value + follow.position_volume_for_trade();
+                        }
+                        return 0;
+                      });
+
+  order_direction_ = negative_pos > positive_pos
+                         ? ReverseOrderDirection(order_direction_)
+                         : order_direction_;
+}
+
+OrderDirection InstrumentFollow::ReverseOrderDirection(
+    OrderDirection order_direction) const {
+  return order_direction == kODBuy ? kODSell : kODBuy;
 }

@@ -19,6 +19,8 @@ class InstrumentFollow {
 
   std::vector<OrderFollow> order_follows_;
   OrderDirection order_direction_;
+  void ResetOrderDirectionIfNeed(const OrderRtnData& order);
+  OrderDirection ReverseOrderDirection(OrderDirection order_direction) const;
 };
 
 #endif  // FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
