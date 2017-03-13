@@ -5,12 +5,15 @@ OrderFollow::OrderFollow(const std::string& order_no,
                          OrderDirection order_direction)
     : trade_order_no_(order_no),
       follow_order_no_(order_no),
-      total_volume_for_trade_(total_volume),
-      total_volume_for_follow_(total_volume),
-      order_direction_(order_direction) {}
+      order_direction_(order_direction) {
+  memset(&trader_, 0, sizeof(OrderVolume));
+  memset(&follower_, 0, sizeof(OrderVolume));
+  trader_.opening = total_volume;
+  follower_.opening = total_volume;
+}
 
 int OrderFollow::CancelableVolume() const {
-  return total_volume_for_follow_ - position_volume_for_follow_;
+  return follower_.opening;
 }
 
 const std::string& OrderFollow::trade_order_no() const {
@@ -22,31 +25,29 @@ const std::string& OrderFollow::follow_order_no() const {
 }
 
 void OrderFollow::FillOpenOrderForTrade(int volume) {
-  position_volume_for_trade_ += volume;
+  trader_.position += volume;
+  trader_.opening -= volume;
 }
 
 void OrderFollow::FillOpenOrderForFollow(int volume) {
-  position_volume_for_follow_ += volume;
+  follower_.position += volume;
+  follower_.opening -= volume;
 }
 
 int OrderFollow::ProcessCloseOrder(const std::string& order_no,
                                    int close_volume,
-                                   int* follow_close_volume,
+                                   int* close_volume_by_follower,
                                    bool* cancel_order) {
-  int real_close_volume =
-      std::min<int>(position_volume_for_trade_, close_volume);
-  *follow_close_volume = std::max<int>(
-      real_close_volume -
-          (position_volume_for_trade_ - position_volume_for_follow_),
-      0);
+  int close_volume_by_trader = std::min<int>(trader_.position, close_volume);
 
-  int canceling_volume =
-      (total_volume_for_follow_ - position_volume_for_follow_);
-  total_volume_for_follow_ -= canceling_volume;
-  *cancel_order = canceling_volume > 0 ? true : false;
+  *close_volume_by_follower = std::max<int>(
+      close_volume_by_trader - (trader_.position - follower_.position), 0);
 
-  position_volume_for_trade_ -= real_close_volume;
-  position_volume_for_follow_ -= *follow_close_volume;
-  total_volume_for_follow_ -= *follow_close_volume;
-  return close_volume - real_close_volume;
+  *cancel_order = follower_.opening > 0 ? true : false;
+  follower_.canceling = follower_.opening;
+  follower_.opening = 0;
+
+  trader_.position -= close_volume_by_trader;
+  follower_.position -= *close_volume_by_follower;
+  return close_volume - close_volume_by_trader;
 }

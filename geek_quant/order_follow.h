@@ -2,6 +2,7 @@
 #define FOLLOW_TRADE_ORDER_FOLLOW_H
 #include <string>
 #include "geek_quant/caf_defines.h"
+#include "geek_quant/order_volume_follow.h"
 
 class OrderFollow {
  public:
@@ -15,19 +16,19 @@ class OrderFollow {
   const std::string& follow_order_no() const;
 
   int position_volume_for_trade() const {
-    return position_volume_for_trade_;
+    return trader_.position;
   }
 
   int position_volume_for_follow() const {
-    return position_volume_for_follow_;
+    return follower_.position;
   }
 
   int total_volume_for_follow() const {
-    return total_volume_for_follow_;
+    return follower_.opening + follower_.position;
   }
 
   int total_volume_for_trade() const {
-    return total_volume_for_trade_;
+    return trader_.opening + trader_.position;
   }
 
   OrderDirection order_direction() const {
@@ -45,17 +46,22 @@ class OrderFollow {
 
  private:
   std::string trade_order_no_;
+
   std::string follow_order_no_;
 
   OrderDirection order_direction_ = kODUnkown;
 
-  int position_volume_for_trade_ = 0;
-  int position_volume_for_follow_ = 0;
-
-  int closeing_volume_ = 0;
-
-  int total_volume_for_trade_ = 0;
-  int total_volume_for_follow_ = 0;
+  struct OrderVolume {
+    int opening;
+    int position;
+    int closeing;
+    int closed;
+    int canceling;
+    int canceled;
+  };
+  
+  OrderVolume trader_;
+  OrderVolume follower_;
 };
 
 #endif  // FOLLOW_TRADE_ORDER_FOLLOW_H

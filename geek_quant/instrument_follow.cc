@@ -13,7 +13,6 @@ void InstrumentFollow::HandleOrderRtnForTrader(
         order.order_direction != order_direction_) {
       // Open Reverse Order
       int volume = CalcOrderReverseVolume(order.volume);
-
       if (volume > 0) {
         enter_order->order_no = order.order_no;
         enter_order->instrument = order.instrument;
@@ -23,6 +22,11 @@ void InstrumentFollow::HandleOrderRtnForTrader(
         enter_order->action = EnterOrderAction::kEOAOpen;
         order_follows_.push_back(
             OrderFollow{order.order_no, order.volume, order.order_direction});
+      }
+      for (auto follow : order_follows_) {
+        if (follow.CancelableVolume()) {
+          cancel_order_no_list->push_back(follow.follow_order_no());
+        }
       }
     } else {
       enter_order->order_no = order.order_no;
@@ -50,7 +54,6 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     for (auto& follow : order_follows_) {
       int follow_close_volume = 0;
       bool cancel_order = false;
-      ;
       outstanding_close_volume =
           follow.ProcessCloseOrder(order.order_no, outstanding_close_volume,
                                    &follow_close_volume, &cancel_order);
