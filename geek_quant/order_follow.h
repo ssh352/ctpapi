@@ -2,7 +2,6 @@
 #define FOLLOW_TRADE_ORDER_FOLLOW_H
 #include <string>
 #include "geek_quant/caf_defines.h"
-#include "geek_quant/order_volume_follow.h"
 
 class OrderFollow {
  public:
