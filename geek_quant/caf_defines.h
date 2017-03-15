@@ -46,6 +46,12 @@ struct PositionData {
   double volume;
 };
 
+struct OpenOrderData {
+  std::string instrument;
+  OrderDirection direction;
+  OrderStatus order_status;
+};
+
 struct OrderRtnData {
   OrderRtnData() {
     order_status = kOSInvalid;

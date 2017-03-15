@@ -65,4 +65,8 @@ int main() {
       break;
     }
   }
+
+  FollowTradeServcies follow_trade_services;
+
+  follow_services.run();
 }

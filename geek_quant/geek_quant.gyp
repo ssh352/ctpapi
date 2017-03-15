@@ -16,6 +16,10 @@
       'order_follow.h',
       'order_follow.cc',
       'caf_defines.h',
+      'ctp_trader.h',
+      'ctp_trader.cc',
+      'ctp_order_dispatcher.h',
+      'ctp_order_dispatcher.cc',
     ],
     'dependencies' : [
       #'<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',
@@ -36,7 +40,6 @@
     'variables' : {
     },
     'sources' : [
-      'ctp_trader.h',
       'main.cc',
     ],
     'dependencies' : [
@@ -75,6 +78,21 @@
     'include_dirs' : [
       '..',
     ],
-  }
+  },
+  {
+    'target_name' : 'serialize_rtn_order',
+    'type' : 'executable',
+    'variables' : {
+    },
+    'sources' : [
+      'serialize_rtn_order.cc',
+    ],
+    'dependencies' : [
+      '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+    ],
+    'include_dirs': [
+      '..',
+    ],
+  },
   ]
 }     
