@@ -3,8 +3,6 @@
 #include <boost/make_shared.hpp>
 
 #include "caf/all.hpp"
-#include "geek_quant/caf_defines.h"
-#include "geek_quant/follow_strategy.h"
 #include "geek_quant/ctp_trader.h"
 
 using std::endl;
@@ -36,12 +34,15 @@ CtpObserver::behavior_type DummyObserver(CtpObserver::pointer self) {
   };
 }
 
+*/
 
 int main() {
   // our CAF environment
   actor_system_config cfg;
   actor_system system{cfg};
 
+  /*
+  
   auto observer_actor = system.spawn(DummyObserver);
 
   CtpTrader ctp_trader(caf::actor_cast<caf::strong_actor_ptr>(observer_actor));
@@ -54,6 +55,8 @@ int main() {
   //                        "8661188");
   ctp_trader.LoginServer("tcp://59.42.241.91:41205", "9080", "38030022",
                          "140616");
+  
+  */
 
   // system will wait until both actors are destroyed before leaving main
   std::string input;
@@ -63,5 +66,3 @@ int main() {
     }
   }
 }
-
-*/

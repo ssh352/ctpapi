@@ -4,6 +4,74 @@
 #include <fstream>
 #include <boost/lexical_cast.hpp>
 
+#include "ctpapi/ThostFtdcTraderApi.h"
+std::ostream& operator<<(std::ostream& output, CThostFtdcOrderField& order) {
+  output << boost::lexical_cast<std::string>(order.BrokerID) << ","
+         << boost::lexical_cast<std::string>(order.InvestorID) << ","
+         << boost::lexical_cast<std::string>(order.InstrumentID) << ","
+         << boost::lexical_cast<std::string>(order.OrderRef) << ","
+         << boost::lexical_cast<std::string>(order.UserID) << ","
+         << boost::lexical_cast<std::string>(order.OrderPriceType) << ","
+         << boost::lexical_cast<std::string>(order.Direction) << ","
+         << boost::lexical_cast<std::string>(order.CombOffsetFlag) << ","
+         << boost::lexical_cast<std::string>(order.CombHedgeFlag) << ","
+         << boost::lexical_cast<std::string>(order.LimitPrice) << ","
+         << boost::lexical_cast<std::string>(order.VolumeTotalOriginal) << ","
+         << boost::lexical_cast<std::string>(order.TimeCondition) << ","
+         << boost::lexical_cast<std::string>(order.GTDDate) << ","
+         << boost::lexical_cast<std::string>(order.VolumeCondition) << ","
+         << boost::lexical_cast<std::string>(order.MinVolume) << ","
+         << boost::lexical_cast<std::string>(order.ContingentCondition) << ","
+         << boost::lexical_cast<std::string>(order.StopPrice) << ","
+         << boost::lexical_cast<std::string>(order.ForceCloseReason) << ","
+         << boost::lexical_cast<std::string>(order.IsAutoSuspend) << ","
+         << boost::lexical_cast<std::string>(order.BusinessUnit) << ","
+         << boost::lexical_cast<std::string>(order.RequestID) << ","
+         << boost::lexical_cast<std::string>(order.OrderLocalID) << ","
+         << boost::lexical_cast<std::string>(order.ExchangeID) << ","
+         << boost::lexical_cast<std::string>(order.ParticipantID) << ","
+         << boost::lexical_cast<std::string>(order.ClientID) << ","
+         << boost::lexical_cast<std::string>(order.ExchangeInstID) << ","
+         << boost::lexical_cast<std::string>(order.TraderID) << ","
+         << boost::lexical_cast<std::string>(order.InstallID) << ","
+         << boost::lexical_cast<std::string>(order.OrderSubmitStatus) << ","
+         << boost::lexical_cast<std::string>(order.NotifySequence) << ","
+         << boost::lexical_cast<std::string>(order.TradingDay) << ","
+         << boost::lexical_cast<std::string>(order.SettlementID) << ","
+         << boost::lexical_cast<std::string>(order.OrderSysID) << ","
+         << boost::lexical_cast<std::string>(order.OrderSource) << ","
+         << boost::lexical_cast<std::string>(order.OrderStatus) << ","
+         << boost::lexical_cast<std::string>(order.OrderType) << ","
+         << boost::lexical_cast<std::string>(order.VolumeTraded) << ","
+         << boost::lexical_cast<std::string>(order.VolumeTotal) << ","
+         << boost::lexical_cast<std::string>(order.InsertDate) << ","
+         << boost::lexical_cast<std::string>(order.InsertTime) << ","
+         << boost::lexical_cast<std::string>(order.ActiveTime) << ","
+         << boost::lexical_cast<std::string>(order.SuspendTime) << ","
+         << boost::lexical_cast<std::string>(order.UpdateTime) << ","
+         << boost::lexical_cast<std::string>(order.CancelTime) << ","
+         << boost::lexical_cast<std::string>(order.ActiveTraderID) << ","
+         << boost::lexical_cast<std::string>(order.ClearingPartID) << ","
+         << boost::lexical_cast<std::string>(order.SequenceNo) << ","
+         << boost::lexical_cast<std::string>(order.FrontID) << ","
+         << boost::lexical_cast<std::string>(order.SessionID) << ","
+         << boost::lexical_cast<std::string>(order.UserProductInfo) << ","
+         << boost::lexical_cast<std::string>(order.StatusMsg) << ","
+         << boost::lexical_cast<std::string>(order.UserForceClose) << ","
+         << boost::lexical_cast<std::string>(order.ActiveUserID) << ","
+         << boost::lexical_cast<std::string>(order.BrokerOrderSeq) << ","
+         << boost::lexical_cast<std::string>(order.RelativeOrderSysID) << ","
+         << boost::lexical_cast<std::string>(order.ZCETotalTradedVolume) << ","
+         << boost::lexical_cast<std::string>(order.IsSwapOrder) << ","
+         << boost::lexical_cast<std::string>(order.BranchID) << ","
+         << boost::lexical_cast<std::string>(order.InvestUnitID) << ","
+         << boost::lexical_cast<std::string>(order.AccountID) << ","
+         << boost::lexical_cast<std::string>(order.CurrencyID) << ","
+         << boost::lexical_cast<std::string>(order.IPAddress) << ","
+         << boost::lexical_cast<std::string>(order.MacAddress) << "\n";
+
+  return output;
+}
 class CtpTrader : public CThostFtdcTraderSpi {
  public:
   CtpTrader(caf::strong_actor_ptr observer)
@@ -186,8 +254,6 @@ class CtpTrader : public CThostFtdcTraderSpi {
                               CThostFtdcRspInfoField* pRspInfo,
                               int nRequestID,
                               bool bIsLast) override {
-    anon_send(caf::actor_cast<CtpObserver::pointer>(observer_),
-              CtpLoginAtom::value);
     if (pRspInfo->ErrorID == 0) {
       std::cout << "OnRspUserLogin\n";
       /*
@@ -214,7 +280,6 @@ class CtpTrader : public CThostFtdcTraderSpi {
         cta_api_->ReqQryInvestorPosition(&position_field, 0);
       }
       */
-
 
       // CThostFtdcQrySettlementInfoField req = { 0 };
       // strcpy(req.BrokerID, broker_id_.c_str());
@@ -256,73 +321,7 @@ class CtpTrader : public CThostFtdcTraderSpi {
   };
 
   virtual void OnRtnOrder(CThostFtdcOrderField* pOrder) {
-    fstream_ << boost::lexical_cast<std::string>(pOrder->BrokerID) << ","
-             << boost::lexical_cast<std::string>(pOrder->InvestorID) << ","
-             << boost::lexical_cast<std::string>(pOrder->InstrumentID) << ","
-             << boost::lexical_cast<std::string>(pOrder->OrderRef) << ","
-             << boost::lexical_cast<std::string>(pOrder->UserID) << ","
-             << boost::lexical_cast<std::string>(pOrder->OrderPriceType) << ","
-             << boost::lexical_cast<std::string>(pOrder->Direction) << ","
-             << boost::lexical_cast<std::string>(pOrder->CombOffsetFlag) << ","
-             << boost::lexical_cast<std::string>(pOrder->CombHedgeFlag) << ","
-             << boost::lexical_cast<std::string>(pOrder->LimitPrice) << ","
-             << boost::lexical_cast<std::string>(pOrder->VolumeTotalOriginal)
-             << "," << boost::lexical_cast<std::string>(pOrder->TimeCondition)
-             << "," << boost::lexical_cast<std::string>(pOrder->GTDDate) << ","
-             << boost::lexical_cast<std::string>(pOrder->VolumeCondition) << ","
-             << boost::lexical_cast<std::string>(pOrder->MinVolume) << ","
-             << boost::lexical_cast<std::string>(pOrder->ContingentCondition)
-             << "," << boost::lexical_cast<std::string>(pOrder->StopPrice)
-             << ","
-             << boost::lexical_cast<std::string>(pOrder->ForceCloseReason)
-             << "," << boost::lexical_cast<std::string>(pOrder->IsAutoSuspend)
-             << "," << boost::lexical_cast<std::string>(pOrder->BusinessUnit)
-             << "," << boost::lexical_cast<std::string>(pOrder->RequestID)
-             << "," << boost::lexical_cast<std::string>(pOrder->OrderLocalID)
-             << "," << boost::lexical_cast<std::string>(pOrder->ExchangeID)
-             << "," << boost::lexical_cast<std::string>(pOrder->ParticipantID)
-             << "," << boost::lexical_cast<std::string>(pOrder->ClientID) << ","
-             << boost::lexical_cast<std::string>(pOrder->ExchangeInstID) << ","
-             << boost::lexical_cast<std::string>(pOrder->TraderID) << ","
-             << boost::lexical_cast<std::string>(pOrder->InstallID) << ","
-             << boost::lexical_cast<std::string>(pOrder->OrderSubmitStatus)
-             << "," << boost::lexical_cast<std::string>(pOrder->NotifySequence)
-             << "," << boost::lexical_cast<std::string>(pOrder->TradingDay)
-             << "," << boost::lexical_cast<std::string>(pOrder->SettlementID)
-             << "," << boost::lexical_cast<std::string>(pOrder->OrderSysID)
-             << "," << boost::lexical_cast<std::string>(pOrder->OrderSource)
-             << "," << boost::lexical_cast<std::string>(pOrder->OrderStatus)
-             << "," << boost::lexical_cast<std::string>(pOrder->OrderType)
-             << "," << boost::lexical_cast<std::string>(pOrder->VolumeTraded)
-             << "," << boost::lexical_cast<std::string>(pOrder->VolumeTotal)
-             << "," << boost::lexical_cast<std::string>(pOrder->InsertDate)
-             << "," << boost::lexical_cast<std::string>(pOrder->InsertTime)
-             << "," << boost::lexical_cast<std::string>(pOrder->ActiveTime)
-             << "," << boost::lexical_cast<std::string>(pOrder->SuspendTime)
-             << "," << boost::lexical_cast<std::string>(pOrder->UpdateTime)
-             << "," << boost::lexical_cast<std::string>(pOrder->CancelTime)
-             << "," << boost::lexical_cast<std::string>(pOrder->ActiveTraderID)
-             << "," << boost::lexical_cast<std::string>(pOrder->ClearingPartID)
-             << "," << boost::lexical_cast<std::string>(pOrder->SequenceNo)
-             << "," << boost::lexical_cast<std::string>(pOrder->FrontID) << ","
-             << boost::lexical_cast<std::string>(pOrder->SessionID) << ","
-             << boost::lexical_cast<std::string>(pOrder->UserProductInfo) << ","
-             << boost::lexical_cast<std::string>(pOrder->StatusMsg) << ","
-             << boost::lexical_cast<std::string>(pOrder->UserForceClose) << ","
-             << boost::lexical_cast<std::string>(pOrder->ActiveUserID) << ","
-             << boost::lexical_cast<std::string>(pOrder->BrokerOrderSeq) << ","
-             << boost::lexical_cast<std::string>(pOrder->RelativeOrderSysID)
-             << ","
-             << boost::lexical_cast<std::string>(pOrder->ZCETotalTradedVolume)
-             << "," << boost::lexical_cast<std::string>(pOrder->IsSwapOrder)
-             << "," << boost::lexical_cast<std::string>(pOrder->BranchID) << ","
-             << boost::lexical_cast<std::string>(pOrder->InvestUnitID) << ","
-             << boost::lexical_cast<std::string>(pOrder->AccountID) << ","
-             << boost::lexical_cast<std::string>(pOrder->CurrencyID) << ","
-             << boost::lexical_cast<std::string>(pOrder->IPAddress) << ","
-             << boost::lexical_cast<std::string>(pOrder->MacAddress) << "\n";
-    anon_send(caf::actor_cast<CtpObserver::pointer>(observer_),
-              CtpRtnOrderAtom::value, CThostFtdcOrderField(*pOrder));
+    fstream_ << *pOrder;
   };
 
   virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) {
