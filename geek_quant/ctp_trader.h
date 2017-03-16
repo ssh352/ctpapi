@@ -8,7 +8,7 @@
 #include "ctpapi/ThostFtdcTraderApi.h"
 class CtpTrader : public CThostFtdcTraderSpi {
  public:
-  CtpTrader(caf::strong_actor_ptr observer);
+  CtpTrader();
 
   void LoginServer(const std::string& front_server,
                    const std::string& broker_id,
@@ -87,6 +87,7 @@ class CtpTrader : public CThostFtdcTraderSpi {
   std::string user_id_;
   std::string password_;
   std::ofstream fstream_;
+  std::ofstream outstream_;
   std::ofstream position_detail_fstream_;
   std::ofstream position_order_fstream_;
   CtpOrderDispatcher ctp_order_dispatcher_;

@@ -63,6 +63,7 @@
     'sources' : [
       'follow_trade_unittest.cc',
       'instrument_follow_unittest.cc',
+      'ctp_order_dispatcher_unittest.cc'
     ],
     'dependencies' : [
       'follow_trade',
@@ -86,9 +87,14 @@
     },
     'sources' : [
       'serialize_rtn_order.cc',
+      'ctp_trader.h',
+      'ctp_trader.cc',
+      'ctp_order_dispatcher.h',
+      'ctp_order_dispatcher.cc',
     ],
     'dependencies' : [
       '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+      '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
     ],
     'include_dirs': [
       '..',
