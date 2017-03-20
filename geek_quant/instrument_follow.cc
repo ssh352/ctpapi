@@ -2,28 +2,50 @@
 
 InstrumentFollow::InstrumentFollow() {
   order_direction_ = kODUnkown;
-  pending_trader_init_ = false;
-  pending_follower_init_ = false;
+  has_sync_ = false;
+  trader_order_rtn_seq_ = 0;
+  follower_order_rtn_seq_ = 0;
+  last_check_trader_order_rtn_seq_ = 0;
+  last_check_follower_order_rtn_seq_ = 0;
 }
 
-void InstrumentFollow::InitOrderVolumeOrderForTrader(
-    std::vector<OrderVolume> orders) {
-  pending_trader_init_ = true;
-  pending_trader_orders_ = orders;
-  ProcessPendingOrder();
+bool InstrumentFollow::HasSyncOrders() {
+  return has_sync_;
 }
 
-void InstrumentFollow::InitOrderVolumeOrderForFollower(
-    std::vector<OrderVolume> orders) {
-  pending_follower_init_ = true;
-  pending_follower_orders_ = orders;
-  ProcessPendingOrder();
+bool InstrumentFollow::TryCompleteSyncOrders() {
+  if (trader_order_rtn_seq_ != last_check_trader_order_rtn_seq_ ||
+      follower_order_rtn_seq_ != last_check_follower_order_rtn_seq_) {
+    last_check_trader_order_rtn_seq_ = trader_order_rtn_seq_;
+    last_check_follower_order_rtn_seq_ = follower_order_rtn_seq_;
+    return false;
+  }
+
+  for (auto order : history_order_for_trader_) {
+    auto it = std::find_if(
+        history_order_for_follower_.begin(), history_order_for_follower_.end(),
+        [=](auto f_order) {
+          return order.trade_order_no() == f_order.trade_order_no();
+        });
+    if (it != history_order_for_follower_.end()) {
+      order_follows_.push_back(
+          OrderFollow{order.trader_volume_data(), it->trader_volume_data()});
+      history_order_for_follower_.erase(it);
+    }
+  }
+  has_sync_ = true;
+  return true;
 }
 
 void InstrumentFollow::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
+  ++trader_order_rtn_seq_;
+  if (!HasSyncOrders()) {
+    ProcessHistoryOrderRtn(order, true);
+    return;
+  }
   switch (order.order_status) {
     case kOSOpening: {
       if (order_direction_ != kODUnkown &&
@@ -105,6 +127,11 @@ void InstrumentFollow::HandleOrderRtnForFollow(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
+  ++follower_order_rtn_seq_;
+  if (!HasSyncOrders()) {
+    ProcessHistoryOrderRtn(order, false);
+    return;
+  }
   auto it = std::find_if(
       order_follows_.begin(), order_follows_.end(),
       [&](auto forder) { return forder.follow_order_no() == order.order_no; });
@@ -199,19 +226,46 @@ OrderDirection InstrumentFollow::ReverseOrderDirection(
   return order_direction == kODBuy ? kODSell : kODBuy;
 }
 
-void InstrumentFollow::ProcessPendingOrder() {
-  if (!pending_trader_init_ || !pending_follower_init_)
-    return;
-  for (auto trader_order : pending_trader_orders_) {
-    OrderFollow order_follow(trader_order);
-    auto it = std::find_if(pending_follower_orders_.begin(),
-                           pending_follower_orders_.end(), [&](auto forder) {
-      return forder.order_no == trader_order.order_no;
-    });
-    if (it != pending_follower_orders_.end()) {
-      order_follow.InitFollowerOrderVolue(*it);
-      pending_follower_orders_.erase(it);
-    }
-    order_follows_.push_back(std::move(order_follow));
+void InstrumentFollow::ProcessHistoryOrderRtn(const OrderRtnData& order,
+                                              bool for_trader) {
+  DoProcessHistoryOrderRtn(order, for_trader ? &history_order_for_trader_
+                                             : &history_order_for_follower_);
+}
+
+void InstrumentFollow::DoProcessHistoryOrderRtn(
+    const OrderRtnData& order,
+    std::vector<OrderFollow>* history_order) {
+  switch (order.order_status) {
+    case kOSOpening: {
+      history_order->push_back(
+          OrderFollow{order.order_no, order.volume, order.order_direction});
+    } break;
+    case kOSCloseing: {
+      int outstanding_close_volume = order.volume;
+      for (auto& follow : order_follows_) {
+        int follow_close_volume = 0;
+        bool cancel_order = false;
+        outstanding_close_volume =
+            follow.ProcessCloseOrder(order.order_no, outstanding_close_volume,
+                                     &follow_close_volume, &cancel_order);
+      }
+    } break;
+    case kOSOpened: {
+      auto it = std::find_if(history_order->begin(), history_order->end(),
+                             [&](auto follow) {
+                               return follow.trade_order_no() == order.order_no;
+                             });
+      if (it != history_order->end()) {
+        it->FillOpenOrderForTrade(order.volume);
+      } else {
+        // ASSERT(FALSE)
+      }
+    } break;
+    case kOSClosed: {
+    } break;
+    case kOSCanceled: {
+    } break;
+    default:
+      break;
   }
 }

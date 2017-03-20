@@ -8,8 +8,10 @@ class OrderFollow {
   OrderFollow(const std::string& order_no,
               int total_volume,
               OrderDirection order_direction);
-  OrderFollow(OrderVolume trader);
 
+  OrderFollow(OrderVolume trader, OrderVolume follower);
+
+  OrderVolume trader_volume_data() const ;
 
   void InitFollowerOrderVolue(OrderVolume order);
 

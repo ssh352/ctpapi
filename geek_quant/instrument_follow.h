@@ -7,9 +7,9 @@ class InstrumentFollow {
  public:
   InstrumentFollow();
 
-  void InitOrderVolumeOrderForTrader(std::vector<OrderVolume> orders);
+  bool HasSyncOrders();
 
-  void InitOrderVolumeOrderForFollower(std::vector<OrderVolume> orders);
+  bool TryCompleteSyncOrders();
 
   void HandleOrderRtnForTrader(const OrderRtnData& order,
                                EnterOrderData* enter_order,
@@ -23,14 +23,21 @@ class InstrumentFollow {
   int CalcOrderReverseVolume(int order_volume) const;
   void ResetOrderDirectionIfNeed(const OrderRtnData& order);
   OrderDirection ReverseOrderDirection(OrderDirection order_direction) const;
-  void ProcessPendingOrder();
+  void ProcessHistoryOrderRtn(const OrderRtnData& order, bool for_trader);
+  void DoProcessHistoryOrderRtn(const OrderRtnData& order,
+                                std::vector<OrderFollow>* history_order);
 
-  bool pending_trader_init_;
-  bool pending_follower_init_;
+  bool has_sync_;
+
+  int trader_order_rtn_seq_;
+  int follower_order_rtn_seq_;
+
+  int last_check_trader_order_rtn_seq_;
+  int last_check_follower_order_rtn_seq_;
 
   std::vector<OrderFollow> order_follows_;
-  std::vector<OrderVolume> pending_trader_orders_;
-  std::vector<OrderVolume> pending_follower_orders_;
+  std::vector<OrderFollow> history_order_for_trader_;
+  std::vector<OrderFollow> history_order_for_follower_;
   OrderDirection order_direction_;
 };
 

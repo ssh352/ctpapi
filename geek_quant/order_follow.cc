@@ -14,7 +14,12 @@ OrderFollow::OrderFollow(const std::string& order_no,
   follower_.order_direction = order_direction;
 }
 
-OrderFollow::OrderFollow(OrderVolume trader) : trader_(trader) {}
+OrderFollow::OrderFollow(OrderVolume trader, OrderVolume follower)
+    : trader_(trader), follower_(follower) {}
+
+OrderVolume OrderFollow::trader_volume_data() const {
+  return trader_;
+}
 
 void OrderFollow::InitFollowerOrderVolue(OrderVolume order) {
   follower_ = order;
