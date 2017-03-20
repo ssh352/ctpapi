@@ -4,11 +4,8 @@
 
 #include "caf/all.hpp"
 #include "geek_quant/ctp_trader.h"
-
-using std::endl;
-using std::string;
-
-using namespace caf;
+#include "follow_trade_actor.h"
+#include "geek_quant/cta_trade_actor.h"
 
 /*
 
@@ -36,37 +33,16 @@ CtpObserver::behavior_type DummyObserver(CtpObserver::pointer self) {
 
 */
 
-int main() {
-  // our CAF environment
-  actor_system_config cfg;
-  actor_system system{cfg};
-
-  /*
-  
-  auto observer_actor = system.spawn(DummyObserver);
-
-  CtpTrader ctp_trader(caf::actor_cast<caf::strong_actor_ptr>(observer_actor));
-
-  // auto ctp_broker = boost::make_shared<CTPTradingSpi>(system);
-  // ctp_broker->LoginServer("053867", "8661188");
-  // ctp_trader.LoginServer("tcp://180.168.146.187:10000", "9999", "053867",
-  //                        "8661188");
-  // ctp_trader.LoginServer("tcp://180.168.146.187:10000", "9999", "053867",
-  //                        "8661188");
-  ctp_trader.LoginServer("tcp://59.42.241.91:41205", "9080", "38030022",
-                         "140616");
-  
-  */
-
-  // system will wait until both actors are destroyed before leaving main
+int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  CtaTradeActor cta(system.spawn<FollowTradeActor>());
+  cta.Start("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
   std::string input;
   while (std::cin >> input) {
     if (input == "exit") {
       break;
     }
   }
-
-  FollowTradeServcies follow_trade_services;
-
-  follow_services.run();
+  return 0;
 }
+
+CAF_MAIN()

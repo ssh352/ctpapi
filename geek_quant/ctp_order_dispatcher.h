@@ -11,8 +11,8 @@ class CtpOrderDispatcher {
  private:
   bool IsSameOrderStatus(const CThostFtdcOrderField& left,
                          const CThostFtdcOrderField& right);
-  std::vector<CThostFtdcOrderField> orders_;
   OrderStatus ParseThostForOrderStatus(const CThostFtdcOrderField& order);
+  std::vector<CThostFtdcOrderField> orders_;
 };
 
 #endif  // FOLLOW_TRADE_CTP_ORDER_DISPATCHER_H

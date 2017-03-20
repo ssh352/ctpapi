@@ -84,7 +84,6 @@ struct EnterOrderData {
   int volume;
 };
 
-
 struct OrderVolume {
   std::string order_no;
   OrderDirection order_direction;
@@ -96,11 +95,26 @@ struct OrderVolume {
   int canceled;
 };
 
+struct OrderIdent {
+  int front_id;
+  int session_id;
+  std::string order_id;
+  std::string exchange_id;
+  std::string order_sys_id;
+};
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
 using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
 using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
+using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
+
+
+using OrderRtnForTrader = caf::atom_constant < caf::atom("rotrader")>;
+using OrderRtnForFollow = caf::atom_constant < caf::atom("rofollow")>;
+
+using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
+using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;
 
 using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
 using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
@@ -138,6 +152,12 @@ template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {
   return f(caf::meta::type_name("EnterOrderData"), x.instrument, x.order_no,
            x.action, x.order_direction, x.order_price, x.volume);
+}
+
+template <class Inspector>
+typename Inspector::result_type inspect(Inspector& f, OrderIdent& x) {
+  return f(caf::meta::type_name("OrderIdent"), x.order_id, x.front_id, x.session_id,
+           x.exchange_id, x.order_sys_id);
 }
 
 #endif /* CAF_DEFINES_H */

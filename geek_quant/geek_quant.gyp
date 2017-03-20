@@ -41,11 +41,21 @@
     },
     'sources' : [
       'main.cc',
+      'follow_trade_actor.h',
+      'follow_trade_actor.cc',
+      'ctp_trader.h',
+      'ctp_trader.cc',
+      'caf_defines.h',
+      'instrument_follow.h',
+      'instrument_follow.cc',
+      'order_follow.h',
+      'order_follow.cc',
+      'ctp_order_dispatcher.h',
+      'ctp_order_dispatcher.cc',
     ],
     'dependencies' : [
       '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
       '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      'follow_trade',
     ],
     'defines' : [
     ],
