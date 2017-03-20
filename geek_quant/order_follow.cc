@@ -2,14 +2,22 @@
 
 OrderFollow::OrderFollow(const std::string& order_no,
                          int total_volume,
-                         OrderDirection order_direction)
-    : trade_order_no_(order_no),
-      follow_order_no_(order_no),
-      order_direction_(order_direction) {
+                         OrderDirection order_direction) {
   memset(&trader_, 0, sizeof(OrderVolume));
   memset(&follower_, 0, sizeof(OrderVolume));
+  trader_.order_no = order_no;
   trader_.opening = total_volume;
+  trader_.order_direction = order_direction;
+
+  follower_.order_no = order_no;
   follower_.opening = total_volume;
+  follower_.order_direction = order_direction;
+}
+
+OrderFollow::OrderFollow(OrderVolume trader) : trader_(trader) {}
+
+void OrderFollow::InitFollowerOrderVolue(OrderVolume order) {
+  follower_ = order;
 }
 
 int OrderFollow::CancelableVolume() const {
@@ -17,11 +25,11 @@ int OrderFollow::CancelableVolume() const {
 }
 
 const std::string& OrderFollow::trade_order_no() const {
-  return trade_order_no_;
+  return trader_.order_no;
 }
 
 const std::string& OrderFollow::follow_order_no() const {
-  return follow_order_no_;
+  return follower_.order_no;
 }
 
 void OrderFollow::FillOpenOrderForTrade(int volume) {

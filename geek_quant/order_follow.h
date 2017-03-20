@@ -8,6 +8,11 @@ class OrderFollow {
   OrderFollow(const std::string& order_no,
               int total_volume,
               OrderDirection order_direction);
+  OrderFollow(OrderVolume trader);
+
+
+  void InitFollowerOrderVolue(OrderVolume order);
+
   int CancelableVolume() const;
 
   const std::string& trade_order_no() const;
@@ -31,12 +36,13 @@ class OrderFollow {
   }
 
   OrderDirection order_direction() const {
-    return order_direction_;
+    return trader_.order_direction;
   }
 
   void FillOpenOrderForTrade(int volume);
 
   void FillOpenOrderForFollow(int volume);
+
 
   int ProcessCloseOrder(const std::string& order_no,
                         int close_volume,
@@ -44,21 +50,6 @@ class OrderFollow {
                         bool* cancel_order);
 
  private:
-  std::string trade_order_no_;
-
-  std::string follow_order_no_;
-
-  OrderDirection order_direction_ = kODUnkown;
-
-  struct OrderVolume {
-    int opening;
-    int position;
-    int closeing;
-    int closed;
-    int canceling;
-    int canceled;
-  };
-  
   OrderVolume trader_;
   OrderVolume follower_;
 };

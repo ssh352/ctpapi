@@ -32,7 +32,7 @@ enum OrderStatus {
   kOSCloseing,
   kOSOpened,
   kOSClosed,
-  kOSCanceling,
+  kOSCanceled,
 };
 
 struct PositionData {
@@ -84,6 +84,19 @@ struct EnterOrderData {
   int volume;
 };
 
+
+struct OrderVolume {
+  std::string order_no;
+  OrderDirection order_direction;
+  int opening;
+  int position;
+  int closeing;
+  int closed;
+  int canceling;
+  int canceled;
+};
+
+
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
 using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
@@ -92,22 +105,22 @@ using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
 using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 
-
 using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
 
 using TASubscriberActor = caf::typed_actor<
-  caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
+    caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
     caf::reacts_to<TAUnfillOrdersAtom, std::vector<OrderRtnData> >,
     caf::reacts_to<TARtnOrderAtom, OrderRtnData> >;
 
-using OrderSubscriberActor =
-    caf::typed_actor<caf::reacts_to<EnterOrderAtom, EnterOrderData>,
-                     caf::reacts_to<CancelOrderAtom, std::string, std::string> >;
+using OrderSubscriberActor = caf::typed_actor<
+    caf::reacts_to<EnterOrderAtom, EnterOrderData>,
+    caf::reacts_to<CancelOrderAtom, std::string, std::string> >;
 
 using FollowTAStrategyActor = TASubscriberActor::extend<
     caf::reacts_to<AddStrategySubscriberAtom, OrderSubscriberActor> >;
 
-using OrderAgentActor = FollowTAStrategyActor::extend_with<OrderSubscriberActor>;
+using OrderAgentActor =
+    FollowTAStrategyActor::extend_with<OrderSubscriberActor>;
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, PositionData& x) {
