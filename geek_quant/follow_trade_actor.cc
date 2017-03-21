@@ -4,6 +4,10 @@
 FollowTradeActor::FollowTradeActor(caf::actor_config& cfg)
     : caf::event_based_actor(cfg), ctp_(this, "follower") {
   instrument_follow_set_.insert_or_assign("MA705", InstrumentFollow());
+  instrument_follow_set_.insert_or_assign("c1709", InstrumentFollow());
+  instrument_follow_set_.insert_or_assign("cs1709", InstrumentFollow());
+  instrument_follow_set_.insert_or_assign("bu1706", InstrumentFollow());
+  instrument_follow_set_.insert_or_assign("FG705", InstrumentFollow());
 }
 
 FollowTradeActor::~FollowTradeActor() {}
