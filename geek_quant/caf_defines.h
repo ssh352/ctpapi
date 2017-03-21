@@ -110,6 +110,7 @@ using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
 
 
+using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant < caf::atom("rotrader")>;
 using OrderRtnForFollow = caf::atom_constant < caf::atom("rofollow")>;
 

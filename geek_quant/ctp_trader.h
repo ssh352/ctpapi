@@ -10,6 +10,7 @@ class CtpTrader : public CThostFtdcTraderSpi {
  public:
   class Delegate {
    public:
+    virtual void OnLogon() = 0;
     virtual void OnRtnOrderData(CThostFtdcOrderField* order) = 0;
   };
   //////////////////////////////////////////////////////////////////////////
@@ -38,10 +39,16 @@ class CtpTrader : public CThostFtdcTraderSpi {
   }
 
   void OrderInsert(CThostFtdcInputOrderField order) {
+    strcpy(order.BrokerID, broker_id_.c_str());
+    strcpy(order.UserID, user_id_.c_str());
+    strcpy(order.InvestorID, user_id_.c_str());
     cta_api_->ReqOrderInsert(&order, 1);
   }
 
   void OrderAction(CThostFtdcInputOrderActionField order) {
+    strcpy(order.BrokerID, broker_id_.c_str());
+    strcpy(order.UserID, user_id_.c_str());
+    strcpy(order.InvestorID, user_id_.c_str());
     cta_api_->ReqOrderAction(&order, 1);
   }
 
@@ -62,6 +69,7 @@ class CtpTrader : public CThostFtdcTraderSpi {
                               int nRequestID,
                               bool bIsLast) override {
     if (pRspInfo->ErrorID == 0) {
+      delegate_->OnLogon();
       std::cout << "OnRspUserLogin\n";
     } else {
       std::cout << "User Login Error:" << pRspInfo->ErrorMsg << "\n";
@@ -88,6 +96,13 @@ class CtpTrader : public CThostFtdcTraderSpi {
                                    CThostFtdcRspInfoField* pRspInfo) {
     std::cout << __FUNCTION__ << "\n";
   }
+
+  virtual void OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                CThostFtdcRspInfoField* pRspInfo,
+                                int nRequestID,
+                                bool bIsLast) {
+    std::cout << __FUNCTION__ << "\n";
+  };
 
  private:
   CThostFtdcTraderApi* cta_api_;

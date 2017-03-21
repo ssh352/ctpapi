@@ -3,12 +3,10 @@
 
 FollowTradeActor::FollowTradeActor(caf::actor_config& cfg)
     : caf::event_based_actor(cfg), ctp_(this, "follower") {
-  instrument_follow_set_.insert_or_assign("cs1709", InstrumentFollow());
+  instrument_follow_set_.insert_or_assign("MA705", InstrumentFollow());
 }
 
-FollowTradeActor::~FollowTradeActor() {
-
-}
+FollowTradeActor::~FollowTradeActor() {}
 
 void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
   OrderIdent ord_ident;
@@ -24,20 +22,37 @@ void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
   }
 }
 
+void FollowTradeActor::OnLogon() {
+  delayed_send(this, std::chrono::seconds(3), TrySyncHistoryOrderAtom::value);
+}
+
 caf::behavior FollowTradeActor::make_behavior() {
-  ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678");
+  ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
+                   "Cj12345678");
   return {
       [=](TAOrderIdentAtom, OrderIdent order_ident) {
         unfill_orders_[order_ident.order_id] = order_ident;
+      },
+      [=](TrySyncHistoryOrderAtom) {
+        bool sync_finish = true;
+        for (auto& item : instrument_follow_set_) {
+          if (!item.second.TryCompleteSyncOrders()) {
+            sync_finish = false;
+          }
+        }
+        if (!sync_finish) {
+          delayed_send(this, std::chrono::seconds(3),
+                       TrySyncHistoryOrderAtom::value);
+        }
       },
       [=](OrderRtnForTrader, OrderRtnData order) {
         auto it = instrument_follow_set_.find(order.instrument);
         if (it != instrument_follow_set_.end()) {
           EnterOrderData enter_order;
           std::vector<std::string> cancel_order_no_list;
-          it->second.HandleOrderRtnForFollow(order, &enter_order,
+          it->second.HandleOrderRtnForTrader(order, &enter_order,
                                              &cancel_order_no_list);
-          if (enter_order.order_no.empty()) {
+          if (!enter_order.order_no.empty()) {
             ctp_.OrderInsert(MakeCtpOrderInsert(enter_order));
           }
           for (auto order_no : cancel_order_no_list) {
@@ -49,7 +64,7 @@ caf::behavior FollowTradeActor::make_behavior() {
         }
       },
       [=](OrderRtnForFollow, OrderRtnData order) {
-        auto it = instrument_follow_set_.find("");
+        auto it = instrument_follow_set_.find(order.instrument);
         if (it != instrument_follow_set_.end()) {
           EnterOrderData enter_order;
           std::vector<std::string> cancel_order_no_list;
@@ -90,7 +105,8 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   strcpy(field.OrderRef, order.order_no.c_str());
   // strcpy(filed.UserID, );
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-  field.Direction = THOST_FTDC_D_Buy;
+  field.Direction =
+      order.order_direction == kODBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
   field.CombOffsetFlag[0] =
       order.action == kEOAOpen ? THOST_FTDC_OF_Open : THOST_FTDC_OF_Close;
   strcpy(field.CombHedgeFlag, "1");

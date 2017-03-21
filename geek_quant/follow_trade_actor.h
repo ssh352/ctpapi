@@ -13,7 +13,10 @@ class FollowTradeActor : public caf::event_based_actor,
   ~FollowTradeActor();
   virtual void OnRtnOrderData(CThostFtdcOrderField* order) override;
 
- protected:
+
+  virtual void OnLogon() override;
+
+protected:
   virtual caf::behavior make_behavior() override;
 
  private:

@@ -33,6 +33,8 @@ bool InstrumentFollow::TryCompleteSyncOrders() {
       history_order_for_follower_.erase(it);
     }
   }
+  history_order_for_follower_.clear();
+  history_order_for_trader_.clear();
   has_sync_ = true;
   return true;
 }

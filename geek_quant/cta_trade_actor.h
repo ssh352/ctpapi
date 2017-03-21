@@ -14,7 +14,10 @@ class CtaTradeActor : public CtpTrader::Delegate {
 
   virtual void OnRtnOrderData(CThostFtdcOrderField* order) override;
 
- protected:
+
+  virtual void OnLogon() override;
+
+protected:
  private:
   CtpTrader ctp_;
   caf::actor actor_;

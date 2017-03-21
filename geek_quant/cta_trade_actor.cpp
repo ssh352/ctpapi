@@ -15,3 +15,6 @@ void CtaTradeActor::OnRtnOrderData(CThostFtdcOrderField* field) {
     caf::anon_send(actor_, OrderRtnForTrader::value, *order);
   }
 }
+
+void CtaTradeActor::OnLogon() {
+}
