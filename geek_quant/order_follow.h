@@ -5,55 +5,33 @@
 
 class OrderFollow {
  public:
-  OrderFollow(const std::string& order_no,
-              int total_volume,
-              OrderDirection order_direction);
-
-  OrderFollow(OrderVolume trader, OrderVolume follower);
-
-  OrderVolume trader_volume_data() const ;
-
-  void InitFollowerOrderVolue(OrderVolume order);
+  OrderFollow();
+  OrderFollow(int total_volume, OrderDirection order_direction);
 
   int CancelableVolume() const;
 
-  const std::string& trade_order_no() const;
+  int total_volume() const { return opening_ + position_; }
 
-  const std::string& follow_order_no() const;
+  int position_volume() const { return position_; }
 
-  int position_volume_for_trade() const {
-    return trader_.position;
-  }
+  OrderDirection order_direction() const { return order_direction_; }
 
-  int position_volume_for_follow() const {
-    return follower_.position;
-  }
+  void HandleOpened(int volume);
 
-  int total_volume_for_follow() const {
-    return follower_.opening + follower_.position;
-  }
+  void HandleCloseing(int volume);
 
-  int total_volume_for_trade() const {
-    return trader_.opening + trader_.position;
-  }
+  void HandleClosed(int volume);
 
-  OrderDirection order_direction() const {
-    return trader_.order_direction;
-  }
+  void HandleCanceledByOpen();
 
-  void FillOpenOrderForTrade(int volume);
+  void HandleCanceledByClose();
 
-  void FillOpenOrderForFollow(int volume);
-
-
-  int ProcessCloseOrder(const std::string& order_no,
-                        int close_volume,
-                        int* follow_close_volume,
-                        bool* cancel_order);
-
- private:
-  OrderVolume trader_;
-  OrderVolume follower_;
+  int opening_;
+  int position_;
+  int closeing_;
+  int closed_;
+  int canceled_;
+  OrderDirection order_direction_;
 };
 
 #endif  // FOLLOW_TRADE_ORDER_FOLLOW_H

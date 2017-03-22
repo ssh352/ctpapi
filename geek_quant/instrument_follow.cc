@@ -1,7 +1,6 @@
 #include "instrument_follow.h"
 
 InstrumentFollow::InstrumentFollow() {
-  order_direction_ = kODUnkown;
   has_sync_ = false;
   trader_order_rtn_seq_ = 0;
   follower_order_rtn_seq_ = 0;
@@ -21,6 +20,7 @@ bool InstrumentFollow::TryCompleteSyncOrders() {
     return false;
   }
 
+  /*
   for (auto order : history_order_for_trader_) {
     auto it = std::find_if(
         history_order_for_follower_.begin(), history_order_for_follower_.end(),
@@ -35,6 +35,7 @@ bool InstrumentFollow::TryCompleteSyncOrders() {
   }
   history_order_for_follower_.clear();
   history_order_for_trader_.clear();
+  */
   has_sync_ = true;
   return true;
 }
@@ -48,81 +49,52 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     ProcessHistoryOrderRtn(order, true);
     return;
   }
+
+  if (pending_order_actions_.find(order.order_no) !=
+      pending_order_actions_.end()) {
+    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(order);
+  }
+
   switch (order.order_status) {
     case kOSOpening: {
-      if (order_direction_ != kODUnkown &&
-          order.order_direction != order_direction_) {
-        // Open Reverse Order
-        int volume = CalcOrderReverseVolume(order.volume);
-        if (volume > 0) {
-          enter_order->order_no = order.order_no;
-          enter_order->instrument = order.instrument;
-          enter_order->order_direction = order.order_direction;
-          enter_order->order_price = order.order_price;
-          enter_order->volume = volume;
-          enter_order->action = EnterOrderAction::kEOAOpen;
-          order_follows_.push_back(
-              OrderFollow{order.order_no, order.volume, order.order_direction});
-        }
-        for (auto follow : order_follows_) {
-          if (follow.CancelableVolume()) {
-            cancel_order_no_list->push_back(follow.follow_order_no());
+      if (trader_orders_.IsOpenReverseOrder(order)) {
+        OpenReverseOrderActionInfo action =
+            trader_orders_.ParseOpenReverseOrderRtn(order);
+        std::vector<std::string> order_list;
+        for (auto item : action.items) {
+          if (pending_order_actions_.find(item.order_no) !=
+              pending_order_actions_.end()) {
+            pending_order_actions_[item.order_no].HandleOpenReverse(
+                cancel_order_no_list);
           }
+          order_list.push_back(item.order_no);
         }
+        *enter_order = MakeOpenReverseAction(
+            order,
+            follower_orders_.GetPositionVolumeWithOrderNoList(order_list));
       } else {
-        enter_order->order_no = order.order_no;
-        enter_order->instrument = order.instrument;
-        enter_order->order_direction = order.order_direction;
-        enter_order->order_price = order.order_price;
-        enter_order->volume = order.volume;
-        enter_order->action = EnterOrderAction::kEOAOpen;
-        order_follows_.push_back(
-            OrderFollow{order.order_no, order.volume, order.order_direction});
+        *enter_order = MakeOpeningAction(order);
       }
     } break;
     case kOSCloseing: {
-      int outstanding_close_volume = order.volume;
-      int close_volume = 0;
-      for (auto& follow : order_follows_) {
-        int follow_close_volume = 0;
-        bool cancel_order = false;
-        outstanding_close_volume =
-            follow.ProcessCloseOrder(order.order_no, outstanding_close_volume,
-                                     &follow_close_volume, &cancel_order);
-        if (cancel_order) {
-          cancel_order_no_list->push_back(follow.follow_order_no());
+      CloseingActionInfo action = trader_orders_.ParseCloseingOrderRtn(order);
+      std::vector<std::string> order_list;
+      for (auto item : action.items) {
+        if (pending_order_actions_.find(item.first) !=
+            pending_order_actions_.end()) {
+          pending_order_actions_[item.first].HandleCloseing(
+              cancel_order_no_list);
         }
-        close_volume += follow_close_volume;
+        order_list.push_back(item.first);
       }
-      if (close_volume > 0) {
-        enter_order->order_no = order.order_no;
-        enter_order->instrument = order.instrument;
-        enter_order->order_direction = order.order_direction;
-        enter_order->order_price = order.order_price;
-        enter_order->volume = close_volume;
-        enter_order->action = EnterOrderAction::kEOAClose;
-      }
-    } break;
-    case kOSOpened: {
-      auto it = std::find_if(order_follows_.begin(), order_follows_.end(),
-                             [&](auto follow) {
-                               return follow.trade_order_no() == order.order_no;
-                             });
-      if (it != order_follows_.end()) {
-        it->FillOpenOrderForTrade(order.volume);
-      } else {
-        // ASSERT(FALSE)
-      }
-      ResetOrderDirectionIfNeed(order);
-    } break;
-    case kOSClosed: {
-    } break;
-    case kOSCanceled: {
-      cancel_order_no_list->push_back(order.order_no);
+      *enter_order = MakeCloseingAction(
+          order, action,
+          follower_orders_.GetPositionVolumeWithOrderNoList(order_list));
     } break;
     default:
       break;
   }
+  trader_orders_.HandleOrderRtn(order);
 }
 
 void InstrumentFollow::HandleOrderRtnForFollow(
@@ -134,117 +106,38 @@ void InstrumentFollow::HandleOrderRtnForFollow(
     ProcessHistoryOrderRtn(order, false);
     return;
   }
-  auto it = std::find_if(
-      order_follows_.begin(), order_follows_.end(),
-      [&](auto forder) { return forder.follow_order_no() == order.order_no; });
 
-  // ASSERT(it != order_follows_.end());
-  if (it == order_follows_.end()) {
-    return;
-  }
-  if (order.order_status == OrderStatus::kOSOpened) {
-    it->FillOpenOrderForFollow(order.volume);
-  }
-}
-
-int InstrumentFollow::CalcOrderReverseVolume(int order_volume) const {
-  int trade_position_volume =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() == order_direction_) {
-                          return value + follow.position_volume_for_trade();
-                        }
-                        return 0;
-                      });
-
-  int follow_position_volume =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() == order_direction_) {
-                          return value + follow.position_volume_for_follow();
-                        }
-                        return 0;
-                      });
-
-  // include position and unfill
-  int trade_reverse_volume =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() != order_direction_) {
-                          return value + follow.total_volume_for_trade();
-                        }
-                        return 0;
-                      });
-
-  int follow_reverse_volume =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() != order_direction_) {
-                          return value + follow.total_volume_for_follow();
-                        }
-                        return 0;
-                      });
-
-  int trade_left_unlock_volume =
-      (trade_position_volume - trade_reverse_volume) - order_volume;
-  return follow_position_volume - follow_reverse_volume -
-         trade_left_unlock_volume;
-}
-
-void InstrumentFollow::ResetOrderDirectionIfNeed(const OrderRtnData& order) {
-  if (order_direction_ == kODUnkown) {
-    order_direction_ = order.order_direction;
-    return;
+  if (pending_order_actions_.find(order.order_no) !=
+      pending_order_actions_.end()) {
+    if (pending_order_actions_[order.order_no].HandleOrderRtnForFollower(
+            order, cancel_order_no_list)) {
+      pending_order_actions_.erase(order.order_no);
+    }
   }
 
-  if (order_direction_ == order.order_direction) {
-    return;
-  }
-
-  int positive_pos =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() == order_direction_) {
-                          return value + follow.position_volume_for_trade();
-                        }
-                        return 0;
-                      });
-  int negative_pos =
-      std::accumulate(order_follows_.begin(), order_follows_.end(), 0,
-                      [=](int value, auto follow) {
-                        if (follow.order_direction() != order_direction_) {
-                          return value + follow.position_volume_for_trade();
-                        }
-                        return 0;
-                      });
-
-  order_direction_ = negative_pos > positive_pos
-                         ? ReverseOrderDirection(order_direction_)
-                         : order_direction_;
-}
-
-OrderDirection InstrumentFollow::ReverseOrderDirection(
-    OrderDirection order_direction) const {
-  return order_direction == kODBuy ? kODSell : kODBuy;
+  follower_orders_.HandleOrderRtn(order);
 }
 
 void InstrumentFollow::ProcessHistoryOrderRtn(const OrderRtnData& order,
                                               bool for_trader) {
+  /*
   DoProcessHistoryOrderRtn(order, for_trader ? &history_order_for_trader_
                                              : &history_order_for_follower_);
+  */
 }
 
 void InstrumentFollow::DoProcessHistoryOrderRtn(
     const OrderRtnData& order,
-    std::vector<OrderFollow>* history_order) {
+    std::map<std::string, OrderFollow>* history_order) {
+  /*
   switch (order.order_status) {
     case kOSOpening: {
       history_order->push_back(
-          OrderFollow{order.order_no, order.volume, order.order_direction});
+          order.order_no, OrderFollow{order.volume, order.order_direction});
     } break;
     case kOSCloseing: {
       int outstanding_close_volume = order.volume;
-      for (auto& follow : order_follows_) {
+      for (auto& item : *history_order) {
         int follow_close_volume = 0;
         bool cancel_order = false;
         outstanding_close_volume =
@@ -270,4 +163,93 @@ void InstrumentFollow::DoProcessHistoryOrderRtn(
     default:
       break;
   }
+
+  */
+}
+
+EnterOrderData InstrumentFollow::MakeOpenReverseAction(
+    const OrderRtnData& order,
+    std::vector<std::pair<std::string, int> > order_volumes) {
+  EnterOrderData enter_order;
+  int volume =
+      std::accumulate(order_volumes.begin(), order_volumes.end(), 0,
+                      [](int val, auto item) { return val + item.second; });
+  if (volume <= 0) {
+    return enter_order;
+  }
+  enter_order.order_no = order.order_no;
+  enter_order.action = kEOAOpen;
+  enter_order.instrument = order.instrument;
+  enter_order.order_direction = order.order_direction;
+  enter_order.order_price = order.order_price;
+  enter_order.volume = std::min<int>(order.volume, volume);
+  pending_order_actions_[order.order_no] =
+      PendingOrderAction{order, enter_order.volume};
+  return enter_order;
+}
+
+EnterOrderData InstrumentFollow::MakeOpeningAction(const OrderRtnData& order) {
+  EnterOrderData enter_order;
+  enter_order.order_no = order.order_no;
+  enter_order.action = kEOAOpen;
+  enter_order.instrument = order.instrument;
+  enter_order.order_direction = order.order_direction;
+  enter_order.order_price = order.order_price;
+  enter_order.volume = order.volume;
+  pending_order_actions_[order.order_no] =
+      PendingOrderAction{order, order.volume};
+  return enter_order;
+}
+
+EnterOrderData InstrumentFollow::MakeCloseingAction(
+    const OrderRtnData& order,
+    const CloseingActionInfo& action,
+    std::vector<std::pair<std::string, int> > order_volumes) {
+  EnterOrderData enter_order;
+  int volume =
+      std::accumulate(order_volumes.begin(), order_volumes.end(), 0,
+                      [](int val, auto item) { return val + item.second; });
+  if (volume <= 0) {
+    return enter_order;
+  }
+
+  int pending_close_volume = GetPendingCloseVolume(order.order_direction);
+
+  int trader_close_volume = std::accumulate(
+      action.items.begin(), action.items.end(), 0,
+      [](int val, auto item) { return val + item.second.close_volume; });
+
+  int trader_position_volume = std::accumulate(
+      action.items.begin(), action.items.end(), 0,
+      [](int val, auto item) { return val + item.second.position_volume; });
+
+  // trader_position_volume
+  int close_volume = volume - pending_close_volume -
+                     (trader_position_volume - trader_close_volume);
+  if (close_volume <= 0) {
+    return enter_order;
+  }
+
+  enter_order.order_no = order.order_no;
+  enter_order.action = kEOAClose;
+  enter_order.instrument = order.instrument;
+  enter_order.order_direction = order.order_direction;
+  enter_order.order_price = order.order_price;
+  enter_order.volume = close_volume;
+  pending_order_actions_[order.order_no] =
+      PendingOrderAction{order, enter_order.volume};
+  return enter_order;
+}
+
+int InstrumentFollow::GetPendingCloseVolume(
+    OrderDirection order_direction) const {
+  return std::accumulate(
+      pending_order_actions_.begin(), pending_order_actions_.end(), 0,
+      [=](int val, auto item) {
+        if (item.second.order_direction() == order_direction) {
+          return val + item.second.pending_close_volume();
+        }
+        return val;
+      });
+  return 0;
 }

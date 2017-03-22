@@ -6,6 +6,7 @@ class InstrumentFollowSyncOrdersFixture : public InstrumentFollowBaseFixture {
   virtual void SetUp() override {}
 };
 
+/*
 TEST_F(InstrumentFollowSyncOrdersFixture, SyncOrdersCase1) {
   auto ret = TraderOrderRtn("0001", kOSOpening, 10);
   EnterOrderData& enter_order = ret.first;
@@ -25,3 +26,4 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOrdersCase2) {
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(5, enter_order.volume);
 }
+*/

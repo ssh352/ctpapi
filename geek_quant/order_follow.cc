@@ -1,66 +1,46 @@
 #include "order_follow.h"
 
-OrderFollow::OrderFollow(const std::string& order_no,
-                         int total_volume,
-                         OrderDirection order_direction) {
-  memset(&trader_, 0, sizeof(OrderVolume));
-  memset(&follower_, 0, sizeof(OrderVolume));
-  trader_.order_no = order_no;
-  trader_.opening = total_volume;
-  trader_.order_direction = order_direction;
-
-  follower_.order_no = order_no;
-  follower_.opening = total_volume;
-  follower_.order_direction = order_direction;
+OrderFollow::OrderFollow(int opening_volume, OrderDirection order_direction) {
+  opening_ = opening_volume;
+  order_direction_ = order_direction;
+  position_ = 0;
+  closeing_ = 0;
+  closed_ = 0;
+  canceled_ = 0;
 }
 
-OrderFollow::OrderFollow(OrderVolume trader, OrderVolume follower)
-    : trader_(trader), follower_(follower) {}
-
-OrderVolume OrderFollow::trader_volume_data() const {
-  return trader_;
-}
-
-void OrderFollow::InitFollowerOrderVolue(OrderVolume order) {
-  follower_ = order;
+OrderFollow::OrderFollow() {
+  opening_ = 0;
+  position_ = 0;
+  closeing_ = 0;
+  closed_ = 0;
+  canceled_ = 0;
 }
 
 int OrderFollow::CancelableVolume() const {
-  return follower_.opening;
+  return opening_;
 }
 
-const std::string& OrderFollow::trade_order_no() const {
-  return trader_.order_no;
+void OrderFollow::HandleOpened(int volume) {
+  opening_ -= volume;
+  position_ += volume;
 }
 
-const std::string& OrderFollow::follow_order_no() const {
-  return follower_.order_no;
+void OrderFollow::HandleCloseing(int volume) {
+  closeing_ += volume;
+  position_ -= volume;
 }
 
-void OrderFollow::FillOpenOrderForTrade(int volume) {
-  trader_.position += volume;
-  trader_.opening -= volume;
+void OrderFollow::HandleClosed(int volume) {
+  closeing_ -= volume;
+  closed_ += volume;
 }
 
-void OrderFollow::FillOpenOrderForFollow(int volume) {
-  follower_.position += volume;
-  follower_.opening -= volume;
+void OrderFollow::HandleCanceledByOpen() {
+  opening_ = 0;
 }
 
-int OrderFollow::ProcessCloseOrder(const std::string& order_no,
-                                   int close_volume,
-                                   int* close_volume_by_follower,
-                                   bool* cancel_order) {
-  int close_volume_by_trader = std::min<int>(trader_.position, close_volume);
-
-  *close_volume_by_follower = std::max<int>(
-      close_volume_by_trader - (trader_.position - follower_.position), 0);
-
-  *cancel_order = follower_.opening > 0 ? true : false;
-  follower_.canceling = follower_.opening;
-  follower_.opening = 0;
-
-  trader_.position -= close_volume_by_trader;
-  follower_.position -= *close_volume_by_follower;
-  return close_volume - close_volume_by_trader;
+void OrderFollow::HandleCanceledByClose() {
+  position_ += closeing_;
+  closeing_ = 0;
 }

@@ -66,7 +66,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
 
     FollowerOrderRtn(
         order_no, enter_order_action == kEOAOpen ? kOSOpening : kOSCloseing,
-        fill_follow_open_volume, order_direction, order_price, instrument);
+        fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
         order_no, enter_order_action == kEOAOpen ? kOSOpened : kOSClosed,

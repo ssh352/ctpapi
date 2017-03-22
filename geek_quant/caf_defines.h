@@ -32,7 +32,14 @@ enum OrderStatus {
   kOSCloseing,
   kOSOpened,
   kOSClosed,
-  kOSCanceled,
+  kOSOpenCanceled,
+  kOSCloseCanceled,
+};
+
+enum OpenClose {
+  kOCInvalid,
+  kOCOpen,
+  kOCClose,
 };
 
 struct PositionData {
@@ -72,7 +79,6 @@ struct EnterOrderData {
     action = kEOAInvalid;
     order_direction = kODUnkown;
     order_price = 0.0;
-    old_volume = 0.0;
     volume = 0;
   }
   std::string order_no;
@@ -80,7 +86,6 @@ struct EnterOrderData {
   EnterOrderAction action;
   OrderDirection order_direction;
   double order_price;
-  int old_volume;
   int volume;
 };
 
@@ -103,16 +108,35 @@ struct OrderIdent {
   std::string order_sys_id;
 };
 
+struct CloseingActionItem {
+  int close_volume;
+  int position_volume;
+};
+struct CloseingActionInfo {
+  std::string order_no;
+  std::map<std::string, CloseingActionItem> items;
+};
+
+struct OpenReverseOrderItem {
+  std::string order_no;
+  int volume;
+  int reverse_volume;
+};
+
+struct OpenReverseOrderActionInfo {
+  std::string order_no;
+  std::vector<OpenReverseOrderItem> items;
+};
+
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
 using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
 using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
 
-
 using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
-using OrderRtnForTrader = caf::atom_constant < caf::atom("rotrader")>;
-using OrderRtnForFollow = caf::atom_constant < caf::atom("rofollow")>;
+using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;
+using OrderRtnForFollow = caf::atom_constant<caf::atom("rofollow")>;
 
 using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
 using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;
@@ -157,8 +181,8 @@ typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderIdent& x) {
-  return f(caf::meta::type_name("OrderIdent"), x.order_id, x.front_id, x.session_id,
-           x.exchange_id, x.order_sys_id);
+  return f(caf::meta::type_name("OrderIdent"), x.order_id, x.front_id,
+           x.session_id, x.exchange_id, x.order_sys_id);
 }
 
 #endif /* CAF_DEFINES_H */
