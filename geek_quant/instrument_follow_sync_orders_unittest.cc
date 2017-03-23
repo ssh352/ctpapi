@@ -53,3 +53,15 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase4) {
   EXPECT_EQ(1, cancel_order_no_list.size());
   EXPECT_EQ("0001", cancel_order_no_list.at(0));
 }
+
+TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase5) {
+  (void)TraderOrderRtn("0001", kOSOpening);
+  (void)TraderOrderRtn("0001", kOSOpened);
+  EXPECT_FALSE(instrument_follow.TryCompleteSyncOrders());
+  EXPECT_TRUE(instrument_follow.TryCompleteSyncOrders());
+  auto ret = TraderOrderRtn("0002", kOSOpening, 10, kODSell);
+  EnterOrderData& enter_order = ret.first;
+  std::vector<std::string>& cancel_order_no_list = ret.second;
+  EXPECT_EQ("", enter_order.order_no);
+  EXPECT_EQ(0, cancel_order_no_list.size());
+}
