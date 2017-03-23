@@ -68,7 +68,9 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
       }
       break;
     case THOST_FTDC_OST_Canceled: {
-      order_status = kOSOpenCanceled;
+      order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
+                         ? kOSOpenCanceled
+                         : kOSCloseCanceled;
     }
     case THOST_FTDC_OST_NotTouched:
     case THOST_FTDC_OST_Touched:

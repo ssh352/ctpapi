@@ -23,12 +23,7 @@ class InstrumentFollow {
                                std::vector<std::string>* cancel_order_no_list);
 
  private:
-  void ProcessHistoryOrderRtn(const OrderRtnData& order, bool for_trader);
-  void DoProcessHistoryOrderRtn(
-      const OrderRtnData& order,
-      std::map<std::string, OrderFollow>* history_order);
-
-  EnterOrderData MakeOpenReverseAction(
+                             EnterOrderData MakeOpenReverseAction(
       const OrderRtnData& order,
       std::vector<std::pair<std::string, int> > order_volumes);
 
