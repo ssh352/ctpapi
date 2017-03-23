@@ -69,7 +69,8 @@
     'sources' : [
       'follow_trade_unittest.cc',
       'instrument_follow_unittest.cc',
-      'ctp_order_dispatcher_unittest.cc'
+      'ctp_order_dispatcher_unittest.cc',
+      'instrument_follow_sync_orders_unittest.cc',
     ],
     'dependencies' : [
       'follow_trade',
