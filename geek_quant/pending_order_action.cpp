@@ -61,8 +61,7 @@ bool PendingOrderAction::HandleOrderRtnForFollower(
 
 void PendingOrderAction::HandleCloseing(
     std::vector<std::string>* cancel_order_no_list) {
-  if (trader_.total_volume == trader_.traded_volume &&
-      follower_.total_volume != follower_.traded_volume && !follower_.cancel) {
+  if (follower_.total_volume != follower_.traded_volume && !follower_.cancel) {
     cancel_order_no_list->push_back(order_no_);
     follower_.cancel = true;
   }
@@ -70,8 +69,7 @@ void PendingOrderAction::HandleCloseing(
 
 void PendingOrderAction::HandleOpenReverse(
     std::vector<std::string>* cancel_order_no_list) {
-  if (trader_.total_volume == trader_.traded_volume &&
-      follower_.total_volume != follower_.traded_volume && !follower_.cancel) {
+  if (follower_.total_volume != follower_.traded_volume && !follower_.cancel) {
     cancel_order_no_list->push_back(order_no_);
     follower_.cancel = true;
   }
