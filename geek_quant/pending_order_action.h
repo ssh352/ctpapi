@@ -5,7 +5,7 @@
 
 class PendingOrderAction {
  public:
-  PendingOrderAction() = default;
+  PendingOrderAction();
 
   PendingOrderAction(const OrderRtnData& order, int follower_volum); 
 

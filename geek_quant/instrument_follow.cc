@@ -30,6 +30,7 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     std::vector<std::string>* cancel_order_no_list) {
   ++trader_order_rtn_seq_;
   if (!HasSyncOrders()) {
+    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(order);
     trader_orders_.HandleOrderRtn(order);
     return;
   }
@@ -87,6 +88,9 @@ void InstrumentFollow::HandleOrderRtnForFollow(
     std::vector<std::string>* cancel_order_no_list) {
   ++follower_order_rtn_seq_;
   if (!HasSyncOrders()) {
+    std::vector<std::string> dummy_cancel_order_no_list;
+    pending_order_actions_[order.order_no].HandleOrderRtnForFollower(
+        order, &dummy_cancel_order_no_list);
     follower_orders_.HandleOrderRtn(order);
     return;
   }

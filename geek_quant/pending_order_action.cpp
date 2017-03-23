@@ -6,15 +6,26 @@ PendingOrderAction::PendingOrderAction(const OrderRtnData& order,
       order_direction_(order.order_direction),
       trader_{0, order.volume, false},
       follower_{0, follower_volum, false} {
+  pending_close_volume_ = 0;
   if (order.order_status == kOSCloseing) {
     pending_close_volume_ = follower_volum;
   }
 }
 
+PendingOrderAction::PendingOrderAction()
+    : trader_{0, 0, false}, follower_{0, 0, false} {
+  order_direction_ = kODUnkown;
+  pending_close_volume_ = 0;
+}
+
 void PendingOrderAction::HandleOrderRtnForTrader(const OrderRtnData& order) {
   switch (order.order_status) {
-    case kOSOpening:
-      break;
+    case kOSOpening: {
+      order_no_ = order.order_no;
+      order_direction_ = order.order_direction;
+      trader_.traded_volume = 0;
+      trader_.total_volume = order.volume;
+    } break;
     case kOSCloseing:
       break;
     case kOSOpened:
@@ -36,6 +47,8 @@ bool PendingOrderAction::HandleOrderRtnForFollower(
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
     case kOSOpening: {
+      follower_.traded_volume = 0;
+      follower_.total_volume = order.volume;
       if (trader_.cancel) {
         cancel_order_no_list->push_back(order_no_);
       }
