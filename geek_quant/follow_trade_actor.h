@@ -24,6 +24,7 @@ protected:
       const OrderIdent& order_ident) const;
   CThostFtdcInputOrderField MakeCtpOrderInsert(
       const EnterOrderData& enter_order) const;
+  InstrumentFollow& GetInstrumentFollow(const std::string& instrument);
   std::map<std::string, OrderIdent> unfill_orders_;
   CtpOrderDispatcher ctp_order_dispatcher_;
   CtpTrader ctp_;

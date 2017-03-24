@@ -9,11 +9,11 @@ class PendingOrderAction {
 
   PendingOrderAction(const OrderRtnData& order, int follower_volum); 
 
-  void HandleOrderRtnForTrader(const OrderRtnData& order);
+  void HandleOrderRtnForTrader(const OrderRtnData& order, std::vector<std::string>* cancel_order_no_list);
 
   bool HandleOrderRtnForFollower(const OrderRtnData& order, std::vector<std::string>* cancel_order_no_list);
 
-  void HandleCloseing(std::vector<std::string>* cancel_order_no_list);
+  void HandleCloseingFromTrader(std::vector<std::string>* cancel_order_no_list);
 
   void HandleOpenReverse(std::vector<std::string>* cancel_order_no_list);
 
@@ -29,6 +29,7 @@ private:
     int traded_volume;
     int total_volume;
     bool cancel;
+    bool closeing;
   };
   InnerOrder trader_;
   InnerOrder follower_;

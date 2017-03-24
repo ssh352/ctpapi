@@ -30,14 +30,16 @@ void InstrumentFollow::HandleOrderRtnForTrader(
     std::vector<std::string>* cancel_order_no_list) {
   ++trader_order_rtn_seq_;
   if (!HasSyncOrders()) {
-    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(order);
+    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(
+        order, cancel_order_no_list);
     trader_orders_.HandleOrderRtn(order);
     return;
   }
 
   if (pending_order_actions_.find(order.order_no) !=
       pending_order_actions_.end()) {
-    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(order);
+    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(
+        order, cancel_order_no_list);
   }
 
   switch (order.order_status) {
@@ -67,7 +69,7 @@ void InstrumentFollow::HandleOrderRtnForTrader(
       for (auto item : action.items) {
         if (pending_order_actions_.find(item.first) !=
             pending_order_actions_.end()) {
-          pending_order_actions_[item.first].HandleCloseing(
+          pending_order_actions_[item.first].HandleCloseingFromTrader(
               cancel_order_no_list);
         }
         order_list.push_back(item.first);

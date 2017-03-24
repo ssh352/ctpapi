@@ -2,13 +2,7 @@
 #include "geek_quant/caf_defines.h"
 
 FollowTradeActor::FollowTradeActor(caf::actor_config& cfg)
-    : caf::event_based_actor(cfg), ctp_(this, "follower") {
-  instrument_follow_set_.insert_or_assign("MA705", InstrumentFollow());
-  instrument_follow_set_.insert_or_assign("c1709", InstrumentFollow());
-  instrument_follow_set_.insert_or_assign("cs1709", InstrumentFollow());
-  instrument_follow_set_.insert_or_assign("bu1706", InstrumentFollow());
-  instrument_follow_set_.insert_or_assign("FG705", InstrumentFollow());
-}
+    : caf::event_based_actor(cfg), ctp_(this, "follower") {}
 
 FollowTradeActor::~FollowTradeActor() {}
 
@@ -26,9 +20,7 @@ void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
   }
 }
 
-void FollowTradeActor::OnLogon() {
-  delayed_send(this, std::chrono::seconds(3), TrySyncHistoryOrderAtom::value);
-}
+void FollowTradeActor::OnLogon() {}
 
 caf::behavior FollowTradeActor::make_behavior() {
   ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
@@ -37,48 +29,40 @@ caf::behavior FollowTradeActor::make_behavior() {
       [=](TAOrderIdentAtom, OrderIdent order_ident) {
         unfill_orders_[order_ident.order_id] = order_ident;
       },
-      [=](TrySyncHistoryOrderAtom) {
-        bool sync_finish = true;
-        for (auto& item : instrument_follow_set_) {
-          if (!item.second.TryCompleteSyncOrders()) {
-            sync_finish = false;
-          }
-        }
-        if (!sync_finish) {
+      [=](TrySyncHistoryOrderAtom, std::string instrument) {
+        if (!instrument_follow_set_[instrument].TryCompleteSyncOrders()) {
           delayed_send(this, std::chrono::seconds(3),
-                       TrySyncHistoryOrderAtom::value);
+                       TrySyncHistoryOrderAtom::value, instrument);
         }
       },
       [=](OrderRtnForTrader, OrderRtnData order) {
-        auto it = instrument_follow_set_.find(order.instrument);
-        if (it != instrument_follow_set_.end()) {
-          EnterOrderData enter_order;
-          std::vector<std::string> cancel_order_no_list;
-          it->second.HandleOrderRtnForTrader(order, &enter_order,
-                                             &cancel_order_no_list);
-          if (!enter_order.order_no.empty()) {
-            ctp_.OrderInsert(MakeCtpOrderInsert(enter_order));
-          }
-          for (auto order_no : cancel_order_no_list) {
-            if (unfill_orders_.find(order_no) != unfill_orders_.end()) {
-              ctp_.OrderAction(
-                  MakeCtpCancelOrderAction(unfill_orders_[order_no]));
-            }
+        InstrumentFollow& instrument_follow =
+            GetInstrumentFollow(order.instrument);
+        EnterOrderData enter_order;
+        std::vector<std::string> cancel_order_no_list;
+        instrument_follow.HandleOrderRtnForTrader(order, &enter_order,
+                                                  &cancel_order_no_list);
+        if (!enter_order.order_no.empty()) {
+          ctp_.OrderInsert(MakeCtpOrderInsert(enter_order));
+        }
+        for (auto order_no : cancel_order_no_list) {
+          if (unfill_orders_.find(order_no) != unfill_orders_.end()) {
+            ctp_.OrderAction(
+                MakeCtpCancelOrderAction(unfill_orders_[order_no]));
           }
         }
       },
       [=](OrderRtnForFollow, OrderRtnData order) {
-        auto it = instrument_follow_set_.find(order.instrument);
-        if (it != instrument_follow_set_.end()) {
-          EnterOrderData enter_order;
-          std::vector<std::string> cancel_order_no_list;
-          it->second.HandleOrderRtnForFollow(order, &enter_order,
-                                             &cancel_order_no_list);
-          for (auto order_no : cancel_order_no_list) {
-            if (unfill_orders_.find(order_no) != unfill_orders_.end()) {
-              ctp_.OrderAction(
-                  MakeCtpCancelOrderAction(unfill_orders_[order_no]));
-            }
+        InstrumentFollow& instrument_follow =
+            GetInstrumentFollow(order.instrument);
+        EnterOrderData enter_order;
+        std::vector<std::string> cancel_order_no_list;
+        instrument_follow.HandleOrderRtnForFollow(order, &enter_order,
+                                                  &cancel_order_no_list);
+        for (auto order_no : cancel_order_no_list) {
+          if (unfill_orders_.find(order_no) != unfill_orders_.end()) {
+            ctp_.OrderAction(
+                MakeCtpCancelOrderAction(unfill_orders_[order_no]));
           }
         }
       },
@@ -112,7 +96,7 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   field.Direction =
       order.order_direction == kODBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
   field.CombOffsetFlag[0] =
-      order.action == kEOAOpen ? THOST_FTDC_OF_Open : THOST_FTDC_OF_Close;
+      order.action == kEOAOpen ? THOST_FTDC_OF_Open : THOST_FTDC_OF_CloseToday;
   strcpy(field.CombHedgeFlag, "1");
   field.LimitPrice = order.order_price;
   field.VolumeTotalOriginal = order.volume;
@@ -126,4 +110,13 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   field.IsAutoSuspend = 0;
   field.UserForceClose = 0;
   return field;
+}
+
+InstrumentFollow& FollowTradeActor::GetInstrumentFollow(
+    const std::string& instrument) {
+  if (instrument_follow_set_.find(instrument) == instrument_follow_set_.end()) {
+    delayed_send(this, std::chrono::seconds(3), TrySyncHistoryOrderAtom::value,
+                 instrument);
+  }
+  return instrument_follow_set_[instrument];
 }

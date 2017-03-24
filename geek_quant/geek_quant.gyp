@@ -9,8 +9,6 @@
     'variables' : {
     },
     'sources' : [
-      'follow_trade_actor.h',
-      'follow_trade_actor.cc',
       'instrument_follow.h',
       'instrument_follow.cc',
       'order_follow.h',
@@ -47,6 +45,8 @@
       'main.cc',
       'cta_trade_actor.h',
       'cta_trade_actor.cc',
+      'follow_trade_actor.h',
+      'follow_trade_actor.cc',
     ],
     'dependencies' : [
       '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
