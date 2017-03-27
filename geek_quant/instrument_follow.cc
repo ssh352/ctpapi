@@ -1,35 +1,22 @@
 #include "instrument_follow.h"
 
-InstrumentFollow::InstrumentFollow() {
-  has_sync_ = false;
-  trader_order_rtn_seq_ = 0;
-  follower_order_rtn_seq_ = 0;
-  last_check_trader_order_rtn_seq_ = 0;
-  last_check_follower_order_rtn_seq_ = 0;
+InstrumentFollow::InstrumentFollow(bool wait_sync) {
+  wait_sync_ = wait_sync;
 }
 
-bool InstrumentFollow::HasSyncOrders() {
-  return has_sync_;
+bool InstrumentFollow::WaitSyncOrders() {
+  return wait_sync_;
 }
 
-bool InstrumentFollow::TryCompleteSyncOrders() {
-  if (trader_order_rtn_seq_ != last_check_trader_order_rtn_seq_ ||
-      follower_order_rtn_seq_ != last_check_follower_order_rtn_seq_) {
-    last_check_trader_order_rtn_seq_ = trader_order_rtn_seq_;
-    last_check_follower_order_rtn_seq_ = follower_order_rtn_seq_;
-    return false;
-  }
-
-  has_sync_ = true;
-  return true;
+void InstrumentFollow::SyncComplete() {
+  wait_sync_ = false;
 }
 
 void InstrumentFollow::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
-  ++trader_order_rtn_seq_;
-  if (!HasSyncOrders()) {
+  if (WaitSyncOrders()) {
     pending_order_actions_[order.order_no].HandleOrderRtnForTrader(
         order, cancel_order_no_list);
     trader_orders_.HandleOrderRtn(order);
@@ -88,8 +75,7 @@ void InstrumentFollow::HandleOrderRtnForFollow(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
-  ++follower_order_rtn_seq_;
-  if (!HasSyncOrders()) {
+  if (WaitSyncOrders()) {
     std::vector<std::string> dummy_cancel_order_no_list;
     pending_order_actions_[order.order_no].HandleOrderRtnForFollower(
         order, &dummy_cancel_order_no_list);

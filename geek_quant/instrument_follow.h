@@ -8,11 +8,9 @@
 
 class InstrumentFollow {
  public:
-  InstrumentFollow();
+  InstrumentFollow(bool wait_sync = false);
 
-  bool HasSyncOrders();
-
-  bool TryCompleteSyncOrders();
+  void SyncComplete();
 
   void HandleOrderRtnForTrader(const OrderRtnData& order,
                                EnterOrderData* enter_order,
@@ -23,7 +21,9 @@ class InstrumentFollow {
                                std::vector<std::string>* cancel_order_no_list);
 
  private:
-                             EnterOrderData MakeOpenReverseAction(
+  bool WaitSyncOrders();
+
+  EnterOrderData MakeOpenReverseAction(
       const OrderRtnData& order,
       std::vector<std::pair<std::string, int> > order_volumes);
 
@@ -36,13 +36,7 @@ class InstrumentFollow {
 
   int GetPendingCloseVolume(OrderDirection order_direction) const;
 
-  bool has_sync_;
-
-  int trader_order_rtn_seq_;
-  int follower_order_rtn_seq_;
-
-  int last_check_trader_order_rtn_seq_;
-  int last_check_follower_order_rtn_seq_;
+  bool wait_sync_;
 
   std::map<std::string, OrderFollow> history_order_for_trader_;
   std::map<std::string, OrderFollow> history_order_for_follower_;

@@ -13,10 +13,9 @@ class FollowTradeActor : public caf::event_based_actor,
   ~FollowTradeActor();
   virtual void OnRtnOrderData(CThostFtdcOrderField* order) override;
 
-
   virtual void OnLogon() override;
 
-protected:
+ protected:
   virtual caf::behavior make_behavior() override;
 
  private:
@@ -29,6 +28,12 @@ protected:
   CtpOrderDispatcher ctp_order_dispatcher_;
   CtpTrader ctp_;
   std::map<std::string, InstrumentFollow> instrument_follow_set_;
+
+  int trader_order_rtn_seq_;
+  int follower_order_rtn_seq_;
+  int last_check_trader_order_rtn_seq_;
+  int last_check_follower_order_rtn_seq_;
+  bool wait_sync_orders_;
 };
 
 #endif  // STRATEGY_UNITTEST_FOLLOW_TRADE_ACTOR_H

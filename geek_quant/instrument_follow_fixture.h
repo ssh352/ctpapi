@@ -6,6 +6,9 @@
 class InstrumentFollowBaseFixture : public testing::Test {
  public:
  protected:
+   InstrumentFollowBaseFixture() : instrument_follow(true) {
+
+   }
   OrderRtnData MakeOrderRtnData(const std::string& order_no,
                                 OrderDirection order_direction,
                                 OrderStatus order_status,

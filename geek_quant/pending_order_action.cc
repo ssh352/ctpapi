@@ -22,14 +22,13 @@ void PendingOrderAction::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
-    case kOSOpening: {
+    case kOSOpening:
+    case kOSCloseing: {
       order_no_ = order.order_no;
       order_direction_ = order.order_direction;
       trader_.traded_volume = 0;
       trader_.total_volume = order.volume;
     } break;
-    case kOSCloseing:
-      break;
     case kOSOpened:
     case kOSClosed:
       trader_.traded_volume += order.volume;
@@ -61,6 +60,8 @@ bool PendingOrderAction::HandleOrderRtnForFollower(
       }
     } break;
     case kOSCloseing:
+      follower_.traded_volume = 0;
+      follower_.total_volume = order.volume;
       pending_close_volume_ = 0;
       break;
     case kOSOpened:

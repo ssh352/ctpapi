@@ -2,7 +2,13 @@
 #include "geek_quant/caf_defines.h"
 
 FollowTradeActor::FollowTradeActor(caf::actor_config& cfg)
-    : caf::event_based_actor(cfg), ctp_(this, "follower") {}
+    : caf::event_based_actor(cfg), ctp_(this, "follower") {
+  trader_order_rtn_seq_ = 0;
+  follower_order_rtn_seq_ = 0;
+  last_check_trader_order_rtn_seq_ = -1;
+  last_check_follower_order_rtn_seq_ = -1;
+  wait_sync_orders_ = true;
+}
 
 FollowTradeActor::~FollowTradeActor() {}
 
@@ -20,7 +26,10 @@ void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
   }
 }
 
-void FollowTradeActor::OnLogon() {}
+void FollowTradeActor::OnLogon() {
+  delayed_send(this, std::chrono::seconds(1),
+               TrySyncHistoryOrderAtom::value);
+}
 
 caf::behavior FollowTradeActor::make_behavior() {
   ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
@@ -29,13 +38,22 @@ caf::behavior FollowTradeActor::make_behavior() {
       [=](TAOrderIdentAtom, OrderIdent order_ident) {
         unfill_orders_[order_ident.order_id] = order_ident;
       },
-      [=](TrySyncHistoryOrderAtom, std::string instrument) {
-        if (!instrument_follow_set_[instrument].TryCompleteSyncOrders()) {
-          delayed_send(this, std::chrono::seconds(3),
-                       TrySyncHistoryOrderAtom::value, instrument);
+      [=](TrySyncHistoryOrderAtom) {
+        if (trader_order_rtn_seq_ != last_check_trader_order_rtn_seq_ ||
+            follower_order_rtn_seq_ != last_check_follower_order_rtn_seq_) {
+          last_check_trader_order_rtn_seq_ = trader_order_rtn_seq_;
+          last_check_follower_order_rtn_seq_ = follower_order_rtn_seq_;
+          delayed_send(this, std::chrono::seconds(1),
+                       TrySyncHistoryOrderAtom::value);
+        } else {
+          wait_sync_orders_ = false;
+          std::for_each(instrument_follow_set_.begin(),
+                        instrument_follow_set_.end(),
+                        [](auto& item) { item.second.SyncComplete(); });
         }
       },
       [=](OrderRtnForTrader, OrderRtnData order) {
+        ++trader_order_rtn_seq_;
         InstrumentFollow& instrument_follow =
             GetInstrumentFollow(order.instrument);
         EnterOrderData enter_order;
@@ -53,6 +71,7 @@ caf::behavior FollowTradeActor::make_behavior() {
         }
       },
       [=](OrderRtnForFollow, OrderRtnData order) {
+        ++follower_order_rtn_seq_;
         InstrumentFollow& instrument_follow =
             GetInstrumentFollow(order.instrument);
         EnterOrderData enter_order;
@@ -115,8 +134,8 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
 InstrumentFollow& FollowTradeActor::GetInstrumentFollow(
     const std::string& instrument) {
   if (instrument_follow_set_.find(instrument) == instrument_follow_set_.end()) {
-    delayed_send(this, std::chrono::seconds(3), TrySyncHistoryOrderAtom::value,
-                 instrument);
+    instrument_follow_set_.insert(
+        std::make_pair(instrument, InstrumentFollow(wait_sync_orders_)));
   }
   return instrument_follow_set_[instrument];
 }

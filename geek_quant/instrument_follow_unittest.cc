@@ -3,7 +3,7 @@
 
 class InstrumentFollowFixture : public InstrumentFollowBaseFixture {
  protected:
-  virtual void SetUp() override { instrument_follow.TryCompleteSyncOrders(); }
+  virtual void SetUp() override { instrument_follow.SyncComplete(); }
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -273,11 +273,13 @@ TEST_F(InstrumentFollowFixture, CancelOpenCalse3) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeOrderRtnData("0001", OrderDirection::kODSell, OrderStatus::kOSOpening),
+      MakeOrderRtnData("0001", OrderDirection::kODSell,
+                       OrderStatus::kOSOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeOrderRtnData("0001", OrderDirection::kODSell, OrderStatus::kOSOpening),
+      MakeOrderRtnData("0001", OrderDirection::kODSell,
+                       OrderStatus::kOSOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
@@ -303,6 +305,18 @@ TEST_F(InstrumentFollowFixture, CancelCloseCase1) {
   EXPECT_EQ("0001", cancel_order_no_list.at(0));
 }
 
+TEST_F(InstrumentFollowFixture, CancelCloseCase2) {
+  OpenAndFillOrder(10, 10, 10);
+
+  TraderOrderRtn("0002", kOSCloseing, 10, kODSell);
+  FollowerOrderRtn("0002", kOSCloseing, 10, kODSell);
+  auto ret = TraderOrderRtn("0002", kOSCloseCanceled, 10, kODSell);
+  EnterOrderData& enter_order = ret.first;
+  std::vector<std::string>& cancel_order_no_list = ret.second;
+  EXPECT_EQ(1, cancel_order_no_list.size());
+  EXPECT_EQ("0002", cancel_order_no_list.at(0));
+
+}
 
 // Mutl Open Order with one Close
 TEST_F(InstrumentFollowFixture, FillMutilOrder) {
