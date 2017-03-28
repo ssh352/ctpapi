@@ -1,10 +1,17 @@
 #include "order_follow_manager.h"
 
+void OrderFollowMananger::AddPosition(const std::string& order_no,
+                                      OrderDirection order_direction,
+                                      int volume) {
+  if (orders_.find(order_no) != orders_.end()) {
+    orders_[order_no].MakePosition(volume, order_direction);
+  }
+}
+
 void OrderFollowMananger::HandleOrderRtn(const OrderRtnData& order) {
   switch (order.order_status) {
     case kOSOpening: {
-      orders_[order.order_no] =
-          OrderFollow{order.volume, order.order_direction};
+      orders_[order.order_no].MakeOpening(order.volume, order.order_direction);
     } break;
     case kOSCloseing: {
       (void)HandleCloseing(order);
@@ -105,8 +112,8 @@ CloseingActionInfo OrderFollowMananger::ParseCloseingOrderRtn(
         std::min<int>(outstanding_close_volume, order_follow.position_volume());
 
     action_info.order_no = order.order_no;
-    action_info.items[item.first] = CloseingActionItem {close_volume,
-                                   order_follow.position_volume()};
+    action_info.items[item.first] =
+        CloseingActionItem{close_volume, order_follow.position_volume()};
     outstanding_close_volume -= close_volume;
     if (outstanding_close_volume <= 0) {
       break;

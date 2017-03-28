@@ -12,6 +12,14 @@ class InstrumentFollow {
 
   void SyncComplete();
 
+  void AddPositionToTrader(const std::string& order_no,
+                           OrderDirection order_direction,
+                           int volume);
+
+  void AddPositionToFollower(const std::string& order_no,
+                             OrderDirection order_direction,
+                             int volume);
+
   void HandleOrderRtnForTrader(const OrderRtnData& order,
                                EnterOrderData* enter_order,
                                std::vector<std::string>* cancel_order_no_list);
@@ -38,8 +46,6 @@ class InstrumentFollow {
 
   bool wait_sync_;
 
-  std::map<std::string, OrderFollow> history_order_for_trader_;
-  std::map<std::string, OrderFollow> history_order_for_follower_;
   std::map<std::string, PendingOrderAction> pending_order_actions_;
   OrderFollowMananger trader_orders_;
   OrderFollowMananger follower_orders_;

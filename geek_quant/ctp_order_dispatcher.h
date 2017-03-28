@@ -6,13 +6,17 @@
 
 class CtpOrderDispatcher {
  public:
+  CtpOrderDispatcher(bool is_cta);
   boost::optional<OrderRtnData> HandleRtnOrder(CThostFtdcOrderField pOrder);
 
  private:
   bool IsSameOrderStatus(const CThostFtdcOrderField& left,
                          const CThostFtdcOrderField& right);
   OrderStatus ParseThostForOrderStatus(const CThostFtdcOrderField& order);
+  RequestBy ParseRequestBy(const std::string& user_product_info) const;
+
   std::vector<CThostFtdcOrderField> orders_;
+  bool is_cta_;
 };
 
 #endif  // FOLLOW_TRADE_CTP_ORDER_DISPATCHER_H

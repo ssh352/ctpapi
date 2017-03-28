@@ -1,7 +1,7 @@
 #include "cta_trade_actor.h"
 
 CtaTradeActor::CtaTradeActor(caf::actor actor)
-    : ctp_(this, "trader_"), actor_(actor) {}
+    : ctp_(this, "trader_"), order_dispatcher_(this, true), actor_(actor) {}
 
 void CtaTradeActor::Start(const std::string& front_server,
                           const std::string& broker_id,
@@ -16,5 +16,8 @@ void CtaTradeActor::OnRtnOrderData(CThostFtdcOrderField* field) {
   }
 }
 
-void CtaTradeActor::OnLogon() {
+void CtaTradeActor::OnLogon() {}
+
+std::string CtaTradeActor::ParseOrderNo(const char* order_ref) {
+  return order_ref;
 }

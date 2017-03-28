@@ -3,7 +3,8 @@
 #include "caf/all.hpp"
 #include "geek_quant/ctp_trader.h"
 
-class CtaTradeActor : public CtpTrader::Delegate {
+class CtaTradeActor : public CtpTrader::Delegate,
+                      public CtpOrderDispatcher::OrderRefDelegate {
  public:
   CtaTradeActor(caf::actor actor);
 
@@ -14,10 +15,11 @@ class CtaTradeActor : public CtpTrader::Delegate {
 
   virtual void OnRtnOrderData(CThostFtdcOrderField* order) override;
 
-
   virtual void OnLogon() override;
 
-protected:
+  virtual std::string ParseOrderNo(const char* order_ref) override;
+
+ protected:
  private:
   CtpTrader ctp_;
   caf::actor actor_;

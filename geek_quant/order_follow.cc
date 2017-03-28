@@ -1,12 +1,14 @@
 #include "order_follow.h"
 
-OrderFollow::OrderFollow(int opening_volume, OrderDirection order_direction) {
+void OrderFollow::MakeOpening(int opening_volume,
+                              OrderDirection order_direction) {
   opening_ = opening_volume;
   order_direction_ = order_direction;
-  position_ = 0;
-  closeing_ = 0;
-  closed_ = 0;
-  canceled_ = 0;
+}
+
+void OrderFollow::MakePosition(int volume, OrderDirection order_direction) {
+  order_direction_ = order_direction;
+  position_ = volume;
 }
 
 OrderFollow::OrderFollow() {

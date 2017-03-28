@@ -24,7 +24,7 @@ CThostFtdcOrderField MakeRtnOrderField(
 }
 
 TEST(CtpOrderDispatcherTest, OpenOrder) {
-  CtpOrderDispatcher dispatcher;
+  CtpOrderDispatcher dispatcher(true);
   {
     auto order =
         dispatcher.HandleRtnOrder(MakeRtnOrderField(THOST_FTDC_OST_Unknown));
@@ -73,7 +73,7 @@ TEST(CtpOrderDispatcherTest, OpenOrder) {
 }
 
 TEST(CtpOrderDispatcherTest, CloseOrder) {
-  CtpOrderDispatcher dispatcher;
+  CtpOrderDispatcher dispatcher(true);
   {
     auto order = dispatcher.HandleRtnOrder(
         MakeRtnOrderField(THOST_FTDC_OST_Unknown, THOST_FTDC_OF_Close));
@@ -123,7 +123,7 @@ TEST(CtpOrderDispatcherTest, CloseOrder) {
 // THOST_FTDC_OST_Canceled
 
 TEST(CtpOrderDispatcherTest, CancelOpenOrder) {
-  CtpOrderDispatcher dispatcher;
+  CtpOrderDispatcher dispatcher(true);
   {
     auto order =
         dispatcher.HandleRtnOrder(MakeRtnOrderField(THOST_FTDC_OST_Unknown));
@@ -157,7 +157,7 @@ TEST(CtpOrderDispatcherTest, CancelOpenOrder) {
 }
 
 TEST(CtpOrderDispatcherTest, CancelCloseOrder) {
-  CtpOrderDispatcher dispatcher;
+  CtpOrderDispatcher dispatcher(true);
   {
     auto order = dispatcher.HandleRtnOrder(
         MakeRtnOrderField(THOST_FTDC_OST_Unknown, THOST_FTDC_OF_Close));

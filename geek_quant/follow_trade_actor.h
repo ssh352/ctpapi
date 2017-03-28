@@ -24,6 +24,10 @@ class FollowTradeActor : public caf::event_based_actor,
   CThostFtdcInputOrderField MakeCtpOrderInsert(
       const EnterOrderData& enter_order) const;
   InstrumentFollow& GetInstrumentFollow(const std::string& instrument);
+
+  void TrySyncPositionIfReady();
+
+
   std::map<std::string, OrderIdent> unfill_orders_;
   CtpOrderDispatcher ctp_order_dispatcher_;
   CtpTrader ctp_;
@@ -34,6 +38,13 @@ class FollowTradeActor : public caf::event_based_actor,
   int last_check_trader_order_rtn_seq_;
   int last_check_follower_order_rtn_seq_;
   bool wait_sync_orders_;
+  std::vector<OrderPosition> trader_positions_;
+  std::vector<OrderPosition> follower_positions_;
+
+  
+  int max_order_no_;
+  bool wait_yesterday_trader_position_;
+  bool wait_yesterday_follower_position_;
 };
 
 #endif  // STRATEGY_UNITTEST_FOLLOW_TRADE_ACTOR_H

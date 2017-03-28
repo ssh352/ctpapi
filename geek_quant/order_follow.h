@@ -6,7 +6,10 @@
 class OrderFollow {
  public:
   OrderFollow();
-  OrderFollow(int total_volume, OrderDirection order_direction);
+
+  void MakeOpening(int opening_volume, OrderDirection order_direction);
+
+  void MakePosition(int volume, OrderDirection order_direction);
 
   int CancelableVolume() const;
 

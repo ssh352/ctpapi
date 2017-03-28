@@ -12,6 +12,18 @@ void InstrumentFollow::SyncComplete() {
   wait_sync_ = false;
 }
 
+void InstrumentFollow::AddPositionToTrader(const std::string& order_no,
+                                           OrderDirection order_direction,
+                                           int volume) {
+  trader_orders_.AddPosition(order_no, order_direction, volume);
+}
+
+void InstrumentFollow::AddPositionToFollower(const std::string& order_no,
+                                             OrderDirection order_direction,
+                                             int volume) {
+  follower_orders_.AddPosition(order_no, order_direction, volume);
+}
+
 void InstrumentFollow::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     EnterOrderData* enter_order,

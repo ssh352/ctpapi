@@ -1,5 +1,7 @@
 #include "ctp_order_dispatcher.h"
 
+CtpOrderDispatcher::CtpOrderDispatcher(bool is_cta) : is_cta_(is_cta) {}
+
 boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     CThostFtdcOrderField raw_order) {
   auto it = std::find_if(orders_.begin(), orders_.end(), [&](auto order) {
@@ -17,6 +19,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
                              : kOSCloseing;
     order.volume = raw_order.VolumeTotal;
     order.order_no = raw_order.OrderRef;
+    order.request_by = ParseRequestBy(raw_order.UserProductInfo);
     orders_.push_back(raw_order);
     return boost::optional<OrderRtnData>(order);
   } else {
@@ -28,6 +31,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
       order.order_price = raw_order.LimitPrice;
       order.volume = it->VolumeTotal - raw_order.VolumeTotal;
       order.order_status = ParseThostForOrderStatus(raw_order);
+      order.request_by = ParseRequestBy(raw_order.UserProductInfo);
       order.order_no = raw_order.OrderRef;
       *it = raw_order;
       return boost::optional<OrderRtnData>(order);
@@ -78,4 +82,17 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
       break;
   }
   return order_status;
+}
+
+RequestBy CtpOrderDispatcher::ParseRequestBy(
+    const std::string& user_product_info) const {
+  RequestBy request_by;
+  if (is_cta_) {
+    request_by = RequestBy::kCTA;
+  } else {
+    request_by = user_product_info == kStrategyUserProductInfo
+                     ? RequestBy::kStrategy
+                     : RequestBy::kApp;
+  }
+  return request_by;
 }

@@ -2,12 +2,18 @@
 #include "geek_quant/caf_defines.h"
 
 FollowTradeActor::FollowTradeActor(caf::actor_config& cfg)
-    : caf::event_based_actor(cfg), ctp_(this, "follower") {
+    : caf::event_based_actor(cfg),
+      ctp_(this, "follower"),
+      ctp_order_dispatcher_(false) {
   trader_order_rtn_seq_ = 0;
   follower_order_rtn_seq_ = 0;
   last_check_trader_order_rtn_seq_ = -1;
   last_check_follower_order_rtn_seq_ = -1;
   wait_sync_orders_ = true;
+  max_order_no_ = 0;
+
+  wait_yesterday_trader_position_ = false;
+  wait_yesterday_follower_position_ = false;
 }
 
 FollowTradeActor::~FollowTradeActor() {}
@@ -27,8 +33,7 @@ void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
 }
 
 void FollowTradeActor::OnLogon() {
-  delayed_send(this, std::chrono::seconds(1),
-               TrySyncHistoryOrderAtom::value);
+  delayed_send(this, std::chrono::seconds(1), TrySyncHistoryOrderAtom::value);
 }
 
 caf::behavior FollowTradeActor::make_behavior() {
@@ -51,6 +56,18 @@ caf::behavior FollowTradeActor::make_behavior() {
                         instrument_follow_set_.end(),
                         [](auto& item) { item.second.SyncComplete(); });
         }
+      },
+      [=](YesterdayPositionForTraderAtom,
+          std::vector<OrderPosition> positions) {
+        trader_positions_ = positions;
+        wait_yesterday_trader_position_ = false;
+        TrySyncPositionIfReady();
+      },
+      [=](YesterdayPositionForFollowerAtom,
+          std::vector<OrderPosition> positions) {
+        follower_positions_ = positions;
+        wait_yesterday_follower_position_ = false;
+        TrySyncPositionIfReady();
       },
       [=](OrderRtnForTrader, OrderRtnData order) {
         ++trader_order_rtn_seq_;
@@ -138,4 +155,43 @@ InstrumentFollow& FollowTradeActor::GetInstrumentFollow(
         std::make_pair(instrument, InstrumentFollow(wait_sync_orders_)));
   }
   return instrument_follow_set_[instrument];
+}
+
+void FollowTradeActor::TrySyncPositionIfReady() {
+  if (wait_yesterday_trader_position_ || wait_yesterday_follower_position_) {
+    return;
+  }
+
+  std::map<std::pair<std::string, OrderDirection>, int> position_type_set_;
+  for (auto pos : trader_positions_) {
+    auto key = std::make_pair(pos.instrument, pos.order_direction);
+    if (position_type_set_.find(key) == position_type_set_.end()) {
+      position_type_set_.insert(
+          {key, static_cast<int>(position_type_set_.size() + 1)});
+    }
+  }
+
+  for (auto pos : follower_positions_) {
+    auto key = std::make_pair(pos.instrument, pos.order_direction);
+    if (position_type_set_.find(key) == position_type_set_.end()) {
+      position_type_set_.insert(
+          {key, static_cast<int>(position_type_set_.size() + 1)});
+    }
+  }
+
+  max_order_no_ = static_cast<int>(position_type_set_.size());
+
+  for (auto pos : trader_positions_) {
+    instrument_follow_set_[pos.instrument].AddPositionToTrader(
+        boost::lexical_cast<std::string>(
+            position_type_set_[{pos.instrument, pos.order_direction}]),
+        pos.order_direction, pos.volume);
+  }
+
+  for (auto pos : follower_positions_) {
+    instrument_follow_set_[pos.instrument].AddPositionToFollower(
+        boost::lexical_cast<std::string>(
+            position_type_set_[{pos.instrument, pos.order_direction}]),
+        pos.order_direction, pos.volume);
+  }
 }

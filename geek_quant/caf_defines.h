@@ -2,6 +2,15 @@
 #define CAF_DEFINES_H
 
 #include "caf/all.hpp"
+
+extern const char kStrategyUserProductInfo[];
+
+enum class RequestBy {
+  kInvalid,
+  kCTA,
+  kStrategy,
+  kApp,
+};
 enum OrderRtnFrom {
   kInvalid,
   kORFInvalid,
@@ -64,6 +73,7 @@ struct OrderRtnData {
     order_status = kOSInvalid;
     order_direction = kODUnkown;
     order_price = 0.0;
+    request_by = RequestBy::kInvalid;
     volume = 0;
   }
   std::string order_no;
@@ -129,6 +139,12 @@ struct OpenReverseOrderActionInfo {
   std::vector<OpenReverseOrderItem> items;
 };
 
+struct OrderPosition {
+  std::string instrument;
+  OrderDirection order_direction;
+  int volume;
+};
+
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
 using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
@@ -138,6 +154,8 @@ using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
 using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;
 using OrderRtnForFollow = caf::atom_constant<caf::atom("rofollow")>;
+using YesterdayPositionForTraderAtom = caf::atom_constant<caf::atom("tyerpos")>;
+using YesterdayPositionForFollowerAtom = caf::atom_constant<caf::atom("fyerpos")>;
 
 using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
 using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;
@@ -184,6 +202,12 @@ template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderIdent& x) {
   return f(caf::meta::type_name("OrderIdent"), x.order_id, x.front_id,
            x.session_id, x.exchange_id, x.order_sys_id);
+}
+
+template <class Inspector>
+typename Inspector::result_type inspect(Inspector& f, OrderPosition& x) {
+  return f(caf::meta::type_name("OrderPosition"), x.instrument,
+           x.order_direction, x.volume);
 }
 
 #endif /* CAF_DEFINES_H */

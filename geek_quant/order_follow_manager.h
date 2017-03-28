@@ -5,6 +5,8 @@
 
 class OrderFollowMananger {
  public:
+  void AddPosition(const std::string& order_no, OrderDirection order_direction, int volume);
+
   void HandleOrderRtn(const OrderRtnData& order);
 
   bool IsOpenReverseOrder(const OrderRtnData& order) const;
