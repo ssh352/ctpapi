@@ -2,8 +2,8 @@
 #define CAF_DEFINES_H
 
 #include "caf/all.hpp"
-
 enum OrderRtnFrom {
+  kInvalid,
   kORFInvalid,
   kORFSource,
   kORFDest,
@@ -70,6 +70,7 @@ struct OrderRtnData {
   std::string instrument;
   OrderDirection order_direction;
   OrderStatus order_status;
+  RequestBy request_by;
   double order_price;
   int volume;
 };

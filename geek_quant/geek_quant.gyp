@@ -94,10 +94,10 @@
     },
     'sources' : [
       'serialize_rtn_order.cc',
-      'ctp_trader.h',
-      'ctp_trader.cc',
       'ctp_order_dispatcher.h',
       'ctp_order_dispatcher.cc',
+      'serialize_ctp_trader.h',
+      'serialize_ctp_trader.cc',
     ],
     'dependencies' : [
       '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',

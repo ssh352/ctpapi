@@ -1,157 +1,14 @@
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
 #include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
 #include <iostream>
-#include "ctpapi/ThostFtdcTraderApi.h"
-#include "ctp_trader.h"
+#include "geek_quant/serialize_ctp_trader.h"
 
-namespace boost {
-namespace serialization {
+/*
 
-template <class Archive>
-void serialize(Archive& ar,
-               CThostFtdcOrderField& order,
-               const unsigned int version) {
-  ar& order.BrokerID;
-  ar& order.InvestorID;
-  ar& order.InstrumentID;
-  ar& order.OrderRef;
-  ar& order.UserID;
-  ar& order.OrderPriceType;
-  ar& order.Direction;
-  ar& order.CombOffsetFlag;
-  ar& order.CombHedgeFlag;
-  ar& order.LimitPrice;
-  ar& order.VolumeTotalOriginal;
-  ar& order.TimeCondition;
-  ar& order.GTDDate;
-  ar& order.VolumeCondition;
-  ar& order.MinVolume;
-  ar& order.ContingentCondition;
-  ar& order.StopPrice;
-  ar& order.ForceCloseReason;
-  ar& order.IsAutoSuspend;
-  ar& order.BusinessUnit;
-  ar& order.RequestID;
-  ar& order.OrderLocalID;
-  ar& order.ExchangeID;
-  ar& order.ParticipantID;
-  ar& order.ClientID;
-  ar& order.ExchangeInstID;
-  ar& order.TraderID;
-  ar& order.InstallID;
-  ar& order.OrderSubmitStatus;
-  ar& order.NotifySequence;
-  ar& order.TradingDay;
-  ar& order.SettlementID;
-  ar& order.OrderSysID;
-  ar& order.OrderSource;
-  ar& order.OrderStatus;
-  ar& order.OrderType;
-  ar& order.VolumeTraded;
-  ar& order.VolumeTotal;
-  ar& order.InsertDate;
-  ar& order.InsertTime;
-  ar& order.ActiveTime;
-  ar& order.SuspendTime;
-  ar& order.UpdateTime;
-  ar& order.CancelTime;
-  ar& order.ActiveTraderID;
-  ar& order.ClearingPartID;
-  ar& order.SequenceNo;
-  ar& order.FrontID;
-  ar& order.SessionID;
-  ar& order.UserProductInfo;
-  ar& order.StatusMsg;
-  ar& order.UserForceClose;
-  ar& order.ActiveUserID;
-  ar& order.BrokerOrderSeq;
-  ar& order.RelativeOrderSysID;
-  ar& order.ZCETotalTradedVolume;
-  ar& order.IsSwapOrder;
-  ar& order.BranchID;
-  ar& order.InvestUnitID;
-  ar& order.AccountID;
-  ar& order.CurrencyID;
-  ar& order.IPAddress;
-  ar& order.MacAddress;
-}
-
-}  // namespace serialization
-}  // namespace boost
-
-class SerializeCtpTrader : public CThostFtdcTraderSpi {
- public:
-  SerializeCtpTrader() {
-    file_.open("rtn_order.txt");
-    oa_ = boost::make_shared<boost::archive::text_oarchive>(file_);
-    cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
-  }
-
-  void LoginServer(const std::string& front_server,
-                   const std::string& broker_id,
-                   const std::string& user_id,
-                   const std::string& password) {
-    broker_id_ = broker_id;
-    user_id_ = user_id;
-    password_ = password;
-
-    cta_api_->RegisterSpi(this);
-    char front_server_buffer[256] = {0};
-    strcpy(front_server_buffer, front_server.c_str());
-
-    cta_api_->RegisterFront(front_server_buffer);
-    // api_->SubscribePublicTopic(THOST_TERT_RESTART);
-    cta_api_->SubscribePublicTopic(THOST_TERT_RESUME);
-    cta_api_->SubscribePrivateTopic(THOST_TERT_RESTART);
-    cta_api_->Init();
-  }
-
-  virtual void OnFrontConnected() override {
-    CThostFtdcReqUserLoginField req;
-    memset(&req, 0, sizeof(req));
-    strcpy(req.BrokerID, broker_id_.c_str());
-    strcpy(req.UserID, user_id_.c_str());
-    strcpy(req.Password, password_.c_str());
-    // strcpy(req.UserProductInfo, "Q7");
-    int iResult = cta_api_->ReqUserLogin(&req, 0);
-  }
-
-  virtual void OnFrontDisconnected(int nReason) override {}
-
-  virtual void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
-                              CThostFtdcRspInfoField* pRspInfo,
-                              int nRequestID,
-                              bool bIsLast) override {
-    std::cout << "Logon\n";
-  }
-
-  virtual void OnRtnOrder(CThostFtdcOrderField* pOrder) override {
-    boost::lock_guard<boost::mutex> lock(mutex);
-    static int i = 0;
-    *oa_&* pOrder;
-    std::cout << "RtnOrder:" << ++i << "\n";
-  }
-
- private:
-  CThostFtdcTraderApi* cta_api_;
-  std::string broker_id_;
-  std::string user_id_;
-  std::string password_;
-  std::ofstream fstream_;
-  std::ofstream position_detail_fstream_;
-  std::ofstream position_order_fstream_;
-  std::ofstream file_;
-  // boost::archive::text_oarchive oa(file);
-  boost::mutex mutex;
-  boost::shared_ptr<boost::archive::text_oarchive> oa_;
-};
 
 void LoadRtnOrder() {
-  std::ifstream file("rtn_order.txt");
+  std::ifstream file("rtn_order_20170327.txt");
 
   std::vector<CThostFtdcOrderField> orders;
   try {
@@ -162,9 +19,6 @@ void LoadRtnOrder() {
       ia >> order;
       orders.push_back(order);
       std::cout << orders.size() << "\n";
-      if (orders.size() == 18) {
-        std::cout << "O\n";
-      }
     }
   } catch (boost::archive::archive_exception& exp) {
     std::cout << "exception " << exp.what() << "\n";
@@ -174,7 +28,7 @@ void LoadRtnOrder() {
 }
 
 std::ofstream MakeFileStream() {
-  std::ofstream stream("out_rtn_order.csv");
+  std::ofstream stream("38030022_rtn_order.csv");
   stream << "OrderNo,"
          << "Instrument,"
          << "OrderDirection,"
@@ -184,26 +38,10 @@ std::ofstream MakeFileStream() {
   return stream;
 }
 
-int main(int argc, char* argv[]) {
-  /*
-  CtpTrader ctp;
-  ctp.LoginServer("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
-  std::string input;
-  while (std::cin >> input) {
-    if (input == "exit") {
-      break;
-    } else if (input == "1") {
-      SerializeCtpTrader* ctp = new SerializeCtpTrader();
-      ctp->LoginServer("tcp://59.42.241.91:41205", "9080", "38030022",
-                       "140616");
-    } else if (input == "2") {
-      LoadRtnOrder();
-    }
-  }
-
-  */
+void TestSerialize() {
   std::ofstream out_stream = MakeFileStream();
-  std::ifstream file("rtn_order.txt");
+  std::ifstream
+file("c:\\Users\\yjqpro\\Desktop\\cta_0322\\38030022_20170327_rtn_order.txt");
   std::vector<CThostFtdcOrderField> orders;
   try {
     boost::archive::text_iarchive ia(file);
@@ -226,5 +64,396 @@ int main(int argc, char* argv[]) {
                  << "\n";
     }
   }
+}
+
+*/
+
+void RtnOrderSerializeToCsvFile(const std::string& in_file,
+                                const std::string& out_file) {
+  std::ofstream out(out_file);
+  out << "BrokerID,"
+      << "InvestorID,"
+      << "InstrumentID,"
+      << "OrderRef,"
+      << "UserID,"
+      << "OrderPriceType,"
+      << "Direction,"
+      << "CombOffsetFlag,"
+      << "CombHedgeFlag,"
+      << "LimitPrice,"
+      << "VolumeTotalOriginal,"
+      << "TimeCondition,"
+      << "GTDDate,"
+      << "VolumeCondition,"
+      << "MinVolume,"
+      << "ContingentCondition,"
+      << "StopPrice,"
+      << "ForceCloseReason,"
+      << "IsAutoSuspend,"
+      << "BusinessUnit,"
+      << "RequestID,"
+      << "OrderLocalID,"
+      << "ExchangeID,"
+      << "ParticipantID,"
+      << "ClientID,"
+      << "ExchangeInstID,"
+      << "TraderID,"
+      << "InstallID,"
+      << "OrderSubmitStatus,"
+      << "NotifySequence,"
+      << "TradingDay,"
+      << "SettlementID,"
+      << "OrderSysID,"
+      << "OrderSource,"
+      << "OrderStatus,"
+      << "OrderType,"
+      << "VolumeTraded,"
+      << "VolumeTotal,"
+      << "InsertDate,"
+      << "InsertTime,"
+      << "ActiveTime,"
+      << "SuspendTime,"
+      << "UpdateTime,"
+      << "CancelTime,"
+      << "ActiveTraderID,"
+      << "ClearingPartID,"
+      << "SequenceNo,"
+      << "FrontID,"
+      << "SessionID,"
+      << "UserProductInfo,"
+      << "StatusMsg,"
+      << "UserForceClose,"
+      << "ActiveUserID,"
+      << "BrokerOrderSeq,"
+      << "RelativeOrderSysID,"
+      << "ZCETotalTradedVolume,"
+      << "IsSwapOrder,"
+      << "BranchID,"
+      << "InvestUnitID,"
+      << "AccountID,"
+      << "CurrencyID,"
+      << "IPAddress,"
+      << "MacAddress"
+      << "\n";
+
+  std::ifstream in(in_file);
+
+  std::vector<CThostFtdcOrderField> orders;
+  try {
+    boost::archive::text_iarchive ia(in);
+    while (true) {
+      CThostFtdcOrderField order;
+      memset(&order, 0, sizeof(CThostFtdcOrderField));
+      ia >> order;
+      orders.push_back(std::move(order));
+    }
+  } catch (boost::archive::archive_exception& err) {
+    std::cout << "Done" << err.what() << "\n";
+  }
+
+  for (auto order : orders) {
+    out << boost::lexical_cast<std::string>(order.BrokerID) << ","
+        << boost::lexical_cast<std::string>(order.InvestorID) << ","
+        << boost::lexical_cast<std::string>(order.InstrumentID) << ","
+        << boost::lexical_cast<std::string>(order.OrderRef) << ","
+        << boost::lexical_cast<std::string>(order.UserID) << ","
+        << boost::lexical_cast<std::string>(order.OrderPriceType) << ","
+        << boost::lexical_cast<std::string>(order.Direction) << ","
+        << boost::lexical_cast<std::string>(order.CombOffsetFlag) << ","
+        << boost::lexical_cast<std::string>(order.CombHedgeFlag) << ","
+        << boost::lexical_cast<std::string>(order.LimitPrice) << ","
+        << boost::lexical_cast<std::string>(order.VolumeTotalOriginal) << ","
+        << boost::lexical_cast<std::string>(order.TimeCondition) << ","
+        << boost::lexical_cast<std::string>(order.GTDDate) << ","
+        << boost::lexical_cast<std::string>(order.VolumeCondition) << ","
+        << boost::lexical_cast<std::string>(order.MinVolume) << ","
+        << boost::lexical_cast<std::string>(order.ContingentCondition) << ","
+        << boost::lexical_cast<std::string>(order.StopPrice) << ","
+        << boost::lexical_cast<std::string>(order.ForceCloseReason) << ","
+        << boost::lexical_cast<std::string>(order.IsAutoSuspend) << ","
+        << boost::lexical_cast<std::string>(order.BusinessUnit) << ","
+        << boost::lexical_cast<std::string>(order.RequestID) << ","
+        << boost::lexical_cast<std::string>(order.OrderLocalID) << ","
+        << boost::lexical_cast<std::string>(order.ExchangeID) << ","
+        << boost::lexical_cast<std::string>(order.ParticipantID) << ","
+        << boost::lexical_cast<std::string>(order.ClientID) << ","
+        << boost::lexical_cast<std::string>(order.ExchangeInstID) << ","
+        << boost::lexical_cast<std::string>(order.TraderID) << ","
+        << boost::lexical_cast<std::string>(order.InstallID) << ","
+        << boost::lexical_cast<std::string>(order.OrderSubmitStatus) << ","
+        << boost::lexical_cast<std::string>(order.NotifySequence) << ","
+        << boost::lexical_cast<std::string>(order.TradingDay) << ","
+        << boost::lexical_cast<std::string>(order.SettlementID) << ","
+        << boost::lexical_cast<std::string>(order.OrderSysID) << ","
+        << boost::lexical_cast<std::string>(order.OrderSource) << ","
+        << boost::lexical_cast<std::string>(order.OrderStatus) << ","
+        << boost::lexical_cast<std::string>(order.OrderType) << ","
+        << boost::lexical_cast<std::string>(order.VolumeTraded) << ","
+        << boost::lexical_cast<std::string>(order.VolumeTotal) << ","
+        << boost::lexical_cast<std::string>(order.InsertDate) << ","
+        << boost::lexical_cast<std::string>(order.InsertTime) << ","
+        << boost::lexical_cast<std::string>(order.ActiveTime) << ","
+        << boost::lexical_cast<std::string>(order.SuspendTime) << ","
+        << boost::lexical_cast<std::string>(order.UpdateTime) << ","
+        << boost::lexical_cast<std::string>(order.CancelTime) << ","
+        << boost::lexical_cast<std::string>(order.ActiveTraderID) << ","
+        << boost::lexical_cast<std::string>(order.ClearingPartID) << ","
+        << boost::lexical_cast<std::string>(order.SequenceNo) << ","
+        << boost::lexical_cast<std::string>(order.FrontID) << ","
+        << boost::lexical_cast<std::string>(order.SessionID) << ","
+        << boost::lexical_cast<std::string>(order.UserProductInfo) << ","
+        << boost::lexical_cast<std::string>(order.StatusMsg) << ","
+        << boost::lexical_cast<std::string>(order.UserForceClose) << ","
+        << boost::lexical_cast<std::string>(order.ActiveUserID) << ","
+        << boost::lexical_cast<std::string>(order.BrokerOrderSeq) << ","
+        << boost::lexical_cast<std::string>(order.RelativeOrderSysID) << ","
+        << boost::lexical_cast<std::string>(order.ZCETotalTradedVolume) << ","
+        << boost::lexical_cast<std::string>(order.IsSwapOrder) << ","
+        << boost::lexical_cast<std::string>(order.BranchID) << ","
+        << boost::lexical_cast<std::string>(order.InvestUnitID) << ","
+        << boost::lexical_cast<std::string>(order.AccountID) << ","
+        << boost::lexical_cast<std::string>(order.CurrencyID) << ","
+        << boost::lexical_cast<std::string>(order.IPAddress) << ","
+        << boost::lexical_cast<std::string>(order.MacAddress) << "\n";
+  }
+}
+
+void ErrRtnOrderInsertSerializeToCsvFile(const std::string& in_file,
+                                         const std::string& out_file) {
+  std::ofstream out(out_file);
+  out << "BrokerID,"
+      << "InvestorID,"
+      << "InstrumentID,"
+      << "OrderRef,"
+      << "UserID,"
+      << "OrderPriceType,"
+      << "Direction,"
+      << "CombOffsetFlag,"
+      << "CombHedgeFlag,"
+      << "LimitPrice,"
+      << "VolumeTotalOriginal,"
+      << "TimeCondition,"
+      << "GTDDate,"
+      << "VolumeCondition,"
+      << "MinVolume,"
+      << "ContingentCondition,"
+      << "StopPrice,"
+      << "ForceCloseReason,"
+      << "IsAutoSuspend,"
+      << "BusinessUnit,"
+      << "RequestID,"
+      << "UserForceClose,"
+      << "IsSwapOrder,"
+      << "ExchangeID,"
+      << "InvestUnitID,"
+      << "AccountID,"
+      << "CurrencyID,"
+      << "ClientID,"
+      << "IPAddress,"
+      << "MacAddress,"
+      << "ErrorID,"
+      << "ErrorMsg"
+      << "\n";
+
+  std::ifstream in(in_file);
+
+  std::vector<std::pair<CThostFtdcInputOrderField, CThostFtdcRspInfoField> >
+      orders;
+  try {
+    boost::archive::text_iarchive ia(in);
+    while (true) {
+      CThostFtdcInputOrderField order = {0};
+      CThostFtdcRspInfoField err = {0};
+      ia >> order;
+      ia >> err;
+      orders.push_back(std::make_pair(order, err));
+    }
+  } catch (boost::archive::archive_exception&) {
+    std::cout << "Done\n";
+  }
+
+  for (auto item : orders) {
+    out << boost::lexical_cast<std::string>(item.first.BrokerID) << ","
+        << boost::lexical_cast<std::string>(item.first.InvestorID) << ","
+        << boost::lexical_cast<std::string>(item.first.InstrumentID) << ","
+        << boost::lexical_cast<std::string>(item.first.OrderRef) << ","
+        << boost::lexical_cast<std::string>(item.first.UserID) << ","
+        << boost::lexical_cast<std::string>(item.first.OrderPriceType) << ","
+        << boost::lexical_cast<std::string>(item.first.Direction) << ","
+        << boost::lexical_cast<std::string>(item.first.CombOffsetFlag) << ","
+        << boost::lexical_cast<std::string>(item.first.CombHedgeFlag) << ","
+        << boost::lexical_cast<std::string>(item.first.LimitPrice) << ","
+        << boost::lexical_cast<std::string>(item.first.VolumeTotalOriginal)
+        << "," << boost::lexical_cast<std::string>(item.first.TimeCondition)
+        << "," << boost::lexical_cast<std::string>(item.first.GTDDate) << ","
+        << boost::lexical_cast<std::string>(item.first.VolumeCondition) << ","
+        << boost::lexical_cast<std::string>(item.first.MinVolume) << ","
+        << boost::lexical_cast<std::string>(item.first.ContingentCondition)
+        << "," << boost::lexical_cast<std::string>(item.first.StopPrice) << ","
+        << boost::lexical_cast<std::string>(item.first.ForceCloseReason) << ","
+        << boost::lexical_cast<std::string>(item.first.IsAutoSuspend) << ","
+        << boost::lexical_cast<std::string>(item.first.BusinessUnit) << ","
+        << boost::lexical_cast<std::string>(item.first.RequestID) << ","
+        << boost::lexical_cast<std::string>(item.first.UserForceClose) << ","
+        << boost::lexical_cast<std::string>(item.first.IsSwapOrder) << ","
+        << boost::lexical_cast<std::string>(item.first.ExchangeID) << ","
+        << boost::lexical_cast<std::string>(item.first.InvestUnitID) << ","
+        << boost::lexical_cast<std::string>(item.first.AccountID) << ","
+        << boost::lexical_cast<std::string>(item.first.CurrencyID) << ","
+        << boost::lexical_cast<std::string>(item.first.ClientID) << ","
+        << boost::lexical_cast<std::string>(item.first.IPAddress) << ","
+        << boost::lexical_cast<std::string>(item.first.MacAddress) << ","
+        << boost::lexical_cast<std::string>(item.second.ErrorID) << ","
+        << boost::lexical_cast<std::string>(item.second.ErrorMsg) << "\n";
+  }
+}
+
+void InverstorPositionSerializeToCsvFile(const std::string& in_file,
+                                         const std::string& out_file) {
+  std::ifstream in(in_file);
+  std::vector<CThostFtdcInvestorPositionField> positions;
+  try {
+    boost::archive::text_iarchive ia(in);
+    while (true) {
+      CThostFtdcInvestorPositionField pos;
+      ia >> pos;
+      positions.push_back(std::move(pos));
+    }
+  } catch (boost::archive::archive_exception&) {
+    std::cout << "Done\n";
+  }
+
+  std::ofstream out(out_file);
+
+  out << "InstrumentID,"
+      << "BrokerID,"
+      << "InvestorID,"
+      << "PosiDirection,"
+      << "HedgeFlag,"
+      << "PositionDate,"
+      << "YdPosition,"
+      << "Position,"
+      << "LongFrozen,"
+      << "ShortFrozen,"
+      << "LongFrozenAmount,"
+      << "ShortFrozenAmount,"
+      << "OpenVolume,"
+      << "CloseVolume,"
+      << "OpenAmount,"
+      << "CloseAmount,"
+      << "PositionCost,"
+      << "PreMargin,"
+      << "UseMargin,"
+      << "FrozenMargin,"
+      << "FrozenCash,"
+      << "FrozenCommission,"
+      << "CashIn,"
+      << "Commission,"
+      << "CloseProfit,"
+      << "PositionProfit,"
+      << "PreSettlementPrice,"
+      << "SettlementPrice,"
+      << "TradingDay,"
+      << "SettlementID,"
+      << "OpenCost,"
+      << "ExchangeMargin,"
+      << "CombPosition,"
+      << "CombLongFrozen,"
+      << "CombShortFrozen,"
+      << "CloseProfitByDate,"
+      << "CloseProfitByTrade,"
+      << "TodayPosition,"
+      << "MarginRateByMoney,"
+      << "MarginRateByVolume,"
+      << "StrikeFrozen,"
+      << "StrikeFrozenAmount,"
+      << "AbandonFrozen"
+      << "\n";
+
+  for (auto pos : positions) {
+    out << boost::lexical_cast<std::string>(pos.InstrumentID) << ","
+        << boost::lexical_cast<std::string>(pos.BrokerID) << ","
+        << boost::lexical_cast<std::string>(pos.InvestorID) << ","
+        << boost::lexical_cast<std::string>(pos.PosiDirection) << ","
+        << boost::lexical_cast<std::string>(pos.HedgeFlag) << ","
+        << boost::lexical_cast<std::string>(pos.PositionDate) << ","
+        << boost::lexical_cast<std::string>(pos.YdPosition) << ","
+        << boost::lexical_cast<std::string>(pos.Position) << ","
+        << boost::lexical_cast<std::string>(pos.LongFrozen) << ","
+        << boost::lexical_cast<std::string>(pos.ShortFrozen) << ","
+        << boost::lexical_cast<std::string>(pos.LongFrozenAmount) << ","
+        << boost::lexical_cast<std::string>(pos.ShortFrozenAmount) << ","
+        << boost::lexical_cast<std::string>(pos.OpenVolume) << ","
+        << boost::lexical_cast<std::string>(pos.CloseVolume) << ","
+        << boost::lexical_cast<std::string>(pos.OpenAmount) << ","
+        << boost::lexical_cast<std::string>(pos.CloseAmount) << ","
+        << boost::lexical_cast<std::string>(pos.PositionCost) << ","
+        << boost::lexical_cast<std::string>(pos.PreMargin) << ","
+        << boost::lexical_cast<std::string>(pos.UseMargin) << ","
+        << boost::lexical_cast<std::string>(pos.FrozenMargin) << ","
+        << boost::lexical_cast<std::string>(pos.FrozenCash) << ","
+        << boost::lexical_cast<std::string>(pos.FrozenCommission) << ","
+        << boost::lexical_cast<std::string>(pos.CashIn) << ","
+        << boost::lexical_cast<std::string>(pos.Commission) << ","
+        << boost::lexical_cast<std::string>(pos.CloseProfit) << ","
+        << boost::lexical_cast<std::string>(pos.PositionProfit) << ","
+        << boost::lexical_cast<std::string>(pos.PreSettlementPrice) << ","
+        << boost::lexical_cast<std::string>(pos.SettlementPrice) << ","
+        << boost::lexical_cast<std::string>(pos.TradingDay) << ","
+        << boost::lexical_cast<std::string>(pos.SettlementID) << ","
+        << boost::lexical_cast<std::string>(pos.OpenCost) << ","
+        << boost::lexical_cast<std::string>(pos.ExchangeMargin) << ","
+        << boost::lexical_cast<std::string>(pos.CombPosition) << ","
+        << boost::lexical_cast<std::string>(pos.CombLongFrozen) << ","
+        << boost::lexical_cast<std::string>(pos.CombShortFrozen) << ","
+        << boost::lexical_cast<std::string>(pos.CloseProfitByDate) << ","
+        << boost::lexical_cast<std::string>(pos.CloseProfitByTrade) << ","
+        << boost::lexical_cast<std::string>(pos.TodayPosition) << ","
+        << boost::lexical_cast<std::string>(pos.MarginRateByMoney) << ","
+        << boost::lexical_cast<std::string>(pos.MarginRateByVolume) << ","
+        << boost::lexical_cast<std::string>(pos.StrikeFrozen) << ","
+        << boost::lexical_cast<std::string>(pos.StrikeFrozenAmount) << ","
+        << boost::lexical_cast<std::string>(pos.AbandonFrozen) << "\n";
+  }
+}
+
+int main(int argc, char* argv[]) {
+  std::string path = "c:\\Users\\yjqpro\\Desktop\\20170327_night\\";
+  RtnOrderSerializeToCsvFile(
+      path + "053861_20170327_night_qry_order_file.txt",
+      path + "053861_20170327_night_qry_order_file.csv");
+  // RtnOrderSerializeToCsvFile(
+  //     path + "38030022_20170327_night_rtn_order.txt",
+  //     path + "38030022_20170327_night_rtn_order.csv");
+
+  // ErrRtnOrderInsertSerializeToCsvFile(
+  //    path + "053861_20170327_night_err_rtn_order_insert.txt",
+  //    path + "053861_20170327_night_err_rtn_order_insert.csv");
+
+  // InverstorPositionSerializeToCsvFile(
+  //     path + "053861_20170327_night_inverstor_position_file.txt",
+  //     path + "053861_20170327_night_inverstor_position_file.csv");
+
+  // ErrRtnOrderInsertSerializeToCsvFile(
+  //     "c:\\Users\\yjqpro\\Desktop\\cta_0322\\053861_20170327_err_rtn_order_"
+  //     "insert.txt",
+  //     "c:\\Users\\yjqpro\\Desktop\\cta_0322\\053861_20170327_err_rtn_order_"
+  //     "insert.csv");
+  // SerializeCtpTrader* ctp = new
+  // SerializeCtpTrader("38030022_20170327_night");
+  // ctp->LoginServer("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
+
+  // SerializeCtpTrader* ctp = new SerializeCtpTrader("053861_20170327_night_");
+  // ctp->LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
+  //                  "Cj12345678");
+
+
+  std::string input;
+  while (std::cin >> input) {
+    if (input == "exit") {
+      break;
+    }
+  }
+  // TestSerialize();
   return 0;
 }
