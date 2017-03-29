@@ -3,10 +3,10 @@
 #include "caf/all.hpp"
 #include "geek_quant/ctp_trader.h"
 
-class CtaTradeActor : public CtpTrader::Delegate,
-                      public CtpOrderDispatcher::OrderRefDelegate {
+class CtaTradeActor : public caf::event_based_actor,
+  public CtpTrader::Delegate {
  public:
-  CtaTradeActor(caf::actor actor);
+  CtaTradeActor(caf::actor_config& cfg, caf::actor actor);
 
   void Start(const std::string& front_server,
              const std::string& broker_id,
@@ -17,10 +17,17 @@ class CtaTradeActor : public CtpTrader::Delegate,
 
   virtual void OnLogon() override;
 
-  virtual std::string ParseOrderNo(const char* order_ref) override;
 
- protected:
- private:
+  virtual void OnPositions(std::vector<OrderPosition> positions) override;
+
+
+  virtual void OnSettlementInfoConfirm() override;
+
+protected:
+
+  virtual caf::behavior make_behavior() override;
+
+private:
   CtpTrader ctp_;
   caf::actor actor_;
   CtpOrderDispatcher order_dispatcher_;

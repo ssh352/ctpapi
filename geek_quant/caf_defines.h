@@ -150,6 +150,8 @@ using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
 using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
 using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
+using QryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryposs")>;
+using SettlementInfoConfirmAtom = caf::atom_constant<caf::atom("sttlcfm")>;
 
 using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;

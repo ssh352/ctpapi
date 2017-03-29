@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/thread.hpp>
 
 #include "caf/all.hpp"
 #include "geek_quant/ctp_trader.h"
@@ -33,10 +34,38 @@ CtpObserver::behavior_type DummyObserver(CtpObserver::pointer self) {
 
 */
 
+caf::behavior wtf(caf::event_based_actor* self) {
+  return {[=](std::string str) -> std::string {
+    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+    return str;
+  }};
+}
+
+caf::behavior bar(caf::event_based_actor* self) {
+  return {[=](std::string str) -> std::string { return str; }};
+}
+
+caf::behavior foo(caf::event_based_actor* self,
+                  const caf::actor& a,
+                  const caf::actor& b) {
+  caf::scoped_actor block_actor(self->system());
+  block_actor->request(a, caf::infinite, "hello")
+      .receive([=](std::string str) {
+    std::cout << str;
+  }, [=](caf::error& err) {});
+  self->request(a, caf::infinite, "hello").await([=](std::string str) {
+    std::cout << str << "\n";
+  });
+
+  self->request(b, caf::infinite, "wtf").await([=](std::string str) {
+    std::cout << str << "\n";
+  });
+  return {[=](int i) {}};
+}
+
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  CtaTradeActor cta(system.spawn<FollowTradeActor>());
-  cta.Start("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
-  // cta.Start("tcp://180.168.146.187:10000", "9999", "053867", "8661188");
+  // system.spawn(foo, system.spawn(bar), system.spawn(wtf));
+  auto cta = system.spawn<CtaTradeActor>(system.spawn<FollowTradeActor>());
   std::string input;
   while (std::cin >> input) {
     if (input == "exit") {

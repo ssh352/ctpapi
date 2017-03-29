@@ -3,7 +3,7 @@
 void OrderFollowMananger::AddPosition(const std::string& order_no,
                                       OrderDirection order_direction,
                                       int volume) {
-  if (orders_.find(order_no) != orders_.end()) {
+  if (orders_.find(order_no) == orders_.end()) {
     orders_[order_no].MakePosition(volume, order_direction);
   }
 }
