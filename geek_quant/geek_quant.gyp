@@ -22,6 +22,8 @@
       'order_follow_manager.cc',
       'pending_order_action.h',
       'pending_order_action.cc',
+      'caf_defines.h',
+      'caf_defines.cc',
     ],
     'dependencies' : [
       #'<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',
@@ -98,6 +100,8 @@
       'ctp_order_dispatcher.cc',
       'serialize_ctp_trader.h',
       'serialize_ctp_trader.cc',
+      'caf_defines.h',
+      'caf_defines.cc',
     ],
     'dependencies' : [
       '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',

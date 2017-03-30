@@ -17,10 +17,9 @@ class FollowTradeActor : public caf::event_based_actor,
 
   virtual void OnPositions(std::vector<OrderPosition> positions) override;
 
-
   virtual void OnSettlementInfoConfirm() override;
 
-protected:
+ protected:
   virtual caf::behavior make_behavior() override;
 
  private:
@@ -32,13 +31,15 @@ protected:
 
   void TrySyncPositionIfReady();
 
-  std::string RemapOrderNo(std::string order_no, RequestBy request_by);
+  std::string RemapOrderNo(const std::string& order_no,
+                           int session_id,
+                           RequestBy request_by);
 
   std::map<std::string, OrderIdent> unfill_orders_;
   CtpOrderDispatcher ctp_order_dispatcher_;
   CtpTrader ctp_;
   std::map<std::string, InstrumentFollow> instrument_follow_set_;
-  std::map<std::pair<std::string, RequestBy>, int> remap_order_ref_;
+  std::map<std::pair<std::string, int>, int> remap_order_ref_;
 
   int trader_order_rtn_seq_;
   int follower_order_rtn_seq_;

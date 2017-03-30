@@ -418,10 +418,11 @@ void InverstorPositionSerializeToCsvFile(const std::string& in_file,
 }
 
 int main(int argc, char* argv[]) {
-  std::string path = "c:\\Users\\yjqpro\\Desktop\\20170327_night\\";
-  RtnOrderSerializeToCsvFile(
-      path + "053861_20170327_night_qry_order_file.txt",
-      path + "053861_20170327_night_qry_order_file.csv");
+  std::string path = "c:\\Users\\yjqpro\\Desktop\\20170330_day\\";
+  std::string prefix = "120350655_20170330_day_";
+  // RtnOrderSerializeToCsvFile(
+  //     path + prefix + "rtn_order.txt",
+  //     path + prefix + "rtn_order.csv");
   // RtnOrderSerializeToCsvFile(
   //     path + "38030022_20170327_night_rtn_order.txt",
   //     path + "38030022_20170327_night_rtn_order.csv");
@@ -439,14 +440,17 @@ int main(int argc, char* argv[]) {
   //     "insert.txt",
   //     "c:\\Users\\yjqpro\\Desktop\\cta_0322\\053861_20170327_err_rtn_order_"
   //     "insert.csv");
-  // SerializeCtpTrader* ctp = new
-  // SerializeCtpTrader("38030022_20170327_night");
+
+  // SerializeCtpTrader* ctp = new SerializeCtpTrader("38030022_20170330_day");
   // ctp->LoginServer("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
 
   // SerializeCtpTrader* ctp = new SerializeCtpTrader("053861_20170327_night_");
   // ctp->LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
   //                  "Cj12345678");
 
+  SerializeCtpTrader* ctp = new SerializeCtpTrader("120350655_20170330_day");
+  ctp->LoginServer("tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655",
+                   "140616");
 
   std::string input;
   while (std::cin >> input) {

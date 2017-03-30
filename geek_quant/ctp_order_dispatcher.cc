@@ -5,7 +5,8 @@ CtpOrderDispatcher::CtpOrderDispatcher(bool is_cta) : is_cta_(is_cta) {}
 boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     CThostFtdcOrderField raw_order) {
   auto it = std::find_if(orders_.begin(), orders_.end(), [&](auto order) {
-    return std::string(order.OrderRef) == raw_order.OrderRef;
+    return std::string(order.OrderRef) == raw_order.OrderRef &&
+           order.SessionID == raw_order.SessionID;
   });
   if (it == orders_.end()) {
     // new order
@@ -20,6 +21,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     order.volume = raw_order.VolumeTotal;
     order.order_no = raw_order.OrderRef;
     order.request_by = ParseRequestBy(raw_order.UserProductInfo);
+    order.session_id = raw_order.SessionID;
     orders_.push_back(raw_order);
     return boost::optional<OrderRtnData>(order);
   } else {
@@ -33,6 +35,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
       order.order_status = ParseThostForOrderStatus(raw_order);
       order.request_by = ParseRequestBy(raw_order.UserProductInfo);
       order.order_no = raw_order.OrderRef;
+      order.session_id = raw_order.SessionID;
       *it = raw_order;
       return boost::optional<OrderRtnData>(order);
     }
@@ -68,7 +71,9 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
       } else {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
                            ? kOSOpening
-                           : kOSOpening;
+                           : order.CombOffsetFlag[0] == THOST_FTDC_OF_Close
+                                 ? kOSCloseing
+                                 : kOSCloseingToday;
       }
       break;
     case THOST_FTDC_OST_Canceled: {

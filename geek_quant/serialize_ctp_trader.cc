@@ -15,8 +15,8 @@ SerializeCtpTrader::SerializeCtpTrader(const std::string& file_prefix) {
       err_rtn_order_action_file_);
   inverstor_position_oa_ = boost::make_shared<boost::archive::text_oarchive>(
       inverstor_position_file_);
-  qry_order_oa_ = boost::make_shared<boost::archive::text_oarchive>(
-      qry_order_file_);
+  qry_order_oa_ =
+      boost::make_shared<boost::archive::text_oarchive>(qry_order_file_);
   cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
 }
 
@@ -58,7 +58,7 @@ void SerializeCtpTrader::OnRspUserLogin(
     bool bIsLast) {
   std::cout << "Logon\n";
   /*
-  
+  
   {
   CThostFtdcQryInvestorPositionField filed{0};
   strcpy(filed.BrokerID, broker_id_.c_str());
@@ -76,9 +76,9 @@ void SerializeCtpTrader::OnRspUserLogin(
 }
 
 void SerializeCtpTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
-  static int i = 0;
   *rtn_order_oa_&* pOrder;
-  std::cout << "RtnOrder:" << ++i << "\n";
+  std::cout << "RtnOrder:" << pOrder->OrderRef << "," << pOrder->InstrumentID
+            << "\n";
 }
 
 void SerializeCtpTrader::OnRtnTrade(CThostFtdcTradeField* pTrade) {}
@@ -86,10 +86,9 @@ void SerializeCtpTrader::OnRtnTrade(CThostFtdcTradeField* pTrade) {}
 void SerializeCtpTrader::OnErrRtnOrderInsert(
     CThostFtdcInputOrderField* pInputOrder,
     CThostFtdcRspInfoField* pRspInfo) {
-  static int i = 0;
   *err_rtn_order_insert_oa_&* pInputOrder;
   *err_rtn_order_insert_oa_&* pRspInfo;
-  std::cout << "OnErrRtnOrderInsert:" << ++i << "\n";
+  std::cout << "OnErrRtnOrderInsert:" << pInputOrder->OrderRef << "\n";
 }
 
 void SerializeCtpTrader::OnErrRtnOrderAction(

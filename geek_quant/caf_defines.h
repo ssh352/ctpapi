@@ -28,6 +28,7 @@ enum EnterOrderAction {
   kEOAInvalid,
   kEOAOpen,
   kEOAClose,
+  kEOACloseToday,
   kEOAOpenConfirm,
   kEOACloseConfirm,
   kEOAOpenReverseOrder,
@@ -38,6 +39,7 @@ enum EnterOrderAction {
 enum OrderStatus {
   kOSInvalid,
   kOSOpening,
+  kOSCloseingToday,
   kOSCloseing,
   kOSOpened,
   kOSClosed,
@@ -75,9 +77,11 @@ struct OrderRtnData {
     order_price = 0.0;
     request_by = RequestBy::kInvalid;
     volume = 0;
+    session_id = 0;
   }
   std::string order_no;
   std::string instrument;
+  int session_id;
   OrderDirection order_direction;
   OrderStatus order_status;
   RequestBy request_by;
@@ -157,7 +161,8 @@ using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;
 using OrderRtnForFollow = caf::atom_constant<caf::atom("rofollow")>;
 using YesterdayPositionForTraderAtom = caf::atom_constant<caf::atom("tyerpos")>;
-using YesterdayPositionForFollowerAtom = caf::atom_constant<caf::atom("fyerpos")>;
+using YesterdayPositionForFollowerAtom =
+    caf::atom_constant<caf::atom("fyerpos")>;
 
 using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
 using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;

@@ -170,7 +170,8 @@ EnterOrderData InstrumentFollow::MakeCloseingAction(
   }
 
   enter_order.order_no = order.order_no;
-  enter_order.action = kEOAClose;
+  enter_order.action =
+      order.order_status == kOSCloseing ? kEOAClose : kEOACloseToday;
   enter_order.instrument = order.instrument;
   enter_order.order_direction = order.order_direction;
   enter_order.order_price = order.order_price;

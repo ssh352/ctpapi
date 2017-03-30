@@ -171,13 +171,13 @@ TEST(CtpOrderDispatcherTest, CancelCloseOrder) {
 
   {
     auto order = dispatcher.HandleRtnOrder(
-        MakeRtnOrderField(THOST_FTDC_OST_NoTradeQueueing));
+        MakeRtnOrderField(THOST_FTDC_OST_NoTradeQueueing, THOST_FTDC_OF_Close));
     EXPECT_FALSE(order);
   }
 
   {
     auto order = dispatcher.HandleRtnOrder(
-        MakeRtnOrderField(THOST_FTDC_OST_NoTradeQueueing));
+        MakeRtnOrderField(THOST_FTDC_OST_NoTradeQueueing, THOST_FTDC_OF_Close));
     EXPECT_FALSE(order);
   }
 

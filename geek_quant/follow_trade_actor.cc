@@ -43,14 +43,14 @@ void FollowTradeActor::OnPositions(std::vector<OrderPosition> positions) {
 }
 
 void FollowTradeActor::OnSettlementInfoConfirm() {
-  send(this, QryInvestorPositionsAtom::value);
+  delayed_send(this, std::chrono::seconds(1), QryInvestorPositionsAtom::value);
 }
 
 caf::behavior FollowTradeActor::make_behavior() {
-  ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
-                   "Cj12345678");
-  // ctp_.LoginServer("tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655",
-  //                  "140616");
+  // ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
+  //                  "Cj12345678");
+  ctp_.LoginServer("tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655",
+                   "140616");
   return {
       [=](TAOrderIdentAtom, OrderIdent order_ident) {
         unfill_orders_[order_ident.order_id] = order_ident;
@@ -90,7 +90,8 @@ caf::behavior FollowTradeActor::make_behavior() {
         if (wait_sync_position_) {
           pending_trader_rtn_orders_.push_back(order);
         } else {
-          order.order_no = RemapOrderNo(order.order_no, order.request_by);
+          order.order_no =
+              RemapOrderNo(order.order_no, order.session_id, order.request_by);
           InstrumentFollow& instrument_follow =
               GetInstrumentFollow(order.instrument);
           EnterOrderData enter_order;
@@ -113,7 +114,8 @@ caf::behavior FollowTradeActor::make_behavior() {
         if (wait_sync_position_) {
           pending_follower_rtn_orders_.push_back(order);
         } else {
-          order.order_no = RemapOrderNo(order.order_no, order.request_by);
+          order.order_no =
+              RemapOrderNo(order.order_no, order.session_id, order.request_by);
           InstrumentFollow& instrument_follow =
               GetInstrumentFollow(order.instrument);
           EnterOrderData enter_order;
@@ -157,8 +159,11 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
   field.Direction =
       order.order_direction == kODBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
-  field.CombOffsetFlag[0] =
-      order.action == kEOAOpen ? THOST_FTDC_OF_Open : THOST_FTDC_OF_CloseToday;
+  field.CombOffsetFlag[0] = order.action == kEOAOpen
+                                ? THOST_FTDC_OF_Open
+                                : order.action == kEOACloseToday
+                                      ? THOST_FTDC_OF_CloseToday
+                                      : THOST_FTDC_OF_Close;
   strcpy(field.CombHedgeFlag, "1");
   field.LimitPrice = order.order_price;
   field.VolumeTotalOriginal = order.volume;
@@ -225,7 +230,8 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   }
 
   for (auto order : pending_trader_rtn_orders_) {
-    order.order_no = RemapOrderNo(order.order_no, order.request_by);
+    order.order_no =
+        RemapOrderNo(order.order_no, order.session_id, order.request_by);
     InstrumentFollow& instrument = GetInstrumentFollow(order.instrument);
     EnterOrderData dummy_enter_order;
     std::vector<std::string> dummy_cancel_order_no_list;
@@ -235,7 +241,8 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   pending_trader_rtn_orders_.clear();
 
   for (auto order : pending_follower_rtn_orders_) {
-    order.order_no = RemapOrderNo(order.order_no, order.request_by);
+    order.order_no =
+        RemapOrderNo(order.order_no, order.session_id, order.request_by);
     InstrumentFollow& instrument = GetInstrumentFollow(order.instrument);
     EnterOrderData dummy_enter_order;
     std::vector<std::string> dummy_cancel_order_no_list;
@@ -245,20 +252,22 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   pending_follower_rtn_orders_.clear();
 }
 
-std::string FollowTradeActor::RemapOrderNo(std::string order_no,
+std::string FollowTradeActor::RemapOrderNo(const std::string& order_no,
+                                           int session_id,
                                            RequestBy request_by) {
   if (request_by == RequestBy::kStrategy) {
     return order_no;
   }
 
-  auto key = std::make_pair(order_no, request_by);
+  std::string ret_order_no;
+  auto key = std::make_pair(order_no, session_id);
   if (remap_order_ref_.find(key) != remap_order_ref_.end()) {
-    order_no = boost::lexical_cast<std::string>(remap_order_ref_[key]);
+    ret_order_no = boost::lexical_cast<std::string>(remap_order_ref_[key]);
   } else {
     remap_order_ref_.insert(
-        {{order_no, request_by},
+        {{order_no, session_id},
          static_cast<int>(remap_order_ref_.size()) + max_order_no_});
-    order_no = boost::lexical_cast<std::string>(remap_order_ref_[key]);
+    ret_order_no = boost::lexical_cast<std::string>(remap_order_ref_[key]);
   }
-  return order_no;
+  return ret_order_no;
 }

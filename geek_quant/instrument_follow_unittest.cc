@@ -324,15 +324,17 @@ TEST_F(InstrumentFollowFixture, CancelCloseCase3) {
   TraderOrderRtn("0002", kOSCloseing, 1, kODSell);
   FollowerOrderRtn("0002", kOSCloseing, 1, kODSell);
   TraderOrderRtn("0002", kOSCloseCanceled, 1, kODSell);
-  FollowerOrderRtn("0002", kOSCloseCanceled, 1, kODSell);
+  TraderOrderRtn("0003", kOSCloseing, 1, kODSell);
 
-  auto ret = TraderOrderRtn("0003", kOSCloseing, 1, kODSell);
+  auto ret = FollowerOrderRtn("0002", kOSCloseCanceled, 1, kODSell);
+
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
   EXPECT_EQ(0, cancel_order_no_list.size());
   EXPECT_EQ("0003", enter_order.order_no);
   EXPECT_EQ(1, enter_order.volume);
 }
+
 
 // Mutl Open Order with one Close
 TEST_F(InstrumentFollowFixture, FillMutilOrder) {
