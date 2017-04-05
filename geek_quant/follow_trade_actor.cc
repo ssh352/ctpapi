@@ -35,7 +35,7 @@ void FollowTradeActor::OnRtnOrderData(CThostFtdcOrderField* order_field) {
 
 void FollowTradeActor::OnLogon() {
   delayed_send(this, std::chrono::seconds(1), TrySyncHistoryOrderAtom::value);
-  delayed_send(this, std::chrono::seconds(1), SettlementInfoConfirmAtom::value);
+  delayed_send(this, std::chrono::seconds(1), CTPReqSettlementInfoConfirmAtom::value);
 }
 
 void FollowTradeActor::OnPositions(std::vector<OrderPosition> positions) {
@@ -43,7 +43,7 @@ void FollowTradeActor::OnPositions(std::vector<OrderPosition> positions) {
 }
 
 void FollowTradeActor::OnSettlementInfoConfirm() {
-  delayed_send(this, std::chrono::seconds(1), QryInvestorPositionsAtom::value);
+  delayed_send(this, std::chrono::seconds(1), CTPQryInvestorPositionsAtom::value);
 }
 
 caf::behavior FollowTradeActor::make_behavior() {
@@ -56,7 +56,7 @@ caf::behavior FollowTradeActor::make_behavior() {
       [=](TAOrderIdentAtom, OrderIdent order_ident) {
         unfill_orders_[order_ident.order_id] = order_ident;
       },
-      [=](SettlementInfoConfirmAtom) { ctp_.SettlementInfoConfirm(); },
+      [=](CTPReqSettlementInfoConfirmAtom) { ctp_.SettlementInfoConfirm(); },
       [=](TrySyncHistoryOrderAtom) {
         if (wait_sync_position_ ||
             trader_order_rtn_seq_ != last_check_trader_order_rtn_seq_ ||
@@ -73,7 +73,7 @@ caf::behavior FollowTradeActor::make_behavior() {
                         [](auto& item) { item.second.SyncComplete(); });
         }
       },
-      [=](QryInvestorPositionsAtom) { ctp_.QryInvestorPosition(); },
+      [=](CTPQryInvestorPositionsAtom) { ctp_.QryInvestorPosition(); },
       [=](YesterdayPositionForTraderAtom,
           std::vector<OrderPosition> positions) {
         trader_positions_ = positions;

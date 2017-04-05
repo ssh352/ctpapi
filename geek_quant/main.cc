@@ -71,13 +71,18 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
   auto f = caf::make_function_view(actor);
 
-  bool result = f(StartAtom::value)->get_as<bool>(0);
+  bool result = f(CTPLogin::value, "tcp://59.42.241.91:41205", "9080",
+                  "38030022", "140616")
+                    ->get_as<bool>(0);
 
   std::vector<OrderPosition> positions =
-      f(QryInvestorPositionsAtom::value)->get_as<std::vector<OrderPosition> >(0);
+      f(CTPQryInvestorPositionsAtom::value)
+          ->get_as<std::vector<OrderPosition>>(0);
 
   std::vector<OrderRtnData> orders =
-      f(RestartRtnOrdersAtom::value)->get_as<std::vector<OrderRtnData>>(0);
+      f(CTPReqRestartRtnOrdersAtom::value,
+        caf::actor_cast<caf::strong_actor_ptr>(actor))
+          ->get_as<std::vector<OrderRtnData>>(0);
 
   std::string input;
   while (std::cin >> input) {

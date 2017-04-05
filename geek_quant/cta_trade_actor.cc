@@ -16,56 +16,72 @@ void CtaTradeActor::Start(const std::string& front_server,
 
 void CtaTradeActor::OnRtnOrderData(CThostFtdcOrderField* field) {
   if (auto order = order_dispatcher_.HandleRtnOrder(*field)) {
-    send(this, OrderRtnForTrader::value, *order);
+    send(this, CTPRtnOrderAtom::value, *order);
   }
 }
 
 void CtaTradeActor::OnLogon() {
-  logon_response_.deliver(true);
-  // delayed_send(this, std::chrono::seconds(1),
-  // QryInvestorPositionsAtom::value);
+  send(this, CTPRspLogin::value);
 }
 
 void CtaTradeActor::OnPositions(std::vector<OrderPosition> positions) {
-  // caf::anon_send(actor_, YesterdayPositionForTraderAtom::value,
-  //                std::move(positions));
-  positions_response_.deliver(positions);
+  send(this, CTPRspQryInvestorPositionsAtom::value, positions);
 }
 
 void CtaTradeActor::OnSettlementInfoConfirm() {}
 
-caf::behavior CtaTradeActor::make_behavior(){
-    // Start("tcp://180.168.146.187:10000", "9999", "053867", "8661188");
-    return {
-        [=](StartAtom) -> caf::result<bool> {
-          logon_response_ = make_response_promise<bool>();
-          Start("tcp://59.42.241.91:41205", "9080", "38030022", "140616");
-          return logon_response_;
-        },
-        [=](OrderRtnForTrader, OrderRtnData order) {
-          restart_rtn_orders_.push_back(order);
-        },
-        [=](RestartRtnOrdersAtom) -> caf::result<std::vector<OrderRtnData> > {
-          restart_rtn_orders_response_promise_ =
-              make_response_promise<std::vector<OrderRtnData> >();
+caf::behavior CtaTradeActor::make_behavior() {
+  // Start("tcp://180.168.146.187:10000", "9999", "053867", "8661188");
+  return {
+      [=](CTPLogin, const std::string& front_server,
+          const std::string& broker_id, const std::string& user_id,
+          const std::string& password) -> caf::result<bool> {
+        auto logon_response_ = make_response_promise<bool>();
+        logon_response_promises_.push_back(logon_response_);
+        Start(front_server, broker_id, user_id, password);
+        return logon_response_;
+      },
+      [=](CTPRspLogin) {
+        for (auto promise : logon_response_promises_) {
+          promise.deliver(true);
+        }
+        logon_response_promises_.clear();
+      },
+      [=](CTPQryInvestorPositionsAtom)
+          -> caf::result<std::vector<OrderPosition> > {
+        auto promise = make_response_promise<std::vector<OrderPosition> >();
+        positions_response_promises.push_back(promise);
+        ctp_.QryInvestorPosition();
+        return promise;
+      },
+      [=](CTPRspQryInvestorPositionsAtom,
+          std::vector<OrderPosition> positions) {
+        for (auto promise : positions_response_promises) {
+          promise.deliver(positions);
+        }
+        positions_response_promises.clear();
+      },
+      [=](CTPRtnOrderAtom, OrderRtnData order) {
+        restart_rtn_orders_.push_back(order);
+      },
+      [=](CTPReqRestartRtnOrdersAtom, const caf::strong_actor_ptr& actor)
+          -> caf::result<std::vector<OrderRtnData> > {
+        auto promise = make_response_promise<std::vector<OrderRtnData> >();
+        restart_rtn_orders_response_promises_.push_back(promise);
+        last_check_rtn_order_size_ = restart_rtn_orders_.size();
+        delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
+        return promise;
+      },
+      [=](ActorTimerAtom) {
+        if (last_check_rtn_order_size_ == restart_rtn_orders_.size()) {
+          for (auto promise : restart_rtn_orders_response_promises_) {
+            promise.deliver(restart_rtn_orders_);
+          }
+          restart_rtn_orders_response_promises_.clear();
+        } else {
           last_check_rtn_order_size_ = restart_rtn_orders_.size();
           delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
-          return restart_rtn_orders_response_promise_;
-        },
-        [=](QryInvestorPositionsAtom)
-            -> caf::result<std::vector<OrderPosition> > {
-          positions_response_ =
-              make_response_promise<std::vector<OrderPosition> >();
-          ctp_.QryInvestorPosition();
-          return positions_response_;
-        },
-        [=](ActorTimerAtom) {
-          if (last_check_rtn_order_size_ == restart_rtn_orders_.size()) {
-            restart_rtn_orders_response_promise_.deliver(restart_rtn_orders_);
-          } else {
-            last_check_rtn_order_size_ = restart_rtn_orders_.size();
-            delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
-          }
-        },
-    };
+        }
+      },
+  };
 }

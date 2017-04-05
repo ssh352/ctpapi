@@ -28,13 +28,23 @@ class CtaTradeActor : public caf::event_based_actor,
   CtpTrader ctp_;
   CtpOrderDispatcher order_dispatcher_;
   std::vector<OrderRtnData> restart_rtn_orders_;
-  caf::detail::make_response_promise_helper<bool>::type logon_response_;
-  caf::detail::make_response_promise_helper<std::vector<OrderPosition>>::type
-      positions_response_;
 
-  caf::detail::make_response_promise_helper<std::vector<OrderRtnData>>::type
-      restart_rtn_orders_response_promise_;
+  typedef caf::detail::make_response_promise_helper<bool>::type
+      LogonResponsePromise;
+  std::vector<LogonResponsePromise> logon_response_promises_;
+
+  typedef caf::detail::make_response_promise_helper<
+      std::vector<OrderPosition>>::type PositionsResponsePromise;
+  std::vector<PositionsResponsePromise> positions_response_promises;
+
+  typedef caf::detail::make_response_promise_helper<
+      std::vector<OrderRtnData>>::type RestartRtnOrdersRepsonsePromise;
+  std::vector<RestartRtnOrdersRepsonsePromise>
+      restart_rtn_orders_response_promises_;
   size_t last_check_rtn_order_size_;
+
+  std::vector<caf::strong_actor_ptr> pending_rtn_order_subscriber_;
+  std::vector<caf::strong_actor_ptr> rtn_order_subscriber_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_CTA_TRADE_ACTOR_H

@@ -152,13 +152,15 @@ struct OrderPosition {
 };
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
-using TAPositionAtom = caf::atom_constant<caf::atom("pos")>;
-using TAUnfillOrdersAtom = caf::atom_constant<caf::atom("ufo")>;
-using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
-using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
-using QryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryposs")>;
-using SettlementInfoConfirmAtom = caf::atom_constant<caf::atom("sttlcfm")>;
-using StartAtom = caf::atom_constant<caf::atom("start")>;
+using CTPLogin = caf::atom_constant<caf::atom("login")>;
+using CTPRspLogin = caf::atom_constant<caf::atom("rsplogin")>;
+using CTPQryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryposs")>;
+using CTPRspQryInvestorPositionsAtom = caf::atom_constant<caf::atom("rqryposs")>;
+using CTPReqSettlementInfoConfirmAtom = caf::atom_constant<caf::atom("sttlcfm")>;
+using CTPRtnOrderAtom = caf::atom_constant<caf::atom("rtnorder")>;
+using CTPReqRestartRtnOrdersAtom = caf::atom_constant<caf::atom("rros")>;
+
+using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordid")>;
 
 using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;
@@ -169,8 +171,6 @@ using YesterdayPositionForFollowerAtom =
 
 using ActorTimerAtom = caf::atom_constant<caf::atom("timer")>;
 
-using RestartRtnOrdersAtom = caf::atom_constant<caf::atom("rros")>;
-
 using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
 using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;
 
@@ -178,21 +178,6 @@ using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
 using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 
 using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
-
-using TASubscriberActor = caf::typed_actor<
-    caf::reacts_to<TAPositionAtom, std::vector<PositionData> >,
-    caf::reacts_to<TAUnfillOrdersAtom, std::vector<OrderRtnData> >,
-    caf::reacts_to<TARtnOrderAtom, OrderRtnData> >;
-
-using OrderSubscriberActor = caf::typed_actor<
-    caf::reacts_to<EnterOrderAtom, EnterOrderData>,
-    caf::reacts_to<CancelOrderAtom, std::string, std::string> >;
-
-using FollowTAStrategyActor = TASubscriberActor::extend<
-    caf::reacts_to<AddStrategySubscriberAtom, OrderSubscriberActor> >;
-
-using OrderAgentActor =
-    FollowTAStrategyActor::extend_with<OrderSubscriberActor>;
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, PositionData& x) {
