@@ -158,6 +158,7 @@ using TARtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using TAOrderIdentAtom = caf::atom_constant<caf::atom("ordident")>;
 using QryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryposs")>;
 using SettlementInfoConfirmAtom = caf::atom_constant<caf::atom("sttlcfm")>;
+using StartAtom = caf::atom_constant<caf::atom("start")>;
 
 using TrySyncHistoryOrderAtom = caf::atom_constant<caf::atom("syncord")>;
 using OrderRtnForTrader = caf::atom_constant<caf::atom("rotrader")>;
@@ -165,6 +166,10 @@ using OrderRtnForFollow = caf::atom_constant<caf::atom("rofollow")>;
 using YesterdayPositionForTraderAtom = caf::atom_constant<caf::atom("tyerpos")>;
 using YesterdayPositionForFollowerAtom =
     caf::atom_constant<caf::atom("fyerpos")>;
+
+using ActorTimerAtom = caf::atom_constant<caf::atom("timer")>;
+
+using RestartRtnOrdersAtom = caf::atom_constant<caf::atom("rros")>;
 
 using TraderRtnOrderAtom = caf::atom_constant<caf::atom("tro")>;
 using FollowerRtnOrderAtom = caf::atom_constant<caf::atom("fro")>;

@@ -4,9 +4,9 @@
 #include "geek_quant/ctp_trader.h"
 
 class CtaTradeActor : public caf::event_based_actor,
-  public CtpTrader::Delegate {
+                      public CtpTrader::Delegate {
  public:
-  CtaTradeActor(caf::actor_config& cfg, caf::actor actor);
+  CtaTradeActor(caf::actor_config& cfg);
 
   void Start(const std::string& front_server,
              const std::string& broker_id,
@@ -17,20 +17,24 @@ class CtaTradeActor : public caf::event_based_actor,
 
   virtual void OnLogon() override;
 
-
   virtual void OnPositions(std::vector<OrderPosition> positions) override;
-
 
   virtual void OnSettlementInfoConfirm() override;
 
-protected:
-
+ protected:
   virtual caf::behavior make_behavior() override;
 
-private:
+ private:
   CtpTrader ctp_;
-  caf::actor actor_;
   CtpOrderDispatcher order_dispatcher_;
+  std::vector<OrderRtnData> restart_rtn_orders_;
+  caf::detail::make_response_promise_helper<bool>::type logon_response_;
+  caf::detail::make_response_promise_helper<std::vector<OrderPosition>>::type
+      positions_response_;
+
+  caf::detail::make_response_promise_helper<std::vector<OrderRtnData>>::type
+      restart_rtn_orders_response_promise_;
+  size_t last_check_rtn_order_size_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_CTA_TRADE_ACTOR_H

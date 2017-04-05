@@ -50,9 +50,8 @@ caf::behavior foo(caf::event_based_actor* self,
                   const caf::actor& b) {
   caf::scoped_actor block_actor(self->system());
   block_actor->request(a, caf::infinite, "hello")
-      .receive([=](std::string str) {
-    std::cout << str;
-  }, [=](caf::error& err) {});
+      .receive([=](std::string str) { std::cout << str; },
+               [=](caf::error& err) {});
   self->request(a, caf::infinite, "hello").await([=](std::string str) {
     std::cout << str << "\n";
   });
@@ -64,8 +63,22 @@ caf::behavior foo(caf::event_based_actor* self,
 }
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  // system.spawn(foo, system.spawn(bar), system.spawn(wtf));
-  auto cta = system.spawn<CtaTradeActor>(system.spawn<FollowTradeActor>());
+  caf::scoped_actor self(system);
+  auto actor = system.spawn<CtaTradeActor>();
+  //   self->request(actor, std::chrono::seconds(10), StartAtom::value)
+  //       .receive([=](bool result) { std::cout << "Logon sccuess!"; },
+  //                [](caf::error& err) {});
+
+  auto f = caf::make_function_view(actor);
+
+  bool result = f(StartAtom::value)->get_as<bool>(0);
+
+  std::vector<OrderPosition> positions =
+      f(QryInvestorPositionsAtom::value)->get_as<std::vector<OrderPosition> >(0);
+
+  std::vector<OrderRtnData> orders =
+      f(RestartRtnOrdersAtom::value)->get_as<std::vector<OrderRtnData>>(0);
+
   std::string input;
   while (std::cin >> input) {
     if (input == "exit") {

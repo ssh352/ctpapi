@@ -47,6 +47,7 @@ void FollowTradeActor::OnSettlementInfoConfirm() {
 }
 
 caf::behavior FollowTradeActor::make_behavior() {
+  caf::scoped_actor self(system());
   // ctp_.LoginServer("tcp://180.168.146.187:10000", "9999", "053861",
   //                  "Cj12345678");
   ctp_.LoginServer("tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655",
