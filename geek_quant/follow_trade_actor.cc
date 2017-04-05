@@ -93,7 +93,7 @@ caf::behavior FollowTradeActor::make_behavior() {
         } else {
           order.order_no =
               RemapOrderNo(order.order_no, order.session_id, order.request_by);
-          InstrumentFollow& instrument_follow =
+          FollowStragety& instrument_follow =
               GetInstrumentFollow(order.instrument);
           EnterOrderData enter_order;
           std::vector<std::string> cancel_order_no_list;
@@ -117,7 +117,7 @@ caf::behavior FollowTradeActor::make_behavior() {
         } else {
           order.order_no =
               RemapOrderNo(order.order_no, order.session_id, order.request_by);
-          InstrumentFollow& instrument_follow =
+          FollowStragety& instrument_follow =
               GetInstrumentFollow(order.instrument);
           EnterOrderData enter_order;
           std::vector<std::string> cancel_order_no_list;
@@ -179,11 +179,11 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   return field;
 }
 
-InstrumentFollow& FollowTradeActor::GetInstrumentFollow(
+FollowStragety& FollowTradeActor::GetInstrumentFollow(
     const std::string& instrument) {
   if (instrument_follow_set_.find(instrument) == instrument_follow_set_.end()) {
     instrument_follow_set_.insert(
-        std::make_pair(instrument, InstrumentFollow(wait_sync_orders_)));
+        std::make_pair(instrument, FollowStragety(wait_sync_orders_)));
   }
   return instrument_follow_set_[instrument];
 }
@@ -214,7 +214,7 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   max_order_no_ = static_cast<int>(position_type_map_.size());
 
   for (auto pos : trader_positions_) {
-    InstrumentFollow& instrument = GetInstrumentFollow(pos.instrument);
+    FollowStragety& instrument = GetInstrumentFollow(pos.instrument);
     instrument.AddPositionToTrader(
         boost::lexical_cast<std::string>(
             position_type_map_[{pos.instrument, pos.order_direction}]),
@@ -222,7 +222,7 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   }
 
   for (auto pos : follower_positions_) {
-    InstrumentFollow& instrument = GetInstrumentFollow(pos.instrument);
+    FollowStragety& instrument = GetInstrumentFollow(pos.instrument);
     instrument.AddPositionToFollower(
         boost::lexical_cast<std::string>(
             position_type_map_[{pos.instrument, pos.order_direction}]),
@@ -232,7 +232,7 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   for (auto order : pending_trader_rtn_orders_) {
     order.order_no =
         RemapOrderNo(order.order_no, order.session_id, order.request_by);
-    InstrumentFollow& instrument = GetInstrumentFollow(order.instrument);
+    FollowStragety& instrument = GetInstrumentFollow(order.instrument);
     EnterOrderData dummy_enter_order;
     std::vector<std::string> dummy_cancel_order_no_list;
     instrument.HandleOrderRtnForTrader(order, &dummy_enter_order,
@@ -243,7 +243,7 @@ void FollowTradeActor::TrySyncPositionIfReady() {
   for (auto order : pending_follower_rtn_orders_) {
     order.order_no =
         RemapOrderNo(order.order_no, order.session_id, order.request_by);
-    InstrumentFollow& instrument = GetInstrumentFollow(order.instrument);
+    FollowStragety& instrument = GetInstrumentFollow(order.instrument);
     EnterOrderData dummy_enter_order;
     std::vector<std::string> dummy_cancel_order_no_list;
     instrument.HandleOrderRtnForFollow(order, &dummy_enter_order,

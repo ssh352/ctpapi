@@ -1,14 +1,14 @@
-#ifndef FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
-#define FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
+#ifndef FOLLOW_TRADE_FOLLOW_STRAGETY_H
+#define FOLLOW_TRADE_FOLLOW_STRAGETY_H
 #include "boost/optional.hpp"
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/order_follow.h"
 #include "geek_quant/order_follow_manager.h"
 #include "geek_quant/pending_order_action.h"
 
-class InstrumentFollow {
+class FollowStragety {
  public:
-  InstrumentFollow(bool wait_sync = false);
+  FollowStragety(bool wait_sync = false);
 
   void SyncComplete();
 
@@ -51,4 +51,4 @@ class InstrumentFollow {
   OrderFollowMananger follower_orders_;
 };
 
-#endif  // FOLLOW_TRADE_INSTRUMENT_FOLLOW_H
+#endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_H

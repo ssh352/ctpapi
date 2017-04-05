@@ -1,30 +1,30 @@
-#include "instrument_follow.h"
+#include "follow_stragety.h"
 
-InstrumentFollow::InstrumentFollow(bool wait_sync) {
+FollowStragety::FollowStragety(bool wait_sync) {
   wait_sync_ = wait_sync;
 }
 
-bool InstrumentFollow::WaitSyncOrders() {
+bool FollowStragety::WaitSyncOrders() {
   return wait_sync_;
 }
 
-void InstrumentFollow::SyncComplete() {
+void FollowStragety::SyncComplete() {
   wait_sync_ = false;
 }
 
-void InstrumentFollow::AddPositionToTrader(const std::string& order_no,
-                                           OrderDirection order_direction,
-                                           int volume) {
+void FollowStragety::AddPositionToTrader(const std::string& order_no,
+                                         OrderDirection order_direction,
+                                         int volume) {
   trader_orders_.AddPosition(order_no, order_direction, volume);
 }
 
-void InstrumentFollow::AddPositionToFollower(const std::string& order_no,
-                                             OrderDirection order_direction,
-                                             int volume) {
+void FollowStragety::AddPositionToFollower(const std::string& order_no,
+                                           OrderDirection order_direction,
+                                           int volume) {
   follower_orders_.AddPosition(order_no, order_direction, volume);
 }
 
-void InstrumentFollow::HandleOrderRtnForTrader(
+void FollowStragety::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
@@ -83,7 +83,7 @@ void InstrumentFollow::HandleOrderRtnForTrader(
   trader_orders_.HandleOrderRtn(order);
 }
 
-void InstrumentFollow::HandleOrderRtnForFollow(
+void FollowStragety::HandleOrderRtnForFollow(
     const OrderRtnData& order,
     EnterOrderData* enter_order,
     std::vector<std::string>* cancel_order_no_list) {
@@ -106,7 +106,7 @@ void InstrumentFollow::HandleOrderRtnForFollow(
   follower_orders_.HandleOrderRtn(order);
 }
 
-EnterOrderData InstrumentFollow::MakeOpenReverseAction(
+EnterOrderData FollowStragety::MakeOpenReverseAction(
     const OrderRtnData& order,
     std::vector<std::pair<std::string, int> > order_volumes) {
   EnterOrderData enter_order;
@@ -127,7 +127,7 @@ EnterOrderData InstrumentFollow::MakeOpenReverseAction(
   return enter_order;
 }
 
-EnterOrderData InstrumentFollow::MakeOpeningAction(const OrderRtnData& order) {
+EnterOrderData FollowStragety::MakeOpeningAction(const OrderRtnData& order) {
   EnterOrderData enter_order;
   enter_order.order_no = order.order_no;
   enter_order.action = kEOAOpen;
@@ -140,7 +140,7 @@ EnterOrderData InstrumentFollow::MakeOpeningAction(const OrderRtnData& order) {
   return enter_order;
 }
 
-EnterOrderData InstrumentFollow::MakeCloseingAction(
+EnterOrderData FollowStragety::MakeCloseingAction(
     const OrderRtnData& order,
     const CloseingActionInfo& action,
     std::vector<std::pair<std::string, int> > order_volumes) {
@@ -181,7 +181,7 @@ EnterOrderData InstrumentFollow::MakeCloseingAction(
   return enter_order;
 }
 
-int InstrumentFollow::GetPendingCloseVolume(
+int FollowStragety::GetPendingCloseVolume(
     OrderDirection order_direction) const {
   return std::accumulate(
       pending_order_actions_.begin(), pending_order_actions_.end(), 0,

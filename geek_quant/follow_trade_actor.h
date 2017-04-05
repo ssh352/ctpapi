@@ -4,7 +4,7 @@
 #include "caf/all.hpp"
 #include "geek_quant/ctp_trader.h"
 #include "geek_quant/ctp_order_dispatcher.h"
-#include "geek_quant/instrument_follow.h"
+#include "geek_quant/follow_stragety.h"
 
 class FollowTradeActor : public caf::event_based_actor,
                          public CtpTrader::Delegate {
@@ -27,7 +27,7 @@ class FollowTradeActor : public caf::event_based_actor,
       const OrderIdent& order_ident) const;
   CThostFtdcInputOrderField MakeCtpOrderInsert(
       const EnterOrderData& enter_order) const;
-  InstrumentFollow& GetInstrumentFollow(const std::string& instrument);
+  FollowStragety& GetInstrumentFollow(const std::string& instrument);
 
   void TrySyncPositionIfReady();
 
@@ -38,7 +38,7 @@ class FollowTradeActor : public caf::event_based_actor,
   std::map<std::string, OrderIdent> unfill_orders_;
   CtpOrderDispatcher ctp_order_dispatcher_;
   CtpTrader ctp_;
-  std::map<std::string, InstrumentFollow> instrument_follow_set_;
+  std::map<std::string, FollowStragety> instrument_follow_set_;
   std::map<std::pair<std::string, int>, int> remap_order_ref_;
 
   int trader_order_rtn_seq_;
