@@ -28,7 +28,6 @@ enum EnterOrderAction {
   kEOAInvalid,
   kEOAOpen,
   kEOAClose,
-  kEOACloseToday,
   kEOAOpenConfirm,
   kEOACloseConfirm,
   kEOAOpenReverseOrder,
@@ -39,7 +38,6 @@ enum EnterOrderAction {
 enum OrderStatus {
   kOSInvalid,
   kOSOpening,
-  kOSCloseingToday,
   kOSCloseing,
   kOSOpened,
   kOSClosed,
@@ -78,6 +76,7 @@ struct OrderRtnData {
     request_by = RequestBy::kInvalid;
     volume = 0;
     session_id = 0;
+    today = false;
   }
   std::string order_no;
   std::string instrument;
@@ -85,6 +84,7 @@ struct OrderRtnData {
   OrderDirection order_direction;
   OrderStatus order_status;
   RequestBy request_by;
+  bool today;
   double order_price;
   int volume;
 };
@@ -94,6 +94,7 @@ struct EnterOrderData {
     action = kEOAInvalid;
     order_direction = kODUnkown;
     order_price = 0.0;
+    today = false;
     volume = 0;
   }
   std::string order_no;
@@ -102,6 +103,7 @@ struct EnterOrderData {
   OrderDirection order_direction;
   double order_price;
   int volume;
+  bool today;
 };
 
 struct OrderVolume {

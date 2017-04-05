@@ -22,6 +22,8 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     order.order_no = raw_order.OrderRef;
     order.request_by = ParseRequestBy(raw_order.UserProductInfo);
     order.session_id = raw_order.SessionID;
+    order.today =
+        raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday ? true : false;
     orders_.push_back(raw_order);
     return boost::optional<OrderRtnData>(order);
   } else {
@@ -34,6 +36,9 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
       order.volume = it->VolumeTotal - raw_order.VolumeTotal;
       order.order_status = ParseThostForOrderStatus(raw_order);
       order.request_by = ParseRequestBy(raw_order.UserProductInfo);
+      order.today = raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday
+                        ? true
+                        : false;
       order.order_no = raw_order.OrderRef;
       order.session_id = raw_order.SessionID;
       *it = raw_order;
@@ -71,9 +76,7 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
       } else {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
                            ? kOSOpening
-                           : order.CombOffsetFlag[0] == THOST_FTDC_OF_Close
-                                 ? kOSCloseing
-                                 : kOSCloseingToday;
+                           : kOSCloseing;
       }
       break;
     case THOST_FTDC_OST_Canceled: {
