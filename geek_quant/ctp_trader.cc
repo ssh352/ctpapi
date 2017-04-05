@@ -1,5 +1,6 @@
 #include "geek_quant/ctp_trader.h"
 #include <boost/optional.hpp>
+#include <boost/log/trivial.hpp>
 
 CtpTrader::CtpTrader(Delegate* delegate, const char* folw_path)
     : delegate_(delegate) {
@@ -26,6 +27,11 @@ void CtpTrader::LoginServer(const std::string& front_server,
 }
 
 void CtpTrader::OrderInsert(CThostFtdcInputOrderField order) {
+  BOOST_LOG_TRIVIAL(info) << user_id_
+                          << "]OrderInsert Instrument:" << order.InstrumentID
+                          << ",OrderRef:" << order.OrderRef
+                          << ",OC:" << order.CombOffsetFlag[0]
+                          << ",Direction:" << order.Direction;
   strcpy(order.BrokerID, broker_id_.c_str());
   strcpy(order.UserID, user_id_.c_str());
   strcpy(order.InvestorID, user_id_.c_str());
@@ -33,6 +39,8 @@ void CtpTrader::OrderInsert(CThostFtdcInputOrderField order) {
 }
 
 void CtpTrader::OrderAction(CThostFtdcInputOrderActionField order) {
+  BOOST_LOG_TRIVIAL(info) << user_id_
+                          << "]OrderAction OrderRef:" << order.OrderRef;
   strcpy(order.BrokerID, broker_id_.c_str());
   strcpy(order.UserID, user_id_.c_str());
   strcpy(order.InvestorID, user_id_.c_str());
@@ -81,6 +89,11 @@ void CtpTrader::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
 }
 
 void CtpTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
+  BOOST_LOG_TRIVIAL(info) << user_id_ << "]"
+                          << "OrderRef:" << pOrder->OrderRef << ","
+                          << "Instrument:" << pOrder->InstrumentID << ","
+                          << "OC:" << pOrder->CombOffsetFlag[0] << ","
+                          << "Direction:" << pOrder->Direction;
   delegate_->OnRtnOrderData(pOrder);
 }
 
@@ -90,23 +103,26 @@ void CtpTrader::OnRtnTrade(CThostFtdcTradeField* pTrade) {
 
 void CtpTrader::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                     CThostFtdcRspInfoField* pRspInfo) {
-  std::cout << __FUNCTION__ << "ErrorID:" << pRspInfo->ErrorID
-            << ","
-               "ErrorMsg:"
-            << pRspInfo->ErrorMsg << "\n";
+  BOOST_LOG_TRIVIAL(warning)
+      << user_id_ << "]"
+      << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
+      << "ErrorId:" << pRspInfo->ErrorID << ","
+      << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpTrader::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                     CThostFtdcRspInfoField* pRspInfo) {
-  std::cout << __FUNCTION__ << "\n";
+  BOOST_LOG_TRIVIAL(warning)
+      << user_id_ << "]"
+      << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
+      << "ErrorId:" << pRspInfo->ErrorID << ","
+      << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpTrader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                  CThostFtdcRspInfoField* pRspInfo,
                                  int nRequestID,
-                                 bool bIsLast) {
-  std::cout << __FUNCTION__ << "\n";
-}
+                                 bool bIsLast) {}
 
 void CtpTrader::OnRspQryInvestorPosition(
     CThostFtdcInvestorPositionField* pInvestorPosition,
@@ -138,7 +154,9 @@ void CtpTrader::OnRspQryInvestorPosition(
 void CtpTrader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                            int nRequestID,
                            bool bIsLast) {
-  std::cout << "OnRspError:" << pRspInfo->ErrorMsg << "\n";
+  BOOST_LOG_TRIVIAL(warning) << user_id_ << "]"
+                             << "RspError ErrorId:" << pRspInfo->ErrorID
+                             << "Error Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpTrader::OnRspQrySettlementInfoConfirm(
