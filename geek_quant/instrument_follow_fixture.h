@@ -34,7 +34,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
                         const std::string& order_no = "0001",
                         double order_price = 1234.1,
                         const std::string& instrument = "abc") {
-    EnterOrderAndFill(kEOAOpen, open_volume, fill_open_volume,
+    EnterOrderAndFill(EnterOrderAction::kOpen, open_volume, fill_open_volume,
                       fill_follow_open_volume, order_direction, order_no,
                       order_price, instrument);
   }
@@ -47,7 +47,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
       const std::string& order_no = "0001",
       double order_price = 1234.1,
       const std::string& instrument = "abc") {
-    EnterOrderAndFill(kEOAClose, open_volume, fill_open_volume,
+    EnterOrderAndFill(EnterOrderAction::kClose, open_volume, fill_open_volume,
                       fill_follow_open_volume, order_direction, order_no,
                       order_price, instrument);
   }
@@ -61,18 +61,18 @@ class InstrumentFollowBaseFixture : public testing::Test {
                          double order_price,
                          const std::string& instrument) {
     TraderOrderRtn(order_no,
-                   enter_order_action == kEOAOpen ? kOSOpening : kOSCloseing,
+                   enter_order_action == EnterOrderAction::kOpen ? kOSOpening : kOSCloseing,
                    open_volume, order_direction, order_price, instrument);
     TraderOrderRtn(order_no,
-                   enter_order_action == kEOAOpen ? kOSOpened : kOSClosed,
+                   enter_order_action == EnterOrderAction::kOpen ? kOSOpened : kOSClosed,
                    fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == kEOAOpen ? kOSOpening : kOSCloseing,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? kOSOpening : kOSCloseing,
         fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == kEOAOpen ? kOSOpened : kOSClosed,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? kOSOpened : kOSClosed,
         fill_follow_open_volume, order_direction, order_price, instrument);
   }
 

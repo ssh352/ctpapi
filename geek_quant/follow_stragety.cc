@@ -117,7 +117,7 @@ EnterOrderData FollowStragety::MakeOpenReverseAction(
     return enter_order;
   }
   enter_order.order_no = order.order_no;
-  enter_order.action = kEOAOpen;
+  enter_order.action = EnterOrderAction::kOpen;
   enter_order.instrument = order.instrument;
   enter_order.order_direction = order.order_direction;
   enter_order.order_price = order.order_price;
@@ -130,7 +130,7 @@ EnterOrderData FollowStragety::MakeOpenReverseAction(
 EnterOrderData FollowStragety::MakeOpeningAction(const OrderRtnData& order) {
   EnterOrderData enter_order;
   enter_order.order_no = order.order_no;
-  enter_order.action = kEOAOpen;
+  enter_order.action = EnterOrderAction::kOpen;
   enter_order.instrument = order.instrument;
   enter_order.order_direction = order.order_direction;
   enter_order.order_price = order.order_price;
@@ -170,7 +170,7 @@ EnterOrderData FollowStragety::MakeCloseingAction(
   }
 
   enter_order.order_no = order.order_no;
-  enter_order.action = kEOAClose;
+  enter_order.action = EnterOrderAction::kClose;
   enter_order.instrument = order.instrument;
   enter_order.order_direction = order.order_direction;
   enter_order.order_price = order.order_price;

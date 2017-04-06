@@ -161,7 +161,7 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   field.Direction =
       order.order_direction == OrderDirection::kBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
   field.CombOffsetFlag[0] =
-      order.action == kEOAOpen
+      order.action == EnterOrderAction::kOpen
           ? THOST_FTDC_OF_Open
           : order.today ? THOST_FTDC_OF_CloseToday : THOST_FTDC_OF_Close;
   strcpy(field.CombHedgeFlag, "1");

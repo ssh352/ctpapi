@@ -16,7 +16,7 @@ TEST_F(InstrumentFollowFixture, FollowOpenBuy) {
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ(OrderDirection::kBuy, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAOpen, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kOpen, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(10, enter_order.volume);
 }
@@ -30,7 +30,7 @@ TEST_F(InstrumentFollowFixture, FollowOpenSell) {
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAOpen, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kOpen, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(10, enter_order.volume);
 }
@@ -64,7 +64,7 @@ TEST_F(InstrumentFollowFixture, CloseCase1) {
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(10, enter_order.volume);
 }
@@ -83,7 +83,7 @@ TEST_F(InstrumentFollowFixture, CloseCase2) {
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(5, enter_order.volume);
   EXPECT_EQ(1, cancel_order_no_list.size());
@@ -383,7 +383,7 @@ TEST_F(InstrumentFollowFixture, FillMutilOrder) {
 
   EXPECT_EQ("0003", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
   EXPECT_EQ(20, enter_order.volume);
 }
 
@@ -436,7 +436,7 @@ TEST_F(InstrumentFollowFixture, PartFillMutilOrder) {
   EXPECT_EQ("0002", cancel_order_no_list.at(0));
   EXPECT_EQ("0003", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
   EXPECT_EQ(16, enter_order.volume);
 }
 
@@ -503,7 +503,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderCase1) {
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAOpen, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kOpen, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(10, enter_order.volume);
 }
@@ -522,7 +522,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderCase2) {
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ("0002", enter_order.order_no);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-  EXPECT_EQ(EnterOrderAction::kEOAOpen, enter_order.action);
+  EXPECT_EQ(EnterOrderAction::kOpen, enter_order.action);
   EXPECT_EQ(1234.1, enter_order.order_price);
   EXPECT_EQ(6, enter_order.volume);
 }
@@ -562,7 +562,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase1) {
     EXPECT_EQ("abc", enter_order.instrument);
     EXPECT_EQ("0003", enter_order.order_no);
     EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-    EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+    EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
     EXPECT_EQ(1234.1, enter_order.order_price);
     EXPECT_EQ(10, enter_order.volume);
   }
@@ -580,7 +580,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase1) {
     EXPECT_EQ("abc", enter_order.instrument);
     EXPECT_EQ("0004", enter_order.order_no);
     EXPECT_EQ(OrderDirection::kBuy, enter_order.order_direction);
-    EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+    EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
     EXPECT_EQ(1234.1, enter_order.order_price);
     EXPECT_EQ(10, enter_order.volume);
   }
@@ -605,7 +605,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase2) {
     EXPECT_EQ("abc", enter_order.instrument);
     EXPECT_EQ("0003", enter_order.order_no);
     EXPECT_EQ(OrderDirection::kBuy, enter_order.order_direction);
-    EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+    EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
     EXPECT_EQ(1234.1, enter_order.order_price);
     EXPECT_EQ(10, enter_order.volume);
   }
@@ -623,7 +623,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase2) {
     EXPECT_EQ("abc", enter_order.instrument);
     EXPECT_EQ("0004", enter_order.order_no);
     EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
-    EXPECT_EQ(EnterOrderAction::kEOAClose, enter_order.action);
+    EXPECT_EQ(EnterOrderAction::kClose, enter_order.action);
     EXPECT_EQ(1234.1, enter_order.order_price);
     EXPECT_EQ(10, enter_order.volume);
   }

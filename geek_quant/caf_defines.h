@@ -23,15 +23,15 @@ enum class OrderDirection {
   kSell,
 };
 
-enum EnterOrderAction {
-  kEOAInvalid,
-  kEOAOpen,
-  kEOAClose,
-  kEOAOpenConfirm,
-  kEOACloseConfirm,
-  kEOAOpenReverseOrder,
-  kEOAOpenReverseOrderConfirm,
-  kEOACancelForTest,
+enum class EnterOrderAction {
+  kInvalid,
+  kOpen,
+  kClose,
+  kOpenConfirm,
+  kCloseConfirm,
+  kOpenReverseOrder,
+  kOpenReverseOrderConfirm,
+  kCancelForTest,
 };
 
 enum OrderStatus {
@@ -90,7 +90,7 @@ struct OrderRtnData {
 
 struct EnterOrderData {
   EnterOrderData() {
-    action = kEOAInvalid;
+    action = EnterOrderAction::kInvalid;
     order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
     today = false;
