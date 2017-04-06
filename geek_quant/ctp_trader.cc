@@ -137,8 +137,8 @@ void CtpTrader::OnRspQryInvestorPosition(
       std::cout << "Oops!\n";
       positions_.push_back(
           {pInvestorPosition->InstrumentID,
-           pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long ? kODBuy
-                                                                  : kODSell,
+           pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long ? OrderDirection::kBuy
+                                                                  : OrderDirection::kSell,
            pInvestorPosition->YdPosition});
     }
   }

@@ -12,7 +12,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     // new order
     OrderRtnData order;
     order.order_direction =
-        raw_order.Direction == THOST_FTDC_D_Buy ? kODBuy : kODSell;
+        raw_order.Direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy : OrderDirection::kSell;
     order.instrument = raw_order.InstrumentID;
     order.order_price = raw_order.LimitPrice;
     order.order_status = raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
@@ -30,7 +30,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     if (!IsSameOrderStatus(*it, raw_order)) {
       OrderRtnData order;
       order.order_direction =
-          raw_order.Direction == THOST_FTDC_D_Buy ? kODBuy : kODSell;
+          raw_order.Direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy : OrderDirection::kSell;
       order.instrument = raw_order.InstrumentID;
       order.order_price = raw_order.LimitPrice;
       order.volume = it->VolumeTotal - raw_order.VolumeTotal;

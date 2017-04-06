@@ -11,17 +11,16 @@ enum class RequestBy {
   kStrategy,
   kApp,
 };
-enum OrderRtnFrom {
+enum class OrderRtnFrom {
   kInvalid,
-  kORFInvalid,
-  kORFSource,
-  kORFDest,
+  kSource,
+  kDest,
 };
 
-enum OrderDirection {
-  kODUnkown,
-  kODBuy,
-  kODSell,
+enum class OrderDirection {
+  kUnkown,
+  kBuy,
+  kSell,
 };
 
 enum EnterOrderAction {
@@ -71,7 +70,7 @@ struct OpenOrderData {
 struct OrderRtnData {
   OrderRtnData() {
     order_status = kOSInvalid;
-    order_direction = kODUnkown;
+    order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
     request_by = RequestBy::kInvalid;
     volume = 0;
@@ -92,7 +91,7 @@ struct OrderRtnData {
 struct EnterOrderData {
   EnterOrderData() {
     action = kEOAInvalid;
-    order_direction = kODUnkown;
+    order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
     today = false;
     volume = 0;

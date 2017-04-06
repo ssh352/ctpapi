@@ -21,7 +21,7 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase1) {
 TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase2) {
   OpenAndFillOrder(10, 10, 5);
   instrument_follow.SyncComplete();
-  auto ret = TraderOrderRtn("0002", kOSCloseing, 10, kODSell);
+  auto ret = TraderOrderRtn("0002", kOSCloseing, 10, OrderDirection::kSell);
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
   EXPECT_EQ("0002", enter_order.order_no);
@@ -31,7 +31,7 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase2) {
 TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase3) {
   OpenAndFillOrder(10, 0, 0);
   instrument_follow.SyncComplete();
-  auto ret = TraderOrderRtn("0002", kOSOpenCanceled, 10, kODSell);
+  auto ret = TraderOrderRtn("0002", kOSOpenCanceled, 10, OrderDirection::kSell);
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
   EXPECT_EQ("", enter_order.order_no);
@@ -41,7 +41,7 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase3) {
 TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase4) {
   OpenAndFillOrder(10, 10, 5);
   instrument_follow.SyncComplete();
-  auto ret = TraderOrderRtn("0002", kOSCloseing, 10, kODSell);
+  auto ret = TraderOrderRtn("0002", kOSCloseing, 10, OrderDirection::kSell);
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
   EXPECT_EQ("0002", enter_order.order_no);
@@ -55,7 +55,7 @@ TEST_F(InstrumentFollowSyncOrdersFixture, SyncOpenOrderCase5) {
   (void)TraderOrderRtn("0001", kOSOpened);
   instrument_follow.SyncComplete();
   instrument_follow.SyncComplete();
-  auto ret = TraderOrderRtn("0002", kOSOpening, 10, kODSell);
+  auto ret = TraderOrderRtn("0002", kOSOpening, 10, OrderDirection::kSell);
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
   EXPECT_EQ("", enter_order.order_no);

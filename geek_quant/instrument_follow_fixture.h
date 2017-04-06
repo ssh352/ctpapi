@@ -30,7 +30,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
   void OpenAndFillOrder(int open_volume,
                         int fill_open_volume,
                         int fill_follow_open_volume,
-                        OrderDirection order_direction = OrderDirection::kODBuy,
+                        OrderDirection order_direction = OrderDirection::kBuy,
                         const std::string& order_no = "0001",
                         double order_price = 1234.1,
                         const std::string& instrument = "abc") {
@@ -43,7 +43,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
       int open_volume,
       int fill_open_volume,
       int fill_follow_open_volume,
-      OrderDirection order_direction = OrderDirection::kODSell,
+      OrderDirection order_direction = OrderDirection::kSell,
       const std::string& order_no = "0001",
       double order_price = 1234.1,
       const std::string& instrument = "abc") {
@@ -80,7 +80,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
       const std::string& order_no,
       OrderStatus order_status,
       int volume = 10,
-      OrderDirection order_direction = kODBuy,
+      OrderDirection order_direction = OrderDirection::kBuy,
       double order_price = 1234.1,
       const std::string& instrument = "abc") {
     EnterOrderData enter_order;
@@ -94,7 +94,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
       const std::string& order_no,
       OrderStatus order_status,
       int volume = 10,
-      OrderDirection order_direction = kODBuy,
+      OrderDirection order_direction = OrderDirection::kBuy,
       double order_price = 1234.1,
       const std::string& instrument = "abc") {
     EnterOrderData enter_order;
@@ -124,7 +124,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
     }
   }
 
-  InstrumentFollow instrument_follow;
+  FollowStragety instrument_follow;
 
  private:
   virtual void TestBody() override {}

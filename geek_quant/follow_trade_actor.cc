@@ -159,7 +159,7 @@ CThostFtdcInputOrderField FollowTradeActor::MakeCtpOrderInsert(
   // strcpy(filed.UserID, );
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
   field.Direction =
-      order.order_direction == kODBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
+      order.order_direction == OrderDirection::kBuy ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
   field.CombOffsetFlag[0] =
       order.action == kEOAOpen
           ? THOST_FTDC_OF_Open

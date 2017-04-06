@@ -45,30 +45,38 @@ caf::behavior bar(caf::event_based_actor* self) {
   return {[=](std::string str) -> std::string { return str; }};
 }
 
-caf::behavior foo(caf::event_based_actor* self,
-                  const caf::actor& a,
-                  const caf::actor& b) {
-  caf::scoped_actor block_actor(self->system());
-  block_actor->request(a, caf::infinite, "hello")
-      .receive([=](std::string str) { std::cout << str; },
-               [=](caf::error& err) {});
-  self->request(a, caf::infinite, "hello").await([=](std::string str) {
-    std::cout << str << "\n";
-  });
-
-  self->request(b, caf::infinite, "wtf").await([=](std::string str) {
-    std::cout << str << "\n";
-  });
-  return {[=](int i) {}};
+caf::behavior foo(caf::event_based_actor* self) {
+  self->set_default_handler(caf::skip);
+  return {[=](int i) {
+            std::cout << i << "\n";
+            return caf::skip();
+          },
+          [=](std::string str) {
+            std::cout << str << "\n";
+            self->become(caf::keep_behavior,
+                         [=](std::string str) {
+                           std::cout << str << "\n";
+                           self->unbecome();
+                         },
+                         [=](const caf::error& err) { std::cout << "err\n"; });
+          }};
 }
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   caf::scoped_actor self(system);
-  auto actor = system.spawn<CtaTradeActor>();
+  auto actor = system.spawn(foo);
+  // auto actor = system.spawn<CtaTradeActor>();
   //   self->request(actor, std::chrono::seconds(10), StartAtom::value)
   //       .receive([=](bool result) { std::cout << "Logon sccuess!"; },
   //                [](caf::error& err) {});
 
+  for (int i = 0; i < 100; ++i) {
+    caf::anon_send(actor, i);
+  }
+  caf::anon_send(actor, "hello, world");
+
+  caf::anon_send(actor, "wtf");
+  /*
   auto f = caf::make_function_view(actor);
 
   bool result = f(CTPLogin::value, "tcp://59.42.241.91:41205", "9080",
@@ -83,6 +91,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
       f(CTPReqRestartRtnOrdersAtom::value,
         caf::actor_cast<caf::strong_actor_ptr>(actor))
           ->get_as<std::vector<OrderRtnData>>(0);
+  
+  */
 
   std::string input;
   while (std::cin >> input) {

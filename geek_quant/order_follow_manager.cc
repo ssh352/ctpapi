@@ -148,7 +148,7 @@ void OrderFollowMananger::HandleCloseing(const OrderRtnData& order) {
 bool OrderFollowMananger::IsOpenReverseOrder(const OrderRtnData& order) const {
   int buy_position_volume = std::accumulate(
       orders_.begin(), orders_.end(), 0, [](int val, auto item) {
-        if (item.second.order_direction() == kODBuy) {
+        if (item.second.order_direction() == OrderDirection::kBuy) {
           return val + item.second.position_volume();
         }
         return val;
@@ -156,21 +156,21 @@ bool OrderFollowMananger::IsOpenReverseOrder(const OrderRtnData& order) const {
 
   int sell_position_volume = std::accumulate(
       orders_.begin(), orders_.end(), 0, [](int val, auto item) {
-        if (item.second.order_direction() == kODSell) {
+        if (item.second.order_direction() == OrderDirection::kSell) {
           return val + item.second.position_volume();
         }
         return val;
       });
 
-  OrderDirection order_direction = kODUnkown;
+  OrderDirection order_direction = OrderDirection::kUnkown;
   if (buy_position_volume > sell_position_volume) {
-    order_direction = kODBuy;
+    order_direction = OrderDirection::kBuy;
   } else if (buy_position_volume > sell_position_volume) {
-    order_direction = kODSell;
+    order_direction = OrderDirection::kSell;
   } else {
     // Do noting
   }
-  return order_direction != kODUnkown ? order_direction != order.order_direction
+  return order_direction != OrderDirection::kUnkown ? order_direction != order.order_direction
                                       : false;
 }
 

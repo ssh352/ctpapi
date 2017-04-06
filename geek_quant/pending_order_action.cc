@@ -14,7 +14,7 @@ PendingOrderAction::PendingOrderAction(const OrderRtnData& order,
 
 PendingOrderAction::PendingOrderAction()
     : trader_{0, 0, false, false}, follower_{0, 0, false, false} {
-  order_direction_ = kODUnkown;
+  order_direction_ = OrderDirection::kUnkown;
   pending_close_volume_ = 0;
 }
 
