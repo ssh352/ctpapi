@@ -31,7 +31,7 @@ TEST(CtpOrderDispatcherTest, OpenOrder) {
     EXPECT_TRUE(order);
     EXPECT_EQ("abc", order->instrument);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSOpening, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpening, order->order_status);
     EXPECT_EQ(1234.1, order->order_price);
     EXPECT_EQ(10, order->volume);
   }
@@ -53,7 +53,7 @@ TEST(CtpOrderDispatcherTest, OpenOrder) {
         THOST_FTDC_OST_PartTradedQueueing, THOST_FTDC_OF_Open, 1, 9));
     EXPECT_TRUE(order);
     EXPECT_EQ(1, order->volume);
-    EXPECT_EQ(kOSOpened, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpened, order->order_status);
   }
 
   {
@@ -61,14 +61,14 @@ TEST(CtpOrderDispatcherTest, OpenOrder) {
         THOST_FTDC_OST_PartTradedQueueing, THOST_FTDC_OF_Open, 5, 5));
     EXPECT_TRUE(order);
     EXPECT_EQ(4, order->volume);
-    EXPECT_EQ(kOSOpened, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpened, order->order_status);
   }
   {
     auto order = dispatcher.HandleRtnOrder(
         MakeRtnOrderField(THOST_FTDC_OST_AllTraded, THOST_FTDC_OF_Open, 10, 0));
     EXPECT_TRUE(order);
     EXPECT_EQ(5, order->volume);
-    EXPECT_EQ(kOSOpened, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpened, order->order_status);
   }
 }
 
@@ -80,7 +80,7 @@ TEST(CtpOrderDispatcherTest, CloseOrder) {
     EXPECT_TRUE(order);
     EXPECT_EQ("abc", order->instrument);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSCloseing, order->order_status);
+    EXPECT_EQ(OrderStatus::kCloseing, order->order_status);
     EXPECT_EQ(1234.1, order->order_price);
     EXPECT_EQ(10, order->volume);
   }
@@ -102,7 +102,7 @@ TEST(CtpOrderDispatcherTest, CloseOrder) {
         THOST_FTDC_OST_PartTradedQueueing, THOST_FTDC_OF_Close, 1, 9));
     EXPECT_TRUE(order);
     EXPECT_EQ(1, order->volume);
-    EXPECT_EQ(kOSClosed, order->order_status);
+    EXPECT_EQ(OrderStatus::kClosed, order->order_status);
   }
 
   {
@@ -110,14 +110,14 @@ TEST(CtpOrderDispatcherTest, CloseOrder) {
         THOST_FTDC_OST_PartTradedQueueing, THOST_FTDC_OF_Close, 5, 5));
     EXPECT_TRUE(order);
     EXPECT_EQ(4, order->volume);
-    EXPECT_EQ(kOSClosed, order->order_status);
+    EXPECT_EQ(OrderStatus::kClosed, order->order_status);
   }
   {
     auto order = dispatcher.HandleRtnOrder(MakeRtnOrderField(
         THOST_FTDC_OST_AllTraded, THOST_FTDC_OF_Close, 10, 0));
     EXPECT_TRUE(order);
     EXPECT_EQ(5, order->volume);
-    EXPECT_EQ(kOSClosed, order->order_status);
+    EXPECT_EQ(OrderStatus::kClosed, order->order_status);
   }
 }
 // THOST_FTDC_OST_Canceled
@@ -130,7 +130,7 @@ TEST(CtpOrderDispatcherTest, CancelOpenOrder) {
     EXPECT_TRUE(order);
     EXPECT_EQ("abc", order->instrument);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSOpening, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpening, order->order_status);
     EXPECT_EQ(1234.1, order->order_price);
     EXPECT_EQ(10, order->volume);
   }
@@ -152,7 +152,7 @@ TEST(CtpOrderDispatcherTest, CancelOpenOrder) {
         dispatcher.HandleRtnOrder(MakeRtnOrderField(THOST_FTDC_OST_Canceled));
     EXPECT_TRUE(order);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSOpenCanceled, order->order_status);
+    EXPECT_EQ(OrderStatus::kOpenCanceled, order->order_status);
   }
 }
 
@@ -164,7 +164,7 @@ TEST(CtpOrderDispatcherTest, CancelCloseOrder) {
     EXPECT_TRUE(order);
     EXPECT_EQ("abc", order->instrument);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSCloseing, order->order_status);
+    EXPECT_EQ(OrderStatus::kCloseing, order->order_status);
     EXPECT_EQ(1234.1, order->order_price);
     EXPECT_EQ(10, order->volume);
   }
@@ -186,6 +186,6 @@ TEST(CtpOrderDispatcherTest, CancelCloseOrder) {
         MakeRtnOrderField(THOST_FTDC_OST_Canceled, THOST_FTDC_OF_Close));
     EXPECT_TRUE(order);
     EXPECT_EQ("00001", order->order_no);
-    EXPECT_EQ(kOSCloseCanceled, order->order_status);
+    EXPECT_EQ(OrderStatus::kCloseCanceled, order->order_status);
   }
 }

@@ -42,7 +42,7 @@ void FollowStragety::HandleOrderRtnForTrader(
   }
 
   switch (order.order_status) {
-    case kOSOpening: {
+    case OrderStatus::kOpening: {
       if (trader_orders_.IsOpenReverseOrder(order)) {
         OpenReverseOrderActionInfo action =
             trader_orders_.ParseOpenReverseOrderRtn(order);
@@ -62,7 +62,7 @@ void FollowStragety::HandleOrderRtnForTrader(
         *enter_order = MakeOpeningAction(order);
       }
     } break;
-    case kOSCloseing: {
+    case OrderStatus::kCloseing: {
       CloseingActionInfo action = trader_orders_.ParseCloseingOrderRtn(order);
       std::vector<std::string> order_list;
       for (auto item : action.items) {

@@ -7,7 +7,7 @@ PendingOrderAction::PendingOrderAction(const OrderRtnData& order,
       trader_{0, order.volume, false, false},
       follower_{0, 0, false, false} {
   pending_close_volume_ = 0;
-  if (order.order_status == kOSCloseing) {
+  if (order.order_status == OrderStatus::kCloseing) {
     pending_close_volume_ = follower_volum;
   }
 }
@@ -22,19 +22,19 @@ void PendingOrderAction::HandleOrderRtnForTrader(
     const OrderRtnData& order,
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
-    case kOSOpening:
-    case kOSCloseing: {
+    case OrderStatus::kOpening:
+    case OrderStatus::kCloseing: {
       order_no_ = order.order_no;
       order_direction_ = order.order_direction;
       trader_.traded_volume = 0;
       trader_.total_volume = order.volume;
     } break;
-    case kOSOpened:
-    case kOSClosed:
+    case OrderStatus::kOpened:
+    case OrderStatus::kClosed:
       trader_.traded_volume += order.volume;
       break;
-    case kOSOpenCanceled:
-    case kOSCloseCanceled:
+    case OrderStatus::kOpenCanceled:
+    case OrderStatus::kCloseCanceled:
       trader_.total_volume = trader_.traded_volume;
       trader_.cancel = true;
       if (follower_.total_volume != follower_.traded_volume &&
@@ -52,24 +52,24 @@ bool PendingOrderAction::HandleOrderRtnForFollower(
     const OrderRtnData& order,
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
-    case kOSOpening: {
+    case OrderStatus::kOpening: {
       follower_.traded_volume = 0;
       follower_.total_volume = order.volume;
       if (trader_.cancel || trader_.closeing) {
         cancel_order_no_list->push_back(order_no_);
       }
     } break;
-    case kOSCloseing:
+    case OrderStatus::kCloseing:
       follower_.traded_volume = 0;
       follower_.total_volume = order.volume;
       pending_close_volume_ = 0;
       break;
-    case kOSOpened:
-    case kOSClosed:
+    case OrderStatus::kOpened:
+    case OrderStatus::kClosed:
       follower_.traded_volume += order.volume;
       break;
-    case kOSOpenCanceled: {
-      case kOSCloseCanceled:
+    case OrderStatus::kOpenCanceled: {
+      case OrderStatus::kCloseCanceled:
         follower_.total_volume = follower_.traded_volume;
         break;
       default:

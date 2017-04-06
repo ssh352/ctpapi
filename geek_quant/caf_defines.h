@@ -34,20 +34,20 @@ enum class EnterOrderAction {
   kCancelForTest,
 };
 
-enum OrderStatus {
-  kOSInvalid,
-  kOSOpening,
-  kOSCloseing,
-  kOSOpened,
-  kOSClosed,
-  kOSOpenCanceled,
-  kOSCloseCanceled,
+enum class OrderStatus {
+  kInvalid,
+  kOpening,
+  kCloseing,
+  kOpened,
+  kClosed,
+  kOpenCanceled,
+  kCloseCanceled,
 };
 
-enum OpenClose {
-  kOCInvalid,
-  kOCOpen,
-  kOCClose,
+enum class OpenClose {
+  kInvalid,
+  kOpen,
+  kClose,
 };
 
 struct PositionData {
@@ -69,7 +69,7 @@ struct OpenOrderData {
 
 struct OrderRtnData {
   OrderRtnData() {
-    order_status = kOSInvalid;
+    order_status = OrderStatus::kInvalid;
     order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
     request_by = RequestBy::kInvalid;

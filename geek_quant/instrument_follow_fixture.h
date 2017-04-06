@@ -61,18 +61,18 @@ class InstrumentFollowBaseFixture : public testing::Test {
                          double order_price,
                          const std::string& instrument) {
     TraderOrderRtn(order_no,
-                   enter_order_action == EnterOrderAction::kOpen ? kOSOpening : kOSCloseing,
+                   enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpening : OrderStatus::kCloseing,
                    open_volume, order_direction, order_price, instrument);
     TraderOrderRtn(order_no,
-                   enter_order_action == EnterOrderAction::kOpen ? kOSOpened : kOSClosed,
+                   enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpened : OrderStatus::kClosed,
                    fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == EnterOrderAction::kOpen ? kOSOpening : kOSCloseing,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpening : OrderStatus::kCloseing,
         fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == EnterOrderAction::kOpen ? kOSOpened : kOSClosed,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpened : OrderStatus::kClosed,
         fill_follow_open_volume, order_direction, order_price, instrument);
   }
 

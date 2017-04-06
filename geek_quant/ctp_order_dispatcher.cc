@@ -16,8 +16,8 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     order.instrument = raw_order.InstrumentID;
     order.order_price = raw_order.LimitPrice;
     order.order_status = raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                             ? kOSOpening
-                             : kOSCloseing;
+                             ? OrderStatus::kOpening
+                             : OrderStatus::kCloseing;
     order.volume = raw_order.VolumeTotal;
     order.order_no = raw_order.OrderRef;
     order.request_by = ParseRequestBy(raw_order.UserProductInfo);
@@ -61,7 +61,7 @@ bool CtpOrderDispatcher::IsSameOrderStatus(const CThostFtdcOrderField& prev,
 
 OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
     const CThostFtdcOrderField& order) {
-  OrderStatus order_status = kOSInvalid;
+  OrderStatus order_status = OrderStatus::kInvalid;
   switch (order.OrderStatus) {
     case THOST_FTDC_OST_AllTraded:
     case THOST_FTDC_OST_PartTradedQueueing:
@@ -71,18 +71,18 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
     case THOST_FTDC_OST_Unknown:
       if (order.VolumeTraded != 0) {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                           ? kOSOpened
-                           : kOSClosed;
+                           ? OrderStatus::kOpened
+                           : OrderStatus::kClosed;
       } else {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                           ? kOSOpening
-                           : kOSCloseing;
+                           ? OrderStatus::kOpening
+                           : OrderStatus::kCloseing;
       }
       break;
     case THOST_FTDC_OST_Canceled: {
       order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                         ? kOSOpenCanceled
-                         : kOSCloseCanceled;
+                         ? OrderStatus::kOpenCanceled
+                         : OrderStatus::kCloseCanceled;
     }
     case THOST_FTDC_OST_NotTouched:
     case THOST_FTDC_OST_Touched:
