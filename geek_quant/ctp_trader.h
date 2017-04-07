@@ -61,16 +61,23 @@ class CtpTrader : public CThostFtdcTraderSpi {
       int nRequestID,
       bool bIsLast) override;
 
+  virtual void OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                          int nRequestID,
+                          bool bIsLast) override;
 
-  virtual void OnRspError(CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) override;
+  virtual void OnRspQrySettlementInfoConfirm(
+      CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) override;
 
+  virtual void OnRspSettlementInfoConfirm(
+      CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) override;
 
-  virtual void OnRspQrySettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) override;
-
-
-  virtual void OnRspSettlementInfoConfirm(CThostFtdcSettlementInfoConfirmField *pSettlementInfoConfirm, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) override;
-
-private:
+ private:
   CThostFtdcTraderApi* cta_api_;
   std::string broker_id_;
   std::string user_id_;

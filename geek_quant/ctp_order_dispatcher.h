@@ -12,7 +12,7 @@ class CtpOrderDispatcher {
  private:
   bool IsSameOrderStatus(const CThostFtdcOrderField& left,
                          const CThostFtdcOrderField& right);
-  OrderStatus ParseThostForOrderStatus(const CThostFtdcOrderField& order);
+  OldOrderStatus ParseThostForOrderStatus(const CThostFtdcOrderField& order);
   RequestBy ParseRequestBy(const std::string& user_product_info) const;
 
   std::vector<CThostFtdcOrderField> orders_;

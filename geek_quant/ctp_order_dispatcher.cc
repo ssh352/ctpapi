@@ -16,8 +16,8 @@ boost::optional<RtnOrderData> CtpOrderDispatcher::HandleRtnOrder(
     order.instrument = raw_order.InstrumentID;
     order.order_price = raw_order.LimitPrice;
     order.order_status = raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                             ? OrderStatus::kOpening
-                             : OrderStatus::kCloseing;
+                             ? OldOrderStatus::kOpening
+                             : OldOrderStatus::kCloseing;
     order.volume = raw_order.VolumeTotal;
     order.order_no = raw_order.OrderRef;
     order.request_by = ParseRequestBy(raw_order.UserProductInfo);
@@ -51,17 +51,17 @@ boost::optional<RtnOrderData> CtpOrderDispatcher::HandleRtnOrder(
 
 bool CtpOrderDispatcher::IsSameOrderStatus(const CThostFtdcOrderField& prev,
                                            const CThostFtdcOrderField& last) {
-  OrderStatus prev_order_status = ParseThostForOrderStatus(prev);
-  OrderStatus last_order_status = ParseThostForOrderStatus(last);
+  OldOrderStatus prev_order_status = ParseThostForOrderStatus(prev);
+  OldOrderStatus last_order_status = ParseThostForOrderStatus(last);
   if (prev_order_status != last_order_status) {
     return false;
   }
   return prev.VolumeTraded == last.VolumeTraded;
 }
 
-OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
+OldOrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
     const CThostFtdcOrderField& order) {
-  OrderStatus order_status = OrderStatus::kInvalid;
+  OldOrderStatus order_status = OldOrderStatus::kInvalid;
   switch (order.OrderStatus) {
     case THOST_FTDC_OST_AllTraded:
     case THOST_FTDC_OST_PartTradedQueueing:
@@ -71,18 +71,18 @@ OrderStatus CtpOrderDispatcher::ParseThostForOrderStatus(
     case THOST_FTDC_OST_Unknown:
       if (order.VolumeTraded != 0) {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                           ? OrderStatus::kOpened
-                           : OrderStatus::kClosed;
+                           ? OldOrderStatus::kOpened
+                           : OldOrderStatus::kClosed;
       } else {
         order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                           ? OrderStatus::kOpening
-                           : OrderStatus::kCloseing;
+                           ? OldOrderStatus::kOpening
+                           : OldOrderStatus::kCloseing;
       }
       break;
     case THOST_FTDC_OST_Canceled: {
       order_status = order.CombOffsetFlag[0] == THOST_FTDC_OF_Open
-                         ? OrderStatus::kOpenCanceled
-                         : OrderStatus::kCloseCanceled;
+                         ? OldOrderStatus::kOpenCanceled
+                         : OldOrderStatus::kCloseCanceled;
     }
     case THOST_FTDC_OST_NotTouched:
     case THOST_FTDC_OST_Touched:

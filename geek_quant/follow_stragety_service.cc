@@ -1,58 +1,42 @@
 #include "follow_stragety_service.h"
 
 FollowStragetyService::FollowStragetyService(const std::string& master_account,
-                                             const std::string& slave_account,
-                                             Delegate* delegate)
-    : stragety_(master_account, slave_account, this),
-      delegate_(delegate),
+                        const std::string& slave_account,
+                        TradeOrderDelegate* delegate)
+    : stragety_(master_account, slave_account, delegate, this, &context_),
       master_account_(master_account),
       slave_account_(slave_account) {}
 
-void FollowStragetyService::HandleRtnOrder(RtnOrderData rtn_order) {
-  if (!waiting_reply_order_.empty()) {
-    auto it = std::find(waiting_reply_order_.begin(),
-                        waiting_reply_order_.end(), rtn_order.order_no);
-    if (it != waiting_reply_order_.end()) {
-      waiting_reply_order_.erase(it);
-      if (waiting_reply_order_.empty()) {
-        while (!outstanding_rtn_orders_.empty() &&
-               waiting_reply_order_.empty()) {
-          DoHandleRtnOrder(outstanding_rtn_orders_.front());
-          outstanding_rtn_orders_.pop_front();
-        }
-        if (waiting_reply_order_.empty()) {
-          DoHandleRtnOrder(rtn_order);
-        } else {
-          outstanding_rtn_orders_.push_back(rtn_order);
-        }
-      } else {
-        outstanding_rtn_orders_.push_back(rtn_order);
-      }
-    } else {
-      outstanding_rtn_orders_.push_back(rtn_order);
-    }
-  } else {
-    DoHandleRtnOrder(rtn_order);
+void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
+  OrderData adjust_order = order_id_mananger_.AdjustOrder(std::move(rtn_order));
+  switch (BeforeHandleOrder(adjust_order)) {
+    case StragetyStatus::kPending:
+      outstanding_orders_.push_back(std::move(adjust_order));
+      break;
+    case StragetyStatus::kIdle:
+      DoHandleRtnOrder(std::move(adjust_order));
+      break;
+    default:
+      break;
   }
 }
 
-void FollowStragetyService::DoHandleRtnOrder(RtnOrderData& rtn_order) {
-  context_.HandlertnOrder(rtn_order);
-
-  switch (rtn_order.order_status) {
-    case OrderStatus::kOpening:
-      stragety_.HandleOpening(rtn_order, context_);
+void FollowStragetyService::DoHandleRtnOrder(OrderData rtn_order) {
+  switch (context_.HandlertnOrder(rtn_order)) {
+    case OrderEventType::kNewOpen:
+      stragety_.HandleOpening(rtn_order);
       break;
-    case OrderStatus::kCloseing:
-      stragety_.HandleCloseing(rtn_order, context_);
+    case OrderEventType::kNewClose:
+      stragety_.HandleCloseing(rtn_order);
       break;
-    case OrderStatus::kOpened:
+    case OrderEventType::kOpenTraded:
+      stragety_.HandleOpened(rtn_order);
       break;
-    case OrderStatus::kClosed:
+    case OrderEventType::kCloseTraded:
+      stragety_.HandleClosed(rtn_order);
       break;
-    case OrderStatus::kOpenCanceled:
-    case OrderStatus::kCloseCanceled:
-      stragety_.HandleCanceled(rtn_order, context_);
+    case OrderEventType::kCanceled:
+      stragety_.HandleCanceled(rtn_order);
       break;
     default:
       break;
@@ -104,11 +88,30 @@ void FollowStragetyService::DoHandleRtnOrder(RtnOrderData& rtn_order) {
   */
 }
 
-void FollowStragetyService::OpenOrder(const std::string& instrument,
-                                      const std::string& order_no,
-                                      OrderDirection direction,
-                                      double price,
-                                      int quantity) {
+void FollowStragetyService::Trade(const std::string& order_no) {
   waiting_reply_order_.push_back(order_no);
-  delegate_->OpenOrder(instrument, order_no, direction, price, quantity);
+}
+
+FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
+    OrderData order) {
+  StragetyStatus status = waiting_reply_order_.empty()
+                              ? StragetyStatus::kIdle
+                              : StragetyStatus::kPending;
+  if (!waiting_reply_order_.empty()) {
+    auto it = std::find(waiting_reply_order_.begin(),
+                        waiting_reply_order_.end(), order.order_id());
+    if (it != waiting_reply_order_.end()) {
+      waiting_reply_order_.erase(it);
+      if (waiting_reply_order_.empty()) {
+        while (!outstanding_orders_.empty() && waiting_reply_order_.empty()) {
+          DoHandleRtnOrder(outstanding_orders_.front());
+          outstanding_orders_.pop_front();
+        }
+        if (waiting_reply_order_.empty()) {
+          status = StragetyStatus::kIdle;
+        }
+      }
+    }
+  }
+  return status;
 }

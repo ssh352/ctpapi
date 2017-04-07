@@ -11,7 +11,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
    }
   RtnOrderData MakeRtnOrderData(const std::string& order_no,
                                 OrderDirection order_direction,
-                                OrderStatus order_status,
+                                OldOrderStatus order_status,
                                 int volume = 10,
                                 double order_price = 1234.1,
                                 const std::string&& instrument = "abc") {
@@ -61,24 +61,24 @@ class InstrumentFollowBaseFixture : public testing::Test {
                          double order_price,
                          const std::string& instrument) {
     TraderOrderRtn(order_no,
-                   enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpening : OrderStatus::kCloseing,
+                   enter_order_action == EnterOrderAction::kOpen ? OldOrderStatus::kOpening : OldOrderStatus::kCloseing,
                    open_volume, order_direction, order_price, instrument);
     TraderOrderRtn(order_no,
-                   enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpened : OrderStatus::kClosed,
+                   enter_order_action == EnterOrderAction::kOpen ? OldOrderStatus::kOpened : OldOrderStatus::kClosed,
                    fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpening : OrderStatus::kCloseing,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? OldOrderStatus::kOpening : OldOrderStatus::kCloseing,
         fill_open_volume, order_direction, order_price, instrument);
 
     FollowerOrderRtn(
-        order_no, enter_order_action == EnterOrderAction::kOpen ? OrderStatus::kOpened : OrderStatus::kClosed,
+        order_no, enter_order_action == EnterOrderAction::kOpen ? OldOrderStatus::kOpened : OldOrderStatus::kClosed,
         fill_follow_open_volume, order_direction, order_price, instrument);
   }
 
   std::pair<EnterOrderData, std::vector<std::string>> TraderOrderRtn(
       const std::string& order_no,
-      OrderStatus order_status,
+      OldOrderStatus order_status,
       int volume = 10,
       OrderDirection order_direction = OrderDirection::kBuy,
       double order_price = 1234.1,
@@ -92,7 +92,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
 
   std::pair<EnterOrderData, std::vector<std::string>> FollowerOrderRtn(
       const std::string& order_no,
-      OrderStatus order_status,
+      OldOrderStatus order_status,
       int volume = 10,
       OrderDirection order_direction = OrderDirection::kBuy,
       double order_price = 1234.1,
@@ -107,7 +107,7 @@ class InstrumentFollowBaseFixture : public testing::Test {
   void DoOrderRtn(bool trader,
                   const std::string& order_no,
                   const std::string& instrument,
-                  OrderStatus order_status,
+                  OldOrderStatus order_status,
                   OrderDirection order_direction,
                   int volume,
                   double order_price,

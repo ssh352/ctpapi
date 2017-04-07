@@ -2,31 +2,36 @@
 #define FOLLOW_TRADE_FOLLOW_STRAGETY_H
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/context.h"
+#include "geek_quant/trade_order_delegate.h"
 
 class FollowStragety {
  public:
-  class OrderDelegate {
+  class Delegate {
    public:
-    virtual void OpenOrder(const std::string& instrument,
-                           const std::string& order_no,
-                           OrderDirection direction,
-                           double price,
-                           int quantity) = 0;
+    virtual void Trade(const std::string& order_no) = 0;
   };
   FollowStragety(const std::string& master_account_id,
                  const std::string& slave_account_id,
-                 OrderDelegate* del);
+                 TradeOrderDelegate* trade_order_delegate,
+                 Delegate* delegate,
+                 Context* context);
 
-  void HandleOpening(RtnOrderData rtn_order, const Context& context_);
+  void HandleOpening(const OrderData& order_data);
 
-  void HandleCloseing(RtnOrderData rtn_order, const Context& context_);
+  void HandleCloseing(const OrderData& order_data);
 
-  void HandleCanceled(RtnOrderData rtn_order, const Context& context);
+  void HandleCanceled(const OrderData& order_data);
+
+  void HandleClosed(const OrderData& order_data);
+
+  void HandleOpened(const OrderData& order_data);
 
  private:
   std::string master_account_id_;
   std::string slave_account_id_;
-  OrderDelegate* delegate_;
+  TradeOrderDelegate* trade_order_delegate_;
+  Delegate* delegate_;
+  Context* context_;
 };
 
 #endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_H

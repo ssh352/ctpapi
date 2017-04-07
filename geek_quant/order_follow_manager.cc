@@ -10,20 +10,20 @@ void OrderFollowMananger::AddPosition(const std::string& order_no,
 
 void OrderFollowMananger::HandleOrderRtn(const RtnOrderData& order) {
   switch (order.order_status) {
-    case OrderStatus::kOpening: {
+    case OldOrderStatus::kOpening: {
       orders_[order.order_no].MakeOpening(order.volume, order.order_direction);
     } break;
-    case OrderStatus::kCloseing: {
+    case OldOrderStatus::kCloseing: {
       (void)HandleCloseing(order);
     } break;
-    case OrderStatus::kOpened: {
+    case OldOrderStatus::kOpened: {
       if (orders_.find(order.order_no) != orders_.end()) {
         orders_[order.order_no].HandleOpened(order.volume);
       } else {
         // ASSERT(FALSE)
       }
     } break;
-    case OrderStatus::kClosed: {
+    case OldOrderStatus::kClosed: {
       int outstanding_volume = order.volume;
       for (auto& item : closeing_orders_[order.order_no]) {
         int close_volume = std::min<int>(outstanding_volume, item.second);
@@ -35,10 +35,10 @@ void OrderFollowMananger::HandleOrderRtn(const RtnOrderData& order) {
         }
       }
     } break;
-    case OrderStatus::kOpenCanceled: {
+    case OldOrderStatus::kOpenCanceled: {
       orders_[order.order_no].HandleCanceledByOpen();
     } break;
-    case OrderStatus::kCloseCanceled: {
+    case OldOrderStatus::kCloseCanceled: {
       for (auto item : closeing_orders_[order.order_no]) {
         orders_[item.first].HandleCanceledByClose();
       }

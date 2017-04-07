@@ -3,40 +3,32 @@
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/follow_stragety.h"
 #include "geek_quant/context.h"
+#include "geek_quant/order_id_mananger.h"
 
-class FollowStragetyService : public FollowStragety::OrderDelegate {
+class FollowStragetyService : public FollowStragety::Delegate {
  public:
-  class Delegate {
-   public:
-    virtual void OpenOrder(const std::string& instrument,
-                           const std::string& order_no,
-                           OrderDirection direction,
-                           double price,
-                           int quantity) = 0;
-  };
-   
-
   FollowStragetyService(const std::string& master_account,
                         const std::string& slave_account,
-                        Delegate* delegate);
+                        TradeOrderDelegate* delegate);
 
-  void HandleRtnOrder(RtnOrderData rtn_order);
+  void HandleRtnOrder(OrderData rtn_order);
 
-  void DoHandleRtnOrder(RtnOrderData& rtn_order);
+  void DoHandleRtnOrder(OrderData rtn_order);
 
-  virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_no,
-                         OrderDirection direction,
-                         double price,
-                         int quantity) override;
-  
 
- private:
-  FollowStragety stragety_;
+  virtual void Trade(const std::string& order_no) override;
+
+private:
+  enum class StragetyStatus {
+    kPending,
+    kIdle,
+  };
+  StragetyStatus BeforeHandleOrder(OrderData order);
   Context context_;
-  Delegate* delegate_;
+  FollowStragety stragety_;
+  OrderIdMananger order_id_mananger_;
   std::vector<std::string> waiting_reply_order_;
-  std::deque<RtnOrderData> outstanding_rtn_orders_;
+  std::deque<OrderData> outstanding_orders_;
   std::string master_account_;
   std::string slave_account_;
 };

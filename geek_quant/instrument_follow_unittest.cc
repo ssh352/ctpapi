@@ -12,7 +12,7 @@ TEST_F(InstrumentFollowFixture, FollowOpenBuy) {
   EnterOrderData enter_order;
   std::vector<std::string> cancel_order_no_list;
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ(OrderDirection::kBuy, enter_order.order_direction);
@@ -25,7 +25,7 @@ TEST_F(InstrumentFollowFixture, FollowOpenSell) {
   EnterOrderData enter_order;
   std::vector<std::string> cancel_order_no_list;
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kSell, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kSell, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ("abc", enter_order.instrument);
   EXPECT_EQ(OrderDirection::kSell, enter_order.order_direction);
@@ -40,7 +40,7 @@ TEST_F(InstrumentFollowFixture, OpenOrderCase1) {
     EnterOrderData enter_order;
     std::vector<std::string> cancel_order_no_list;
     instrument_follow.HandleOrderRtnForTrader(
-        MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kOpening),
+        MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kOpening),
         &enter_order, &cancel_order_no_list);
     EXPECT_EQ("0002", enter_order.order_no);
   }
@@ -55,7 +55,7 @@ TEST_F(InstrumentFollowFixture, CloseCase1) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ("abc", enter_order.instrument);
@@ -73,7 +73,7 @@ TEST_F(InstrumentFollowFixture, CloseCase2) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ("abc", enter_order.instrument);
@@ -96,7 +96,7 @@ TEST_F(InstrumentFollowFixture, CloseCase3) {
   // Follow left 4 unfill
   // Trade part close 4 volume left 6 volume
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        4),
       &enter_order, &cancel_order_no_list);
 
@@ -107,7 +107,7 @@ TEST_F(InstrumentFollowFixture, CloseCase3) {
   cancel_order_no_list.clear();
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        6),
       &enter_order, &cancel_order_no_list);
 
@@ -127,7 +127,7 @@ TEST_F(InstrumentFollowFixture, CloseCase4) {
   // Follow left 4 unfill
   // Trade part close 5 volume left 5 volume
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        5),
       &enter_order, &cancel_order_no_list);
 
@@ -138,7 +138,7 @@ TEST_F(InstrumentFollowFixture, CloseCase4) {
 
   cancel_order_no_list.clear();
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        5),
       &enter_order, &cancel_order_no_list);
 
@@ -154,7 +154,7 @@ TEST_F(InstrumentFollowFixture, CloseCase5) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        1),
       &enter_order, &cancel_order_no_list);
 
@@ -164,7 +164,7 @@ TEST_F(InstrumentFollowFixture, CloseCase5) {
 
   cancel_order_no_list.clear();
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        3),
       &enter_order, &cancel_order_no_list);
 
@@ -172,7 +172,7 @@ TEST_F(InstrumentFollowFixture, CloseCase5) {
   EXPECT_EQ("", enter_order.order_no);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0004", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0004", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        4),
       &enter_order, &cancel_order_no_list);
 
@@ -181,7 +181,7 @@ TEST_F(InstrumentFollowFixture, CloseCase5) {
   EXPECT_EQ(4, enter_order.volume);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0005", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0005", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        2),
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ(0, cancel_order_no_list.size());
@@ -196,7 +196,7 @@ TEST_F(InstrumentFollowFixture, CloseCase6) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ("", enter_order.instrument);
@@ -211,16 +211,16 @@ TEST_F(InstrumentFollowFixture, CancelOpenCalse1) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
       MakeRtnOrderData("0001", OrderDirection::kBuy,
-                       OrderStatus::kOpenCanceled),
+                       OldOrderStatus::kOpenCanceled),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ(1, cancel_order_no_list.size());
@@ -231,11 +231,11 @@ TEST_F(InstrumentFollowFixture, CancelOpenCase2) {
   EnterOrderData enter_order;
   std::vector<std::string> cancel_order_no_list;
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened, 5),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened, 5),
       &enter_order, &cancel_order_no_list);
 
   {
@@ -243,7 +243,7 @@ TEST_F(InstrumentFollowFixture, CancelOpenCase2) {
     std::vector<std::string> cancel_order_no_list;
     instrument_follow.HandleOrderRtnForTrader(
         MakeRtnOrderData("0001", OrderDirection::kBuy,
-                         OrderStatus::kOpenCanceled),
+                         OldOrderStatus::kOpenCanceled),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ(0, cancel_order_no_list.size());
@@ -253,7 +253,7 @@ TEST_F(InstrumentFollowFixture, CancelOpenCase2) {
     EnterOrderData enter_order;
     std::vector<std::string> cancel_order_no_list;
     instrument_follow.HandleOrderRtnForFollow(
-        MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+        MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ(1, cancel_order_no_list.size());
@@ -266,16 +266,16 @@ TEST_F(InstrumentFollowFixture, CancelOpenCalse3) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kSell, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kSell, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kSell, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kSell, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
       MakeRtnOrderData("0001", OrderDirection::kSell,
-                       OrderStatus::kOpenCanceled),
+                       OldOrderStatus::kOpenCanceled),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ(1, cancel_order_no_list.size());
@@ -288,7 +288,7 @@ TEST_F(InstrumentFollowFixture, CancelCloseCase1) {
   EnterOrderData enter_order;
   std::vector<std::string> cancel_order_no_list;
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kCloseing),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kCloseing),
       &enter_order, &cancel_order_no_list);
   EXPECT_EQ("", enter_order.instrument);
   EXPECT_EQ(1, cancel_order_no_list.size());
@@ -298,9 +298,9 @@ TEST_F(InstrumentFollowFixture, CancelCloseCase1) {
 TEST_F(InstrumentFollowFixture, CancelCloseCase2) {
   OpenAndFillOrder(10, 10, 10);
 
-  TraderOrderRtn("0002", OrderStatus::kCloseing, 10, OrderDirection::kSell);
-  FollowerOrderRtn("0002", OrderStatus::kCloseing, 10, OrderDirection::kSell);
-  auto ret = TraderOrderRtn("0002", OrderStatus::kCloseCanceled, 10,
+  TraderOrderRtn("0002", OldOrderStatus::kCloseing, 10, OrderDirection::kSell);
+  FollowerOrderRtn("0002", OldOrderStatus::kCloseing, 10, OrderDirection::kSell);
+  auto ret = TraderOrderRtn("0002", OldOrderStatus::kCloseCanceled, 10,
                             OrderDirection::kSell);
   EnterOrderData& enter_order = ret.first;
   std::vector<std::string>& cancel_order_no_list = ret.second;
@@ -311,12 +311,12 @@ TEST_F(InstrumentFollowFixture, CancelCloseCase2) {
 TEST_F(InstrumentFollowFixture, CancelCloseCase3) {
   OpenAndFillOrder(2, 2, 2);
 
-  TraderOrderRtn("0002", OrderStatus::kCloseing, 1, OrderDirection::kSell);
-  FollowerOrderRtn("0002", OrderStatus::kCloseing, 1, OrderDirection::kSell);
-  TraderOrderRtn("0002", OrderStatus::kCloseCanceled, 1, OrderDirection::kSell);
-  TraderOrderRtn("0003", OrderStatus::kCloseing, 1, OrderDirection::kSell);
+  TraderOrderRtn("0002", OldOrderStatus::kCloseing, 1, OrderDirection::kSell);
+  FollowerOrderRtn("0002", OldOrderStatus::kCloseing, 1, OrderDirection::kSell);
+  TraderOrderRtn("0002", OldOrderStatus::kCloseCanceled, 1, OrderDirection::kSell);
+  TraderOrderRtn("0003", OldOrderStatus::kCloseing, 1, OrderDirection::kSell);
 
-  auto ret = FollowerOrderRtn("0002", OrderStatus::kCloseCanceled, 1,
+  auto ret = FollowerOrderRtn("0002", OldOrderStatus::kCloseCanceled, 1,
                               OrderDirection::kSell);
 
   EnterOrderData& enter_order = ret.first;
@@ -333,41 +333,41 @@ TEST_F(InstrumentFollowFixture, FillMutilOrder) {
 
   // Open 0001
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   // Open 0002
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   // Close
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        20),
       &enter_order, &cancel_order_no_list);
 
@@ -383,41 +383,41 @@ TEST_F(InstrumentFollowFixture, PartFillMutilOrder) {
 
   // Open 0001
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   // Open 0002
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpened, 6),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpened, 6),
       &enter_order, &cancel_order_no_list);
 
   // Close
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        20),
       &enter_order, &cancel_order_no_list);
 
@@ -436,38 +436,38 @@ TEST_F(InstrumentFollowFixture, CancelMutlOrder) {
   // follow_stragety_service.HandleRtnOrder();
   // Open 0001
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   // Open 0002
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpened),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpened),
       &enter_order, &cancel_order_no_list);
 
   // prevent write above code
   enter_order.order_no = "";
   // Close
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing,
+      MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing,
                        20),
       &enter_order, &cancel_order_no_list);
 
   // Open 0001
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0001", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   // Open 0002
   instrument_follow.HandleOrderRtnForFollow(
-      MakeRtnOrderData("0002", OrderDirection::kBuy, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kBuy, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ(2, cancel_order_no_list.size());
@@ -486,7 +486,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderCase1) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ("abc", enter_order.instrument);
@@ -504,7 +504,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderCase2) {
   std::vector<std::string> cancel_order_no_list;
 
   instrument_follow.HandleOrderRtnForTrader(
-      MakeRtnOrderData("0002", OrderDirection::kSell, OrderStatus::kOpening),
+      MakeRtnOrderData("0002", OrderDirection::kSell, OldOrderStatus::kOpening),
       &enter_order, &cancel_order_no_list);
 
   EXPECT_EQ("abc", enter_order.instrument);
@@ -516,14 +516,14 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderCase2) {
 }
 
 TEST_F(InstrumentFollowFixture, OpenReverseOrderCase3) {
-  TraderOrderRtn("0001", OrderStatus::kOpening, 10);
-  TraderOrderRtn("0001", OrderStatus::kOpened, 5);
-  FollowerOrderRtn("0001", OrderStatus::kOpening, 10);
+  TraderOrderRtn("0001", OldOrderStatus::kOpening, 10);
+  TraderOrderRtn("0001", OldOrderStatus::kOpened, 5);
+  FollowerOrderRtn("0001", OldOrderStatus::kOpening, 10);
   // Reverse Opening
 
   {
     auto ret =
-        TraderOrderRtn("0002", OrderStatus::kOpening, 5, OrderDirection::kSell);
+        TraderOrderRtn("0002", OldOrderStatus::kOpening, 5, OrderDirection::kSell);
     EnterOrderData& enter_order = ret.first;
     std::vector<std::string>& cancel_order_no_list = ret.second;
     EXPECT_EQ("", enter_order.order_no);
@@ -544,7 +544,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase1) {
     std::vector<std::string> cancel_order_no_list;
 
     instrument_follow.HandleOrderRtnForTrader(
-        MakeRtnOrderData("0003", OrderDirection::kSell, OrderStatus::kCloseing),
+        MakeRtnOrderData("0003", OrderDirection::kSell, OldOrderStatus::kCloseing),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ("abc", enter_order.instrument);
@@ -561,7 +561,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase1) {
     std::vector<std::string> cancel_order_no_list;
 
     instrument_follow.HandleOrderRtnForTrader(
-        MakeRtnOrderData("0004", OrderDirection::kBuy, OrderStatus::kCloseing),
+        MakeRtnOrderData("0004", OrderDirection::kBuy, OldOrderStatus::kCloseing),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ("abc", enter_order.instrument);
@@ -585,7 +585,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase2) {
     std::vector<std::string> cancel_order_no_list;
 
     instrument_follow.HandleOrderRtnForTrader(
-        MakeRtnOrderData("0003", OrderDirection::kBuy, OrderStatus::kCloseing),
+        MakeRtnOrderData("0003", OrderDirection::kBuy, OldOrderStatus::kCloseing),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ("abc", enter_order.instrument);
@@ -602,7 +602,7 @@ TEST_F(InstrumentFollowFixture, OpenReverseOrderThenCloseCase2) {
     std::vector<std::string> cancel_order_no_list;
 
     instrument_follow.HandleOrderRtnForTrader(
-        MakeRtnOrderData("0004", OrderDirection::kSell, OrderStatus::kCloseing),
+        MakeRtnOrderData("0004", OrderDirection::kSell, OldOrderStatus::kCloseing),
         &enter_order, &cancel_order_no_list);
 
     EXPECT_EQ("abc", enter_order.instrument);

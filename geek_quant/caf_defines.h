@@ -34,7 +34,14 @@ enum class EnterOrderAction {
   kCancelForTest,
 };
 
+
 enum class OrderStatus {
+  kActive,
+  kFilled,
+  kCancel,
+};
+
+enum class OldOrderStatus {
   kInvalid,
   kOpening,
   kCloseing,
@@ -44,10 +51,30 @@ enum class OrderStatus {
   kCloseCanceled,
 };
 
+enum class OrderEventType {
+  kIgnore,
+  kNewOpen,
+  kNewClose,
+  kOpenTraded,
+  kCloseTraded,
+  kCanceled,
+};
+
 enum class OpenClose {
   kInvalid,
   kOpen,
   kClose,
+};
+
+enum class OrderType {
+  kLimit,
+  kMarket,
+};
+
+enum class PositionEffect {
+  kOpen,
+  kClose,
+  kCloseToday,
 };
 
 struct PositionData {
@@ -64,12 +91,42 @@ struct PositionData {
 struct OpenOrderData {
   std::string instrument;
   OrderDirection direction;
-  OrderStatus order_status;
+  OldOrderStatus order_status;
+};
+
+struct OrderData {
+  std::string account_id_;
+  std::string order_id_;
+  std::string instrument_;
+  std::string datetime_;
+  std::string user_product_info_;
+  int quanitty_;
+  int filled_quantity_;
+  int session_id_;
+  double price_;
+  OrderDirection direction_;
+  OrderType type_;
+  OrderStatus status_;
+  PositionEffect position_effect_;
+
+  const std::string& account_id() const { return account_id_; }
+  const std::string& order_id() const { return order_id_; }
+  const std::string& instrument() const { return instrument_; }
+  const std::string& datetime() const { return datetime_; }
+  const std::string& user_product_info() const { return user_product_info_; }
+  int quanitty() const { return quanitty_; }
+  int filled_quantity() const { return filled_quantity_; }
+  int session_id() const { return session_id_; }
+  double price() const { return price_; }
+  OrderDirection direction() const { return direction_; }
+  OrderType type() const { return type_; }
+  OrderStatus status() const { return status_; }
+  PositionEffect position_effect() const { return position_effect_; }
 };
 
 struct RtnOrderData {
   RtnOrderData() {
-    order_status = OrderStatus::kInvalid;
+    order_status = OldOrderStatus::kInvalid;
     order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
     request_by = RequestBy::kInvalid;
@@ -82,7 +139,7 @@ struct RtnOrderData {
   std::string instrument;
   int session_id;
   OrderDirection order_direction;
-  OrderStatus order_status;
+  OldOrderStatus order_status;
   RequestBy request_by;
   bool today;
   double order_price;
@@ -161,8 +218,10 @@ struct OrderPosition {
 using CTPLogin = caf::atom_constant<caf::atom("login")>;
 using CTPRspLogin = caf::atom_constant<caf::atom("rsplogin")>;
 using CTPQryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryposs")>;
-using CTPRspQryInvestorPositionsAtom = caf::atom_constant<caf::atom("rqryposs")>;
-using CTPReqSettlementInfoConfirmAtom = caf::atom_constant<caf::atom("sttlcfm")>;
+using CTPRspQryInvestorPositionsAtom =
+    caf::atom_constant<caf::atom("rqryposs")>;
+using CTPReqSettlementInfoConfirmAtom =
+    caf::atom_constant<caf::atom("sttlcfm")>;
 using CTPRtnOrderAtom = caf::atom_constant<caf::atom("rtnorder")>;
 using CTPReqRestartRtnOrdersAtom = caf::atom_constant<caf::atom("rros")>;
 

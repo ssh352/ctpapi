@@ -1,9 +1,22 @@
 #include "order_manager.h"
 
-
-
-void OrderManager::HandleRtnOrder(const RtnOrderData& rtn_order) {
+OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
+  OrderEventType ret_type = OrderEventType::kIgnore;
+  if (orders_.find(order.order_id()) == orders_.end()) {
+    orders_[order.order_id()] = Order(std::move(order));
+    ret_type = IsCloseOrder(order.position_effect()) ? OrderEventType::kNewClose
+                                                     : OrderEventType::kNewOpen;
+  } else if (order.status() == OrderStatus::kCancel) {
+    ret_type = OrderEventType::kCanceled;
+  } else {
+    ret_type = IsCloseOrder(order.position_effect())
+                   ? OrderEventType::kCloseTraded
+                   : OrderEventType::kOpenTraded;
+  }
+  return ret_type;
 }
 
-void OrderManager::AfterHandleRtnOrder() {
+bool OrderManager::IsCloseOrder(PositionEffect effect) {
+  return effect == PositionEffect::kClose ||
+         effect == PositionEffect::kCloseToday;
 }
