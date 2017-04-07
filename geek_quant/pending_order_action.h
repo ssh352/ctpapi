@@ -7,11 +7,11 @@ class PendingOrderAction {
  public:
   PendingOrderAction();
 
-  PendingOrderAction(const OrderRtnData& order, int follower_volum); 
+  PendingOrderAction(const RtnOrderData& order, int follower_volum); 
 
-  void HandleOrderRtnForTrader(const OrderRtnData& order, std::vector<std::string>* cancel_order_no_list);
+  void HandleOrderRtnForTrader(const RtnOrderData& order, std::vector<std::string>* cancel_order_no_list);
 
-  bool HandleOrderRtnForFollower(const OrderRtnData& order, std::vector<std::string>* cancel_order_no_list);
+  bool HandleOrderRtnForFollower(const RtnOrderData& order, std::vector<std::string>* cancel_order_no_list);
 
   void HandleCloseingFromTrader(std::vector<std::string>* cancel_order_no_list);
 

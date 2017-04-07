@@ -1,7 +1,7 @@
 #ifndef FOLLOW_TRADE_UNITTEST_INSTRUMENT_FOLLOW_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_INSTRUMENT_FOLLOW_FIXTURE_H
 #include "gtest/gtest.h"
-#include "geek_quant/follow_stragety.h"
+#include "geek_quant/old_follow_stragety.h"
 #include "geek_quant/caf_defines.h"
 class InstrumentFollowBaseFixture : public testing::Test {
  public:
@@ -9,13 +9,13 @@ class InstrumentFollowBaseFixture : public testing::Test {
    InstrumentFollowBaseFixture() : instrument_follow(true) {
 
    }
-  OrderRtnData MakeOrderRtnData(const std::string& order_no,
+  RtnOrderData MakeRtnOrderData(const std::string& order_no,
                                 OrderDirection order_direction,
                                 OrderStatus order_status,
                                 int volume = 10,
                                 double order_price = 1234.1,
                                 const std::string&& instrument = "abc") {
-    OrderRtnData order;
+    RtnOrderData order;
     order.order_no = std::move(order_no);
     order.order_direction = order_direction;
     order.order_status = order_status;
@@ -115,16 +115,16 @@ class InstrumentFollowBaseFixture : public testing::Test {
                   std::vector<std::string>* cancel_order_no_list) {
     if (trader) {
       instrument_follow.HandleOrderRtnForTrader(
-          MakeOrderRtnData(order_no, order_direction, order_status, volume),
+          MakeRtnOrderData(order_no, order_direction, order_status, volume),
           enter_order, cancel_order_no_list);
     } else {
       instrument_follow.HandleOrderRtnForFollow(
-          MakeOrderRtnData(order_no, order_direction, order_status, volume),
+          MakeRtnOrderData(order_no, order_direction, order_status, volume),
           enter_order, cancel_order_no_list);
     }
   }
 
-  FollowStragety instrument_follow;
+  OldFollowStragety instrument_follow;
 
  private:
   virtual void TestBody() override {}

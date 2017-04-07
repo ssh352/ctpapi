@@ -7,6 +7,7 @@
 #include "geek_quant/ctp_trader.h"
 #include "follow_trade_actor.h"
 #include "geek_quant/cta_trade_actor.h"
+#include "geek_quant/follow_stragety_service.h"
 
 /*
 

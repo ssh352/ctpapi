@@ -7,7 +7,7 @@
 class CtpOrderDispatcher {
  public:
   CtpOrderDispatcher(bool is_cta);
-  boost::optional<OrderRtnData> HandleRtnOrder(CThostFtdcOrderField pOrder);
+  boost::optional<RtnOrderData> HandleRtnOrder(CThostFtdcOrderField pOrder);
 
  private:
   bool IsSameOrderStatus(const CThostFtdcOrderField& left,

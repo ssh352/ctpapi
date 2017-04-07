@@ -8,7 +8,7 @@ void OrderFollowMananger::AddPosition(const std::string& order_no,
   }
 }
 
-void OrderFollowMananger::HandleOrderRtn(const OrderRtnData& order) {
+void OrderFollowMananger::HandleOrderRtn(const RtnOrderData& order) {
   switch (order.order_status) {
     case OrderStatus::kOpening: {
       orders_[order.order_no].MakeOpening(order.volume, order.order_direction);
@@ -50,7 +50,7 @@ void OrderFollowMananger::HandleOrderRtn(const OrderRtnData& order) {
 }
 
 OpenReverseOrderActionInfo OrderFollowMananger::ParseOpenReverseOrderRtn(
-    const OrderRtnData& order) const {
+    const RtnOrderData& order) const {
   OpenReverseOrderActionInfo action;
   action.order_no = order.order_no;
   std::vector<std::pair<std::string, int> > direction_order_volumes;
@@ -97,7 +97,7 @@ OpenReverseOrderActionInfo OrderFollowMananger::ParseOpenReverseOrderRtn(
 }
 
 CloseingActionInfo OrderFollowMananger::ParseCloseingOrderRtn(
-    const OrderRtnData& order) const {
+    const RtnOrderData& order) const {
   CloseingActionInfo action_info;
   int outstanding_close_volume = order.volume;
   int close_volume = 0;
@@ -122,7 +122,7 @@ CloseingActionInfo OrderFollowMananger::ParseCloseingOrderRtn(
   return action_info;
 }
 
-void OrderFollowMananger::HandleCloseing(const OrderRtnData& order) {
+void OrderFollowMananger::HandleCloseing(const RtnOrderData& order) {
   int outstanding_close_volume = order.volume;
   int close_volume = 0;
   for (auto& item : orders_) {
@@ -145,7 +145,7 @@ void OrderFollowMananger::HandleCloseing(const OrderRtnData& order) {
   }
 }
 
-bool OrderFollowMananger::IsOpenReverseOrder(const OrderRtnData& order) const {
+bool OrderFollowMananger::IsOpenReverseOrder(const RtnOrderData& order) const {
   int buy_position_volume = std::accumulate(
       orders_.begin(), orders_.end(), 0, [](int val, auto item) {
         if (item.second.order_direction() == OrderDirection::kBuy) {

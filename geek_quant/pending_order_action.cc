@@ -1,6 +1,6 @@
 #include "pending_order_action.h"
 
-PendingOrderAction::PendingOrderAction(const OrderRtnData& order,
+PendingOrderAction::PendingOrderAction(const RtnOrderData& order,
                                        int follower_volum)
     : order_no_(order.order_no),
       order_direction_(order.order_direction),
@@ -19,7 +19,7 @@ PendingOrderAction::PendingOrderAction()
 }
 
 void PendingOrderAction::HandleOrderRtnForTrader(
-    const OrderRtnData& order,
+    const RtnOrderData& order,
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
     case OrderStatus::kOpening:
@@ -49,7 +49,7 @@ void PendingOrderAction::HandleOrderRtnForTrader(
 }
 
 bool PendingOrderAction::HandleOrderRtnForFollower(
-    const OrderRtnData& order,
+    const RtnOrderData& order,
     std::vector<std::string>* cancel_order_no_list) {
   switch (order.order_status) {
     case OrderStatus::kOpening: {

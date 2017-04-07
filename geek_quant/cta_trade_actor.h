@@ -27,7 +27,7 @@ class CtaTradeActor : public caf::event_based_actor,
  private:
   CtpTrader ctp_;
   CtpOrderDispatcher order_dispatcher_;
-  std::vector<OrderRtnData> restart_rtn_orders_;
+  std::vector<RtnOrderData> restart_rtn_orders_;
 
   typedef caf::detail::make_response_promise_helper<bool>::type
       LogonResponsePromise;
@@ -38,7 +38,7 @@ class CtaTradeActor : public caf::event_based_actor,
   std::vector<PositionsResponsePromise> positions_response_promises;
 
   typedef caf::detail::make_response_promise_helper<
-      std::vector<OrderRtnData>>::type RestartRtnOrdersRepsonsePromise;
+      std::vector<RtnOrderData>>::type RestartRtnOrdersRepsonsePromise;
   std::vector<RestartRtnOrdersRepsonsePromise>
       restart_rtn_orders_response_promises_;
   size_t last_check_rtn_order_size_;

@@ -61,12 +61,12 @@ caf::behavior CtaTradeActor::make_behavior() {
         }
         positions_response_promises.clear();
       },
-      [=](CTPRtnOrderAtom, OrderRtnData order) {
+      [=](CTPRtnOrderAtom, RtnOrderData order) {
         restart_rtn_orders_.push_back(order);
       },
       [=](CTPReqRestartRtnOrdersAtom, const caf::strong_actor_ptr& actor)
-          -> caf::result<std::vector<OrderRtnData> > {
-        auto promise = make_response_promise<std::vector<OrderRtnData> >();
+          -> caf::result<std::vector<RtnOrderData> > {
+        auto promise = make_response_promise<std::vector<RtnOrderData> >();
         restart_rtn_orders_response_promises_.push_back(promise);
         last_check_rtn_order_size_ = restart_rtn_orders_.size();
         delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);

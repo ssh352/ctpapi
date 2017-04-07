@@ -67,8 +67,8 @@ struct OpenOrderData {
   OrderStatus order_status;
 };
 
-struct OrderRtnData {
-  OrderRtnData() {
+struct RtnOrderData {
+  RtnOrderData() {
     order_status = OrderStatus::kInvalid;
     order_direction = OrderDirection::kUnkown;
     order_price = 0.0;
@@ -77,6 +77,7 @@ struct OrderRtnData {
     session_id = 0;
     today = false;
   }
+  std::string account_id;
   std::string order_no;
   std::string instrument;
   int session_id;
@@ -86,6 +87,12 @@ struct OrderRtnData {
   bool today;
   double order_price;
   int volume;
+};
+
+struct CorrOrderQuantity {
+  std::string order_no;
+  int quantity;
+  int corr_quantity;
 };
 
 struct EnterOrderData {
@@ -185,7 +192,7 @@ typename Inspector::result_type inspect(Inspector& f, PositionData& x) {
 }
 
 template <class Inspector>
-typename Inspector::result_type inspect(Inspector& f, OrderRtnData& x) {
+typename Inspector::result_type inspect(Inspector& f, RtnOrderData& x) {
   return f(caf::meta::type_name("OrderRtnData"), x.instrument, x.order_no,
            x.order_status, x.order_direction, x.order_price, x.volume);
 }

@@ -2,7 +2,7 @@
 
 CtpOrderDispatcher::CtpOrderDispatcher(bool is_cta) : is_cta_(is_cta) {}
 
-boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
+boost::optional<RtnOrderData> CtpOrderDispatcher::HandleRtnOrder(
     CThostFtdcOrderField raw_order) {
   auto it = std::find_if(orders_.begin(), orders_.end(), [&](auto order) {
     return std::string(order.OrderRef) == raw_order.OrderRef &&
@@ -10,7 +10,7 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
   });
   if (it == orders_.end()) {
     // new order
-    OrderRtnData order;
+    RtnOrderData order;
     order.order_direction =
         raw_order.Direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy : OrderDirection::kSell;
     order.instrument = raw_order.InstrumentID;
@@ -25,10 +25,10 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
     order.today =
         raw_order.CombOffsetFlag[0] == THOST_FTDC_OF_CloseToday ? true : false;
     orders_.push_back(raw_order);
-    return boost::optional<OrderRtnData>(order);
+    return boost::optional<RtnOrderData>(order);
   } else {
     if (!IsSameOrderStatus(*it, raw_order)) {
-      OrderRtnData order;
+      RtnOrderData order;
       order.order_direction =
           raw_order.Direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy : OrderDirection::kSell;
       order.instrument = raw_order.InstrumentID;
@@ -42,11 +42,11 @@ boost::optional<OrderRtnData> CtpOrderDispatcher::HandleRtnOrder(
       order.order_no = raw_order.OrderRef;
       order.session_id = raw_order.SessionID;
       *it = raw_order;
-      return boost::optional<OrderRtnData>(order);
+      return boost::optional<RtnOrderData>(order);
     }
   }
 
-  return boost::optional<OrderRtnData>{};
+  return boost::optional<RtnOrderData>{};
 }
 
 bool CtpOrderDispatcher::IsSameOrderStatus(const CThostFtdcOrderField& prev,

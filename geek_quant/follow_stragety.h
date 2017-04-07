@@ -1,54 +1,32 @@
 #ifndef FOLLOW_TRADE_FOLLOW_STRAGETY_H
 #define FOLLOW_TRADE_FOLLOW_STRAGETY_H
-#include "boost/optional.hpp"
 #include "geek_quant/caf_defines.h"
-#include "geek_quant/order_follow.h"
-#include "geek_quant/order_follow_manager.h"
-#include "geek_quant/pending_order_action.h"
+#include "geek_quant/context.h"
 
 class FollowStragety {
  public:
-  FollowStragety(bool wait_sync = false);
+  class OrderDelegate {
+   public:
+    virtual void OpenOrder(const std::string& instrument,
+                           const std::string& order_no,
+                           OrderDirection direction,
+                           double price,
+                           int quantity) = 0;
+  };
+  FollowStragety(const std::string& master_account_id,
+                 const std::string& slave_account_id,
+                 OrderDelegate* del);
 
-  void SyncComplete();
+  void HandleOpening(RtnOrderData rtn_order, const Context& context_);
 
-  void AddPositionToTrader(const std::string& order_no,
-                           OrderDirection order_direction,
-                           int volume);
+  void HandleCloseing(RtnOrderData rtn_order, const Context& context_);
 
-  void AddPositionToFollower(const std::string& order_no,
-                             OrderDirection order_direction,
-                             int volume);
-
-  void HandleOrderRtnForTrader(const OrderRtnData& order,
-                               EnterOrderData* enter_order,
-                               std::vector<std::string>* cancel_order_no_list);
-
-  void HandleOrderRtnForFollow(const OrderRtnData& order,
-                               EnterOrderData* enter_order,
-                               std::vector<std::string>* cancel_order_no_list);
+  void HandleCanceled(RtnOrderData rtn_order, const Context& context);
 
  private:
-  bool WaitSyncOrders();
-
-  EnterOrderData MakeOpenReverseAction(
-      const OrderRtnData& order,
-      std::vector<std::pair<std::string, int> > order_volumes);
-
-  EnterOrderData MakeOpeningAction(const OrderRtnData& order);
-
-  EnterOrderData MakeCloseingAction(
-      const OrderRtnData& order,
-      const CloseingActionInfo& action,
-      std::vector<std::pair<std::string, int> > order_volumes);
-
-  int GetPendingCloseVolume(OrderDirection order_direction) const;
-
-  bool wait_sync_;
-
-  std::map<std::string, PendingOrderAction> pending_order_actions_;
-  OrderFollowMananger trader_orders_;
-  OrderFollowMananger follower_orders_;
+  std::string master_account_id_;
+  std::string slave_account_id_;
+  OrderDelegate* delegate_;
 };
 
 #endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_H

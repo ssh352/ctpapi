@@ -1,195 +1,53 @@
 #include "follow_stragety.h"
 
-FollowStragety::FollowStragety(bool wait_sync) {
-  wait_sync_ = wait_sync;
+FollowStragety::FollowStragety(const std::string& master_account_id,
+                               const std::string& slave_account_id,
+                               FollowStragety::OrderDelegate* del)
+    : delegate_(del),
+      master_account_id_(master_account_id),
+      slave_account_id_(slave_account_id) {}
+
+void FollowStragety::HandleOpening(RtnOrderData rtn_order,
+                                   const Context& context_) {
+  delegate_->OpenOrder(rtn_order.instrument, rtn_order.order_no,
+                       rtn_order.order_direction, rtn_order.order_price,
+                       rtn_order.volume);
 }
 
-bool FollowStragety::WaitSyncOrders() {
-  return wait_sync_;
-}
-
-void FollowStragety::SyncComplete() {
-  wait_sync_ = false;
-}
-
-void FollowStragety::AddPositionToTrader(const std::string& order_no,
-                                         OrderDirection order_direction,
-                                         int volume) {
-  trader_orders_.AddPosition(order_no, order_direction, volume);
-}
-
-void FollowStragety::AddPositionToFollower(const std::string& order_no,
-                                           OrderDirection order_direction,
-                                           int volume) {
-  follower_orders_.AddPosition(order_no, order_direction, volume);
-}
-
-void FollowStragety::HandleOrderRtnForTrader(
-    const OrderRtnData& order,
-    EnterOrderData* enter_order,
-    std::vector<std::string>* cancel_order_no_list) {
-  if (WaitSyncOrders()) {
-    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(
-        order, cancel_order_no_list);
-    trader_orders_.HandleOrderRtn(order);
+void FollowStragety::HandleCloseing(RtnOrderData rtn_order,
+                                    const Context& context_) {
+  /*
+  
+  if (account != master_account_id_) {
     return;
   }
 
-  if (pending_order_actions_.find(order.order_no) !=
-      pending_order_actions_.end()) {
-    pending_order_actions_[order.order_no].HandleOrderRtnForTrader(
-        order, cancel_order_no_list);
-  }
+  int master_closeable_quantity =
+      context_.GetPositionCloseableQuantity(account, rtn_order.instrument);
 
-  switch (order.order_status) {
-    case OrderStatus::kOpening: {
-      if (trader_orders_.IsOpenReverseOrder(order)) {
-        OpenReverseOrderActionInfo action =
-            trader_orders_.ParseOpenReverseOrderRtn(order);
-        std::vector<std::string> order_list;
-        for (auto item : action.items) {
-          if (pending_order_actions_.find(item.order_no) !=
-              pending_order_actions_.end()) {
-            pending_order_actions_[item.order_no].HandleOpenReverse(
-                cancel_order_no_list);
-          }
-          order_list.push_back(item.order_no);
-        }
-        *enter_order = MakeOpenReverseAction(
-            order,
-            follower_orders_.GetPositionVolumeWithOrderNoList(order_list));
-      } else {
-        *enter_order = MakeOpeningAction(order);
-      }
-    } break;
-    case OrderStatus::kCloseing: {
-      CloseingActionInfo action = trader_orders_.ParseCloseingOrderRtn(order);
-      std::vector<std::string> order_list;
-      for (auto item : action.items) {
-        if (pending_order_actions_.find(item.first) !=
-            pending_order_actions_.end()) {
-          pending_order_actions_[item.first].HandleCloseingFromTrader(
-              cancel_order_no_list);
-        }
-        order_list.push_back(item.first);
-      }
-      *enter_order = MakeCloseingAction(
-          order, action,
-          follower_orders_.GetPositionVolumeWithOrderNoList(order_list));
-    } break;
-    default:
-      break;
-  }
-  trader_orders_.HandleOrderRtn(order);
-}
+  if (master_closeable_quantity == 0) {
+    // Close all position
+  } else {
+    auto slave_order_quantitys = context_.GetOpenOrderQuantitysWithOrderNos(
+        slave_account_id_, context_.GetCorrOrderNosWithOrderNo(
+                               master_account_id_, rtn_order.order_no));
 
-void FollowStragety::HandleOrderRtnForFollow(
-    const OrderRtnData& order,
-    EnterOrderData* enter_order,
-    std::vector<std::string>* cancel_order_no_list) {
-  if (WaitSyncOrders()) {
-    std::vector<std::string> dummy_cancel_order_no_list;
-    pending_order_actions_[order.order_no].HandleOrderRtnForFollower(
-        order, &dummy_cancel_order_no_list);
-    follower_orders_.HandleOrderRtn(order);
-    return;
-  }
+    auto master_order_quantitys = context_.GetCorrOrderQuantiysWithOrderNo(
+        master_account_id_, rtn_order.order_no);
 
-  if (pending_order_actions_.find(order.order_no) !=
-      pending_order_actions_.end()) {
-    if (pending_order_actions_[order.order_no].HandleOrderRtnForFollower(
-            order, cancel_order_no_list)) {
-      pending_order_actions_.erase(order.order_no);
+    for (auto master_quantity : master_order_quantitys) {
     }
   }
-
-  follower_orders_.HandleOrderRtn(order);
+  
+  */
 }
 
-EnterOrderData FollowStragety::MakeOpenReverseAction(
-    const OrderRtnData& order,
-    std::vector<std::pair<std::string, int> > order_volumes) {
-  EnterOrderData enter_order;
-  int volume =
-      std::accumulate(order_volumes.begin(), order_volumes.end(), 0,
-                      [](int val, auto item) { return val + item.second; });
-  if (volume <= 0) {
-    return enter_order;
+void FollowStragety::HandleCanceled(RtnOrderData rtn_order,
+                                    const Context& context) {
+  /*
+  if (account != master_account_id_) {
+    return;
   }
-  enter_order.order_no = order.order_no;
-  enter_order.action = EnterOrderAction::kOpen;
-  enter_order.instrument = order.instrument;
-  enter_order.order_direction = order.order_direction;
-  enter_order.order_price = order.order_price;
-  enter_order.volume = std::min<int>(order.volume, volume);
-  pending_order_actions_[order.order_no] =
-      PendingOrderAction{order, enter_order.volume};
-  return enter_order;
-}
-
-EnterOrderData FollowStragety::MakeOpeningAction(const OrderRtnData& order) {
-  EnterOrderData enter_order;
-  enter_order.order_no = order.order_no;
-  enter_order.action = EnterOrderAction::kOpen;
-  enter_order.instrument = order.instrument;
-  enter_order.order_direction = order.order_direction;
-  enter_order.order_price = order.order_price;
-  enter_order.volume = order.volume;
-  pending_order_actions_[order.order_no] =
-      PendingOrderAction{order, order.volume};
-  return enter_order;
-}
-
-EnterOrderData FollowStragety::MakeCloseingAction(
-    const OrderRtnData& order,
-    const CloseingActionInfo& action,
-    std::vector<std::pair<std::string, int> > order_volumes) {
-  EnterOrderData enter_order;
-  int volume =
-      std::accumulate(order_volumes.begin(), order_volumes.end(), 0,
-                      [](int val, auto item) { return val + item.second; });
-  if (volume <= 0) {
-    return enter_order;
-  }
-
-  int pending_close_volume = GetPendingCloseVolume(order.order_direction);
-
-  int trader_close_volume = std::accumulate(
-      action.items.begin(), action.items.end(), 0,
-      [](int val, auto item) { return val + item.second.close_volume; });
-
-  int trader_position_volume = std::accumulate(
-      action.items.begin(), action.items.end(), 0,
-      [](int val, auto item) { return val + item.second.position_volume; });
-
-  // trader_position_volume
-  int close_volume = volume - pending_close_volume -
-                     (trader_position_volume - trader_close_volume);
-  if (close_volume <= 0) {
-    return enter_order;
-  }
-
-  enter_order.order_no = order.order_no;
-  enter_order.action = EnterOrderAction::kClose;
-  enter_order.instrument = order.instrument;
-  enter_order.order_direction = order.order_direction;
-  enter_order.order_price = order.order_price;
-  enter_order.volume = close_volume;
-  enter_order.today = order.today;
-  pending_order_actions_[order.order_no] =
-      PendingOrderAction{order, enter_order.volume};
-  return enter_order;
-}
-
-int FollowStragety::GetPendingCloseVolume(
-    OrderDirection order_direction) const {
-  return std::accumulate(
-      pending_order_actions_.begin(), pending_order_actions_.end(), 0,
-      [=](int val, auto item) {
-        if (item.second.order_direction() == order_direction) {
-          return val + item.second.pending_close_volume();
-        }
-        return val;
-      });
-  return 0;
+  
+  */
 }
