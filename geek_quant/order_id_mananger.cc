@@ -1,8 +1,8 @@
 #include "order_id_mananger.h"
 #include <boost/lexical_cast.hpp>
 
-OrderIdMananger::OrderIdMananger() {
-  start_order_id_seq_ = 1000;
+OrderIdMananger::OrderIdMananger(int start_order_id_seq) {
+  start_order_id_seq_ = start_order_id_seq;
 }
 
 OrderData OrderIdMananger::AdjustOrder(OrderData&& order) {

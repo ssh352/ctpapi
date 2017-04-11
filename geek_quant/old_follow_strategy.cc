@@ -1,4 +1,4 @@
-#include "old_follow_stragety.h"
+#include "old_follow_strategy.h"
 
 OldFollowStragety::OldFollowStragety(bool wait_sync) {
   wait_sync_ = wait_sync;

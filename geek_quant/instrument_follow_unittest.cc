@@ -433,7 +433,7 @@ TEST_F(InstrumentFollowFixture, CancelMutlOrder) {
   EnterOrderData enter_order;
   std::vector<std::string> cancel_order_no_list;
 
-  // follow_stragety_service.HandleRtnOrder();
+  // follow_strategy_service.HandleRtnOrder();
   // Open 0001
   instrument_follow.HandleOrderRtnForTrader(
       MakeRtnOrderData("0001", OrderDirection::kBuy, OldOrderStatus::kOpening),

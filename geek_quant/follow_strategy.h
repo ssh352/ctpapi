@@ -1,23 +1,37 @@
-#ifndef FOLLOW_STRATEGY_H
-#define FOLLOW_STRATEGY_H
+#ifndef FOLLOW_TRADE_FOLLOW_strategy_H
+#define FOLLOW_TRADE_FOLLOW_strategy_H
 #include "geek_quant/caf_defines.h"
+#include "geek_quant/context.h"
+#include "geek_quant/trade_order_delegate.h"
 
-class FollowStrategy : public FollowTAStrategyActor::base {
+class FollowStragety {
  public:
-  FollowStrategy(caf::actor_config& cfg);
-  virtual ~FollowStrategy();
+  class Delegate {
+   public:
+    virtual void Trade(const std::string& order_no) = 0;
+  };
+  FollowStragety(const std::string& master_account_id,
+                 const std::string& slave_account_id,
+                 TradeOrderDelegate* trade_order_delegate,
+                 Delegate* delegate,
+                 Context* context);
 
-  virtual FollowTAStrategyActor::behavior_type make_behavior() override;
+  void HandleOpening(const OrderData& order_data);
+
+  void HandleCloseing(const OrderData& order_data);
+
+  void HandleCanceled(const OrderData& order_data);
+
+  void HandleClosed(const OrderData& order_data);
+
+  void HandleOpened(const OrderData& order_data);
 
  private:
-  void HandleOpenging(const OrderRtnData& order);
-  void HandleCloseing(const OrderRtnData& order);
-  void HandleOpened(const OrderRtnData& order);
-  void HandleClosed(const OrderRtnData& order);
-  void HandleCancel(const OrderRtnData& order);
-  std::vector<OrderSubscriberActor> subscribers_;
-  std::vector<OrderRtnData> unfill_orders_;
-  std::vector<PositionData> positions_;
+  std::string master_account_id_;
+  std::string slave_account_id_;
+  TradeOrderDelegate* trade_order_delegate_;
+  Delegate* delegate_;
+  Context* context_;
 };
 
-#endif /* FOLLOW_STRATEGY_H */
+#endif  // FOLLOW_TRADE_FOLLOW_strategy_H

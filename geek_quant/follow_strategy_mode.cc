@@ -1,4 +1,4 @@
-#include "follow_stragety_mode.h"
+#include "follow_strategy_mode.h"
 
 void FollowTradeFollowStragetyMode::Init(
     std::vector<OrderPosition> trader_position,

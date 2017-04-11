@@ -6,7 +6,11 @@ class Order {
  public:
   Order() = default;
   Order(OrderData&& data);
+  const std::string& instrument() const {
+    return data_.instrument();
+  }
 
+  bool IsUnfillOrder() const;
  private:
   OrderData data_;
   std::vector<std::pair<std::string, int> > order_quantitys_;

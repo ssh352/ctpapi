@@ -1,7 +1,7 @@
 #ifndef FOLLOW_TRADE_UNITTEST_INSTRUMENT_FOLLOW_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_INSTRUMENT_FOLLOW_FIXTURE_H
 #include "gtest/gtest.h"
-#include "geek_quant/old_follow_stragety.h"
+#include "geek_quant/old_follow_strategy.h"
 #include "geek_quant/caf_defines.h"
 class InstrumentFollowBaseFixture : public testing::Test {
  public:

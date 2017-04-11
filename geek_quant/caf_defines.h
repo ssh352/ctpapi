@@ -216,11 +216,7 @@ struct OrderPosition {
 
 struct OrderQuantity {
   std::string order_id;
-  int quantity;
-  int closeable_quantity;
-};
-
-struct Position {
+  OrderDirection direction;
   int quantity;
   int closeable_quantity;
 };

@@ -1,18 +1,19 @@
 #ifndef FOLLOW_TRADE_INSTRUMENT_POSITION_H
 #define FOLLOW_TRADE_INSTRUMENT_POSITION_H
 #include "geek_quant/caf_defines.h"
+class CloseCorrOrdersManager;
 
 class InstrumentPosition {
  public:
-  std::vector<OrderQuantity> GetQuantitysWithOrderIds(
-      std::vector<std::string> orders);
+  std::vector<OrderQuantity> GetQuantitys(std::vector<std::string> orders);
 
   int GetPositionCloseableQuantity(OrderDirection direction);
 
+  void HandleRtnOrder(const OrderData& rtn_order,
+                      CloseCorrOrdersManager* close_corr_orders_mgr);
+
  private:
-  std::vector<Position> buy_positions_;
-  std::vector<Position> sell_positions_;
-  std::vector<CorrCloseOrder
+  std::map<std::string, OrderQuantity> positions_;
 };
 
 #endif  // FOLLOW_TRADE_INSTRUMENT_POSITION_H

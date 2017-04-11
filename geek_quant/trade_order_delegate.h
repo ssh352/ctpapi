@@ -16,6 +16,10 @@ class TradeOrderDelegate {
                           PositionEffect position_effect,
                           double price,
                           int quantity) = 0;
+
+  virtual void CancelOrder(const std::string& order_no) = 0;
+
+
 };
 
 #endif  // FOLLOW_TRADE_TRADE_ORDER_DELEGATE_H

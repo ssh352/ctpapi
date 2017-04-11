@@ -4,7 +4,7 @@
 
 class OrderIdMananger {
 public:
-  OrderIdMananger();
+  OrderIdMananger(int start_order_id_seq);
   OrderData AdjustOrder(OrderData&& order);
 
 private:

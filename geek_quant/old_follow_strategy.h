@@ -1,5 +1,5 @@
-#ifndef FOLLOW_TRADE_OLD_FOLLOW_STRAGETY_H
-#define FOLLOW_TRADE_OLD_FOLLOW_STRAGETY_H
+#ifndef FOLLOW_TRADE_OLD_FOLLOW_strategy_H
+#define FOLLOW_TRADE_OLD_FOLLOW_strategy_H
 #include "boost/optional.hpp"
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/order_follow.h"
@@ -51,4 +51,4 @@ class OldFollowStragety {
   OrderFollowMananger follower_orders_;
 };
 
-#endif  // FOLLOW_TRADE_OLD_FOLLOW_STRAGETY_H
+#endif  // FOLLOW_TRADE_OLD_FOLLOW_strategy_H

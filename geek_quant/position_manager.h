@@ -4,21 +4,18 @@
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/instrument_position.h"
 
+class CloseCorrOrdersManager;
+
 class PositionManager {
  public:
-  std::vector<std::string> GetCorrOrderNoWithOrderId(
-      const std::string& order_id) const;
-
-  std::vector<OrderQuantity> GetQuantitysWithOrderIds(
-      const std::string& instrument,
-      std::vector<std::string> orders);
-
-  std::vector<OrderQuantity> GetCorrOrderQuantiysWithOrderNo(
-      const std::string& instrument,
-      const std::string& order_id) const;
+  std::vector<OrderQuantity> GetQuantitys(const std::string& instrument,
+                                          std::vector<std::string> orders);
 
   int GetPositionCloseableQuantity(const std::string& instrument,
                                    OrderDirection direction);
+
+  void HandleRtnOrder(const OrderData& rtn_order,
+                      CloseCorrOrdersManager* close_corr_orders_mgr);
 
  private:
   std::map<std::string, InstrumentPosition> instrument_positions_;

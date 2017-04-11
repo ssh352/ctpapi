@@ -1,11 +1,13 @@
-#include "follow_stragety_service.h"
+#include "follow_strategy_service.h"
 
 FollowStragetyService::FollowStragetyService(const std::string& master_account,
-                        const std::string& slave_account,
-                        TradeOrderDelegate* delegate)
+                                             const std::string& slave_account,
+                                             TradeOrderDelegate* delegate,
+                                             int start_order_id_seq)
     : stragety_(master_account, slave_account, delegate, this, &context_),
       master_account_(master_account),
-      slave_account_(slave_account) {}
+      slave_account_(slave_account),
+      order_id_mananger_(start_order_id_seq) {}
 
 void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
   OrderData adjust_order = order_id_mananger_.AdjustOrder(std::move(rtn_order));

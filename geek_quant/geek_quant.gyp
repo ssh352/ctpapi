@@ -9,8 +9,8 @@
     'variables' : {
     },
     'sources' : [
-      'instrument_follow.h',
-      'instrument_follow.cc',
+      'old_follow_strategy.h',
+      'old_follow_strategy.cc',
       'order_follow.h',
       'order_follow.cc',
       'caf_defines.h',
@@ -24,6 +24,26 @@
       'pending_order_action.cc',
       'caf_defines.h',
       'caf_defines.cc',
+      'context.h',
+      'context.cc',
+      'position_manager.h',
+      'position_manager.cc',
+      'order_manager.h',
+      'order_manager.cc',
+      'follow_strategy.h',
+      'follow_strategy.cc',
+      'follow_strategy_mode.h',
+      'follow_strategy_mode.cc',
+      'follow_strategy_service.h',
+      'follow_strategy_service.cc',
+      'instrument_position.h',
+      'instrument_position.cc',
+      'close_corr_orders_manager.h',
+      'close_corr_orders_manager.cc',
+      'order.h',
+      'order.cc',
+      'order_id_mananger.h',
+      'order_id_mananger.cc',
     ],
     'dependencies' : [
       #'<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_build_config',
@@ -39,36 +59,12 @@
     ],
   },
   {
-    'target_name' : 'follow_trade_server',
-    'type' : 'executable',
-    'variables' : {
-    },
-    'sources' : [
-      'main.cc',
-      'cta_trade_actor.h',
-      'cta_trade_actor.cc',
-      'follow_trade_actor.h',
-      'follow_trade_actor.cc',
-    ],
-    'dependencies' : [
-      '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-      '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      'follow_trade',
-    ],
-    'defines' : [
-    ],
-    'includes' : [
-    ],
-    'include_dirs' : [
-      '..',
-    ],
-  },
-  {
     'target_name' : 'follow_trade_unittest',
     'type' : 'executable',
     'variables' : {
     },
     'sources' : [
+      'follow_strategy_servcie_unittest.cc',
       'follow_trade_unittest.cc',
       'instrument_follow_unittest.cc',
       'ctp_order_dispatcher_unittest.cc',

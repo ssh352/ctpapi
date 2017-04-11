@@ -1,5 +1,5 @@
-#ifndef FOLLOW_TRADE_FOLLOW_STRAGETY_MODE_H
-#define FOLLOW_TRADE_FOLLOW_STRAGETY_MODE_H
+#ifndef FOLLOW_TRADE_FOLLOW_strategy_MODE_H
+#define FOLLOW_TRADE_FOLLOW_strategy_MODE_H
 #include "geek_quant/caf_defines.h"
 
 class FollowTradeFollowStragetyMode {
@@ -15,4 +15,4 @@ class FollowTradeFollowStragetyMode {
  private:
 };
 
-#endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_MODE_H
+#endif  // FOLLOW_TRADE_FOLLOW_strategy_MODE_H

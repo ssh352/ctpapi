@@ -1,7 +1,7 @@
-#ifndef FOLLOW_TRADE_FOLLOW_STRAGETY_SERVICE_H
-#define FOLLOW_TRADE_FOLLOW_STRAGETY_SERVICE_H
+#ifndef FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
+#define FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
 #include "geek_quant/caf_defines.h"
-#include "geek_quant/follow_stragety.h"
+#include "geek_quant/follow_strategy.h"
 #include "geek_quant/context.h"
 #include "geek_quant/order_id_mananger.h"
 
@@ -9,7 +9,8 @@ class FollowStragetyService : public FollowStragety::Delegate {
  public:
   FollowStragetyService(const std::string& master_account,
                         const std::string& slave_account,
-                        TradeOrderDelegate* delegate);
+                        TradeOrderDelegate* delegate,
+                        int start_order_id_seq);
 
   void HandleRtnOrder(OrderData rtn_order);
 
@@ -33,4 +34,4 @@ private:
   std::string slave_account_;
 };
 
-#endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_SERVICE_H
+#endif  // FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
