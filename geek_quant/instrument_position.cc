@@ -28,6 +28,14 @@ int InstrumentPosition::GetPositionCloseableQuantity(OrderDirection direction) {
                          });
 }
 
+int InstrumentPosition::GetCloseableQuantity(
+    const std::string& order_id) const {
+  if (positions_.find(order_id) == positions_.end()) {
+    return 0;
+  }
+  return positions_.at(order_id).closeable_quantity;
+}
+
 void InstrumentPosition::HandleRtnOrder(
     const OrderData& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {

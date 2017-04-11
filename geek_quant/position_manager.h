@@ -11,6 +11,9 @@ class PositionManager {
   std::vector<OrderQuantity> GetQuantitys(const std::string& instrument,
                                           std::vector<std::string> orders);
 
+  int GetCloseableQuantity(const std::string& instrument,
+                           const std::string& order_id) const;
+
   int GetPositionCloseableQuantity(const std::string& instrument,
                                    OrderDirection direction);
 

@@ -9,6 +9,8 @@ class InstrumentPosition {
 
   int GetPositionCloseableQuantity(OrderDirection direction);
 
+  int GetCloseableQuantity(const std::string& order_id) const;
+
   void HandleRtnOrder(const OrderData& rtn_order,
                       CloseCorrOrdersManager* close_corr_orders_mgr);
 

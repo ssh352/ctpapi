@@ -39,37 +39,33 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
   //     order_data.);
   // } else {
 
-  std::vector<OrderQuantity> slave_order_quantitys = context_->GetQuantitys(
-      slave_account_id_, context_->GetCloseCorrOrderIds(master_account_id_,
-                                                        order_data.order_id()));
-
-  std::vector<std::pair<std::string, int> > master_order_quantitys =
+  std::vector<std::pair<std::string, int> > master_corr_order_quantitys =
       context_->GetCorrOrderQuantiys(master_account_id_, order_data.order_id());
 
   int close_quantity = 0;
-  for (auto master_quantity : master_order_quantitys) {
-    auto it = std::find_if(slave_order_quantitys.begin(),
-                           slave_order_quantitys.end(), [&](auto quantity) {
-                             return quantity.order_id == master_quantity.first;
-                           });
-    if (it != slave_order_quantitys.end()) {
-      close_quantity +=
-          std::min<int>(master_quantity.second, it->closeable_quantity);
+  for (auto master_corr_quantity : master_corr_order_quantitys) {
+    close_quantity += std::min<int>(
+        master_corr_quantity.second,
+        std::max<int>(
+            0, context_->GetCloseableQuantity(slave_account_id_,
+                                              master_corr_quantity.first) -
+                   context_->GetCloseableQuantity(master_account_id_,
+                                                  master_corr_quantity.first)));
+
+    if (!context_->IsActiveOrder(master_account_id_,
+                                 master_corr_quantity.first) &&
+        context_->IsActiveOrder(slave_account_id_,
+                                master_corr_quantity.first)) {
+      delegate_->Trade(master_corr_quantity.first);
+      trade_order_delegate_->CancelOrder(master_corr_quantity.first);
     }
   }
 
-  delegate_->Trade(order_data.order_id());
-  trade_order_delegate_->CloseOrder(
-      order_data.instrument(), order_data.order_id(), order_data.direction(),
-      order_data.position_effect(), order_data.price(), close_quantity);
-
-  for (auto order_id : context_->GetCloseCorrOrderIds(master_account_id_,
-                                                      order_data.order_id())) {
-    if (!context_->IsUnfillOrder(master_account_id_, order_id) && 
-        context_->IsUnfillOrder(slave_account_id_, order_id)) {
-      delegate_->Trade(order_id);
-      trade_order_delegate_->CancelOrder(order_id);
-    }
+  if (close_quantity > 0) {
+    delegate_->Trade(order_data.order_id());
+    trade_order_delegate_->CloseOrder(
+        order_data.instrument(), order_data.order_id(), order_data.direction(),
+        order_data.position_effect(), order_data.price(), close_quantity);
   }
 
   // }

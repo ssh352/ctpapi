@@ -23,9 +23,10 @@ class Context {
   std::vector<std::string> GetCloseCorrOrderIds(const std::string& account_id,
                                                 const std::string& order_id);
 
-  bool IsUnfillOrder(const std::string& slave_account_id_,
+  bool IsActiveOrder(const std::string& slave_account_id_,
                      const std::string& order_id) const;
 
+  int GetCloseableQuantity(const std::string& account_id, const std::string& order_id) const;
  private:
   std::map<std::string, OrderManager> account_order_mgr_;
   std::map<std::string, PositionManager> account_position_mgr_;

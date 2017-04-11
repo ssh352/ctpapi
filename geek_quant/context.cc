@@ -38,10 +38,23 @@ std::vector<std::string> Context::GetCloseCorrOrderIds(
       order_id);
 }
 
-bool Context::IsUnfillOrder(const std::string& slave_account_id,
+bool Context::IsActiveOrder(const std::string& slave_account_id,
                             const std::string& order_id) const {
   if (account_order_mgr_.find(slave_account_id) == account_order_mgr_.end()) {
     return false;
   }
   return account_order_mgr_.at(slave_account_id).IsUnfillOrder(order_id);
+}
+
+int Context::GetCloseableQuantity(const std::string& account_id,
+                                  const std::string& order_id) const {
+  // account_close_corr_orders_mgr_
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
+    return 0;
+  }
+
+  return account_position_mgr_.at(account_id)
+      .GetCloseableQuantity(
+          account_order_mgr_.at(account_id).GetOrderInstrument(order_id),
+          order_id);
 }
