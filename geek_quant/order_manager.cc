@@ -16,6 +16,11 @@ OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
   return ret_type;
 }
 
+std::vector<std::string> OrderManager::GetCorrOrderNoWithOrderId(
+    const std::string& order_id) const {
+
+}
+
 bool OrderManager::IsCloseOrder(PositionEffect effect) {
   return effect == PositionEffect::kClose ||
          effect == PositionEffect::kCloseToday;

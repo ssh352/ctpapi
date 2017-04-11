@@ -26,31 +26,30 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
     return;
   }
 
-  delegate_->Trade(order_data.order_id());
-  trade_order_delegate_->CloseOrder(
-      order_data.instrument(), order_data.order_id(), order_data.direction(),
-      order_data.position_effect(), order_data.price(), order_data.quanitty());
-  /*
-  if (account != master_account_id_) {
-    return;
-  }
-
-  int master_closeable_quantity =
-      context_.GetPositionCloseableQuantity(account, rtn_order.instrument);
+  int master_closeable_quantity = context_->GetPositionCloseableQuantity(
+      master_account_id_, order_data.instrument());
 
   if (master_closeable_quantity == 0) {
     // Close all position
   } else {
-    auto slave_order_quantitys = context_.GetOpenOrderQuantitysWithOrderNos(
-        slave_account_id_, context_.GetCorrOrderNosWithOrderNo(
-                               master_account_id_, rtn_order.order_no));
+    auto slave_order_quantitys = context_->GetQuantitysWithOrderIds(
+        slave_account_id_, context_->GetCorrOrderNosWithOrderId(
+                               master_account_id_, order_data.order_id()));
 
-    auto master_order_quantitys = context_.GetCorrOrderQuantiysWithOrderNo(
-        master_account_id_, rtn_order.order_no);
+    auto master_order_quantitys = context_->GetCorrOrderQuantiysWithOrderNo(
+        master_account_id_, order_data.order_id());
 
     for (auto master_quantity : master_order_quantitys) {
     }
   }
+
+  /*
+  
+  delegate_->Trade(order_data.order_id());
+  trade_order_delegate_->CloseOrder(
+      order_data.instrument(), order_data.order_id(), order_data.direction(),
+      order_data.position_effect(), order_data.price(), order_data.quanitty());
+  
   */
 }
 

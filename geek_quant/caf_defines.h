@@ -214,6 +214,17 @@ struct OrderPosition {
   int volume;
 };
 
+struct OrderQuantity {
+  std::string order_id;
+  int quantity;
+  int closeable_quantity;
+};
+
+struct Position {
+  int quantity;
+  int closeable_quantity;
+};
+
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 using CTPLogin = caf::atom_constant<caf::atom("login")>;
 using CTPRspLogin = caf::atom_constant<caf::atom("rsplogin")>;
@@ -243,6 +254,8 @@ using EnterOrderAtom = caf::atom_constant<caf::atom("eo")>;
 using CancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 
 using AddStrategySubscriberAtom = caf::atom_constant<caf::atom("addsuber")>;
+
+
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, PositionData& x) {

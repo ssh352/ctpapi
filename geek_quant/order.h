@@ -9,6 +9,7 @@ class Order {
 
  private:
   OrderData data_;
+  std::vector<std::pair<std::string, int> > order_quantitys_;
 };
 
 #endif  // FOLLOW_TRADE_ORDER_H
