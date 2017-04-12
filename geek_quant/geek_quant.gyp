@@ -9,6 +9,8 @@
     'variables' : {
     },
     'sources' : [
+      'order_util.h',
+      'order_util.cc',
       'old_follow_strategy.h',
       'old_follow_strategy.cc',
       'order_follow.h',
@@ -64,6 +66,8 @@
     'variables' : {
     },
     'sources' : [
+      'follow_strategy_servcie_fixture.h',
+      'follow_strategy_servcie_fixture.cc',
       'follow_strategy_servcie_unittest.cc',
       'follow_trade_unittest.cc',
       'instrument_follow_unittest.cc',
