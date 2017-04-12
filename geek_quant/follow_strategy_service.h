@@ -24,14 +24,13 @@ class FollowStragetyService : public FollowStragety::Delegate {
 
     virtual void CancelOrder(const std::string& order_no) = 0;
   };
+
   FollowStragetyService(const std::string& master_account,
                         const std::string& slave_account,
                         Delegate* delegate,
                         int start_order_id_seq);
 
   void HandleRtnOrder(OrderData rtn_order);
-
-  void DoHandleRtnOrder(OrderData rtn_order);
 
   virtual void OpenOrder(const std::string& instrument,
                          const std::string& order_no,
@@ -50,12 +49,14 @@ class FollowStragetyService : public FollowStragety::Delegate {
 
  private:
   enum class StragetyStatus {
-    kPending,
-    kIdle,
+    kWaitReply,
+    kReady,
     kSkip,
   };
 
   void Trade(const std::string& order_no);
+
+  void DoHandleRtnOrder(OrderData rtn_order);
 
   StragetyStatus BeforeHandleOrder(OrderData order);
   Context context_;

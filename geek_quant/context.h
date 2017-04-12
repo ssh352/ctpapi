@@ -9,8 +9,9 @@ class Context {
  public:
   OrderEventType HandlertnOrder(const OrderData& rtn_order);
 
-  std::vector<OrderQuantity> GetQuantitys(const std::string& account_id,
-                                          std::vector<std::string> order_ids);
+  std::vector<OrderQuantity> GetQuantitys(
+      const std::string& account_id,
+      std::vector<std::string> order_ids) const;
 
   int GetCloseableQuantityWithOrderDirection(const std::string& account_id,
                                              const std::string& instrument,

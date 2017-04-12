@@ -5,7 +5,8 @@ class CloseCorrOrdersManager;
 
 class InstrumentPosition {
  public:
-  std::vector<OrderQuantity> GetQuantitys(std::vector<std::string> orders);
+  std::vector<OrderQuantity> GetQuantitys(
+      std::vector<std::string> orders) const;
 
   int GetCloseableQuantityWithOrderDirection(OrderDirection direction) const;
 
@@ -15,6 +16,9 @@ class InstrumentPosition {
                       CloseCorrOrdersManager* close_corr_orders_mgr);
 
  private:
+  bool TestPositionEffect(const std::string& exchange_id,
+                          PositionEffect position_effect,
+                          bool is_today_quantity);
   std::map<std::string, OrderQuantity> positions_;
 };
 

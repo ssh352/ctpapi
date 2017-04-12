@@ -66,7 +66,7 @@ enum class OpenClose {
   kClose,
 };
 
-enum class OrderType {
+enum class OrderPriceType {
   kLimit,
   kMarket,
 };
@@ -100,12 +100,13 @@ struct OrderData {
   std::string instrument_;
   std::string datetime_;
   std::string user_product_info_;
+  std::string exchange_id_;
   int quanitty_;
   int filled_quantity_;
   int session_id_;
   double price_;
   OrderDirection direction_;
-  OrderType type_;
+  OrderPriceType type_;
   OrderStatus status_;
   PositionEffect position_effect_;
 
@@ -114,12 +115,13 @@ struct OrderData {
   const std::string& instrument() const { return instrument_; }
   const std::string& datetime() const { return datetime_; }
   const std::string& user_product_info() const { return user_product_info_; }
+  const std::string& exchange_id() const { return exchange_id_;  }
   int quanitty() const { return quanitty_; }
   int filled_quantity() const { return filled_quantity_; }
   int session_id() const { return session_id_; }
   double price() const { return price_; }
   OrderDirection direction() const { return direction_; }
-  OrderType type() const { return type_; }
+  OrderPriceType type() const { return type_; }
   OrderStatus status() const { return status_; }
   PositionEffect position_effect() const { return position_effect_; }
 };
@@ -217,6 +219,7 @@ struct OrderPosition {
 struct OrderQuantity {
   std::string order_id;
   OrderDirection direction;
+  bool is_today_quantity;
   int quantity;
   int closeable_quantity;
 };

@@ -10,12 +10,17 @@ OrderEventType Context::HandlertnOrder(const OrderData& rtn_order) {
 
 std::vector<OrderQuantity> Context::GetQuantitys(
     const std::string& account_id,
-    std::vector<std::string> orders) {
+    std::vector<std::string> orders) const {
   if (orders.empty()) {
     return {};
   }
-  return account_position_mgr_[account_id].GetQuantitys(
-      account_order_mgr_[account_id].GetOrderInstrument(orders.at(0)), orders);
+
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end() ||
+      account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
+    return{};
+  }
+  return account_position_mgr_.at(account_id).GetQuantitys(
+      account_order_mgr_.at(account_id).GetOrderInstrument(orders.at(0)), orders);
 }
 
 int Context::GetCloseableQuantityWithOrderDirection(
@@ -95,3 +100,4 @@ bool Context::IsOppositeOpen(const std::string& account_id,
              .GetCloseableQuantityWithOrderDirection(
                  instrument, OppositeOrderDirection(direction)) != 0;
 }
+

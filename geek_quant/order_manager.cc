@@ -17,11 +17,6 @@ OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
   return ret_type;
 }
 
-std::vector<std::string> OrderManager::GetCorrOrderNoWithOrderId(
-    const std::string& order_id) const {
-  return {};
-}
-
 const std::string& OrderManager::GetOrderInstrument(
     const std::string& order_id) const {
   auto it = orders_.find(order_id);

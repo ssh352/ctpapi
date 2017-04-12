@@ -3,13 +3,13 @@
 #include "order_util.h"
 
 std::vector<OrderQuantity> InstrumentPosition::GetQuantitys(
-    std::vector<std::string> orders) {
+    std::vector<std::string> orders) const {
   std::vector<OrderQuantity> quanitys;
   for (auto order : orders) {
     auto it = positions_.find(order);
     if (it != positions_.end()) {
       quanitys.emplace_back(
-          OrderQuantity{it->second.order_id, it->second.direction,
+          OrderQuantity{it->second.order_id, it->second.direction, true,
                         it->second.quantity, it->second.closeable_quantity});
     }
   }
@@ -53,14 +53,16 @@ void InstrumentPosition::HandleRtnOrder(
       it->second.closeable_quantity += new_quantity;
     } else {
       positions_[rtn_order.order_id()] = {
-          rtn_order.order_id(), rtn_order.direction(),
+          rtn_order.order_id(), rtn_order.direction(), true,
           rtn_order.filled_quantity(), rtn_order.filled_quantity()};
     }
   } else if (close_corr_orders_mgr->IsNewCloseOrder(rtn_order)) {
     std::vector<std::pair<std::string, int> > close_corr_orders;
     int outstanding_quantity = rtn_order.quanitty();
     for (auto& pos : positions_) {
-      if (pos.second.direction == rtn_order.direction()) {
+      if (pos.second.direction == rtn_order.direction() &&
+          TestPositionEffect(rtn_order.exchange_id(), rtn_order.position_effect(),
+                             pos.second.is_today_quantity)) {
         continue;
       }
       int close_quantity =
@@ -85,4 +87,16 @@ void InstrumentPosition::HandleRtnOrder(
     }
   } else {
   }
+}
+
+bool InstrumentPosition::TestPositionEffect(const std::string& exchange_id,
+                                            PositionEffect position_effect,
+                                            bool is_today_quantity) {
+  if (exchange_id != "SHFE") {
+    return true;
+  }
+
+  return (position_effect == PositionEffect::kCloseToday && is_today_quantity)
+             ? true
+             : false;
 }

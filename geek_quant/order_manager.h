@@ -7,9 +7,6 @@ class OrderManager {
  public:
   OrderEventType HandleRtnOrder(OrderData order);
 
-  std::vector<std::string> GetCorrOrderNoWithOrderId(
-      const std::string& order_id) const;
-
   const std::string& GetOrderInstrument(const std::string& order_id) const;
 
   int ActiveOrderCount(const std::string& instrument,

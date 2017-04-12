@@ -20,6 +20,7 @@ class FollowStragety {
                             double price,
                             int quantity) = 0;
 
+
     virtual void CancelOrder(const std::string& order_no) = 0;
   };
   FollowStragety(const std::string& master_account_id,

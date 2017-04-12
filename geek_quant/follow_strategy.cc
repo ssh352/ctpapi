@@ -61,18 +61,6 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
     return;
   }
 
-  // int master_closeable_quantity = context_->GetPositionCloseableQuantity(
-  //     master_account_id_, order_data.instrument(),
-  //     OppositeOrderDirection(order_data.direction()));
-
-  // if (master_closeable_quantity == 0) {
-  //   // Close all position
-  //   context_->GetPositionCloseableQuantityWithPositionEffect(
-  //       master_account_id_, order_data.instrument(),
-  //       OppositeOrderDirection(order_data.direction()),
-  //     order_data.);
-  // } else {
-
   std::vector<std::pair<std::string, int> > master_corr_order_quantitys =
       context_->GetCorrOrderQuantiys(master_account_id_, order_data.order_id());
 
@@ -99,14 +87,6 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
                           order_data.direction(), order_data.position_effect(),
                           order_data.price(), close_quantity);
   }
-
-  // }
-  /*
-  delegate_->Trade(order_data.order_id());
-  trade_order_delegate_->CloseOrder(
-      order_data.instrument(), order_data.order_id(), order_data.direction(),
-      order_data.position_effect(), order_data.price(), order_data.quanitty());
-  */
 }
 
 void FollowStragety::HandleCanceled(const OrderData& order_data) {
@@ -124,6 +104,17 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
     return;
   }
 
+  int master_closeable_quantity =
+      context_->GetCloseableQuantityWithOrderDirection(
+          master_account_id_, order_data.instrument(),
+          OppositeOrderDirection(order_data.direction()));
+
+  if (master_closeable_quantity == 0 &&
+      context_->ActiveOrderCount(
+          master_account_id_, order_data.instrument(),
+          OppositeOrderDirection(order_data.direction())) == 0) {
+    // Close all position
+  }
   //  delegate_->CloseOrder(order_data.Instrument())
 }
 

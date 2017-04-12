@@ -13,10 +13,10 @@ FollowStragetyService::FollowStragetyService(const std::string& master_account,
 void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
   OrderData adjust_order = order_id_mananger_.AdjustOrder(std::move(rtn_order));
   switch (BeforeHandleOrder(adjust_order)) {
-    case StragetyStatus::kPending:
+    case StragetyStatus::kWaitReply:
       outstanding_orders_.push_back(std::move(adjust_order));
       break;
-    case StragetyStatus::kIdle:
+    case StragetyStatus::kReady:
       DoHandleRtnOrder(std::move(adjust_order));
       break;
     case StragetyStatus::kSkip:
@@ -125,8 +125,8 @@ void FollowStragetyService::CancelOrder(const std::string& order_no) {
 FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
     OrderData order) {
   StragetyStatus status = waiting_reply_order_.empty()
-                              ? StragetyStatus::kIdle
-                              : StragetyStatus::kPending;
+                              ? StragetyStatus::kReady
+                              : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() && order.account_id() == slave_account_) {
     auto it = std::find(waiting_reply_order_.begin(),
                         waiting_reply_order_.end(), order.order_id());
@@ -141,7 +141,7 @@ FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
         }
       }
     } else {
-      status = StragetyStatus::kPending;
+      status = StragetyStatus::kWaitReply;
     }
   }
   return status;

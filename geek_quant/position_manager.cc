@@ -2,8 +2,11 @@
 
 std::vector<OrderQuantity> PositionManager::GetQuantitys(
     const std::string& instrument,
-    std::vector<std::string> order_ids) {
-  return instrument_positions_[instrument].GetQuantitys(order_ids);
+    std::vector<std::string> order_ids) const {
+  if (instrument_positions_.find(instrument) == instrument_positions_.end()) {
+    return {};
+  }
+  return instrument_positions_.at(instrument).GetQuantitys(order_ids);
 }
 
 int PositionManager::GetCloseableQuantityWithInstrument(
