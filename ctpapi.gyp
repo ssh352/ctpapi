@@ -30,6 +30,15 @@
           'lib/<(lib_dir_for_target_arch)',
         ]
       },
+      'copies': [
+        {
+          'destination': '<(PRODUCT_DIR)',
+          'files': [
+            'lib/<(lib_dir_for_target_arch)/thosttraderapi.dll',
+            'lib/<(lib_dir_for_target_arch)/thostmduserapi.dll'
+          ],
+        },
+      ],
       'direct_dependent_settings': {
         'include_dirs': [
           'include',
