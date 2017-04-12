@@ -18,6 +18,8 @@ void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
     case StragetyStatus::kIdle:
       DoHandleRtnOrder(std::move(adjust_order));
       break;
+    case StragetyStatus::kSkip:
+      break;
     default:
       break;
   }
@@ -99,20 +101,21 @@ FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
   StragetyStatus status = waiting_reply_order_.empty()
                               ? StragetyStatus::kIdle
                               : StragetyStatus::kPending;
-  if (!waiting_reply_order_.empty()) {
+  if (!waiting_reply_order_.empty() && order.account_id() == slave_account_) {
     auto it = std::find(waiting_reply_order_.begin(),
                         waiting_reply_order_.end(), order.order_id());
     if (it != waiting_reply_order_.end()) {
       waiting_reply_order_.erase(it);
+      DoHandleRtnOrder(order);
+      status = StragetyStatus::kSkip;
       if (waiting_reply_order_.empty()) {
         while (!outstanding_orders_.empty() && waiting_reply_order_.empty()) {
           DoHandleRtnOrder(outstanding_orders_.front());
           outstanding_orders_.pop_front();
         }
-        if (waiting_reply_order_.empty()) {
-          status = StragetyStatus::kIdle;
-        }
       }
+    } else {
+      status = StragetyStatus::kPending;
     }
   }
   return status;

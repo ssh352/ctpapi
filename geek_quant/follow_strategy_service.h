@@ -23,6 +23,7 @@ private:
   enum class StragetyStatus {
     kPending,
     kIdle,
+    kSkip,
   };
   StragetyStatus BeforeHandleOrder(OrderData order);
   Context context_;

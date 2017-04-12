@@ -103,11 +103,9 @@ class FollowStragetyServiceFixture : public testing::Test,
     };
   }
 
-  void OpenAndFilledOrder(const std::string& order_id,
-                          int quantity = 10,
-                          int master_filled_quantity = 10,
-                          int slave_filled_quantity = 10,
-                          OrderDirection direction = OrderDirection::kBuy) {
+  void PushOpenOrder(const std::string& order_id,
+                     int quantity = 10,
+                     OrderDirection direction = OrderDirection::kBuy) {
     service.HandleRtnOrder(
         MakeMasterOrderData(order_id, direction, PositionEffect::kOpen,
                             OrderStatus::kActive, 0, quantity));
@@ -117,6 +115,14 @@ class FollowStragetyServiceFixture : public testing::Test,
     service.HandleRtnOrder(
         MakeSlaveOrderData(order_id, direction, PositionEffect::kOpen,
                            OrderStatus::kActive, 0, quantity));
+  }
+
+  void OpenAndFilledOrder(const std::string& order_id,
+                          int quantity = 10,
+                          int master_filled_quantity = 10,
+                          int slave_filled_quantity = 10,
+                          OrderDirection direction = OrderDirection::kBuy) {
+    PushOpenOrder(order_id, quantity, direction);
 
     service.HandleRtnOrder(MakeMasterOrderData(
         order_id, direction, PositionEffect::kOpen,
@@ -124,11 +130,14 @@ class FollowStragetyServiceFixture : public testing::Test,
                                            : OrderStatus::kActive,
         master_filled_quantity, quantity));
 
-    service.HandleRtnOrder(MakeSlaveOrderData(
-        order_id, direction, PositionEffect::kOpen,
-        slave_filled_quantity == quantity ? OrderStatus::kFilled
-                                          : OrderStatus::kActive,
-        slave_filled_quantity, quantity));
+
+    if (slave_filled_quantity > 0) {
+      service.HandleRtnOrder(MakeSlaveOrderData(
+          order_id, direction, PositionEffect::kOpen,
+          slave_filled_quantity == quantity ? OrderStatus::kFilled
+                                            : OrderStatus::kActive,
+          slave_filled_quantity, quantity));
+    }
   }
 
   std::tuple<OrderInsertForTest, std::vector<std::string> >
@@ -145,10 +154,11 @@ class FollowStragetyServiceFixture : public testing::Test,
   std::tuple<OrderInsertForTest, std::vector<std::string> >
   PushNewCloseOrderForMaster(const std::string& account_id = "0002",
                              OrderDirection direction = OrderDirection::kSell,
-                             int quantity = 10) {
+                             int quantity = 10,
+                             double price = 1234.1) {
     service.HandleRtnOrder(
         MakeMasterOrderData(account_id, direction, PositionEffect::kClose,
-                            OrderStatus::kActive, 0, quantity));
+                            OrderStatus::kActive, 0, quantity, price));
 
     std::vector<std::string> ret_cancel_orders;
     ret_cancel_orders.swap(cancel_orders);
@@ -157,26 +167,48 @@ class FollowStragetyServiceFixture : public testing::Test,
   }
 
   std::tuple<OrderInsertForTest, std::vector<std::string> >
-  PushCancelOrderForMaster(const std::string& order_no = "0001",
-                           OrderDirection direction = OrderDirection::kBuy,
-                           int quantity = 10) {
+  PushNewCloseOrderForSlave(const std::string& account_id = "0002",
+                            OrderDirection direction = OrderDirection::kSell,
+                            int quantity = 10) {
     service.HandleRtnOrder(
-        MakeMasterOrderData(order_no, direction, PositionEffect::kOpen,
-                            OrderStatus::kCancel, quantity, quantity));
-    return {!order_inserts.empty() ? PopOrderInsert() : OrderInsertForTest(),
-            {}};
+        MakeSlaveOrderData(account_id, direction, PositionEffect::kClose,
+                           OrderStatus::kActive, 0, quantity));
+
+    return PopOrderEffectForTest();
+  }
+
+  std::tuple<OrderInsertForTest, std::vector<std::string>> PopOrderEffectForTest() {
+    std::vector<std::string> ret_cancel_orders;
+    ret_cancel_orders.swap(cancel_orders);
+    return{ !order_inserts.empty() ? PopOrderInsert() : OrderInsertForTest(),
+            ret_cancel_orders };
   }
 
   std::tuple<OrderInsertForTest, std::vector<std::string> >
-  PushCancelOrderForSlave(const std::string& order_no = "0001",
-                          OrderDirection direction = OrderDirection::kBuy,
-                          int quantity = 10,
-                          int fill_quantity = 10) {
+  PushCancelOrderForMaster(
+      const std::string& order_no = "0001",
+      OrderDirection direction = OrderDirection::kBuy,
+      PositionEffect position_effect = PositionEffect::kOpen,
+      int fill_quantity = 0,
+      int quantity = 10) {
     service.HandleRtnOrder(
-        MakeSlaveOrderData(order_no, direction, PositionEffect::kOpen,
+        MakeMasterOrderData(order_no, direction, position_effect,
+                            OrderStatus::kCancel, fill_quantity, quantity));
+
+    return PopOrderEffectForTest();
+  }
+
+  std::tuple<OrderInsertForTest, std::vector<std::string> >
+  PushCancelOrderForSlave(
+      const std::string& order_no = "0001",
+      OrderDirection direction = OrderDirection::kBuy,
+      PositionEffect position_effect = PositionEffect::kOpen,
+      int fill_quantity = 10,
+      int quantity = 10) {
+    service.HandleRtnOrder(
+        MakeSlaveOrderData(order_no, direction, position_effect,
                            OrderStatus::kCancel, fill_quantity, quantity));
-    return {!order_inserts.empty() ? PopOrderInsert() : OrderInsertForTest(),
-            {}};
+    return PopOrderEffectForTest();
   }
 
   FollowStragetyService service;
@@ -209,9 +241,9 @@ TEST_F(FollowStragetyServiceFixture, OpenSell) {
 }
 
 TEST_F(FollowStragetyServiceFixture, IncreaseOpenOrder) {
-  OpenAndFilledOrder("0001");
+  OpenAndFilledOrder("1");
 
-  auto order = std::get<0>(PushNewOpenOrderForMaster("0002"));
+  auto order = std::get<0>(PushNewOpenOrderForMaster("2"));
   EXPECT_EQ("2", order.order_no);
 }
 
@@ -255,7 +287,8 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase3) {
     EXPECT_EQ("1", cancels.at(0));
   }
 
-  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy, 10, 6);
+  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy,
+                                PositionEffect::kOpen, 10, 6);
 
   {
     auto ret = PushNewCloseOrderForMaster("3", OrderDirection::kSell, 6);
@@ -284,7 +317,8 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase4) {
     EXPECT_EQ("1", cancels.at(0));
   }
 
-  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy, 10, 6);
+  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy,
+                                PositionEffect::kOpen, 10, 6);
 
   {
     service.HandleRtnOrder(MakeSlaveOrderData("2", OrderDirection::kSell,
@@ -318,7 +352,8 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase5) {
     EXPECT_EQ("1", cancels.at(0));
   }
 
-  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy, 10, 6);
+  (void)PushCancelOrderForSlave("1", OrderDirection::kBuy,
+                                PositionEffect::kOpen, 6, 10);
 
   {
     auto ret = PushNewCloseOrderForMaster("3", OrderDirection::kSell, 3);
@@ -358,17 +393,78 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase5) {
   }
 }
 
-// Cancel Order
-TEST_F(FollowStragetyServiceFixture, CancelOrderCase4) {
-  OpenAndFilledOrder("1", 10, 5 , 0);
+TEST_F(FollowStragetyServiceFixture, CloseOrderCase6) {
+  OpenAndFilledOrder("1");
+  (void)PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10);
+  (void)PushNewCloseOrderForSlave("2", OrderDirection::kSell, 10);
+  (void)PushCancelOrderForMaster("2", OrderDirection::kSell,
+                                 PositionEffect::kClose);
+  (void)PushNewCloseOrderForMaster("3", OrderDirection::kSell, 10, 8888.8);
 
   {
-    auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell);
+    auto ret = PushCancelOrderForSlave("2", OrderDirection::kSell,
+                                       PositionEffect::kClose);
+
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ("3", order_insert.order_no);
+    EXPECT_EQ(OrderDirection::kSell, order_insert.direction);
+    EXPECT_EQ(10, order_insert.quantity);
+    EXPECT_EQ(8888.8, order_insert.price);
+  }
+}
+
+// Cancel Order
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase1) {
+  PushOpenOrder("1");
+  {
+    auto ret = PushCancelOrderForMaster("1");
+
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ("", order_insert.order_no);
+
+    auto cancels = std::get<1>(ret);
+    EXPECT_EQ(1, cancels.size());
+    EXPECT_EQ("1", cancels.at(0));
+  }
+}
+
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase2) {
+  OpenAndFilledOrder("1", 10, 5, 0);
+
+  {
+    auto ret = PushCancelOrderForMaster("1", OrderDirection::kBuy,
+                                        PositionEffect::kOpen, 5, 10);
 
     auto order_insert = std::get<0>(ret);
     EXPECT_EQ("", order_insert.order_no);
     auto cancels = std::get<1>(ret);
     EXPECT_EQ(1, cancels.size());
-    EXPECT_EQ("2", cancels.at(0));
+    EXPECT_EQ("1", cancels.at(0));
   }
 }
+
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
+  service.HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
+                                             PositionEffect::kOpen,
+                                             OrderStatus::kActive, 0, 10));
+
+  service.HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
+                                             PositionEffect::kOpen,
+                                             OrderStatus::kCancel, 0, 10));
+  
+  (void)PopOrderInsert();
+
+  service.HandleRtnOrder(MakeSlaveOrderData("1", OrderDirection::kBuy,
+                                            PositionEffect::kOpen,
+                                            OrderStatus::kActive, 0, 10));
+  {
+    auto ret = PopOrderEffectForTest();
+
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ("", order_insert.order_no);
+    auto cancels = std::get<1>(ret);
+    EXPECT_EQ(1, cancels.size());
+    EXPECT_EQ("1", cancels.at(0));
+  }
+}
+

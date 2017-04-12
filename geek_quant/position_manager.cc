@@ -24,5 +24,6 @@ int PositionManager::GetPositionCloseableQuantity(const std::string& instrument,
 void PositionManager::HandleRtnOrder(
     const OrderData& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
-  instrument_positions_[rtn_order.instrument()].HandleRtnOrder(rtn_order, close_corr_orders_mgr);
+  instrument_positions_[rtn_order.instrument()].HandleRtnOrder(
+      rtn_order, close_corr_orders_mgr);
 }

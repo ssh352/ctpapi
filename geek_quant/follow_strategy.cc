@@ -77,7 +77,16 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
   */
 }
 
-void FollowStragety::HandleCanceled(const OrderData& order_data) {}
+void FollowStragety::HandleCanceled(const OrderData& order_data) {
+  if (order_data.account_id() != master_account_id_) {
+    return;
+  }
+
+  if (context_->IsActiveOrder(slave_account_id_, order_data.order_id())) {
+    delegate_->Trade(order_data.order_id());
+    trade_order_delegate_->CancelOrder(order_data.order_id());
+  }
+}
 
 void FollowStragety::HandleClosed(const OrderData& order_data) {
   if (order_data.account_id() != master_account_id_) {

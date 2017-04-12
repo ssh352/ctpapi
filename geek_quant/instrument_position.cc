@@ -39,7 +39,8 @@ int InstrumentPosition::GetCloseableQuantity(
 void InstrumentPosition::HandleRtnOrder(
     const OrderData& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
-  if (IsOpenOrder(rtn_order.position_effect()) &&
+  if (rtn_order.status() != OrderStatus::kCancel &&
+      IsOpenOrder(rtn_order.position_effect()) &&
       rtn_order.filled_quantity() != 0) {
     auto it = std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
       return pos.second.order_id == rtn_order.order_id();
@@ -72,6 +73,15 @@ void InstrumentPosition::HandleRtnOrder(
     }
     close_corr_orders_mgr->AddCloseCorrOrders(rtn_order.order_id(),
                                               std::move(close_corr_orders));
+  } else if (rtn_order.status() == OrderStatus::kCancel) {
+    int fill_quantity = rtn_order.filled_quantity();
+    for (auto order_quantity :
+         close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id())) {
+      if (positions_.find(order_quantity.first) != positions_.end()) {
+        positions_[order_quantity.first].closeable_quantity +=
+            order_quantity.second;
+      }
+    }
   } else {
   }
 }
