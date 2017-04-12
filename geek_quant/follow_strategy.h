@@ -8,11 +8,23 @@ class FollowStragety {
  public:
   class Delegate {
    public:
-    virtual void Trade(const std::string& order_no) = 0;
+    virtual void OpenOrder(const std::string& instrument,
+                           const std::string& order_no,
+                           OrderDirection direction,
+                           double price,
+                           int quantity) = 0;
+
+    virtual void CloseOrder(const std::string& instrument,
+                            const std::string& order_no,
+                            OrderDirection direction,
+                            PositionEffect position_effect,
+                            double price,
+                            int quantity) = 0;
+
+    virtual void CancelOrder(const std::string& order_no) = 0;
   };
   FollowStragety(const std::string& master_account_id,
                  const std::string& slave_account_id,
-                 TradeOrderDelegate* trade_order_delegate,
                  Delegate* delegate,
                  Context* context);
 
@@ -29,7 +41,6 @@ class FollowStragety {
  private:
   std::string master_account_id_;
   std::string slave_account_id_;
-  TradeOrderDelegate* trade_order_delegate_;
   Delegate* delegate_;
   Context* context_;
 };

@@ -14,7 +14,7 @@ struct OrderInsertForTest {
 };
 
 class FollowStragetyServiceFixture : public testing::Test,
-                                     public TradeOrderDelegate {
+                                     public FollowStragetyService::Delegate {
  public:
   FollowStragetyServiceFixture()
       : service(kMasterAccountID, kSlaveAccountID, this, 1) {}
@@ -495,7 +495,6 @@ TEST_F(FollowStragetyServiceFixture, FillMultiOrder) {
   }
 }
 
-
 TEST_F(FollowStragetyServiceFixture, PartFillMultiOrder) {
   OpenAndFilledOrder("1");
   OpenAndFilledOrder("2", 10, 10, 6);
@@ -511,10 +510,6 @@ TEST_F(FollowStragetyServiceFixture, PartFillMultiOrder) {
     EXPECT_EQ("2", cancels.at(0));
   }
 }
-
-
-
-
 
 /*
 
@@ -540,7 +535,6 @@ TEST_F(FollowStragetyServiceFixture, CancelMultiOrder) {
   }
 }
 */
-
 
 // Open Opposite Order
 

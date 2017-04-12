@@ -3,11 +3,9 @@
 
 FollowStragety::FollowStragety(const std::string& master_account_id,
                                const std::string& slave_account_id,
-                               TradeOrderDelegate* trade_order_delegate,
                                Delegate* delegate,
                                Context* context)
-    : trade_order_delegate_(trade_order_delegate),
-      delegate_(delegate),
+    : delegate_(delegate),
       master_account_id_(master_account_id),
       slave_account_id_(slave_account_id),
       context_(context) {}
@@ -16,8 +14,7 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
   if (order_data.account_id_ != master_account_id_) {
     return;
   }
-  delegate_->Trade(order_data.order_id());
-  trade_order_delegate_->OpenOrder(
+  delegate_->OpenOrder(
       order_data.instrument(), order_data.order_id(), order_data.direction(),
       order_data.price(), order_data.quanitty());
 }
@@ -56,14 +53,12 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
                                  master_corr_quantity.first) &&
         context_->IsActiveOrder(slave_account_id_,
                                 master_corr_quantity.first)) {
-      delegate_->Trade(master_corr_quantity.first);
-      trade_order_delegate_->CancelOrder(master_corr_quantity.first);
+      delegate_->CancelOrder(master_corr_quantity.first);
     }
   }
 
   if (close_quantity > 0) {
-    delegate_->Trade(order_data.order_id());
-    trade_order_delegate_->CloseOrder(
+    delegate_->CloseOrder(
         order_data.instrument(), order_data.order_id(), order_data.direction(),
         order_data.position_effect(), order_data.price(), close_quantity);
   }
@@ -83,8 +78,7 @@ void FollowStragety::HandleCanceled(const OrderData& order_data) {
   }
 
   if (context_->IsActiveOrder(slave_account_id_, order_data.order_id())) {
-    delegate_->Trade(order_data.order_id());
-    trade_order_delegate_->CancelOrder(order_data.order_id());
+    delegate_->CancelOrder(order_data.order_id());
   }
 }
 
