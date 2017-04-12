@@ -12,6 +12,7 @@ class FollowStragetyService : public FollowStragety::Delegate {
     virtual void OpenOrder(const std::string& instrument,
                            const std::string& order_no,
                            OrderDirection direction,
+                           OrderPriceType price_type,
                            double price,
                            int quantity) = 0;
 
@@ -19,9 +20,9 @@ class FollowStragetyService : public FollowStragety::Delegate {
                             const std::string& order_no,
                             OrderDirection direction,
                             PositionEffect position_effect,
+                            OrderPriceType price_type,
                             double price,
                             int quantity) = 0;
-
     virtual void CancelOrder(const std::string& order_no) = 0;
   };
 
@@ -32,9 +33,12 @@ class FollowStragetyService : public FollowStragety::Delegate {
 
   void HandleRtnOrder(OrderData rtn_order);
 
+  virtual void CancelOrder(const std::string& order_no) override;
+
   virtual void OpenOrder(const std::string& instrument,
                          const std::string& order_no,
                          OrderDirection direction,
+                         OrderPriceType price_type,
                          double price,
                          int quantity) override;
 
@@ -42,10 +46,9 @@ class FollowStragetyService : public FollowStragety::Delegate {
                           const std::string& order_no,
                           OrderDirection direction,
                           PositionEffect position_effect,
+                          OrderPriceType price_type,
                           double price,
                           int quantity) override;
-
-  virtual void CancelOrder(const std::string& order_no) override;
 
  private:
   enum class StragetyStatus {
@@ -61,7 +64,6 @@ class FollowStragetyService : public FollowStragety::Delegate {
   StragetyStatus BeforeHandleOrder(OrderData order);
   Context context_;
   FollowStragety stragety_;
-  OrderIdMananger order_id_mananger_;
   Delegate* delegate_;
   std::vector<std::string> waiting_reply_order_;
   std::deque<OrderData> outstanding_orders_;

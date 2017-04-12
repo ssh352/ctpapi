@@ -9,11 +9,25 @@ std::vector<OrderQuantity> InstrumentPosition::GetQuantitys(
     auto it = positions_.find(order);
     if (it != positions_.end()) {
       quanitys.emplace_back(
-          OrderQuantity{it->second.order_id, it->second.direction, true,
-                        it->second.quantity, it->second.closeable_quantity});
+          OrderQuantity{it->second.order_id, it->second.direction,
+                        it->second.is_today_quantity, it->second.quantity,
+                        it->second.closeable_quantity});
     }
   }
+  return quanitys;
+}
 
+std::vector<OrderQuantity> InstrumentPosition::GetQuantitysIf(
+    std::function<bool(const OrderQuantity&)> cond) const {
+  std::vector<OrderQuantity> quanitys;
+  for (auto item : positions_) {
+    if (cond(item.second)) {
+      quanitys.emplace_back(
+          OrderQuantity{item.second.order_id, item.second.direction,
+                        item.second.is_today_quantity, item.second.quantity,
+                        item.second.closeable_quantity});
+    }
+  }
   return quanitys;
 }
 
@@ -61,7 +75,8 @@ void InstrumentPosition::HandleRtnOrder(
     int outstanding_quantity = rtn_order.quanitty();
     for (auto& pos : positions_) {
       if (pos.second.direction == rtn_order.direction() &&
-          TestPositionEffect(rtn_order.exchange_id(), rtn_order.position_effect(),
+          TestPositionEffect(rtn_order.exchange_id(),
+                             rtn_order.position_effect(),
                              pos.second.is_today_quantity)) {
         continue;
       }
@@ -92,7 +107,7 @@ void InstrumentPosition::HandleRtnOrder(
 bool InstrumentPosition::TestPositionEffect(const std::string& exchange_id,
                                             PositionEffect position_effect,
                                             bool is_today_quantity) {
-  if (exchange_id != "SHFE") {
+  if (exchange_id != kSHFEExchangeId) {
     return true;
   }
 

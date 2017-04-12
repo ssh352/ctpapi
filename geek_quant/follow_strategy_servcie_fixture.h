@@ -3,8 +3,6 @@
 #include "gtest/gtest.h"
 #include "geek_quant/follow_strategy_service.h"
 
-
-
 extern const char kMasterAccountID[];
 extern const char kSlaveAccountID[];
 
@@ -17,7 +15,6 @@ struct OrderInsertForTest {
   int quantity;
 };
 
-
 class FollowStragetyServiceFixture : public testing::Test,
                                      public FollowStragetyService::Delegate {
  public:
@@ -27,12 +24,14 @@ class FollowStragetyServiceFixture : public testing::Test,
                           const std::string& order_no,
                           OrderDirection direction,
                           PositionEffect position_effect,
+                          OrderPriceType price_type,
                           double price,
                           int quantity) override;
 
   virtual void OpenOrder(const std::string& instrument,
                          const std::string& order_no,
                          OrderDirection direction,
+                         OrderPriceType price_type,
                          double price,
                          int quantity) override;
 
@@ -123,7 +122,4 @@ class FollowStragetyServiceFixture : public testing::Test,
   std::vector<std::string> cancel_orders;
 };
 
-#endif // FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
-
-
-
+#endif  // FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H

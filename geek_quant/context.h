@@ -4,14 +4,22 @@
 #include "geek_quant/order_manager.h"
 #include "geek_quant/position_manager.h"
 #include "geek_quant/close_corr_orders_manager.h"
+#include "geek_quant/order_id_mananger.h"
 
 class Context {
  public:
+  Context(int start_order_id_seq);
+
   OrderEventType HandlertnOrder(const OrderData& rtn_order);
 
   std::vector<OrderQuantity> GetQuantitys(
       const std::string& account_id,
       std::vector<std::string> order_ids) const;
+
+  std::vector<OrderQuantity> GetQuantitysIf(
+      const std::string& account_id,
+      const std::string& instrument,
+      std::function<bool(const OrderQuantity&)> cond) const;
 
   int GetCloseableQuantityWithOrderDirection(const std::string& account_id,
                                              const std::string& instrument,
@@ -42,7 +50,12 @@ class Context {
                       const std::string& instrument,
                       OrderDirection direction) const;
 
+  std::string GenerateOrderId();
+
+  OrderData AdjustOrder(OrderData rtn_order);
+
  private:
+  OrderIdMananger order_id_mananger_;
   std::map<std::string, OrderManager> account_order_mgr_;
   std::map<std::string, PositionManager> account_position_mgr_;
   std::map<std::string, CloseCorrOrdersManager> account_close_corr_orders_mgr_;

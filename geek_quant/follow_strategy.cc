@@ -28,8 +28,8 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
       if (slave_quantity > 0) {
         // Fully lock
         delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                             order_data.direction(), order_data.price(),
-                             slave_quantity);
+                             order_data.direction(), OrderPriceType::kLimit,
+                             order_data.price(), slave_quantity);
       }
 
       if (context_->ActiveOrderCount(
@@ -46,12 +46,14 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
       }
     } else {
       delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                           order_data.direction(), order_data.price(),
+                           order_data.direction(), OrderPriceType::kLimit,
+                           order_data.price(),
                            order_data.quanitty());
     }
   } else {
     delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                         order_data.direction(), order_data.price(),
+                         order_data.direction(), OrderPriceType::kLimit,
+                         order_data.price(),
                          order_data.quanitty());
   }
 }
@@ -85,7 +87,8 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
   if (close_quantity > 0) {
     delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
                           order_data.direction(), order_data.position_effect(),
-                          order_data.price(), close_quantity);
+                          OrderPriceType::kLimit, order_data.price(),
+                          close_quantity);
   }
 }
 
@@ -104,16 +107,54 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
     return;
   }
 
-  int master_closeable_quantity =
+  if (context_->GetCloseableQuantityWithOrderDirection(
+          master_account_id_, order_data.instrument(),
+          OppositeOrderDirection(order_data.direction())) == 0 &&
       context_->GetCloseableQuantityWithOrderDirection(
-          master_account_id_, order_data.instrument(),
-          OppositeOrderDirection(order_data.direction()));
-
-  if (master_closeable_quantity == 0 &&
-      context_->ActiveOrderCount(
-          master_account_id_, order_data.instrument(),
-          OppositeOrderDirection(order_data.direction())) == 0) {
+          slave_account_id_, order_data.instrument(),
+          OppositeOrderDirection(order_data.direction())) != 0) {
     // Close all position
+    auto quantitys = context_->GetQuantitysIf(
+        slave_account_id_, order_data.instrument(),
+        [](auto quantity) { return quantity.closeable_quantity != 0; });
+
+    if (order_data.exchange_id() == kSHFEExchangeId) {
+      int today_quantity = std::accumulate(
+          quantitys.begin(), quantitys.end(), 0, [](int val, auto quantity) {
+            return quantity.is_today_quantity
+                       ? val + quantity.closeable_quantity
+                       : val;
+          });
+      int yesterday_quantity = std::accumulate(
+          quantitys.begin(), quantitys.end(), 0, [](int val, auto quantity) {
+            return !quantity.is_today_quantity
+                       ? val + quantity.closeable_quantity
+                       : val;
+          });
+      if (yesterday_quantity > 0) {
+        delegate_->CloseOrder(order_data.instrument(),
+                              context_->GenerateOrderId(),
+                              order_data.direction(), PositionEffect::kClose,
+                              OrderPriceType::kMarket, 0, yesterday_quantity);
+      }
+
+      if (today_quantity > 0) {
+        delegate_->CloseOrder(
+            order_data.instrument(), context_->GenerateOrderId(),
+            order_data.direction(), PositionEffect::kCloseToday,
+            OrderPriceType::kMarket, 0, today_quantity);
+      }
+    } else {
+      int quantity = std::accumulate(quantitys.begin(), quantitys.end(), 0,
+                                     [](int val, auto quantity) {
+                                       return val + quantity.closeable_quantity;
+                                     });
+
+      delegate_->CloseOrder(order_data.instrument(),
+                            context_->GenerateOrderId(), order_data.direction(),
+                            PositionEffect::kCloseToday,
+                            OrderPriceType::kMarket, 0, quantity);
+    }
   }
   //  delegate_->CloseOrder(order_data.Instrument())
 }

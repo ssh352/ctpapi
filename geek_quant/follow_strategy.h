@@ -10,6 +10,7 @@ class FollowStragety {
     virtual void OpenOrder(const std::string& instrument,
                            const std::string& order_no,
                            OrderDirection direction,
+                           OrderPriceType price_type,
                            double price,
                            int quantity) = 0;
 
@@ -17,9 +18,9 @@ class FollowStragety {
                             const std::string& order_no,
                             OrderDirection direction,
                             PositionEffect position_effect,
+                            OrderPriceType price_type,
                             double price,
                             int quantity) = 0;
-
 
     virtual void CancelOrder(const std::string& order_no) = 0;
   };

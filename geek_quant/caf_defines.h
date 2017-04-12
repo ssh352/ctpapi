@@ -5,6 +5,8 @@
 
 extern const char kStrategyUserProductInfo[];
 
+extern const char kSHFEExchangeId[];
+
 enum class RequestBy {
   kInvalid,
   kCTA,

@@ -8,6 +8,9 @@ class InstrumentPosition {
   std::vector<OrderQuantity> GetQuantitys(
       std::vector<std::string> orders) const;
 
+  std::vector<OrderQuantity> GetQuantitysIf(
+      std::function<bool(const OrderQuantity&)> cond) const;
+
   int GetCloseableQuantityWithOrderDirection(OrderDirection direction) const;
 
   int GetCloseableQuantityWithInstrument(const std::string& order_id) const;

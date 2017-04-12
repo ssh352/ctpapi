@@ -10,6 +10,7 @@ void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
                                               const std::string& order_no,
                                               OrderDirection direction,
                                               PositionEffect position_effect,
+                                              OrderPriceType price_type,
                                               double price,
                                               int quantity) {
   order_inserts.push_back(OrderInsertForTest{instrument, order_no, direction,
@@ -19,6 +20,7 @@ void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
 void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
                                              const std::string& order_no,
                                              OrderDirection direction,
+                                             OrderPriceType price_type,
                                              double price,
                                              int quantity) {
   order_inserts.push_back(OrderInsertForTest{

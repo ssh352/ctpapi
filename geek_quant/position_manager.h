@@ -8,8 +8,13 @@ class CloseCorrOrdersManager;
 
 class PositionManager {
  public:
-  std::vector<OrderQuantity> GetQuantitys(const std::string& instrument,
-                                          std::vector<std::string> orders)const ;
+  std::vector<OrderQuantity> GetQuantitys(
+      const std::string& instrument,
+      std::vector<std::string> orders) const;
+
+  std::vector<OrderQuantity> GetQuantitysIf(
+      const std::string& instrument,
+      std::function<bool(const OrderQuantity&)> cond) const;
 
   int GetCloseableQuantityWithInstrument(const std::string& instrument,
                                          const std::string& order_id) const;

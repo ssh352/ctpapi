@@ -8,10 +8,10 @@ FollowStragetyService::FollowStragetyService(const std::string& master_account,
       delegate_(delegate),
       master_account_(master_account),
       slave_account_(slave_account),
-      order_id_mananger_(start_order_id_seq) {}
+      context_(start_order_id_seq) {}
 
 void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
-  OrderData adjust_order = order_id_mananger_.AdjustOrder(std::move(rtn_order));
+  OrderData adjust_order = context_.AdjustOrder(std::move(rtn_order));
   switch (BeforeHandleOrder(adjust_order)) {
     case StragetyStatus::kWaitReply:
       outstanding_orders_.push_back(std::move(adjust_order));
@@ -100,21 +100,23 @@ void FollowStragetyService::Trade(const std::string& order_no) {
 void FollowStragetyService::OpenOrder(const std::string& instrument,
                                       const std::string& order_no,
                                       OrderDirection direction,
+                                      OrderPriceType price_type,
                                       double price,
                                       int quantity) {
   Trade(order_no);
-  delegate_->OpenOrder(instrument, order_no, direction, price, quantity);
+  delegate_->OpenOrder(instrument, order_no, direction, price_type, price,
+                       quantity);
 }
-
 void FollowStragetyService::CloseOrder(const std::string& instrument,
                                        const std::string& order_no,
                                        OrderDirection direction,
                                        PositionEffect position_effect,
+                                       OrderPriceType price_type,
                                        double price,
                                        int quantity) {
   Trade(order_no);
-  delegate_->CloseOrder(instrument, order_no, direction, position_effect, price,
-                        quantity);
+  delegate_->CloseOrder(instrument, order_no, direction, position_effect,
+                        price_type, price, quantity);
 }
 
 void FollowStragetyService::CancelOrder(const std::string& order_no) {
