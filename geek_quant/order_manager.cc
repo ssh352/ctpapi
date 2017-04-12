@@ -31,10 +31,35 @@ const std::string& OrderManager::GetOrderInstrument(
   return it->second.instrument();
 }
 
-bool OrderManager::IsUnfillOrder(const std::string& order_id) const {
+int OrderManager::ActiveOrderCount(const std::string& instrument,
+                                   OrderDirection direction) const {
+  return std::count_if(orders_.begin(), orders_.end(), [&](auto item) {
+    if (item.second.instrument() != instrument ||
+        item.second.direction() != direction) {
+      return false;
+    }
+    return item.second.IsActiveOrder();
+  });
+}
+
+std::vector<std::string> OrderManager::ActiveOrderIds(
+    const std::string& instrument,
+    OrderDirection direction) const {
+  std::vector<std::string> order_ids;
+  for (auto item : orders_) {
+    if (item.second.instrument() == instrument &&
+        item.second.direction() == direction &&
+        item.second.IsActiveOrder()) {
+      order_ids.push_back(item.first);
+    }
+  }
+  return order_ids;
+}
+
+bool OrderManager::IsActiveOrder(const std::string& order_id) const {
   if (orders_.find(order_id) == orders_.end()) {
     return false;
   }
 
-  return orders_.at(order_id).IsUnfillOrder();
+  return orders_.at(order_id).IsActiveOrder();
 }

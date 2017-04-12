@@ -14,9 +14,46 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
   if (order_data.account_id_ != master_account_id_) {
     return;
   }
-  delegate_->OpenOrder(
-      order_data.instrument(), order_data.order_id(), order_data.direction(),
-      order_data.price(), order_data.quanitty());
+  if (context_->IsOppositeOpen(order_data.account_id(), order_data.instrument(),
+                               order_data.direction())) {
+    int master_quantity = context_->GetCloseableQuantityWithOrderDirection(
+        master_account_id_, order_data.instrument(),
+        OppositeOrderDirection(order_data.direction()));
+
+    int slave_quantity = context_->GetCloseableQuantityWithOrderDirection(
+        slave_account_id_, order_data.instrument(),
+        OppositeOrderDirection(order_data.direction()));
+
+    if (master_quantity == order_data.quanitty()) {
+      if (slave_quantity > 0) {
+        // Fully lock
+        delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+                             order_data.direction(), order_data.price(),
+                             slave_quantity);
+      }
+
+      if (context_->ActiveOrderCount(
+              master_account_id_, order_data.instrument(),
+              OppositeOrderDirection(order_data.direction())) == 0 &&
+          context_->ActiveOrderCount(
+              slave_account_id_, order_data.instrument(),
+              OppositeOrderDirection(order_data.direction())) != 0) {
+        for (auto order_id : context_->ActiveOrderIds(
+                 slave_account_id_, order_data.instrument(),
+                 OppositeOrderDirection(order_data.direction()))) {
+          delegate_->CancelOrder(order_id);
+        }
+      }
+    } else {
+      delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+                           order_data.direction(), order_data.price(),
+                           order_data.quanitty());
+    }
+  } else {
+    delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+                         order_data.direction(), order_data.price(),
+                         order_data.quanitty());
+  }
 }
 
 void FollowStragety::HandleCloseing(const OrderData& order_data) {
@@ -58,9 +95,9 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
   }
 
   if (close_quantity > 0) {
-    delegate_->CloseOrder(
-        order_data.instrument(), order_data.order_id(), order_data.direction(),
-        order_data.position_effect(), order_data.price(), close_quantity);
+    delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
+                          order_data.direction(), order_data.position_effect(),
+                          order_data.price(), close_quantity);
   }
 
   // }

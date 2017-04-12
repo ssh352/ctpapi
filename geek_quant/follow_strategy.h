@@ -2,7 +2,6 @@
 #define FOLLOW_TRADE_FOLLOW_strategy_H
 #include "geek_quant/caf_defines.h"
 #include "geek_quant/context.h"
-#include "geek_quant/trade_order_delegate.h"
 
 class FollowStragety {
  public:

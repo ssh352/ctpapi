@@ -1,4 +1,5 @@
-#include "context.h"
+#include "geek_quant/context.h"
+#include "geek_quant/order_util.h"
 
 OrderEventType Context::HandlertnOrder(const OrderData& rtn_order) {
   account_position_mgr_[rtn_order.account_id()].HandleRtnOrder(
@@ -17,11 +18,15 @@ std::vector<OrderQuantity> Context::GetQuantitys(
       account_order_mgr_[account_id].GetOrderInstrument(orders.at(0)), orders);
 }
 
-int Context::GetPositionCloseableQuantity(const std::string& account_id,
-                                          const std::string& instrument,
-                                          OrderDirection direction) {
-  return account_position_mgr_[account_id].GetPositionCloseableQuantity(
-      instrument, direction);
+int Context::GetCloseableQuantityWithOrderDirection(
+    const std::string& account_id,
+    const std::string& instrument,
+    OrderDirection direction) const {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
+    return 0;
+  }
+  return account_position_mgr_.at(account_id)
+      .GetCloseableQuantityWithOrderDirection(instrument, direction);
 }
 
 std::vector<std::pair<std::string, int> > Context::GetCorrOrderQuantiys(
@@ -38,12 +43,33 @@ std::vector<std::string> Context::GetCloseCorrOrderIds(
       order_id);
 }
 
+int Context::ActiveOrderCount(const std::string& account_id,
+                              const std::string& instrument,
+                              OrderDirection direction) const {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
+    return 0;
+  }
+  return account_order_mgr_.at(account_id)
+      .ActiveOrderCount(instrument, direction);
+}
+
+std::vector<std::string> Context::ActiveOrderIds(
+    const std::string& account_id,
+    const std::string& instrument,
+    OrderDirection direction) const {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
+    return {};
+  }
+  return account_order_mgr_.at(account_id)
+      .ActiveOrderIds(instrument, direction);
+}
+
 bool Context::IsActiveOrder(const std::string& slave_account_id,
                             const std::string& order_id) const {
   if (account_order_mgr_.find(slave_account_id) == account_order_mgr_.end()) {
     return false;
   }
-  return account_order_mgr_.at(slave_account_id).IsUnfillOrder(order_id);
+  return account_order_mgr_.at(slave_account_id).IsActiveOrder(order_id);
 }
 
 int Context::GetCloseableQuantity(const std::string& account_id,
@@ -54,7 +80,18 @@ int Context::GetCloseableQuantity(const std::string& account_id,
   }
 
   return account_position_mgr_.at(account_id)
-      .GetCloseableQuantity(
+      .GetCloseableQuantityWithInstrument(
           account_order_mgr_.at(account_id).GetOrderInstrument(order_id),
           order_id);
+}
+
+bool Context::IsOppositeOpen(const std::string& account_id,
+                             const std::string& instrument,
+                             OrderDirection direction) const {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
+    return false;
+  }
+  return account_position_mgr_.at(account_id)
+             .GetCloseableQuantityWithOrderDirection(
+                 instrument, OppositeOrderDirection(direction)) != 0;
 }

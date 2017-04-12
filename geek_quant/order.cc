@@ -4,6 +4,6 @@ Order::Order(OrderData&& data) : data_(data) {
 
 }
 
-bool Order::IsUnfillOrder() const {
+bool Order::IsActiveOrder() const {
   return data_.status() == OrderStatus::kActive;
 }

@@ -17,7 +17,8 @@ std::vector<OrderQuantity> InstrumentPosition::GetQuantitys(
   return quanitys;
 }
 
-int InstrumentPosition::GetPositionCloseableQuantity(OrderDirection direction) {
+int InstrumentPosition::GetCloseableQuantityWithOrderDirection(
+    OrderDirection direction) const {
   return std::accumulate(positions_.begin(), positions_.end(), 0,
                          [=](int val, auto order_position) {
                            if (order_position.second.direction != direction) {
@@ -28,7 +29,7 @@ int InstrumentPosition::GetPositionCloseableQuantity(OrderDirection direction) {
                          });
 }
 
-int InstrumentPosition::GetCloseableQuantity(
+int InstrumentPosition::GetCloseableQuantityWithInstrument(
     const std::string& order_id) const {
   if (positions_.find(order_id) == positions_.end()) {
     return 0;

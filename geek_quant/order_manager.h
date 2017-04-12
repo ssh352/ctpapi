@@ -12,7 +12,14 @@ class OrderManager {
 
   const std::string& GetOrderInstrument(const std::string& order_id) const;
 
-  bool IsUnfillOrder(const std::string& order_id) const;
+  int ActiveOrderCount(const std::string& instrument,
+                       OrderDirection direction) const;
+
+  std::vector<std::string> ActiveOrderIds(const std::string& instrument,
+                                          OrderDirection direction) const;
+
+  bool IsActiveOrder(const std::string& order_id) const;
+
  private:
   std::map<std::string, Order> orders_;
   std::string dummpy_empty_;

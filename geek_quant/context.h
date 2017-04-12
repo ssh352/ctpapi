@@ -12,9 +12,9 @@ class Context {
   std::vector<OrderQuantity> GetQuantitys(const std::string& account_id,
                                           std::vector<std::string> order_ids);
 
-  int GetPositionCloseableQuantity(const std::string& account_id,
-                                   const std::string& instrument,
-                                   OrderDirection direction);
+  int GetCloseableQuantityWithOrderDirection(const std::string& account_id,
+                                             const std::string& instrument,
+                                             OrderDirection direction) const;
 
   std::vector<std::pair<std::string, int> > GetCorrOrderQuantiys(
       const std::string& account_id,
@@ -23,10 +23,24 @@ class Context {
   std::vector<std::string> GetCloseCorrOrderIds(const std::string& account_id,
                                                 const std::string& order_id);
 
-  bool IsActiveOrder(const std::string& slave_account_id_,
+  int ActiveOrderCount(const std::string& account_id,
+                       const std::string& instrument,
+                       OrderDirection direction) const;
+
+  std::vector<std::string> ActiveOrderIds(const std::string& account_id,
+                                          const std::string& instrument,
+                                          OrderDirection direction) const;
+
+  bool IsActiveOrder(const std::string& account_id,
                      const std::string& order_id) const;
 
-  int GetCloseableQuantity(const std::string& account_id, const std::string& order_id) const;
+  int GetCloseableQuantity(const std::string& account_id,
+                           const std::string& order_id) const;
+
+  bool IsOppositeOpen(const std::string& account_id,
+                      const std::string& instrument,
+                      OrderDirection direction) const;
+
  private:
   std::map<std::string, OrderManager> account_order_mgr_;
   std::map<std::string, PositionManager> account_position_mgr_;

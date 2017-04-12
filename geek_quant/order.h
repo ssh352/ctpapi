@@ -10,7 +10,11 @@ class Order {
     return data_.instrument();
   }
 
-  bool IsUnfillOrder() const;
+  OrderDirection direction() const {
+    return data_.direction();
+  }
+
+  bool IsActiveOrder() const;
  private:
   OrderData data_;
   std::vector<std::pair<std::string, int> > order_quantitys_;
