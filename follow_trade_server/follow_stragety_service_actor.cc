@@ -61,6 +61,9 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   std::this_thread::sleep_for(std::chrono::seconds(1));
   SettlementInfoConfirm(follow_);
 
+  send(cta_, CTPSubscribeRtnOrderAtom::value);
+  send(follow_, CTPSubscribeRtnOrderAtom::value);
+
   return {[=](CTPRtnOrderAtom, OrderData order) {
     service_.HandleRtnOrder(order);
   }};

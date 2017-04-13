@@ -19,6 +19,10 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
 
   virtual void OnSettlementInfoConfirm() override;
 
+
+  void on_exit() override {
+    rtn_orders_subscribers_.clear();
+  }
  protected:
   virtual caf::behavior make_behavior() override;
 
@@ -33,7 +37,7 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
 
   std::vector<OrderData> rtn_orders_;
 
-  std::vector<caf::actor> rtn_orders_subscribers_;
+  std::vector<caf::strong_actor_ptr> rtn_orders_subscribers_;
 
   typedef caf::detail::make_response_promise_helper<bool>::type
       BoolResponsePromise;

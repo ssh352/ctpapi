@@ -72,9 +72,13 @@ caf::behavior CtpTrader::make_behavior() {
         }
         positions_response_promises.clear();
       },
+      [=](CTPSubscribeRtnOrderAtom) {
+        rtn_orders_subscribers_.push_back(current_sender());
+      },
       [=](CTPRtnOrderAtom, OrderData order) {
         for (auto subscriber : rtn_orders_subscribers_) {
-          send(subscriber, CTPRtnOrderAtom::value, order);
+          send(caf::actor_cast<caf::actor>(subscriber), CTPRtnOrderAtom::value,
+               order);
         }
         rtn_orders_.push_back(order);
       },
@@ -114,7 +118,7 @@ caf::behavior CtpTrader::make_behavior() {
         delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
       }
     },
-      
+      
       */
   };
 }

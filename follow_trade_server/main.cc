@@ -106,6 +106,10 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   std::string input;
   while (std::cin >> input) {
     if (input == "exit") {
+      caf::anon_send_exit(cta_actor, caf::exit_reason::user_shutdown);
+      for (auto actor : servcies) {
+        caf::anon_send_exit(actor, caf::exit_reason::user_shutdown);
+      }
       break;
     }
   }

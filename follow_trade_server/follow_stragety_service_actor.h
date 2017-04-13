@@ -30,6 +30,11 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
 
   virtual void CancelOrder(const std::string& order_no) override;
 
+  void on_exit() override {
+    destroy(cta_);
+    destroy(follow_);
+  }
+
  protected:
   virtual caf::behavior make_behavior() override;
 
