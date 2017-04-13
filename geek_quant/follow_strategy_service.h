@@ -31,6 +31,11 @@ class FollowStragetyService : public FollowStragety::Delegate {
                         Delegate* delegate,
                         int start_order_id_seq);
 
+  void InitPositions(const std::string& account_id,
+                     std::vector<OrderPosition> quantitys);
+
+  void InitRtnOrders(std::vector<OrderData> orders);
+
   void HandleRtnOrder(OrderData rtn_order);
 
   virtual void CancelOrder(const std::string& order_no) override;

@@ -11,6 +11,21 @@ OrderEventType Context::HandlertnOrder(const OrderData& rtn_order) {
   return account_order_mgr_[rtn_order.account_id()].HandleRtnOrder(rtn_order);
 }
 
+void Context::InitPositions(const std::string& account_id,
+                            std::vector<OrderPosition> positions) {
+  // std::string order_id;
+  // OrderDirection direction;
+  // bool is_today_quantity;
+  // int quantity;
+  // int closeable_quantity;
+  for (auto pos : positions) {
+    account_position_mgr_[account_id].AddQuantity(
+        pos.instrument,
+        {order_id_mananger_.GetOrderId(pos.instrument, pos.order_direction),
+         pos.order_direction, false, pos.quantity, pos.quantity});
+  }
+}
+
 std::vector<OrderQuantity> Context::GetQuantitys(
     const std::string& account_id,
     std::vector<std::string> orders) const {
@@ -101,9 +116,7 @@ int Context::GetCloseableQuantity(const std::string& account_id,
   }
 
   return account_position_mgr_.at(account_id)
-      .GetCloseableQuantityWithInstrument(
-          account_order_mgr_.at(account_id).GetOrderInstrument(order_id),
-          order_id);
+      .GetCloseableQuantityWithInstrument(order_id);
 }
 
 bool Context::IsOppositeOpen(const std::string& account_id,

@@ -43,10 +43,10 @@ int InstrumentPosition::GetCloseableQuantityWithOrderDirection(
                          });
 }
 
-int InstrumentPosition::GetCloseableQuantityWithInstrument(
+boost::optional<int> InstrumentPosition::GetCloseableQuantityWithInstrument(
     const std::string& order_id) const {
   if (positions_.find(order_id) == positions_.end()) {
-    return 0;
+    return {};
   }
   return positions_.at(order_id).closeable_quantity;
 }
@@ -102,6 +102,10 @@ void InstrumentPosition::HandleRtnOrder(
     }
   } else {
   }
+}
+
+void InstrumentPosition::AddQuantity(OrderQuantity quantity) {
+  positions_.insert_or_assign(quantity.order_id, quantity);
 }
 
 bool InstrumentPosition::TestPositionEffect(const std::string& exchange_id,

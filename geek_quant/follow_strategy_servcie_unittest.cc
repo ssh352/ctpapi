@@ -105,7 +105,7 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase4) {
                                 PositionEffect::kOpen, 10, 6);
 
   {
-    service.HandleRtnOrder(MakeSlaveOrderData("2", OrderDirection::kSell,
+    service->HandleRtnOrder(MakeSlaveOrderData("2", OrderDirection::kSell,
                                               PositionEffect::kClose,
                                               OrderStatus::kActive, 0, 1));
   }
@@ -159,7 +159,7 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase5) {
   }
 
   {
-    service.HandleRtnOrder(MakeSlaveOrderData("4", OrderDirection::kSell,
+    service->HandleRtnOrder(MakeSlaveOrderData("4", OrderDirection::kSell,
                                               PositionEffect::kClose,
                                               OrderStatus::kActive, 0, 4));
   }
@@ -228,17 +228,17 @@ TEST_F(FollowStragetyServiceFixture, CancelOrderCase2) {
 }
 
 TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
-  service.HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
+  service->HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
                                              PositionEffect::kOpen,
                                              OrderStatus::kActive, 0, 10));
 
-  service.HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
+  service->HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
                                              PositionEffect::kOpen,
                                              OrderStatus::kCancel, 0, 10));
 
   (void)PopOrderInsert();
 
-  service.HandleRtnOrder(MakeSlaveOrderData("1", OrderDirection::kBuy,
+  service->HandleRtnOrder(MakeSlaveOrderData("1", OrderDirection::kBuy,
                                             PositionEffect::kOpen,
                                             OrderStatus::kActive, 0, 10));
   {

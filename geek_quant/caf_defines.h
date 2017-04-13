@@ -215,7 +215,7 @@ struct OpenReverseOrderActionInfo {
 struct OrderPosition {
   std::string instrument;
   OrderDirection order_direction;
-  int volume;
+  int quantity;
 };
 
 struct OrderQuantity {
@@ -285,7 +285,7 @@ typename Inspector::result_type inspect(Inspector& f, OrderIdent& x) {
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderPosition& x) {
   return f(caf::meta::type_name("OrderPosition"), x.instrument,
-           x.order_direction, x.volume);
+           x.order_direction, x.quantity);
 }
 
 #endif /* CAF_DEFINES_H */

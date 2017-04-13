@@ -54,6 +54,9 @@ class Context {
 
   OrderData AdjustOrder(OrderData rtn_order);
 
+  void InitPositions(const std::string& account_id,
+                      std::vector<OrderPosition> quantitys);
+
  private:
   OrderIdMananger order_id_mananger_;
   std::map<std::string, OrderManager> account_order_mgr_;

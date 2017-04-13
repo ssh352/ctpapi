@@ -10,6 +10,18 @@ FollowStragetyService::FollowStragetyService(const std::string& master_account,
       slave_account_(slave_account),
       context_(start_order_id_seq) {}
 
+void FollowStragetyService::InitPositions(
+    const std::string& account_id,
+    std::vector<OrderPosition> quantitys) {
+  context_.InitPositions(account_id, quantitys);
+}
+
+void FollowStragetyService::InitRtnOrders(std::vector<OrderData> orders) {
+  for (auto order : orders) {
+    (void)context_.HandlertnOrder(context_.AdjustOrder(order));
+  }
+}
+
 void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
   OrderData adjust_order = context_.AdjustOrder(std::move(rtn_order));
   switch (BeforeHandleOrder(adjust_order)) {

@@ -3,17 +3,18 @@
 #include "geek_quant/caf_defines.h"
 
 class OrderIdMananger {
-public:
+ public:
   OrderIdMananger(int start_order_id_seq);
   OrderData AdjustOrder(OrderData&& order);
 
   std::string GenerateOrderId();
-private:
-  std::map<std::pair<std::string, int>, int> session_corr_order_ids_;
+
+  std::string GetOrderId(const std::string& instrument,
+                         OrderDirection order_direction);
+
+ private:
+  std::map<std::string, int> session_corr_order_ids_;
   int start_order_id_seq_;
 };
 
-#endif // FOLLOW_TRADE_ORDER_ID_MANANGER_H
-
-
-
+#endif  // FOLLOW_TRADE_ORDER_ID_MANANGER_H

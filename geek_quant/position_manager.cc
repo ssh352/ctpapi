@@ -1,5 +1,10 @@
 #include "geek_quant/position_manager.h"
 
+void PositionManager::AddQuantity(const std::string& instrument,
+                                  OrderQuantity quantitys) {
+  instrument_positions_[instrument].AddQuantity(std::move(quantitys));
+}
+
 std::vector<OrderQuantity> PositionManager::GetQuantitys(
     const std::string& instrument,
     std::vector<std::string> order_ids) const {
@@ -19,14 +24,18 @@ std::vector<OrderQuantity> PositionManager::GetQuantitysIf(
 }
 
 int PositionManager::GetCloseableQuantityWithInstrument(
-    const std::string& instrument,
     const std::string& order_id) const {
-  if (instrument_positions_.find(instrument) == instrument_positions_.end()) {
-    return 0;
+  int ret = 0;
+
+  for (auto pos : instrument_positions_) {
+    if (auto quantity =
+            pos.second.GetCloseableQuantityWithInstrument(order_id)) {
+      ret = *quantity;
+      break;
+    }
   }
 
-  return instrument_positions_.at(instrument)
-      .GetCloseableQuantityWithInstrument(order_id);
+  return ret;
 }
 
 int PositionManager::GetCloseableQuantityWithOrderDirection(

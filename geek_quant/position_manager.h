@@ -8,6 +8,8 @@ class CloseCorrOrdersManager;
 
 class PositionManager {
  public:
+  void AddQuantity(const std::string& instrument, OrderQuantity quantitys);
+
   std::vector<OrderQuantity> GetQuantitys(
       const std::string& instrument,
       std::vector<std::string> orders) const;
@@ -16,8 +18,7 @@ class PositionManager {
       const std::string& instrument,
       std::function<bool(const OrderQuantity&)> cond) const;
 
-  int GetCloseableQuantityWithInstrument(const std::string& instrument,
-                                         const std::string& order_id) const;
+  int GetCloseableQuantityWithInstrument(const std::string& order_id) const;
 
   int GetCloseableQuantityWithOrderDirection(const std::string& instrument,
                                              OrderDirection direction) const;
