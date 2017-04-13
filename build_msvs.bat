@@ -11,4 +11,4 @@ REM python gyp_hello.py --depth=.. -Icommon.gypi -Dhost_arch=x64 -Dtarget_arch=x
 REM python gyp_hello.py --depth=.. -Icommon.gypi -Dclang=0 -Dasan=0 %~dp0..\ispread\lhsnet_demo.gyp
 REM python %~dp0gyp_hello.py --depth=.. -I%~dp0common.gypi -D"clang=0 asan=0" %~dp0..\ispread\lhsnet_demo.gyp
 REM %~dp0\tools\python276_bin\python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi build\some.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi geek_quant\geek_quant.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_strategy_mode\follow_strategy_mode.gyp
