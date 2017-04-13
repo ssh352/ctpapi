@@ -1,10 +1,10 @@
 #ifndef FOLLOW_TRADE_CONTEXT_H
 #define FOLLOW_TRADE_CONTEXT_H
-#include "follow_strategy_mode/src/defines.h"
-#include "follow_strategy_mode/src/order_manager.h"
-#include "follow_strategy_mode/src/position_manager.h"
-#include "follow_strategy_mode/src/close_corr_orders_manager.h"
-#include "follow_strategy_mode/src/order_id_mananger.h"
+#include "follow_strategy_mode/defines.h"
+#include "follow_strategy_mode/order_manager.h"
+#include "follow_strategy_mode/position_manager.h"
+#include "follow_strategy_mode/close_corr_orders_manager.h"
+#include "follow_strategy_mode/order_id_mananger.h"
 
 class Context {
  public:
@@ -55,7 +55,10 @@ class Context {
   OrderData AdjustOrder(OrderData rtn_order);
 
   void InitPositions(const std::string& account_id,
-                      std::vector<OrderPosition> quantitys);
+                     std::vector<OrderPosition> quantitys);
+
+  boost::optional<OrderData> GetOrderData(const std::string& account_id,
+                                          const std::string& order_no) const;
 
  private:
   OrderIdMananger order_id_mananger_;

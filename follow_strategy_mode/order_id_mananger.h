@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_ORDER_ID_MANANGER_H
 #define FOLLOW_TRADE_ORDER_ID_MANANGER_H
-#include "follow_strategy_mode/src/defines.h"
+#include "follow_strategy_mode/defines.h"
 
 class OrderIdMananger {
  public:

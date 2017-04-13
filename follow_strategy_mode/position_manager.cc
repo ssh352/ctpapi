@@ -1,4 +1,4 @@
-#include "follow_strategy_mode/src/position_manager.h"
+#include "follow_strategy_mode/position_manager.h"
 
 void PositionManager::AddQuantity(const std::string& instrument,
                                   OrderQuantity quantitys) {

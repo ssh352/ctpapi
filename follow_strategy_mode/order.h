@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_ORDER_H
 #define FOLLOW_TRADE_ORDER_H
-#include "follow_strategy_mode/src/defines.h"
+#include "follow_strategy_mode/defines.h"
 
 class Order {
  public:
@@ -17,6 +17,8 @@ class Order {
   bool IsQuantityChange(int filled_quantity) const;
 
   bool IsActiveOrder() const;
+
+  OrderData order_data() const;
  private:
   OrderData data_;
   std::vector<std::pair<std::string, int> > order_quantitys_;

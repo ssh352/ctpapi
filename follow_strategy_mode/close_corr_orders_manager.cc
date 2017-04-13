@@ -1,5 +1,5 @@
-#include "follow_strategy_mode/src/close_corr_orders_manager.h"
-#include "follow_strategy_mode/src/order_util.h"
+#include "follow_strategy_mode/close_corr_orders_manager.h"
+#include "follow_strategy_mode/order_util.h"
 
 std::vector<std::pair<std::string, int> >
 CloseCorrOrdersManager::GetCorrOrderQuantiys(

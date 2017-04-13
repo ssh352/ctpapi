@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_INSTRUMENT_POSITION_H
 #define FOLLOW_TRADE_INSTRUMENT_POSITION_H
-#include "follow_strategy_mode/src/defines.h"
+#include "follow_strategy_mode/defines.h"
 #include <boost/optional.hpp>
 class CloseCorrOrdersManager;
 

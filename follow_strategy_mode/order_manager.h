@@ -1,7 +1,8 @@
 #ifndef FOLLOW_TRADE_ORDER_MANAGER_H
 #define FOLLOW_TRADE_ORDER_MANAGER_H
-#include "follow_strategy_mode/src/defines.h"
-#include "follow_strategy_mode/src/order.h"
+#include <boost/optional.hpp>
+#include "follow_strategy_mode/defines.h"
+#include "follow_strategy_mode/order.h"
 
 class OrderManager {
  public:
@@ -16,6 +17,8 @@ class OrderManager {
                                           OrderDirection direction) const;
 
   bool IsActiveOrder(const std::string& order_id) const;
+
+  boost::optional<OrderData> order_data(const std::string& order_id) const;
 
  private:
   std::map<std::string, Order> orders_;

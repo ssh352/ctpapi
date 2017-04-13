@@ -4,12 +4,15 @@
   ],
   'targets' : [
   {
-    'target_name' : 'follow_trade',
+    'target_name' : 'follow_strategy_mode',
     'type' : '<(component)',
     'variables' : {
     },
     'sources' : [
-      '<!@(python ../build/glob_files.py src *.h *.cc)',
+      '<!@(python ../build/glob_files.py . *.h *.cc)',
+    ],
+    'sources/' :[
+      ['exclude', 'unittest/.*'],
     ],
     'dependencies' : [
 
@@ -23,7 +26,7 @@
     ],
   },
   {
-    'target_name' : 'follow_trade_unittest',
+    'target_name' : 'follow_strategy_mode_unittest',
     'type' : 'executable',
     'variables' : {
     },
@@ -31,10 +34,9 @@
       '<!@(python ../build/glob_files.py unittest *.h *.cc)',
     ],
     'dependencies' : [
-      'follow_trade',
+      'follow_strategy_mode',
       '<(DEPTH)/testing/gtest.gyp:gtest',
       '<(DEPTH)/testing/gtest.gyp:gtest_main',
-      '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
     ],
     'defines' : [
     ],

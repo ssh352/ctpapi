@@ -1,5 +1,5 @@
-#include "follow_strategy_mode/src/context.h"
-#include "follow_strategy_mode/src/order_util.h"
+#include "follow_strategy_mode/context.h"
+#include "follow_strategy_mode/order_util.h"
 
 Context::Context(int start_order_id_seq)
     : order_id_mananger_(start_order_id_seq) {}
@@ -24,6 +24,15 @@ void Context::InitPositions(const std::string& account_id,
         {order_id_mananger_.GetOrderId(pos.instrument, pos.order_direction),
          pos.order_direction, false, pos.quantity, pos.quantity});
   }
+}
+
+boost::optional<OrderData> Context::GetOrderData(
+    const std::string& account_id,
+    const std::string& order_no) const {
+  if (account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
+    return {};
+  }
+  return account_order_mgr_.at(account_id).order_data(order_no);
 }
 
 std::vector<OrderQuantity> Context::GetQuantitys(

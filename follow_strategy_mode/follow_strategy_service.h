@@ -1,9 +1,9 @@
 #ifndef FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
 #define FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
-#include "follow_strategy_mode/src/defines.h"
-#include "follow_strategy_mode/src/follow_strategy.h"
-#include "follow_strategy_mode/src/context.h"
-#include "follow_strategy_mode/src/order_id_mananger.h"
+#include "follow_strategy_mode/defines.h"
+#include "follow_strategy_mode/follow_strategy.h"
+#include "follow_strategy_mode/context.h"
+#include "follow_strategy_mode/order_id_mananger.h"
 
 class FollowStragetyService : public FollowStragety::Delegate {
  public:
@@ -54,8 +54,10 @@ class FollowStragetyService : public FollowStragety::Delegate {
                           OrderPriceType price_type,
                           double price,
                           int quantity) override;
-
- private:
+  const Context& context() const;
+  const std::string& master_account_id() const;
+  const std::string& slave_account_id() const;
+private:
   enum class StragetyStatus {
     kWaitReply,
     kReady,

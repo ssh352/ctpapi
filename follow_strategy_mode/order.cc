@@ -11,3 +11,7 @@ bool Order::IsQuantityChange(int filled_quantity) const {
 bool Order::IsActiveOrder() const {
   return data_.status() == OrderStatus::kActive;
 }
+
+OrderData Order::order_data() const {
+  return data_;
+}

@@ -131,6 +131,18 @@ void FollowStragetyService::CloseOrder(const std::string& instrument,
                         price_type, price, quantity);
 }
 
+const Context& FollowStragetyService::context() const {
+  return context_;
+}
+
+const std::string& FollowStragetyService::master_account_id() const {
+  return master_account_;
+}
+
+const std::string& FollowStragetyService::slave_account_id() const {
+  return slave_account_;
+}
+
 void FollowStragetyService::CancelOrder(const std::string& order_no) {
   Trade(order_no);
   delegate_->CancelOrder(order_no);

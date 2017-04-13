@@ -1,5 +1,5 @@
-#include "follow_strategy_mode/src/order_manager.h"
-#include "follow_strategy_mode/src/order_util.h"
+#include "follow_strategy_mode/order_manager.h"
+#include "follow_strategy_mode/order_util.h"
 
 OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
   OrderEventType ret_type = OrderEventType::kIgnore;
@@ -57,4 +57,12 @@ bool OrderManager::IsActiveOrder(const std::string& order_id) const {
   }
 
   return orders_.at(order_id).IsActiveOrder();
+}
+
+boost::optional<OrderData> OrderManager::order_data(const std::string& order_id)
+    const  {
+  if (orders_.find(order_id) == orders_.end()) {
+    return {};
+  }
+  return orders_.at(order_id).order_data();
 }

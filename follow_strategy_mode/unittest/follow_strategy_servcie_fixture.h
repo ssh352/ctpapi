@@ -1,8 +1,8 @@
 #ifndef FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #include "gtest/gtest.h"
-#include "follow_strategy_mode/src/follow_strategy_service.h"
-#include "follow_strategy_mode/src/string_util.h"
+#include "follow_strategy_mode/follow_strategy_service.h"
+#include "follow_strategy_mode/string_util.h"
 
 extern const char kMasterAccountID[];
 extern const char kSlaveAccountID[];

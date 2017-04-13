@@ -138,14 +138,14 @@ void FollowStragetyServiceFixture::OpenAndFilledOrder(
 
   service->HandleRtnOrder(MakeMasterOrderData(
       order_id, direction, PositionEffect::kOpen,
-      master_filled_quantity == quantity ? OrderStatus::kFilled
+      master_filled_quantity == quantity ? OrderStatus::kAllFilled
                                          : OrderStatus::kActive,
       master_filled_quantity, quantity));
 
   if (slave_filled_quantity > 0) {
     service->HandleRtnOrder(MakeSlaveOrderData(
         order_id, direction, PositionEffect::kOpen,
-        slave_filled_quantity == quantity ? OrderStatus::kFilled
+        slave_filled_quantity == quantity ? OrderStatus::kAllFilled
                                           : OrderStatus::kActive,
         slave_filled_quantity, quantity));
   }
@@ -181,7 +181,7 @@ FollowStragetyServiceFixture::PushCloseOrderForMaster(
     PositionEffect position_effect /*= PositionEffect::kClose*/) {
   return PushOrderForMaster(
       order_id, direction, position_effect,
-      filled_quantity == quantity ? OrderStatus::kFilled : OrderStatus::kActive,
+      filled_quantity == quantity ? OrderStatus::kAllFilled : OrderStatus::kActive,
       filled_quantity, quantity, price);
 }
 

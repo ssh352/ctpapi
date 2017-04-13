@@ -1,8 +1,8 @@
 #ifndef FOLLOW_TRADE_POSITION_MANAGER_H
 #define FOLLOW_TRADE_POSITION_MANAGER_H
 
-#include "follow_strategy_mode/src/defines.h"
-#include "follow_strategy_mode/src/instrument_position.h"
+#include "follow_strategy_mode/defines.h"
+#include "follow_strategy_mode/instrument_position.h"
 
 class CloseCorrOrdersManager;
 

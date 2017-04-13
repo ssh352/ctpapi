@@ -1,6 +1,6 @@
 #include "order_id_mananger.h"
 #include <boost/lexical_cast.hpp>
-#include "follow_strategy_mode/src/string_util.h"
+#include "follow_strategy_mode/string_util.h"
 
 const char kDummySession[] = "DummySession";
 

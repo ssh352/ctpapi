@@ -1,6 +1,6 @@
-#include "follow_strategy_mode/src/follow_strategy.h"
-#include "follow_strategy_mode/src/order_util.h"
-#include "follow_strategy_mode/src/string_util.h"
+#include "follow_strategy_mode/follow_strategy.h"
+#include "follow_strategy_mode/order_util.h"
+#include "follow_strategy_mode/string_util.h"
 
 FollowStragety::FollowStragety(const std::string& master_account_id,
                                const std::string& slave_account_id,

@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_CLOSE_CORR_ORDERS_MANAGER_H
 #define FOLLOW_TRADE_CLOSE_CORR_ORDERS_MANAGER_H
-#include "follow_strategy_mode/src/defines.h"
+#include "follow_strategy_mode/defines.h"
 
 class CloseCorrOrdersManager {
  public:
