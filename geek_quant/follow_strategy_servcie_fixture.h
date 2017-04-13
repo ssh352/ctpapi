@@ -11,6 +11,7 @@ struct OrderInsertForTest {
   std::string order_no;
   OrderDirection direction;
   PositionEffect position_effect;
+  OrderPriceType price_type;
   double price;
   int quantity;
 };
@@ -105,7 +106,6 @@ class FollowStragetyServiceFixture : public testing::Test,
       double price = 1234.1,
       PositionEffect position_effect = PositionEffect::kClose);
 
-
   TestRetType PushCancelOrderForMaster(
       const std::string& order_no = "0001",
       OrderDirection direction = OrderDirection::kBuy,
@@ -113,11 +113,12 @@ class FollowStragetyServiceFixture : public testing::Test,
       int fill_quantity = 0,
       int quantity = 10);
 
-
   TestRetType PushNewCloseOrderForSlave(
       const std::string& order_id = "0002",
       OrderDirection direction = OrderDirection::kSell,
-      int quantity = 10);
+      int quantity = 10,
+      PositionEffect position_effect = PositionEffect::kClose);
+
 
   TestRetType PushCancelOrderForSlave(
       const std::string& order_no = "0001",
@@ -125,7 +126,6 @@ class FollowStragetyServiceFixture : public testing::Test,
       PositionEffect position_effect = PositionEffect::kOpen,
       int fill_quantity = 10,
       int quantity = 10);
-
 
   FollowStragetyServiceFixture::TestRetType PushOrderForMaster(
       const std::string& order_no,

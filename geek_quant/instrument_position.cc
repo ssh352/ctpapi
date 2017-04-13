@@ -74,10 +74,10 @@ void InstrumentPosition::HandleRtnOrder(
     std::vector<std::pair<std::string, int> > close_corr_orders;
     int outstanding_quantity = rtn_order.quanitty();
     for (auto& pos : positions_) {
-      if (pos.second.direction == rtn_order.direction() &&
-          TestPositionEffect(rtn_order.exchange_id(),
-                             rtn_order.position_effect(),
-                             pos.second.is_today_quantity)) {
+      if (pos.second.direction == rtn_order.direction() ||
+          !TestPositionEffect(rtn_order.exchange_id(),
+                              rtn_order.position_effect(),
+                              pos.second.is_today_quantity)) {
         continue;
       }
       int close_quantity =
@@ -115,7 +115,9 @@ bool InstrumentPosition::TestPositionEffect(const std::string& exchange_id,
     return true;
   }
 
-  return (position_effect == PositionEffect::kCloseToday && is_today_quantity)
+  return ((position_effect == PositionEffect::kCloseToday &&
+           is_today_quantity) ||
+          (position_effect == PositionEffect::kClose && !is_today_quantity))
              ? true
              : false;
 }

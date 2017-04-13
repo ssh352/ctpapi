@@ -64,3 +64,31 @@ TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase1) {
     EXPECT_EQ("1003", order_insert.order_no);
   }
 }
+
+TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase2) {
+  InitDefaultOrderExchangeId(kSHFEExchangeId);
+  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 8}});
+  OpenAndFilledOrder("1001");
+
+  {
+    auto ret = PushNewCloseOrderForMaster("1002", OrderDirection::kSell, 10,
+                                          8888.9, PositionEffect::kCloseToday);
+
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ(10, std::get<0>(ret).quantity);
+    EXPECT_EQ(PositionEffect::kCloseToday, order_insert.position_effect);
+
+    (void)PushNewCloseOrderForSlave(order_insert.order_no,
+                                    OrderDirection::kSell, 10,
+                                    PositionEffect::kCloseToday);
+  }
+
+  {
+    auto ret = PushCloseOrderForMaster("1002", OrderDirection::kSell);
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ(8, order_insert.quantity);
+    EXPECT_EQ("1003", order_insert.order_no);
+    EXPECT_EQ(PositionEffect::kClose, order_insert.position_effect);
+    EXPECT_EQ(OrderPriceType::kMarket, order_insert.price_type);
+  }
+}

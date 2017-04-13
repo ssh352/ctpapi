@@ -13,7 +13,8 @@ void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
                                               double price,
                                               int quantity) {
   order_inserts.push_back(OrderInsertForTest{instrument, order_no, direction,
-                                             position_effect, price, quantity});
+                                             position_effect, price_type, price,
+                                             quantity});
 }
 
 void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
@@ -22,8 +23,9 @@ void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
                                              OrderPriceType price_type,
                                              double price,
                                              int quantity) {
-  order_inserts.push_back(OrderInsertForTest{
-      instrument, order_no, direction, PositionEffect::kOpen, price, quantity});
+  order_inserts.push_back(OrderInsertForTest{instrument, order_no, direction,
+                                             PositionEffect::kOpen, price_type,
+                                             price, quantity});
 }
 
 void FollowStragetyServiceFixture::CancelOrder(const std::string& order_no) {
@@ -181,7 +183,6 @@ FollowStragetyServiceFixture::PushCloseOrderForMaster(
       filled_quantity, quantity, price);
 }
 
-
 FollowStragetyServiceFixture::TestRetType
 FollowStragetyServiceFixture::PushCancelOrderForMaster(
     const std::string& order_no /*= "0001"*/,
@@ -198,8 +199,9 @@ FollowStragetyServiceFixture::TestRetType
 FollowStragetyServiceFixture::PushNewCloseOrderForSlave(
     const std::string& order_id /*= "0002"*/,
     OrderDirection direction /*= OrderDirection::kSell*/,
-    int quantity /*= 10*/) {
-  return PushOrderForSlave(order_id, direction, PositionEffect::kClose,
+    int quantity /*= 10*/,
+    PositionEffect position_effect) {
+  return PushOrderForSlave(order_id, direction, position_effect,
                            OrderStatus::kActive, 0, quantity, 1234.1);
 }
 
