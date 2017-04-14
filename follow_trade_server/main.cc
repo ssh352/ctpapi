@@ -3,6 +3,9 @@
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
 #include <boost/archive/binary_oarchive.hpp>
+#include <boost/filesystem.hpp>
+
+#include <windows.h>
 
 #include "caf/all.hpp"
 #include "follow_trade_server/ctp_trader.h"
@@ -12,6 +15,7 @@
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
 #include "follow_trade_server/binary_serialization.h"
+#include "util.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -76,7 +80,8 @@ struct LogBinaryArchive {
 
 caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
                               std::string slave_account_id) {
-  self->state.file.open(slave_account_id, std::ios_base::binary);
+  self->state.file.open(MakeDataBinaryFileName(slave_account_id),
+                        std::ios_base::binary);
   self->state.oa =
       std::make_unique<boost::archive::binary_oarchive>(self->state.file);
   return {[=](std::string account_id, std::vector<OrderPosition> positions) {
