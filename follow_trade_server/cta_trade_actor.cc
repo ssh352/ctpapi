@@ -6,19 +6,22 @@ CtpTrader::CtpTrader(caf::actor_config& cfg,
                      const std::string& front_server,
                      const std::string& broker_id,
                      const std::string& user_id,
-                     const std::string& password)
+                     const std::string& password,
+                     caf::actor binary_log)
     : caf::event_based_actor(cfg),
       ctp_(this, "trader_"),
       front_server_(front_server),
       broker_id_(broker_id),
       user_id_(user_id),
-      password_(password) {
+      password_(password),
+      binary_log_(binary_log) {
   front_id_ = 0;
   session_id_ = 0;
 }
 
 void CtpTrader::OnOrderData(CThostFtdcOrderField* field) {
   send(this, CTPRtnOrderAtom::value, MakeOrderData(field));
+  send(binary_log_, *field);
 }
 
 void CtpTrader::OnLogon(int front_id, int session_id, bool success) {
@@ -118,7 +121,7 @@ caf::behavior CtpTrader::make_behavior() {
         delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
       }
     },
-      
+      
       */
   };
 }

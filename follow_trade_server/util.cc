@@ -4,12 +4,13 @@
 #include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
-std::string MakeDataBinaryFileName(const std::string& slave_account) {
+std::string MakeDataBinaryFileName(const std::string& slave_account,
+                                   const std::string& sub_dir) {
   char path_buffer[MAX_PATH] = {0};
   GetModuleFileNameA(NULL, path_buffer, MAX_PATH);
   boost::filesystem::path file(path_buffer);
   boost::filesystem::path dir = file.parent_path();
-  dir /= "binlog";
+  dir /= sub_dir;
   if (!boost::filesystem::exists(dir) &&
       !boost::filesystem::create_directory(dir)) {
     std::cout << "create directory error\n";

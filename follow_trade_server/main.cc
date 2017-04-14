@@ -80,7 +80,7 @@ struct LogBinaryArchive {
 
 caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
                               std::string slave_account_id) {
-  self->state.file.open(MakeDataBinaryFileName(slave_account_id),
+  self->state.file.open(MakeDataBinaryFileName(slave_account_id, "flow_bin"),
                         std::ios_base::binary);
   self->state.oa =
       std::make_unique<boost::archive::binary_oarchive>(self->state.file);
@@ -94,6 +94,15 @@ caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
                           [&](auto order) { *self->state.oa << order; });
           },
           [&](OrderData order) { *self->state.oa << order; }};
+}
+
+caf::behavior RtnOrderBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
+                                   std::string account_id) {
+  self->state.file.open(MakeDataBinaryFileName(account_id, "rtn_order"),
+                        std::ios_base::binary);
+  self->state.oa =
+      std::make_unique<boost::archive::binary_oarchive>(self->state.file);
+  return {[=](CThostFtdcOrderField order) { *self->state.oa << order; }};
 }
 
 struct LogonInfo {
@@ -110,7 +119,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                               "140616"};
   auto cta_actor = system.spawn<CtpTrader>(
       master_logon_info.front_server, master_logon_info.broker_id,
-      master_logon_info.user_id, master_logon_info.password);
+      master_logon_info.user_id, master_logon_info.password,
+      system.spawn(RtnOrderBinaryToFile, master_logon_info.user_id));
   // auto cta_actor = system.spawn<CtpTrader>("tcp://59.42.241.91:41205",
   // "9080", "38030022", "140616");
   // auto actor = system.spawn(foo);
@@ -135,8 +145,10 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
     servcies.push_back(system.spawn<FollowStragetyServiceActor>(
         master_logon_info.user_id, follower.user_id, cta_init_positions,
         cta_history_rnt_orders, cta_actor,
-        system.spawn<CtpTrader>(follower.front_server, follower.broker_id,
-                                follower.user_id, follower.password),
+        system.spawn<CtpTrader>(
+            follower.front_server, follower.broker_id, follower.user_id,
+            follower.password,
+            system.spawn(RtnOrderBinaryToFile, master_logon_info.user_id)),
         system.spawn(LogBinaryToFile, follower.user_id)));
   }
 
