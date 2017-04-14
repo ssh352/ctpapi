@@ -11,7 +11,8 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                              std::vector<OrderPosition> master_init_positions,
                              std::vector<OrderData> master_history_rtn_orders,
                              caf::actor ctp,
-                             caf::actor follow);
+                             caf::actor follow,
+                             caf::actor binary_log);
 
   virtual void OpenOrder(const std::string& instrument,
                          const std::string& order_no,
@@ -42,6 +43,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   FollowStragetyService service_;
   caf::actor cta_;
   caf::actor follow_;
+  caf::actor binary_log_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

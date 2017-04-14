@@ -1,6 +1,7 @@
 #include "follow_stragety_service_actor.h"
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/caf_ctp_util.h"
+#include "follow_trade_server/util.h"
 
 FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor_config& cfg,
@@ -9,11 +10,15 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     std::vector<OrderPosition> master_init_positions,
     std::vector<OrderData> master_history_rtn_orders,
     caf::actor cta,
-    caf::actor follow)
+    caf::actor follow,
+    caf::actor binary_log)
     : caf::event_based_actor(cfg),
       service_(master_account_id, slave_account_id, this, 1000),
       cta_(cta),
-      follow_(follow) {
+      follow_(follow),
+      binary_log_(binary_log) {
+  send(binary_log_, master_account_id, master_init_positions);
+  send(binary_log_, master_history_rtn_orders);
   service_.InitPositions(master_account_id, std::move(master_init_positions));
   service_.InitRtnOrders(std::move(master_history_rtn_orders));
 }
@@ -53,10 +58,15 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
     return {};
   }
 
-  service_.InitPositions(service_.slave_account_id(),
-                         BlockRequestInitPositions(follow_));
+  auto init_positions = BlockRequestInitPositions(follow_);
+  auto history_orders = BlockRequestHistoryOrder(follow_);
+  send(binary_log_, service_.slave_account_id(), init_positions);
+  send(binary_log_, history_orders);
 
-  service_.InitRtnOrders(BlockRequestHistoryOrder(follow_));
+  service_.InitPositions(service_.slave_account_id(),
+                         std::move(init_positions));
+
+  service_.InitRtnOrders(std::move(history_orders));
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
   SettlementInfoConfirm(follow_);
@@ -66,5 +76,6 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
   return {[=](CTPRtnOrderAtom, OrderData order) {
     service_.HandleRtnOrder(order);
+    send(binary_log_, order);
   }};
 }

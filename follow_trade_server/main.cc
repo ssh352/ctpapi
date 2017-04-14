@@ -2,6 +2,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/thread.hpp>
+#include <boost/archive/binary_oarchive.hpp>
 
 #include "caf/all.hpp"
 #include "follow_trade_server/ctp_trader.h"
@@ -10,6 +11,7 @@
 #include "follow_strategy_mode/follow_strategy_service.h"
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
+#include "follow_trade_server/binary_serialization.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -67,7 +69,29 @@ caf::behavior foo(caf::event_based_actor* self) {
 
 */
 
-struct Follower {
+struct LogBinaryArchive {
+  std::ofstream file;
+  std::unique_ptr<boost::archive::binary_oarchive> oa;
+};
+
+caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
+                              std::string slave_account_id) {
+  self->state.file.open(slave_account_id, std::ios_base::binary);
+  self->state.oa =
+      std::make_unique<boost::archive::binary_oarchive>(self->state.file);
+  return {[=](std::string account_id, std::vector<OrderPosition> positions) {
+            *self->state.oa << account_id;
+            std::for_each(positions.begin(), positions.end(),
+                          [&](auto pos) { *self->state.oa << pos; });
+          },
+          [&](std::vector<OrderData> orders) {
+            std::for_each(orders.begin(), orders.end(),
+                          [&](auto order) { *self->state.oa << order; });
+          },
+          [&](OrderData order) { *self->state.oa << order; }};
+}
+
+struct LogonInfo {
   std::string front_server;
   std::string broker_id;
   std::string user_id;
@@ -75,8 +99,15 @@ struct Follower {
 };
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  auto cta_actor = system.spawn<CtpTrader>("tcp://59.42.241.91:41205", "9080",
-                                           "38030022", "140616");
+  //   LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999",
+  //   "053861", "Cj12345678"};
+  LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+                              "140616"};
+  auto cta_actor = system.spawn<CtpTrader>(
+      master_logon_info.front_server, master_logon_info.broker_id,
+      master_logon_info.user_id, master_logon_info.password);
+  // auto cta_actor = system.spawn<CtpTrader>("tcp://59.42.241.91:41205",
+  // "9080", "38030022", "140616");
   // auto actor = system.spawn(foo);
   // auto actor = system.spawn<CtaTradeActor>();
   //   self->request(actor, std::chrono::seconds(10), StartAtom::value)
@@ -90,17 +121,18 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto cta_init_positions = BlockRequestInitPositions(cta_actor);
   auto cta_history_rnt_orders = BlockRequestHistoryOrder(cta_actor);
 
-  std::vector<Follower> followers{
+  std::vector<LogonInfo> followers{
       {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
       {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
 
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {
     servcies.push_back(system.spawn<FollowStragetyServiceActor>(
-        "38030022", follower.user_id, cta_init_positions,
+        master_logon_info.user_id, follower.user_id, cta_init_positions,
         cta_history_rnt_orders, cta_actor,
         system.spawn<CtpTrader>(follower.front_server, follower.broker_id,
-                                follower.user_id, follower.password)));
+                                follower.user_id, follower.password),
+        system.spawn(LogBinaryToFile, follower.user_id)));
   }
 
   std::string input;
