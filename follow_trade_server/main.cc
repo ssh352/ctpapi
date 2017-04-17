@@ -87,10 +87,12 @@ caf::behavior FolloweMonitor(caf::stateful_actor<LogBinaryArchive>* self,
       std::make_unique<boost::archive::binary_oarchive>(self->state.file);
   return {[=](std::string account_id, std::vector<OrderPosition> positions) {
             *self->state.oa << account_id;
+            *self->state.oa << positions.size();
             std::for_each(positions.begin(), positions.end(),
                           [&](auto pos) { *self->state.oa << pos; });
           },
           [=](std::vector<OrderData> orders) {
+            *self->state.oa << orders.size();
             std::for_each(orders.begin(), orders.end(),
                           [&](auto order) { *self->state.oa << order; });
           },
