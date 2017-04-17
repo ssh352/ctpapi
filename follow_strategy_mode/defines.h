@@ -141,4 +141,11 @@ struct AccountPortfolio {
   int close;
 };
 
+struct AccountPosition {
+  std::string instrument;
+  OrderDirection direction;
+  int position;
+  int closeable;
+};
+
 #endif  // FOLLOW_TRADE_DEFINES_H

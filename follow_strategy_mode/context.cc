@@ -35,10 +35,55 @@ boost::optional<OrderData> Context::GetOrderData(
   return account_order_mgr_.at(account_id).order_data(order_no);
 }
 
-std::map<std::string, std::vector<AccountPortfolio> >
-Context::GetAccountProfolios() const {
-  std::map<std::string, std::vector<AccountPortfolio> > account_protfolios;
-  return account_protfolios;
+std::vector<AccountPortfolio> Context::GetAccountProfolios(
+    const std::string& account_id) const {
+  std::vector<AccountPosition> positions = GetAccountPositions(account_id);
+  std::vector<std::tuple<std::string, OrderDirection, bool, int> > orders =
+      GetUnfillOrders(account_id);
+  std::vector<AccountPortfolio> protfolios;
+  for (auto position : positions) {
+    auto it =
+        std::find_if(protfolios.begin(), protfolios.end(), [=](auto protfolio) {
+          return position.instrument == protfolio.instrument &&
+                 position.direction == protfolio.direction;
+        });
+    if (it != protfolios.end()) {
+      // Error
+    } else {
+      protfolios.push_back({position.instrument, position.direction,
+                            position.position, position.closeable, 0, 0});
+    }
+  }
+
+  for (auto order : orders) {
+    if (std::get<2>(order)) {
+      // Open
+      auto it = std::find_if(
+          protfolios.begin(), protfolios.end(), [=](auto protfolio) {
+            return std::get<0>(order) == protfolio.instrument &&
+                   std::get<1>(order) == protfolio.direction;
+          });
+      if (it != protfolios.end()) {
+        it->open = std::get<3>(order);
+      } else {
+        protfolios.push_back({std::get<0>(order), std::get<1>(order), 0, 0,
+                              std::get<3>(order), 0});
+      }
+    } else {
+      // Close
+      auto it = std::find_if(
+          protfolios.begin(), protfolios.end(), [=](auto protfolio) {
+            return std::get<0>(order) == protfolio.instrument &&
+                   std::get<1>(order) != protfolio.direction;
+          });
+      if (it != protfolios.end()) {
+        it->close = std::get<3>(order);
+      } else {
+        // Error
+      }
+    }
+  }
+  return protfolios;
 }
 
 std::vector<OrderQuantity> Context::GetQuantitys(
@@ -151,4 +196,21 @@ std::string Context::GenerateOrderId() {
 
 OrderData Context::AdjustOrder(OrderData rtn_order) {
   return order_id_mananger_.AdjustOrder(std::move(rtn_order));
+}
+
+std::vector<AccountPosition> Context::GetAccountPositions(
+    const std::string& account_id) const {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end() ||
+      account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
+    return {};
+  }
+  return account_position_mgr_.at(account_id).GetAccountPositions();
+}
+
+std::vector<std::tuple<std::string, OrderDirection, bool, int> >
+Context::GetUnfillOrders(const std::string& account_id) const {
+  if (account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
+    return {};
+  }
+  return account_order_mgr_.at(account_id).GetUnfillOrders();
 }

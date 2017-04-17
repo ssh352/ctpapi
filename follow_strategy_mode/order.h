@@ -18,6 +18,10 @@ class Order {
 
   bool IsActiveOrder() const;
 
+  bool IsOpen() const;
+
+  int unfill_quantity() const;
+
   OrderData order_data() const;
  private:
   OrderData data_;

@@ -1,10 +1,12 @@
 #ifndef FOLLOW_TRADE_CONTEXT_H
 #define FOLLOW_TRADE_CONTEXT_H
+#include <vector>
+#include <map>
+#include "follow_strategy_mode/close_corr_orders_manager.h"
 #include "follow_strategy_mode/defines.h"
+#include "follow_strategy_mode/order_id_mananger.h"
 #include "follow_strategy_mode/order_manager.h"
 #include "follow_strategy_mode/position_manager.h"
-#include "follow_strategy_mode/close_corr_orders_manager.h"
-#include "follow_strategy_mode/order_id_mananger.h"
 
 class Context {
  public:
@@ -60,9 +62,16 @@ class Context {
   boost::optional<OrderData> GetOrderData(const std::string& account_id,
                                           const std::string& order_no) const;
 
-  std::map<std::string, std::vector<AccountPortfolio> > GetAccountProfolios() const;
+  std::vector<AccountPortfolio> GetAccountProfolios(
+      const std::string& account_id) const;
 
  private:
+  std::vector<AccountPosition> GetAccountPositions(
+      const std::string& account_id) const;
+
+  std::vector<std::tuple<std::string, OrderDirection, bool, int> >
+  GetUnfillOrders(const std::string& account_id) const;
+
   OrderIdMananger order_id_mananger_;
   std::map<std::string, OrderManager> account_order_mgr_;
   std::map<std::string, PositionManager> account_position_mgr_;

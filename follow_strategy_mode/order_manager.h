@@ -10,6 +10,9 @@ class OrderManager {
 
   const std::string& GetOrderInstrument(const std::string& order_id) const;
 
+  std::vector<std::tuple<std::string, OrderDirection, bool, int> >
+  GetUnfillOrders() const;
+
   int ActiveOrderCount(const std::string& instrument,
                        OrderDirection direction) const;
 
@@ -21,6 +24,9 @@ class OrderManager {
   boost::optional<OrderData> order_data(const std::string& order_id) const;
 
  private:
+  int GetUnfillQuantity(const std::string& instrument,
+                         OrderDirection direction,
+                         bool is_open) const;
   std::map<std::string, Order> orders_;
   std::string dummpy_empty_;
 };
