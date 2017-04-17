@@ -13,3 +13,4 @@ REM python %~dp0gyp_hello.py --depth=.. -I%~dp0common.gypi -D"clang=0 asan=0" %~
 REM %~dp0\tools\python276_bin\python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi build\some.gyp
 REM python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_strategy_mode\follow_strategy_mode.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
