@@ -23,6 +23,7 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
 
   void on_exit() override {
     rtn_orders_subscribers_.clear();
+    destroy(binary_log_);
   }
  protected:
   virtual caf::behavior make_behavior() override;

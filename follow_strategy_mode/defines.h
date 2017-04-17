@@ -135,7 +135,6 @@ struct OrderQuantity {
 struct AccountPortfolio {
   std::string instrument;
   OrderDirection direction;
-  int position;
   int closeable;
   int open;
   int close;
@@ -144,7 +143,6 @@ struct AccountPortfolio {
 struct AccountPosition {
   std::string instrument;
   OrderDirection direction;
-  int position;
   int closeable;
 };
 

@@ -32,18 +32,6 @@ std::vector<OrderQuantity> InstrumentPosition::GetQuantitysIf(
   return quanitys;
 }
 
-int InstrumentPosition::GetQuantityWithOrderDireciton(
-    OrderDirection direction) const {
-  return std::accumulate(positions_.begin(), positions_.end(), 0,
-                         [=](int val, auto order_position) {
-                           if (order_position.second.direction != direction) {
-                             return val;
-                           }
-                           auto position = order_position.second;
-                           return val + position.quantity;
-                         });
-}
-
 int InstrumentPosition::GetCloseableQuantityWithOrderDirection(
     OrderDirection direction) const {
   return std::accumulate(positions_.begin(), positions_.end(), 0,
@@ -105,12 +93,11 @@ void InstrumentPosition::HandleRtnOrder(
     close_corr_orders_mgr->AddCloseCorrOrders(rtn_order.order_id(),
                                               std::move(close_corr_orders));
   } else if (rtn_order.status() == OrderStatus::kCancel) {
-    int fill_quantity = rtn_order.filled_quantity();
     for (auto order_quantity :
          close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id())) {
       if (positions_.find(order_quantity.first) != positions_.end()) {
         positions_[order_quantity.first].closeable_quantity +=
-            order_quantity.second - fill_quantity;
+            order_quantity.second - rtn_order.filled_quantity();
       }
     }
   } else {

@@ -1,6 +1,7 @@
 #include "follow_stragety_service_actor.h"
-#include "follow_trade_server/caf_defines.h"
+#include <boost/lexical_cast.hpp>
 #include "follow_trade_server/caf_ctp_util.h"
+#include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/util.h"
 
 FollowStragetyServiceActor::FollowStragetyServiceActor(
@@ -11,14 +12,14 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     std::vector<OrderData> master_history_rtn_orders,
     caf::actor cta,
     caf::actor follow,
-    caf::actor binary_log)
+    caf::actor monitor)
     : caf::event_based_actor(cfg),
       service_(master_account_id, slave_account_id, this, 1000),
       cta_(cta),
       follow_(follow),
-      binary_log_(binary_log) {
-  send(binary_log_, master_account_id, master_init_positions);
-  send(binary_log_, master_history_rtn_orders);
+      monitor_(monitor) {
+  send(monitor_, master_account_id, master_init_positions);
+  send(monitor_, master_history_rtn_orders);
   service_.InitPositions(master_account_id, std::move(master_init_positions));
   service_.InitRtnOrders(std::move(master_history_rtn_orders));
 }
@@ -61,8 +62,8 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
   auto init_positions = BlockRequestInitPositions(follow_);
   auto history_orders = BlockRequestHistoryOrder(follow_);
-  send(binary_log_, service_.slave_account_id(), init_positions);
-  send(binary_log_, history_orders);
+  send(monitor_, service_.slave_account_id(), init_positions);
+  send(monitor_, history_orders);
 
   service_.InitPositions(service_.slave_account_id(),
                          std::move(init_positions));
@@ -75,9 +76,23 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
-  caf::aout(block_self) << service_.slave_account_id() << " ready.\n";
+  // caf::aout(block_self) << service_.slave_account_id() << " ready.\n";
+  // auto mp =
+  // service_.context().GetAccountProfolios(service_.master_account_id());
+  send(monitor_, service_.slave_account_id(),
+       service_.context().GetAccountProfolios(service_.master_account_id()),
+       service_.context().GetAccountProfolios(service_.slave_account_id()),
+       true);
+
+  // ss << std::setw(80) << std::setfill('=') << "=" << "\n";
+
+  // caf::aout(block_self) << ss.str() << "\n";
   return {[=](CTPRtnOrderAtom, OrderData order) {
     service_.HandleRtnOrder(order);
-    send(binary_log_, order);
+    send(monitor_, order);
+    send(monitor_, service_.slave_account_id(),
+         service_.context().GetAccountProfolios(service_.master_account_id()),
+         service_.context().GetAccountProfolios(service_.slave_account_id()),
+         false);
   }};
 }

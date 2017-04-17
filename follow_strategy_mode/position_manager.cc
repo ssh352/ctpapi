@@ -42,11 +42,10 @@ boost::optional<AccountPosition> PositionManager::GetAccountPosition(
     const std::string& instrument,
     const InstrumentPosition& instrument_position,
     OrderDirection direction) const {
-  int quantity = instrument_position.GetQuantityWithOrderDireciton(direction);
   int closeable_quantity =
       instrument_position.GetCloseableQuantityWithOrderDirection(direction);
-  if (quantity != 0 || closeable_quantity != 0) {
-    return AccountPosition{instrument, direction, quantity, closeable_quantity};
+  if (closeable_quantity != 0) {
+    return AccountPosition{instrument, direction, closeable_quantity};
   };
   return {};
 }

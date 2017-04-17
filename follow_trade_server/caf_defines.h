@@ -52,6 +52,13 @@ typename Inspector::result_type inspect(Inspector& f, CThostFtdcOrderField& x) {
       x.ZCETotalTradedVolume, x.IsSwapOrder, x.BranchID, x.InvestUnitID,
       x.AccountID, x.CurrencyID, x.IPAddress, x.MacAddress);
 }
+
+template <class Inspector>
+typename Inspector::result_type inspect(Inspector& f, AccountPortfolio& x) {
+  return f(caf::meta::type_name("AccountPortfolio"), x.instrument, x.direction,
+           x.closeable, x.open, x.close);
+}
+
 /*
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {

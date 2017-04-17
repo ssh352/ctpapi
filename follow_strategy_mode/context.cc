@@ -50,8 +50,8 @@ std::vector<AccountPortfolio> Context::GetAccountProfolios(
     if (it != protfolios.end()) {
       // Error
     } else {
-      protfolios.push_back({position.instrument, position.direction,
-                            position.position, position.closeable, 0, 0});
+      protfolios.push_back(
+          {position.instrument, position.direction, position.closeable, 0, 0});
     }
   }
 
@@ -66,8 +66,8 @@ std::vector<AccountPortfolio> Context::GetAccountProfolios(
       if (it != protfolios.end()) {
         it->open = std::get<3>(order);
       } else {
-        protfolios.push_back({std::get<0>(order), std::get<1>(order), 0, 0,
-                              std::get<3>(order), 0});
+        protfolios.push_back(
+            {std::get<0>(order), std::get<1>(order), 0, std::get<3>(order), 0});
       }
     } else {
       // Close

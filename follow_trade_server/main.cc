@@ -15,6 +15,7 @@
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/cta_trade_actor.h"
 #include "follow_trade_server/ctp_trader.h"
+#include "print_portfolio_helper.h"
 #include "util.h"
 
 /*
@@ -78,7 +79,7 @@ struct LogBinaryArchive {
   std::unique_ptr<boost::archive::binary_oarchive> oa;
 };
 
-caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
+caf::behavior FolloweMonitor(caf::stateful_actor<LogBinaryArchive>* self,
                               std::string slave_account_id) {
   self->state.file.open(MakeDataBinaryFileName(slave_account_id, "flow_bin"),
                         std::ios_base::binary);
@@ -93,7 +94,13 @@ caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
             std::for_each(orders.begin(), orders.end(),
                           [&](auto order) { *self->state.oa << order; });
           },
-          [=](OrderData order) { *self->state.oa << order; }};
+          [=](OrderData order) { *self->state.oa << order; },
+          [=](std::string account_id,
+              std::vector<AccountPortfolio> master_portfolio,
+              std::vector<AccountPortfolio> slave_portfolio, bool fully) {
+            caf::aout(self) << FormatPortfolio(account_id, master_portfolio,
+                                               slave_portfolio, fully);
+          }};
 }
 
 caf::behavior RtnOrderBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
@@ -113,10 +120,10 @@ struct LogonInfo {
 };
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  //   LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999",
-  //   "053861", "Cj12345678"};
-  LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
-                              "140616"};
+  LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999", "053861",
+                              "Cj12345678"};
+  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+  //                             "140616"};
   auto cta_actor = system.spawn<CtpTrader>(
       master_logon_info.front_server, master_logon_info.broker_id,
       master_logon_info.user_id, master_logon_info.password,
@@ -138,9 +145,11 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
   std::vector<LogonInfo> followers{
       {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
+      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
       {"tcp://101.231.3.125:41205", "8888", "181006", "371070"},
       {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
-      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
+      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}
+  };
 
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {
@@ -151,7 +160,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
             follower.front_server, follower.broker_id, follower.user_id,
             follower.password,
             system.spawn(RtnOrderBinaryToFile, follower.user_id)),
-        system.spawn(LogBinaryToFile, follower.user_id)));
+        system.spawn(FolloweMonitor, follower.user_id)));
   }
 
   std::string input;
