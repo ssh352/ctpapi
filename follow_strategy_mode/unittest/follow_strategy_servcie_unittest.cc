@@ -1,5 +1,5 @@
-#include "gtest/gtest.h"
 #include "follow_strategy_mode/unittest/follow_strategy_servcie_fixture.h"
+#include "gtest/gtest.h"
 
 // Test Open
 TEST_F(FollowStragetyServiceFixture, OpenBuy) {
@@ -106,8 +106,8 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase4) {
 
   {
     service->HandleRtnOrder(MakeSlaveOrderData("2", OrderDirection::kSell,
-                                              PositionEffect::kClose,
-                                              OrderStatus::kActive, 0, 1));
+                                               PositionEffect::kClose,
+                                               OrderStatus::kActive, 0, 1));
   }
 
   {
@@ -160,8 +160,8 @@ TEST_F(FollowStragetyServiceFixture, CloseOrderCase5) {
 
   {
     service->HandleRtnOrder(MakeSlaveOrderData("4", OrderDirection::kSell,
-                                              PositionEffect::kClose,
-                                              OrderStatus::kActive, 0, 4));
+                                               PositionEffect::kClose,
+                                               OrderStatus::kActive, 0, 4));
   }
 
   {
@@ -229,18 +229,18 @@ TEST_F(FollowStragetyServiceFixture, CancelOrderCase2) {
 
 TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
   service->HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
-                                             PositionEffect::kOpen,
-                                             OrderStatus::kActive, 0, 10));
+                                              PositionEffect::kOpen,
+                                              OrderStatus::kActive, 0, 10));
 
   service->HandleRtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
-                                             PositionEffect::kOpen,
-                                             OrderStatus::kCancel, 0, 10));
+                                              PositionEffect::kOpen,
+                                              OrderStatus::kCancel, 0, 10));
 
   (void)PopOrderInsert();
 
   service->HandleRtnOrder(MakeSlaveOrderData("1", OrderDirection::kBuy,
-                                            PositionEffect::kOpen,
-                                            OrderStatus::kActive, 0, 10));
+                                             PositionEffect::kOpen,
+                                             OrderStatus::kActive, 0, 10));
   {
     auto ret = PopOrderEffectForTest();
 
@@ -249,6 +249,26 @@ TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
     auto cancels = std::get<1>(ret);
     EXPECT_EQ(1, cancels.size());
     EXPECT_EQ("1", cancels.at(0));
+  }
+}
+
+TEST_F(FollowStragetyServiceFixture, CancelPartyFillClose) {
+  OpenAndFilledOrder("1", 4, 4, 4);
+  PushNewCloseOrderForMaster("2", OrderDirection::kSell, 4);
+  PushCloseOrderForMaster("2", OrderDirection::kSell, 1, 4);
+  PushNewCloseOrderForSlave("2", OrderDirection::kSell, 4);
+  PushCancelOrderForMaster("2", OrderDirection::kSell, PositionEffect::kClose,
+                           1, 4);
+
+  PushCancelOrderForSlave("2", OrderDirection::kSell, PositionEffect::kClose, 0,
+                          4);
+
+  {
+    auto ret = PushCloseOrderForMaster("3", OrderDirection::kSell, 0, 3);
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ("3", order_insert.order_no);
+    EXPECT_EQ(4, order_insert.quantity);
+    EXPECT_EQ(PositionEffect::kClose, order_insert.position_effect);
   }
 }
 
@@ -404,5 +424,4 @@ TEST_F(FollowStragetyServiceFixture, OpenOppositeThenCloseCase2) {
     EXPECT_EQ(PositionEffect::kClose, order_insert.position_effect);
     EXPECT_EQ(0, std::get<1>(ret).size());
   }
-
 }
