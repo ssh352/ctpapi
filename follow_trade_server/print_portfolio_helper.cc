@@ -175,12 +175,6 @@ std::string FormatPortfolio(std::string account_id,
     keys.insert(key);
   }
 
-  std::stringstream ss;
-  ss << account_id << ":\n";
-  ss << "|" << std::setw(10) << centered("Instrument") << "|" << std::setw(10)
-     << centered("Direction") << "|" << std::setw(10) << centered("Closeable")
-     << "|" << std::setw(10) << centered("Open") << "|" << std::setw(10)
-     << centered("Close") << "|\n";
   std::vector<std::tuple<bool, std::string, OrderDirection, std::string,
                          std::string, std::string> >
       restuls;
@@ -248,14 +242,27 @@ std::string FormatPortfolio(std::string account_id,
     }
     // master_portfolio[] = portfolio;
   }
-  std::sort(restuls.begin(), restuls.end());
-  for (auto t : restuls) {
-    ss << "|" << std::setw(10) << std::get<1>(t) 
-       << "|" << std::setw(10) << (std::get<2>(t) == OrderDirection::kBuy ? "Buy" : "Sell") 
-       << "|" << std::right << std::setw(10) << std::get<3>(t)
-       << "|" << std::setw(10) << std::setw(10) << std::get<4>(t)
-       << "|" << std::setw(10) << std::setw(10) << std::get<5>(t)
-       << "|\n";
+
+  std::sort(restuls.begin(), restuls.end(), [](auto l, auto r) {
+    return std::make_pair(std::get<1>(l), std::get<2>(l)) <
+           std::make_pair(std::get<1>(r), std::get<2>(r));
+  });
+  std::stringstream ss;
+  if (!fully && restuls.empty()) {
+    ss << account_id << ":complete sync order.\n";
+  } else {
+    ss << account_id << ":\n";
+    ss << "|" << std::setw(10) << centered("Instrument") << "|" << std::setw(10)
+       << centered("Direction") << "|" << std::setw(10) << centered("Closeable")
+       << "|" << std::setw(10) << centered("Open") << "|" << std::setw(10)
+       << centered("Close") << "|\n";
+    for (auto t : restuls) {
+      ss << "|" << std::setw(10) << std::get<1>(t) << "|" << std::setw(10)
+         << (std::get<2>(t) == OrderDirection::kBuy ? "Buy" : "Sell") << "|"
+         << std::right << std::setw(10) << std::get<3>(t) << "|"
+         << std::setw(10) << std::setw(10) << std::get<4>(t) << "|"
+         << std::setw(10) << std::setw(10) << std::get<5>(t) << "|\n";
+    }
   }
   return ss.str();
 }

@@ -80,7 +80,7 @@ struct LogBinaryArchive {
 };
 
 caf::behavior FolloweMonitor(caf::stateful_actor<LogBinaryArchive>* self,
-                              std::string slave_account_id) {
+                             std::string slave_account_id) {
   self->state.file.open(MakeDataBinaryFileName(slave_account_id, "flow_bin"),
                         std::ios_base::binary);
   self->state.oa =
@@ -120,6 +120,19 @@ struct LogonInfo {
 };
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  /*
+  std::cout << FormatPortfolio("1234",
+                               {
+                                   {"aaa", OrderDirection::kBuy, 10, 5, 2},
+                                   {"bbb", OrderDirection::kBuy, 10, 5, 2},
+                               },
+                               {
+                                   {"aaa", OrderDirection::kBuy, 10, 5, 2},
+                                   {"ccc", OrderDirection::kSell, 10, 5, 2},
+                               },
+                               false);
+  */
+
   LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999", "053861",
                               "Cj12345678"};
   // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
@@ -145,11 +158,10 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
   std::vector<LogonInfo> followers{
       {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
-      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
+      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120301609", "101116"},
       {"tcp://101.231.3.125:41205", "8888", "181006", "371070"},
       {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
-      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}
-  };
+      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
 
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {
