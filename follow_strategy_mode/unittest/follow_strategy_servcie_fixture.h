@@ -125,7 +125,7 @@ class FollowStragetyServiceFixture : public testing::Test,
       const std::string& order_no = "0001",
       OrderDirection direction = OrderDirection::kBuy,
       PositionEffect position_effect = PositionEffect::kOpen,
-      int fill_quantity = 10,
+      int fill_quantity = 0,
       int quantity = 10);
 
   FollowStragetyServiceFixture::TestRetType PushOrderForMaster(

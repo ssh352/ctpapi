@@ -48,14 +48,12 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
     } else {
       delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
                            order_data.direction(), OrderPriceType::kLimit,
-                           order_data.price(),
-                           order_data.quanitty());
+                           order_data.price(), order_data.quanitty());
     }
   } else {
     delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
                          order_data.direction(), OrderPriceType::kLimit,
-                         order_data.price(),
-                         order_data.quanitty());
+                         order_data.price(), order_data.quanitty());
   }
 }
 
@@ -69,13 +67,20 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
 
   int close_quantity = 0;
   for (auto master_corr_quantity : master_corr_order_quantitys) {
-    close_quantity += std::min<int>(
-        master_corr_quantity.second,
-        std::max<int>(
-            0, context_->GetCloseableQuantity(slave_account_id_,
-                                              master_corr_quantity.first) -
-                   context_->GetCloseableQuantity(master_account_id_,
-                                                  master_corr_quantity.first)));
+    int master_closeable_quantity = context_->GetCloseableQuantity(
+        master_account_id_, master_corr_quantity.first);
+    if (master_closeable_quantity == 0) {
+      close_quantity += context_->GetCloseableQuantity(
+          slave_account_id_, master_corr_quantity.first);
+    } else {
+      close_quantity += std::min<int>(
+          master_corr_quantity.second,
+          std::max<int>(
+              0, context_->GetCloseableQuantity(slave_account_id_,
+                                                master_corr_quantity.first) -
+                     context_->GetCloseableQuantity(
+                         master_account_id_, master_corr_quantity.first)));
+    }
 
     if (!context_->IsActiveOrder(master_account_id_,
                                  master_corr_quantity.first) &&

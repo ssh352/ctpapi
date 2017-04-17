@@ -92,3 +92,30 @@ TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase2) {
     EXPECT_EQ(OrderPriceType::kMarket, order_insert.price_type);
   }
 }
+
+TEST_F(FollowStragetyServiceSyncFixture, CancelPartyFillClose) {
+  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 4}});
+  OpenAndFilledOrder("1001", 2, 2, 2);
+  {
+    auto ret = PushNewCloseOrderForMaster("1002", OrderDirection::kSell, 4);
+    EXPECT_EQ("", std::get<0>(ret).order_no);
+    EXPECT_EQ(0, std::get<1>(ret).size());
+  }
+
+  (void)PushCloseOrderForMaster("1002", OrderDirection::kSell, 1, 4);
+
+  {
+    auto ret = PushCancelOrderForMaster("1002", OrderDirection::kSell,
+                                        PositionEffect::kClose, 1, 4);
+    EXPECT_EQ("", std::get<0>(ret).order_no);
+    EXPECT_EQ(0, std::get<1>(ret).size());
+  }
+  {
+    auto ret = PushNewCloseOrderForMaster("1003", OrderDirection::kSell, 4);
+
+    auto order_insert = std::get<0>(ret);
+    EXPECT_EQ("1003", order_insert.order_no);
+    EXPECT_EQ(1, order_insert.quantity);
+    EXPECT_EQ(0, std::get<1>(ret).size());
+  }
+}
