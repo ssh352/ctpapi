@@ -60,6 +60,8 @@ class Context {
   boost::optional<OrderData> GetOrderData(const std::string& account_id,
                                           const std::string& order_no) const;
 
+  std::map<std::string, std::vector<AccountPortfolio> > GetAccountProfolios() const;
+
  private:
   OrderIdMananger order_id_mananger_;
   std::map<std::string, OrderManager> account_order_mgr_;

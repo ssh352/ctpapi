@@ -35,6 +35,12 @@ boost::optional<OrderData> Context::GetOrderData(
   return account_order_mgr_.at(account_id).order_data(order_no);
 }
 
+std::map<std::string, std::vector<AccountPortfolio> >
+Context::GetAccountProfolios() const {
+  std::map<std::string, std::vector<AccountPortfolio> > account_protfolios;
+  return account_protfolios;
+}
+
 std::vector<OrderQuantity> Context::GetQuantitys(
     const std::string& account_id,
     std::vector<std::string> orders) const {

@@ -132,4 +132,13 @@ struct OrderQuantity {
   int closeable_quantity;
 };
 
+struct AccountPortfolio {
+  std::string instrument;
+  OrderDirection direction;
+  int position;
+  int closeable;
+  int open;
+  int close;
+};
+
 #endif  // FOLLOW_TRADE_DEFINES_H
