@@ -15,7 +15,7 @@ class CtpApi : public CThostFtdcTraderSpi {
   };
   //////////////////////////////////////////////////////////////////////////
   // CtpTrader
-  CtpApi(Delegate* delegate, const char* folw_path);
+  CtpApi(Delegate* delegate, const std::string& folw_path);
 
   void LoginServer(const std::string& front_server,
                    const std::string& broker_id,

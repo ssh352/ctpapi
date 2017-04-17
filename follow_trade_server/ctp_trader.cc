@@ -4,9 +4,9 @@
 #include <iostream>
 #include "follow_strategy_mode/string_util.h"
 
-CtpApi::CtpApi(Delegate* delegate, const char* folw_path)
+CtpApi::CtpApi(Delegate* delegate, const std::string& folw_path)
     : delegate_(delegate) {
-  cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(folw_path);
+  cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(folw_path.c_str());
 }
 
 void CtpApi::LoginServer(const std::string& front_server,
@@ -29,11 +29,11 @@ void CtpApi::LoginServer(const std::string& front_server,
 }
 
 void CtpApi::OrderInsert(CThostFtdcInputOrderField order) {
-  BOOST_LOG_TRIVIAL(info) << user_id_
-                          << "]OrderInsert Instrument:" << order.InstrumentID
-                          << ",OrderRef:" << order.OrderRef
-                          << ",OC:" << order.CombOffsetFlag[0]
-                          << ",Direction:" << order.Direction;
+  // BOOST_LOG_TRIVIAL(info) << user_id_
+  //                         << "]OrderInsert Instrument:" << order.InstrumentID
+  //                         << ",OrderRef:" << order.OrderRef
+  //                         << ",OC:" << order.CombOffsetFlag[0]
+  //                         << ",Direction:" << order.Direction;
   strcpy(order.BrokerID, broker_id_.c_str());
   strcpy(order.UserID, user_id_.c_str());
   strcpy(order.InvestorID, user_id_.c_str());
@@ -41,8 +41,8 @@ void CtpApi::OrderInsert(CThostFtdcInputOrderField order) {
 }
 
 void CtpApi::OrderAction(CThostFtdcInputOrderActionField order) {
-  BOOST_LOG_TRIVIAL(info) << user_id_
-                          << "]OrderAction OrderRef:" << order.OrderRef;
+  // BOOST_LOG_TRIVIAL(info) << user_id_
+  //                         << "]OrderAction OrderRef:" << order.OrderRef;
   strcpy(order.BrokerID, broker_id_.c_str());
   strcpy(order.UserID, user_id_.c_str());
   strcpy(order.InvestorID, user_id_.c_str());
@@ -53,8 +53,9 @@ void CtpApi::QryInvestorPosition() {
   CThostFtdcQryInvestorPositionField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
-  std::cout << "ReqQryInvestorPosition:"
-            << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
+  cta_api_->ReqQryInvestorPosition(&field, 0);
+  // std::cout << "ReqQryInvestorPosition:"
+  //           << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
 }
 
 void CtpApi::SettlementInfoConfirm() {
@@ -65,7 +66,7 @@ void CtpApi::SettlementInfoConfirm() {
 }
 
 void CtpApi::OnFrontConnected() {
-  std::cout << "OnFrontConnected\n";
+  // std::cout << "OnFrontConnected\n";
   CThostFtdcReqUserLoginField req;
   memset(&req, 0, sizeof(req));
   strcpy(req.BrokerID, broker_id_.c_str());
@@ -89,34 +90,34 @@ void CtpApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
 }
 
 void CtpApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
-  BOOST_LOG_TRIVIAL(info) << user_id_ << "]"
-                          << "OrderRef:" << pOrder->OrderRef << ","
-                          << "Instrument:" << pOrder->InstrumentID << ","
-                          << "OC:" << pOrder->CombOffsetFlag[0] << ","
-                          << "Direction:" << pOrder->Direction;
+//   BOOST_LOG_TRIVIAL(info) << user_id_ << "]"
+//                           << "OrderRef:" << pOrder->OrderRef << ","
+//                           << "Instrument:" << pOrder->InstrumentID << ","
+//                           << "OC:" << pOrder->CombOffsetFlag[0] << ","
+//                           << "Direction:" << pOrder->Direction;
   delegate_->OnOrderData(pOrder);
 }
 
 void CtpApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
-  std::cout << __FUNCTION__ << "\n";
+  // std::cout << __FUNCTION__ << "\n";
 }
 
 void CtpApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                  CThostFtdcRspInfoField* pRspInfo) {
-  BOOST_LOG_TRIVIAL(warning)
-      << user_id_ << "]"
-      << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
-      << "ErrorId:" << pRspInfo->ErrorID << ","
-      << "Err Message:" << pRspInfo->ErrorMsg;
+//   BOOST_LOG_TRIVIAL(warning)
+//       << user_id_ << "]"
+//       << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
+//       << "ErrorId:" << pRspInfo->ErrorID << ","
+//       << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                  CThostFtdcRspInfoField* pRspInfo) {
-  BOOST_LOG_TRIVIAL(warning)
-      << user_id_ << "]"
-      << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
-      << "ErrorId:" << pRspInfo->ErrorID << ","
-      << "Err Message:" << pRspInfo->ErrorMsg;
+//   BOOST_LOG_TRIVIAL(warning)
+//       << user_id_ << "]"
+//       << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
+//       << "ErrorId:" << pRspInfo->ErrorID << ","
+//       << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
@@ -130,11 +131,11 @@ void CtpApi::OnRspQryInvestorPosition(
     int nRequestID,
     bool bIsLast) {
   if (pRspInfo != NULL) {
-    std::cout << "OnRspQryInvestorPosition:" << pRspInfo->ErrorMsg << "\n";
+    // std::cout << "OnRspQryInvestorPosition:" << pRspInfo->ErrorMsg << "\n";
   }
   if (pInvestorPosition != NULL) {
     if (pInvestorPosition->YdPosition != 0) {
-      std::cout << "Oops!\n";
+      // std::cout << "Oops!\n";
       positions_.push_back(
           {pInvestorPosition->InstrumentID,
            pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long
@@ -144,9 +145,9 @@ void CtpApi::OnRspQryInvestorPosition(
     }
   }
 
-  std::cout << "Last:" << bIsLast << "\n";
+  // std::cout << "Last:" << bIsLast << "\n";
   if (bIsLast) {
-    std::cout << "OnPositions\n";
+    // std::cout << "OnPositions\n";
     delegate_->OnPositions(positions_);
     positions_.clear();
   }
@@ -155,9 +156,9 @@ void CtpApi::OnRspQryInvestorPosition(
 void CtpApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                         int nRequestID,
                         bool bIsLast) {
-  BOOST_LOG_TRIVIAL(warning) << user_id_ << "]"
-                             << "RspError ErrorId:" << pRspInfo->ErrorID
-                             << "Error Message:" << pRspInfo->ErrorMsg;
+  // BOOST_LOG_TRIVIAL(warning) << user_id_ << "]"
+  //                            << "RspError ErrorId:" << pRspInfo->ErrorID
+  //                            << "Error Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnRspQrySettlementInfoConfirm(

@@ -1,20 +1,20 @@
-#include <iostream>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-#include <boost/thread.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+#include <iostream>
 
 #include <windows.h>
 
 #include "caf/all.hpp"
-#include "follow_trade_server/ctp_trader.h"
-#include "follow_trade_server/cta_trade_actor.h"
-#include "follow_trade_server/caf_defines.h"
-#include "follow_strategy_mode/follow_strategy_service.h"
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
+#include "follow_strategy_mode/follow_strategy_service.h"
 #include "follow_trade_server/binary_serialization.h"
+#include "follow_trade_server/caf_defines.h"
+#include "follow_trade_server/cta_trade_actor.h"
+#include "follow_trade_server/ctp_trader.h"
 #include "util.h"
 
 /*
@@ -89,11 +89,11 @@ caf::behavior LogBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
             std::for_each(positions.begin(), positions.end(),
                           [&](auto pos) { *self->state.oa << pos; });
           },
-          [&](std::vector<OrderData> orders) {
+          [=](std::vector<OrderData> orders) {
             std::for_each(orders.begin(), orders.end(),
                           [&](auto order) { *self->state.oa << order; });
           },
-          [&](OrderData order) { *self->state.oa << order; }};
+          [=](OrderData order) { *self->state.oa << order; }};
 }
 
 caf::behavior RtnOrderBinaryToFile(caf::stateful_actor<LogBinaryArchive>* self,
@@ -137,6 +137,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto cta_history_rnt_orders = BlockRequestHistoryOrder(cta_actor);
 
   std::vector<LogonInfo> followers{
+      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
+      {"tcp://101.231.3.125:41205", "8888", "181006", "371070"},
       {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
       {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
 
@@ -148,7 +150,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
         system.spawn<CtpTrader>(
             follower.front_server, follower.broker_id, follower.user_id,
             follower.password,
-            system.spawn(RtnOrderBinaryToFile, master_logon_info.user_id)),
+            system.spawn(RtnOrderBinaryToFile, follower.user_id)),
         system.spawn(LogBinaryToFile, follower.user_id)));
   }
 

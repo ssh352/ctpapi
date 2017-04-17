@@ -4,7 +4,8 @@
 bool Logon(caf::actor actor) {
   auto f = caf::make_function_view(actor, {caf::time_unit::seconds, 3});
 
-  if (!f(CTPReqLogin::value)->get_as<bool>(0)) {
+  auto ret = f(CTPReqLogin::value);
+  if (!ret || !ret->get_as<bool>(0)) {
     return false;
   }
   return true;

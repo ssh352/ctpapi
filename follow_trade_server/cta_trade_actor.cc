@@ -9,7 +9,7 @@ CtpTrader::CtpTrader(caf::actor_config& cfg,
                      const std::string& password,
                      caf::actor binary_log)
     : caf::event_based_actor(cfg),
-      ctp_(this, "trader_"),
+      ctp_(this, user_id + "_"),
       front_server_(front_server),
       broker_id_(broker_id),
       user_id_(user_id),

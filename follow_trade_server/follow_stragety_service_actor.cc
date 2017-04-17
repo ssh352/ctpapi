@@ -55,6 +55,7 @@ void FollowStragetyServiceActor::CancelOrder(const std::string& order_no) {
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
+    caf::aout(block_self) << service_.slave_account_id() << " fail!\n";
     return {};
   }
 
@@ -74,6 +75,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
+  caf::aout(block_self) << service_.slave_account_id() << " ready.\n";
   return {[=](CTPRtnOrderAtom, OrderData order) {
     service_.HandleRtnOrder(order);
     send(binary_log_, order);
