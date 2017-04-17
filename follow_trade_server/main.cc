@@ -135,10 +135,11 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                                false);
   */
 
-  LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999", "053861",
-                              "Cj12345678"};
-  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
-  //                             "140616"};
+  // LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999",
+  // "053861",
+  //                             "Cj12345678"};
+  LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+                              "140616"};
   auto cta_actor = system.spawn<CtpTrader>(
       master_logon_info.front_server, master_logon_info.broker_id,
       master_logon_info.user_id, master_logon_info.password,
