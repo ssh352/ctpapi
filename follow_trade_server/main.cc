@@ -164,7 +164,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
       {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120301609", "101116"},
       {"tcp://101.231.3.125:41205", "8888", "181006", "371070"},
       {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
-      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
+      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}
+  };
 
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {

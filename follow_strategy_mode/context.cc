@@ -200,8 +200,7 @@ OrderData Context::AdjustOrder(OrderData rtn_order) {
 
 std::vector<AccountPosition> Context::GetAccountPositions(
     const std::string& account_id) const {
-  if (account_position_mgr_.find(account_id) == account_position_mgr_.end() ||
-      account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
+  if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return {};
   }
   return account_position_mgr_.at(account_id).GetAccountPositions();

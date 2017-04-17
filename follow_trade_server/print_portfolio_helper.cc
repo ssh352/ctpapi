@@ -147,9 +147,9 @@ std::basic_ostream<charT, traits>& operator<<(
   return s;
 }
 
-std::string FormatQuantityHelper(int master_quantity, int slave_quantity) {
-  return boost::lexical_cast<std::string>(slave_quantity) + "(" +
-         boost::lexical_cast<std::string>(master_quantity) + ")";
+std::string FormatQuantityHelper(int left, int right) {
+  return boost::lexical_cast<std::string>(left) + "(" +
+         boost::lexical_cast<std::string>(right) + ")";
 }
 
 std::string FormatPortfolio(std::string account_id,
