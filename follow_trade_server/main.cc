@@ -11,12 +11,12 @@
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
 #include "follow_strategy_mode/follow_strategy_service.h"
+#include "follow_strategy_mode/print_portfolio_helper.h"
 #include "follow_trade_server/binary_serialization.h"
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/cta_trade_actor.h"
 #include "follow_trade_server/ctp_trader.h"
-#include "print_portfolio_helper.h"
-#include "util.h"
+#include "follow_trade_server/util.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,

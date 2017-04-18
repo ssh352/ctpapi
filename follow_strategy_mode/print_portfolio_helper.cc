@@ -257,12 +257,14 @@ std::string FormatPortfolio(std::string account_id,
        << "|" << std::setw(10) << centered("Open") << "|" << std::setw(10)
        << centered("Close") << "|\n";
     for (auto t : restuls) {
-      ss << "|" << std::setw(10) << std::get<1>(t) << "|" << std::setw(10)
-         << (std::get<2>(t) == OrderDirection::kBuy ? "Buy" : "Sell") << "|"
+      ss << "|" << std::setw(10) << centered(std::get<1>(t)) << "|" << std::setw(10)
+         << centered((std::get<2>(t) == OrderDirection::kBuy ? "Buy" : "Sell")) << "|"
          << std::right << std::setw(10) << std::get<3>(t) << "|"
          << std::setw(10) << std::setw(10) << std::get<4>(t) << "|"
          << std::setw(10) << std::setw(10) << std::get<5>(t) << "|\n";
     }
   }
+
+  ss << std::setw(80) << std::setfill('-') << "-\n\n";
   return ss.str();
 }
