@@ -1,12 +1,15 @@
 #include "follow_trade_server/ctp_trader.h"
-#include <boost/optional.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/optional.hpp>
 #include <iostream>
 #include "follow_strategy_mode/string_util.h"
+#include "follow_trade_server/util.h"
 
-CtpApi::CtpApi(Delegate* delegate, const std::string& folw_path)
+CtpApi::CtpApi(Delegate* delegate, const std::string& folw_prefix)
     : delegate_(delegate) {
-  cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(folw_path.c_str());
+  std::string flow_path = GetExecuableFileDirectoryPath() + "\\" +
+                          kCTPFolwPath + "\\" + folw_prefix;
+  cta_api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
 }
 
 void CtpApi::LoginServer(const std::string& front_server,
@@ -24,7 +27,7 @@ void CtpApi::LoginServer(const std::string& front_server,
   cta_api_->RegisterFront(front_server_buffer);
   // api_->SubscribePublicTopic(THOST_TERT_RESTART);
   cta_api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  cta_api_->SubscribePrivateTopic(THOST_TERT_RESTART);
+  cta_api_->SubscribePrivateTopic(THOST_TERT_RESUME);
   cta_api_->Init();
 }
 
@@ -90,11 +93,11 @@ void CtpApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
 }
 
 void CtpApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
-//   BOOST_LOG_TRIVIAL(info) << user_id_ << "]"
-//                           << "OrderRef:" << pOrder->OrderRef << ","
-//                           << "Instrument:" << pOrder->InstrumentID << ","
-//                           << "OC:" << pOrder->CombOffsetFlag[0] << ","
-//                           << "Direction:" << pOrder->Direction;
+  //   BOOST_LOG_TRIVIAL(info) << user_id_ << "]"
+  //                           << "OrderRef:" << pOrder->OrderRef << ","
+  //                           << "Instrument:" << pOrder->InstrumentID << ","
+  //                           << "OC:" << pOrder->CombOffsetFlag[0] << ","
+  //                           << "Direction:" << pOrder->Direction;
   delegate_->OnOrderData(pOrder);
 }
 
@@ -104,20 +107,20 @@ void CtpApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
 
 void CtpApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                  CThostFtdcRspInfoField* pRspInfo) {
-//   BOOST_LOG_TRIVIAL(warning)
-//       << user_id_ << "]"
-//       << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
-//       << "ErrorId:" << pRspInfo->ErrorID << ","
-//       << "Err Message:" << pRspInfo->ErrorMsg;
+  //   BOOST_LOG_TRIVIAL(warning)
+  //       << user_id_ << "]"
+  //       << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
+  //       << "ErrorId:" << pRspInfo->ErrorID << ","
+  //       << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                  CThostFtdcRspInfoField* pRspInfo) {
-//   BOOST_LOG_TRIVIAL(warning)
-//       << user_id_ << "]"
-//       << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
-//       << "ErrorId:" << pRspInfo->ErrorID << ","
-//       << "Err Message:" << pRspInfo->ErrorMsg;
+  //   BOOST_LOG_TRIVIAL(warning)
+  //       << user_id_ << "]"
+  //       << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
+  //       << "ErrorId:" << pRspInfo->ErrorID << ","
+  //       << "Err Message:" << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,

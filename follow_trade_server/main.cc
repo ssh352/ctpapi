@@ -121,23 +121,10 @@ struct LogonInfo {
   std::string password;
 };
 
-int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  /*
-  std::cout << FormatPortfolio("1234",
-                               {
-                                   {"aaa", OrderDirection::kBuy, 10, 5, 2},
-                                   {"bbb", OrderDirection::kBuy, 10, 5, 2},
-                               },
-                               {
-                                   {"aaa", OrderDirection::kBuy, 10, 5, 2},
-                                   {"ccc", OrderDirection::kSell, 10, 5, 2},
-                               },
-                               false);
-  */
 
-  // LogonInfo master_logon_info{"tcp://180.168.146.187:10000", "9999",
-  // "053861",
-  //                             "Cj12345678"};
+int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  ClearUpCTPFolwDirectory();
+  
   LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
                               "140616"};
   auto cta_actor = system.spawn<CtpTrader>(
