@@ -76,6 +76,7 @@ void InstrumentPosition::HandleRtnOrder(
     int outstanding_quantity = rtn_order.quanitty();
     for (auto& pos : positions_) {
       if (pos.second.direction == rtn_order.direction() ||
+          pos.second.closeable_quantity == 0 ||
           !TestPositionEffect(rtn_order.exchange_id(),
                               rtn_order.position_effect(),
                               pos.second.is_today_quantity)) {
