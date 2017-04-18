@@ -4,6 +4,10 @@
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/util.h"
 
+static const int kAdultAge = 5;
+
+using DisplayPortfolioAtom = caf::atom_constant<caf::atom("dp")>;
+
 FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor_config& cfg,
     const std::string& master_account_id,
@@ -22,6 +26,7 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
   send(monitor_, master_history_rtn_orders);
   service_.InitPositions(master_account_id, std::move(master_init_positions));
   service_.InitRtnOrders(std::move(master_history_rtn_orders));
+  portfolio_age_ = 0;
 }
 
 void FollowStragetyServiceActor::OpenOrder(const std::string& instrument,
@@ -80,19 +85,39 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   // auto mp =
   // service_.context().GetAccountProfolios(service_.master_account_id());
   send(monitor_, service_.slave_account_id(),
-       service_.context().GetAccountProfolios(service_.master_account_id()),
-       service_.context().GetAccountProfolios(service_.slave_account_id()),
+       service_.context().GetAccountPortfolios(service_.master_account_id()),
+       service_.context().GetAccountPortfolios(service_.slave_account_id()),
        true);
 
   // ss << std::setw(80) << std::setfill('=') << "=" << "\n";
 
   // caf::aout(block_self) << ss.str() << "\n";
-  return {[=](CTPRtnOrderAtom, OrderData order) {
-    service_.HandleRtnOrder(order);
-    send(monitor_, order);
-    send(monitor_, service_.slave_account_id(),
-         service_.context().GetAccountProfolios(service_.master_account_id()),
-         service_.context().GetAccountProfolios(service_.slave_account_id()),
-         false);
-  }};
+  return {
+      [=](CTPRtnOrderAtom, OrderData order) {
+        service_.HandleRtnOrder(order);
+        send(monitor_, order);
+
+        if (portfolio_age_ != 0) {
+          portfolio_age_ = 0;
+        } else {
+          ++portfolio_age_;
+          delayed_send(this, std::chrono::milliseconds(100),
+                       DisplayPortfolioAtom::value);
+        }
+      },
+      [=](DisplayPortfolioAtom) {
+        if (++portfolio_age_ == kAdultAge) {
+          send(monitor_, service_.slave_account_id(),
+               service_.context().GetAccountPortfolios(
+                   service_.master_account_id()),
+               service_.context().GetAccountPortfolios(
+                   service_.slave_account_id()),
+               false);
+          portfolio_age_ = 0;
+        } else {
+          delayed_send(this, std::chrono::milliseconds(100),
+                       DisplayPortfolioAtom::value);
+        }
+      },
+  };
 }

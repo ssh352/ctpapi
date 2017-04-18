@@ -122,8 +122,8 @@ int main(int argc, char** argv) {
       follow_strategy_service.HandleRtnOrder(std::move(order));
       std::cout << FormatPortfolio(
           "120350655",
-          follow_strategy_service.context().GetAccountProfolios("38030022"),
-          follow_strategy_service.context().GetAccountProfolios("120350655"),
+          follow_strategy_service.context().GetAccountPortfolios("38030022"),
+          follow_strategy_service.context().GetAccountPortfolios("120350655"),
           false);
       // std::cout << i << ":" <<
       //   << "=" <<  <<"\n";

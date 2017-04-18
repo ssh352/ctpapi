@@ -19,6 +19,10 @@ CtpTrader::CtpTrader(caf::actor_config& cfg,
   session_id_ = 0;
 }
 
+CtpTrader::~CtpTrader() {
+
+}
+
 void CtpTrader::OnOrderData(CThostFtdcOrderField* field) {
   send(this, CTPRtnOrderAtom::value, MakeOrderData(field));
   send(binary_log_, *field);

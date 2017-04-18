@@ -1,7 +1,7 @@
 #ifndef FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #define FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
-#include "follow_strategy_mode/follow_strategy_service.h"
 #include "caf/all.hpp"
+#include "follow_strategy_mode/follow_strategy_service.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
                                    FollowStragetyService::Delegate {
  public:
@@ -44,6 +44,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   caf::actor cta_;
   caf::actor follow_;
   caf::actor monitor_;
+  int portfolio_age_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

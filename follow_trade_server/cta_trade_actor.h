@@ -11,6 +11,7 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
             const std::string& user_id,
             const std::string& password,
             caf::actor binary_log);
+  ~CtpTrader();
 
   virtual void OnOrderData(CThostFtdcOrderField* order) override;
 

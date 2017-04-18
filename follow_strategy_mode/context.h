@@ -62,7 +62,7 @@ class Context {
   boost::optional<OrderData> GetOrderData(const std::string& account_id,
                                           const std::string& order_no) const;
 
-  std::vector<AccountPortfolio> GetAccountProfolios(
+  std::vector<AccountPortfolio> GetAccountPortfolios(
       const std::string& account_id) const;
 
  private:

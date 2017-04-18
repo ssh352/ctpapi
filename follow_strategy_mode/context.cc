@@ -35,7 +35,7 @@ boost::optional<OrderData> Context::GetOrderData(
   return account_order_mgr_.at(account_id).order_data(order_no);
 }
 
-std::vector<AccountPortfolio> Context::GetAccountProfolios(
+std::vector<AccountPortfolio> Context::GetAccountPortfolios(
     const std::string& account_id) const {
   std::vector<AccountPosition> positions = GetAccountPositions(account_id);
   std::vector<std::tuple<std::string, OrderDirection, bool, int> > orders =
