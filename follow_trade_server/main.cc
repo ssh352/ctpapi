@@ -1,6 +1,8 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <iostream>
@@ -121,11 +123,26 @@ struct LogonInfo {
   std::string password;
 };
 
+namespace pt = boost::property_tree;
+
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  pt::ptree pt;
+  try {
+    pt::read_json(GetExecuableFileDirectoryPath() + "\\config.json", pt);
+  } catch (pt::ptree_error& err) {
+    std::cout << "Read Confirg File Error:" << err.what() << "\n";
+    return 1;
+  }
+
   ClearUpCTPFolwDirectory();
 
-  LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
-                              "140616"};
+  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+  //                            "140616"};
+  LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
+                              pt.get<std::string>("master.broker_id"),
+                              pt.get<std::string>("master.user_id"),
+                              pt.get<std::string>("master.password")};
+
   auto cta_actor = system.spawn<CtpTrader>(
       master_logon_info.front_server, master_logon_info.broker_id,
       master_logon_info.user_id, master_logon_info.password,
@@ -145,13 +162,15 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto cta_init_positions = BlockRequestInitPositions(cta_actor);
   auto cta_history_rnt_orders = BlockRequestHistoryOrder(cta_actor);
 
-  std::vector<LogonInfo> followers{
-      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120350655", "140616"},
-      {"tcp://ctp1-front3.citicsf.com:41205", "66666", "120301609", "101116"},
-      {"tcp://101.231.3.125:41205", "8888", "181006", "371070"},
-      {"tcp://180.168.146.187:10000", "9999", "053861", "Cj12345678"},
-      {"tcp://180.168.146.187:10000", "9999", "053867", "8661188"}};
-
+  std::vector<LogonInfo> followers;
+  for (auto slave : pt.get_child("slaves")) {
+    if (slave.second.get<bool>("enable")) {
+      followers.push_back({slave.second.get<std::string>("front_server"),
+                           slave.second.get<std::string>("broker_id"),
+                           slave.second.get<std::string>("user_id"),
+                           slave.second.get<std::string>("password")});
+    }
+  }
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {
     servcies.push_back(system.spawn<FollowStragetyServiceActor>(
