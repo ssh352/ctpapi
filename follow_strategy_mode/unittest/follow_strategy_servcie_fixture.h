@@ -20,7 +20,7 @@ struct OrderInsertForTest {
 class FollowStragetyServiceFixture : public testing::Test,
                                      public FollowStragetyService::Delegate {
  public:
-  typedef std::tuple<OrderInsertForTest, std::vector<std::string>> TestRetType;
+  typedef std::tuple<OrderInsertForTest, std::vector<std::string> > TestRetType;
   FollowStragetyServiceFixture();
 
   virtual void CloseOrder(const std::string& instrument,
@@ -118,6 +118,14 @@ class FollowStragetyServiceFixture : public testing::Test,
       const std::string& order_id = "0002",
       OrderDirection direction = OrderDirection::kSell,
       int quantity = 10,
+      PositionEffect position_effect = PositionEffect::kClose);
+
+  TestRetType PushCloseOrderForSlave(
+      const std::string& order_id = "0002",
+      OrderDirection direction = OrderDirection::kSell,
+      int filled_quantity = 10,
+      int quantity = 10,
+      double price = 1234.1,
       PositionEffect position_effect = PositionEffect::kClose);
 
 

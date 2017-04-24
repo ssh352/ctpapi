@@ -252,6 +252,52 @@ TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
   }
 }
 
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase4) {
+  OpenAndFilledOrder("1", 10, 10, 10);
+  PushNewCloseOrderForMaster("2");
+  PushNewCloseOrderForSlave("2");
+  PushCancelOrderForMaster("2", OrderDirection::kSell, PositionEffect::kClose);
+  PushNewCloseOrderForMaster("3");
+  PushNewCloseOrderForSlave("2");
+  auto ret = PushCancelOrderForSlave("2", OrderDirection::kSell, PositionEffect::kClose);
+  auto order = std::get<0>(ret);
+  EXPECT_EQ("3", order.order_no);
+  EXPECT_EQ(PositionEffect::kClose, order.position_effect);
+
+  auto cancels = std::get<1>(ret);
+  EXPECT_EQ(0, cancels.size());
+}
+
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase5) {
+  OpenAndFilledOrder("1", 10, 10, 10);
+  PushNewCloseOrderForMaster("2");
+  PushNewCloseOrderForSlave("2");
+  PushCancelOrderForMaster("2", OrderDirection::kSell, PositionEffect::kClose);
+  PushNewCloseOrderForMaster("3");
+  PushCloseOrderForSlave("2", OrderDirection::kSell, 1, 10);
+  auto ret = PushCancelOrderForSlave("2", OrderDirection::kSell, PositionEffect::kClose, 1, 10);
+  auto order = std::get<0>(ret);
+  EXPECT_EQ("3", order.order_no);
+  EXPECT_EQ(PositionEffect::kClose, order.position_effect);
+  EXPECT_EQ(9, order.quantity);
+
+  auto cancels = std::get<1>(ret);
+  EXPECT_EQ(0, cancels.size());
+}
+
+TEST_F(FollowStragetyServiceFixture, CancelOrderCase6) {
+  OpenAndFilledOrder("1", 10, 10, 10);
+  PushNewCloseOrderForMaster("2");
+  PushNewCloseOrderForSlave("2");
+  PushCancelOrderForMaster("2", OrderDirection::kSell, PositionEffect::kClose);
+  PushNewCloseOrderForMaster("3");
+  auto ret = PushCloseOrderForSlave("2", OrderDirection::kSell, 10, 10);
+  auto order = std::get<0>(ret);
+  EXPECT_EQ("", order.order_no);
+  auto cancels = std::get<1>(ret);
+  EXPECT_EQ(0, cancels.size());
+}
+
 TEST_F(FollowStragetyServiceFixture, CancelPartyFillClose) {
   OpenAndFilledOrder("1", 4, 4, 4);
   PushNewCloseOrderForMaster("2", OrderDirection::kSell, 4);

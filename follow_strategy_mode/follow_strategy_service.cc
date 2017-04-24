@@ -105,8 +105,9 @@ void FollowStragetyService::DoHandleRtnOrder(OrderData rtn_order) {
   */
 }
 
-void FollowStragetyService::Trade(const std::string& order_no) {
-  waiting_reply_order_.push_back(order_no);
+void FollowStragetyService::Trade(const std::string& order_no,
+                                  OrderStatus status) {
+  waiting_reply_order_.emplace_back(order_no, status);
 }
 
 void FollowStragetyService::OpenOrder(const std::string& instrument,
@@ -115,7 +116,7 @@ void FollowStragetyService::OpenOrder(const std::string& instrument,
                                       OrderPriceType price_type,
                                       double price,
                                       int quantity) {
-  Trade(order_no);
+  Trade(order_no, OrderStatus::kActive);
   delegate_->OpenOrder(instrument, order_no, direction, price_type, price,
                        quantity);
 }
@@ -126,7 +127,7 @@ void FollowStragetyService::CloseOrder(const std::string& instrument,
                                        OrderPriceType price_type,
                                        double price,
                                        int quantity) {
-  Trade(order_no);
+  Trade(order_no, OrderStatus::kActive);
   delegate_->CloseOrder(instrument, order_no, direction, position_effect,
                         price_type, price, quantity);
 }
@@ -144,7 +145,7 @@ const std::string& FollowStragetyService::slave_account_id() const {
 }
 
 void FollowStragetyService::CancelOrder(const std::string& order_no) {
-  Trade(order_no);
+  Trade(order_no, OrderStatus::kCancel);
   delegate_->CancelOrder(order_no);
 }
 
@@ -154,17 +155,23 @@ FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() && order.account_id() == slave_account_) {
-    auto it = std::find(waiting_reply_order_.begin(),
-                        waiting_reply_order_.end(), order.order_id());
+    auto it =
+        std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
+                     [&](auto i) { return i.first == order.order_id(); });
     if (it != waiting_reply_order_.end()) {
-      waiting_reply_order_.erase(it);
-      DoHandleRtnOrder(order);
-      status = StragetyStatus::kSkip;
-      if (waiting_reply_order_.empty()) {
-        while (!outstanding_orders_.empty() && waiting_reply_order_.empty()) {
-          DoHandleRtnOrder(outstanding_orders_.front());
-          outstanding_orders_.pop_front();
+      if (it->second == order.status() ||
+          order.status() == OrderStatus::kAllFilled) {
+        waiting_reply_order_.erase(it);
+        DoHandleRtnOrder(order);
+        status = StragetyStatus::kSkip;
+        if (waiting_reply_order_.empty()) {
+          while (!outstanding_orders_.empty() && waiting_reply_order_.empty()) {
+            DoHandleRtnOrder(outstanding_orders_.front());
+            outstanding_orders_.pop_front();
+          }
         }
+      } else {
+        status = StragetyStatus::kReady;
       }
     } else {
       status = StragetyStatus::kWaitReply;

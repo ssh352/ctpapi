@@ -64,7 +64,7 @@ private:
     kSkip,
   };
 
-  void Trade(const std::string& order_no);
+  void Trade(const std::string& order_no, OrderStatus status);
 
   void DoHandleRtnOrder(OrderData rtn_order);
 
@@ -72,7 +72,7 @@ private:
   Context context_;
   FollowStragety stragety_;
   Delegate* delegate_;
-  std::vector<std::string> waiting_reply_order_;
+  std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
   std::deque<OrderData> outstanding_orders_;
   std::string master_account_;
   std::string slave_account_;

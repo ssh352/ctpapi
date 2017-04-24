@@ -47,12 +47,12 @@ class DummyServiceDelegate : public FollowStragetyService::Delegate {
 int main(int argc, char** argv) {
   std::vector<std::pair<int, int> > res;
   DummyServiceDelegate delegate;
-  FollowStragetyService follow_strategy_service("38030022", "120350655",
+  FollowStragetyService follow_strategy_service("38030022", "120301609",
                                                 &delegate, 1000);
   std::vector<OrderData> view_orders;
   try {
     std::ifstream file(
-        "c:\\Users\\yjqpro\\Desktop\\flow_bin\\120350655-20170418-081437.bin",
+        "c:\\Users\\yjqpro\\Desktop\\120301609-20170424-083001.bin",
         std::ios_base::binary);
     boost::archive::binary_iarchive ia(file);
     std::string account_id;
@@ -109,27 +109,26 @@ int main(int argc, char** argv) {
       // if (order.account_id() == "38030022" && order.order_id() == "1046") {
       //   std::cout << "Oops!\n";
       // }
-      if (i >= 1118 && i <= 1828) {
-        continue;
-      }
-      if (order.order_id() == "1058") {
-        std::cout << i << "\n";
-      }
 
-      if (order.account_id() == "38030022" && order.datetime() == "13:51:47") {
+      if (order.account_id() == "38030022" /*&& order.datetime() == "13:51:07"*/
+          && order.order_id() == "1183") {
         std::cout << "Oops!\n";
       }
       follow_strategy_service.HandleRtnOrder(std::move(order));
+      /*
+      
       std::cout << FormatPortfolio(
           "120350655",
           follow_strategy_service.context().GetAccountPortfolios("38030022"),
           follow_strategy_service.context().GetAccountPortfolios("120350655"),
           false);
+      
+      */
       // std::cout << i << ":" <<
       //   << "=" <<  <<"\n";
 
       // }
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+      // std::this_thread::sleep_for(std::chrono::milliseconds(500));
     }
   } catch (boost::archive::archive_exception& err) {
     std::cout << "Done" << err.what() << "\n";

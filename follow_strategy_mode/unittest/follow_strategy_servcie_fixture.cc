@@ -49,11 +49,11 @@ OrderData FollowStragetyServiceFixture::MakeMasterOrderData(
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= "Q7"*/) {
   return OrderData{
-      kMasterAccountID,            // account_id,
-      order_no,                    // order_id,
-      instrument,                  // instrument,
-      "",                          // datetime,
-      "q7",                        // user_product_info,
+      kMasterAccountID,  // account_id,
+      order_no,          // order_id,
+      instrument,        // instrument,
+      "",                // datetime,
+      "q7",              // user_product_info,
       order_no,
       default_order_exchange_id_,  // exchange_id
       quantity,                    // quanitty,
@@ -78,11 +78,11 @@ OrderData FollowStragetyServiceFixture::MakeSlaveOrderData(
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= kStrategyUserProductInfo*/) {
   return OrderData{
-      kSlaveAccountID,             // account_id,
-      order_no,                    // order_id,
-      instrument,                  // instrument,
-      "",                          // datetime,
-      kStrategyUserProductInfo,    // user_product_info,
+      kSlaveAccountID,           // account_id,
+      order_no,                  // order_id,
+      instrument,                // instrument,
+      "",                        // datetime,
+      kStrategyUserProductInfo,  // user_product_info,
       order_no,
       default_order_exchange_id_,  // Exchange Id
       quantity,                    // quanitty,
@@ -179,10 +179,11 @@ FollowStragetyServiceFixture::PushCloseOrderForMaster(
     int quantity /*= 10*/,
     double price /*= 1234.1*/,
     PositionEffect position_effect /*= PositionEffect::kClose*/) {
-  return PushOrderForMaster(
-      order_id, direction, position_effect,
-      filled_quantity == quantity ? OrderStatus::kAllFilled : OrderStatus::kActive,
-      filled_quantity, quantity, price);
+  return PushOrderForMaster(order_id, direction, position_effect,
+                            filled_quantity == quantity
+                                ? OrderStatus::kAllFilled
+                                : OrderStatus::kActive,
+                            filled_quantity, quantity, price);
 }
 
 FollowStragetyServiceFixture::TestRetType
@@ -205,6 +206,21 @@ FollowStragetyServiceFixture::PushNewCloseOrderForSlave(
     PositionEffect position_effect) {
   return PushOrderForSlave(order_id, direction, position_effect,
                            OrderStatus::kActive, 0, quantity, 1234.1);
+}
+
+FollowStragetyServiceFixture::TestRetType
+FollowStragetyServiceFixture::PushCloseOrderForSlave(
+    const std::string& order_id /*= "0002"*/,
+    OrderDirection direction /*= OrderDirection::kSell*/,
+    int filled_quantity /*= 10*/,
+    int quantity /*= 10*/,
+    double price /*= 1234.1*/,
+    PositionEffect position_effect /*= PositionEffect::kClose*/) {
+  return PushOrderForSlave(order_id, direction, position_effect,
+                            filled_quantity == quantity
+                                ? OrderStatus::kAllFilled
+                                : OrderStatus::kActive,
+                            filled_quantity, quantity, price);
 }
 
 FollowStragetyServiceFixture::TestRetType
