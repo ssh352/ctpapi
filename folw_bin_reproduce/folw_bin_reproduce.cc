@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
   std::vector<OrderData> view_orders;
   try {
     std::ifstream file(
-        "c:\\Users\\yjqpro\\Desktop\\120301609-20170424-083001.bin",
+        "c:\\Users\\yjqpro\\Desktop\\120301609-20170505-083001.bin",
         std::ios_base::binary);
     boost::archive::binary_iarchive ia(file);
     std::string account_id;
@@ -110,8 +110,7 @@ int main(int argc, char** argv) {
       //   std::cout << "Oops!\n";
       // }
 
-      if (order.account_id() == "38030022" /*&& order.datetime() == "13:51:07"*/
-          && order.order_id() == "1183") {
+      if (order.account_id() == "120301609" && order.user_product_info() !=kStrategyUserProductInfo) {
         std::cout << "Oops!\n";
       }
       follow_strategy_service.HandleRtnOrder(std::move(order));

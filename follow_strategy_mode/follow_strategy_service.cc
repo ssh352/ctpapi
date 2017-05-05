@@ -8,7 +8,7 @@ FollowStragetyService::FollowStragetyService(const std::string& master_account,
       delegate_(delegate),
       master_account_(master_account),
       slave_account_(slave_account),
-      context_(start_order_id_seq) {}
+      context_(OrderIdMananger{master_account, start_order_id_seq}) {}
 
 void FollowStragetyService::InitPositions(
     const std::string& account_id,

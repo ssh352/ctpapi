@@ -10,7 +10,7 @@
 
 class Context {
  public:
-  Context(int start_order_id_seq);
+  Context(OrderIdMananger order_id_mgr);
 
   OrderEventType HandlertnOrder(const OrderData& rtn_order);
 

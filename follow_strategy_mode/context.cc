@@ -1,8 +1,8 @@
 #include "follow_strategy_mode/context.h"
 #include "follow_strategy_mode/order_util.h"
 
-Context::Context(int start_order_id_seq)
-    : order_id_mananger_(start_order_id_seq) {}
+Context::Context(OrderIdMananger order_id_mgr)
+    : order_id_mananger_(std::move(order_id_mgr)) {}
 
 OrderEventType Context::HandlertnOrder(const OrderData& rtn_order) {
   account_position_mgr_[rtn_order.account_id()].HandleRtnOrder(
