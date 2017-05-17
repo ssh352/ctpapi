@@ -61,6 +61,19 @@ void CtpApi::QryInvestorPosition() {
   //           << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
 }
 
+void CtpApi::ReqQryInstrumentMarginRate(const std::string& instrument) {
+  CThostFtdcQryInstrumentMarginRateField field{0};
+  strcpy(field.BrokerID, broker_id_.c_str());
+  strcpy(field.InvestorID, user_id_.c_str());
+  strcpy(field.InstrumentID, instrument.c_str());
+  cta_api_->ReqQryInstrumentMarginRate(&field, 0);
+}
+
+void CtpApi::ReqQryInstrumentList() {
+  CThostFtdcQryInstrumentField field{0};
+  cta_api_->ReqQryInstrument(&field, 0);
+}
+
 void CtpApi::SettlementInfoConfirm() {
   CThostFtdcQrySettlementInfoConfirmField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
@@ -188,6 +201,28 @@ void CtpApi::OnRspSettlementInfoConfirm(
     delegate_->OnSettlementInfoConfirm();
   } else {
     // Except
+  }
+}
+
+void CtpApi::OnRspQryInstrumentMarginRate(
+    CThostFtdcInstrumentMarginRateField* pInstrumentMarginRate,
+    CThostFtdcRspInfoField* pRspInfo,
+    int nRequestID,
+    bool bIsLast) {
+  if (bIsLast && pInstrumentMarginRate != NULL) {
+    delegate_->OnRspQryInstrumentMarginRate(pInstrumentMarginRate);
+  } else {
+    delegate_->OnRspQryInstrumentMarginRate(NULL);
+  }
+}
+
+void CtpApi::OnRspQryInstrument(CThostFtdcInstrumentField* pInstrument,
+                                CThostFtdcRspInfoField* pRspInfo,
+                                int nRequestID,
+                                bool bIsLast) {
+  instruments_.push_back(*pInstrument);
+  if (bIsLast) {
+    delegate_->OnRspQryInstrumentList(std::move(instruments_));
   }
 }
 

@@ -1,7 +1,7 @@
 #ifndef CTP_TRADER_H
 #define CTP_TRADER_H
-#include <fstream>
 #include <boost/lexical_cast.hpp>
+#include <fstream>
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "follow_strategy_mode/defines.h"
 class CtpApi : public CThostFtdcTraderSpi {
@@ -12,6 +12,10 @@ class CtpApi : public CThostFtdcTraderSpi {
     virtual void OnOrderData(CThostFtdcOrderField* order) = 0;
     virtual void OnPositions(std::vector<OrderPosition> positions) = 0;
     virtual void OnSettlementInfoConfirm() = 0;
+    virtual void OnRspQryInstrumentList(
+        std::vector<CThostFtdcInstrumentField> instruments) = 0;
+    virtual void OnRspQryInstrumentMarginRate(
+        CThostFtdcInstrumentMarginRateField* pInstrumentMarginRate) = 0;
   };
   //////////////////////////////////////////////////////////////////////////
   // CtpTrader
@@ -27,6 +31,10 @@ class CtpApi : public CThostFtdcTraderSpi {
   void OrderAction(CThostFtdcInputOrderActionField order);
 
   void QryInvestorPosition();
+
+  void ReqQryInstrumentMarginRate(const std::string& instrument);
+
+  void ReqQryInstrumentList();
 
   void SettlementInfoConfirm();
 
@@ -76,6 +84,17 @@ class CtpApi : public CThostFtdcTraderSpi {
       int nRequestID,
       bool bIsLast) override;
 
+  virtual void OnRspQryInstrumentMarginRate(
+      CThostFtdcInstrumentMarginRateField* pInstrumentMarginRate,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) override;
+
+  virtual void OnRspQryInstrument(CThostFtdcInstrumentField* pInstrument,
+                                  CThostFtdcRspInfoField* pRspInfo,
+                                  int nRequestID,
+                                  bool bIsLast) override;
+
  private:
   CThostFtdcTraderApi* cta_api_;
   std::string broker_id_;
@@ -83,6 +102,7 @@ class CtpApi : public CThostFtdcTraderSpi {
   std::string password_;
   Delegate* delegate_;
   std::vector<OrderPosition> positions_;
+  std::vector<CThostFtdcInstrumentField> instruments_;
 };
 
 #endif /* CTP_TRADER_H */

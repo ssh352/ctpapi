@@ -14,3 +14,4 @@ REM %~dp0\tools\python276_bin\python build\gyp_win.py --depth=. --no-circular-ch
 REM python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_strategy_mode\follow_strategy_mode.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi download_margin_rate\download_margin_rate.gyp
