@@ -15,3 +15,4 @@ REM python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi fo
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi download_margin_rate\download_margin_rate.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
