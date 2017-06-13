@@ -4,16 +4,13 @@
 #include "follow_trade_server/ctp_trader.h"
 
 class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
- public:
-  CtpTrader(caf::actor_config& cfg,
-            const std::string& front_server,
-            const std::string& broker_id,
-            const std::string& user_id,
-            const std::string& password,
-            caf::actor binary_log);
+public:
+  CtpTrader(caf::actor_config &cfg, const std::string &front_server,
+            const std::string &broker_id, const std::string &user_id,
+            const std::string &password, caf::actor binary_log);
   ~CtpTrader();
 
-  virtual void OnOrderData(CThostFtdcOrderField* order) override;
+  virtual void OnOrderData(CThostFtdcOrderField *order) override;
 
   virtual void OnLogon(int frton_id, int session_id, bool success) override;
 
@@ -21,15 +18,21 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
 
   virtual void OnSettlementInfoConfirm() override;
 
-
   void on_exit() override {
     rtn_orders_subscribers_.clear();
     destroy(binary_log_);
   }
- protected:
+
+  virtual void OnRspQryInstrumentList(
+      std::vector<CThostFtdcInstrumentField> instruments) override;
+
+  virtual void OnRspQryInstrumentMarginRate(
+      CThostFtdcInstrumentMarginRateField *pInstrumentMarginRate) override;
+
+protected:
   virtual caf::behavior make_behavior() override;
 
- private:
+private:
   CtpApi ctp_;
   std::string front_server_;
   std::string broker_id_;
@@ -48,12 +51,11 @@ class CtpTrader : public caf::event_based_actor, public CtpApi::Delegate {
       BoolResponsePromise;
   std::vector<BoolResponsePromise> logon_response_promises_;
 
-  BoolResponsePromise  settlement_info_confirm_response_promises_;
+  BoolResponsePromise settlement_info_confirm_response_promises_;
 
   typedef caf::detail::make_response_promise_helper<
       std::vector<OrderPosition>>::type PositionsResponsePromise;
   std::vector<PositionsResponsePromise> positions_response_promises;
-
 };
 
-#endif  // FOLLOW_TRADE_SERVER_CTA_TRADE_ACTOR_H
+#endif // FOLLOW_TRADE_SERVER_CTA_TRADE_ACTOR_H

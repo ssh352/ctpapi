@@ -45,6 +45,8 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   caf::actor follow_;
   caf::actor monitor_;
   int portfolio_age_;
+  std::vector<OrderPosition>  master_init_positions_;
+  std::vector<OrderData> master_history_rtn_orders_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

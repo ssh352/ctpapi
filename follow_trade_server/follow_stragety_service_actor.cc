@@ -24,8 +24,8 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
       monitor_(monitor) {
   send(monitor_, master_account_id, master_init_positions);
   send(monitor_, master_history_rtn_orders);
-  service_.InitPositions(master_account_id, std::move(master_init_positions));
-  service_.InitRtnOrders(std::move(master_history_rtn_orders));
+  master_init_positions_ = std::move(master_init_positions);
+  master_history_rtn_orders_ = std::move(master_history_rtn_orders);
   portfolio_age_ = 0;
 }
 
@@ -65,14 +65,18 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
     return {};
   }
 
+
   auto init_positions = BlockRequestInitPositions(follow_);
   auto history_orders = BlockRequestHistoryOrder(follow_);
   send(monitor_, service_.slave_account_id(), init_positions);
   send(monitor_, history_orders);
 
+  service_.InitPositions(service_.master_account_id(), master_init_positions_);
+
   service_.InitPositions(service_.slave_account_id(),
                          std::move(init_positions));
 
+  service_.InitRtnOrders(master_history_rtn_orders_);
   service_.InitRtnOrders(std::move(history_orders));
 
   std::this_thread::sleep_for(std::chrono::seconds(1));

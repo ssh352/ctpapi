@@ -2,28 +2,19 @@
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/ctp_util.h"
 
-CtpTrader::CtpTrader(caf::actor_config& cfg,
-                     const std::string& front_server,
-                     const std::string& broker_id,
-                     const std::string& user_id,
-                     const std::string& password,
-                     caf::actor binary_log)
-    : caf::event_based_actor(cfg),
-      ctp_(this, user_id + "_"),
-      front_server_(front_server),
-      broker_id_(broker_id),
-      user_id_(user_id),
-      password_(password),
-      binary_log_(binary_log) {
+CtpTrader::CtpTrader(caf::actor_config &cfg, const std::string &front_server,
+                     const std::string &broker_id, const std::string &user_id,
+                     const std::string &password, caf::actor binary_log)
+    : caf::event_based_actor(cfg), ctp_(this, user_id + "_"),
+      front_server_(front_server), broker_id_(broker_id), user_id_(user_id),
+      password_(password), binary_log_(binary_log) {
   front_id_ = 0;
   session_id_ = 0;
 }
 
-CtpTrader::~CtpTrader() {
+CtpTrader::~CtpTrader() {}
 
-}
-
-void CtpTrader::OnOrderData(CThostFtdcOrderField* field) {
+void CtpTrader::OnOrderData(CThostFtdcOrderField *field) {
   send(this, CTPRtnOrderAtom::value, MakeOrderData(field));
   send(binary_log_, *field);
 }
@@ -38,6 +29,14 @@ void CtpTrader::OnPositions(std::vector<OrderPosition> positions) {
 
 void CtpTrader::OnSettlementInfoConfirm() {
   send(this, CTPRspSettlementInfoConfirm::value);
+}
+
+void CtpTrader::OnRspQryInstrumentList(
+    std::vector<CThostFtdcInstrumentField> instruments) {
+}
+
+void CtpTrader::OnRspQryInstrumentMarginRate(
+    CThostFtdcInstrumentMarginRateField *pInstrumentMarginRate) {
 }
 
 caf::behavior CtpTrader::make_behavior() {
@@ -66,8 +65,8 @@ caf::behavior CtpTrader::make_behavior() {
         settlement_info_confirm_response_promises_.deliver(true);
       },
       [=](CTPReqQryInvestorPositionsAtom)
-          -> caf::result<std::vector<OrderPosition> > {
-        auto promise = make_response_promise<std::vector<OrderPosition> >();
+          -> caf::result<std::vector<OrderPosition>> {
+        auto promise = make_response_promise<std::vector<OrderPosition>>();
         positions_response_promises.push_back(promise);
         ctp_.QryInvestorPosition();
         return promise;
@@ -90,18 +89,18 @@ caf::behavior CtpTrader::make_behavior() {
         rtn_orders_.push_back(order);
       },
       [=](CTPReqHistoryRtnOrdersAtom,
-          size_t start_seq) -> caf::result<std::vector<OrderData> > {
+          size_t start_seq) -> caf::result<std::vector<OrderData>> {
         return std::vector<OrderData>{rtn_orders_.begin() + start_seq,
                                       rtn_orders_.end()};
       },
-      [=](CTPReqOpenOrderAtom, const std::string& instrument,
-          const std::string& order_id, OrderDirection direction,
+      [=](CTPReqOpenOrderAtom, const std::string &instrument,
+          const std::string &order_id, OrderDirection direction,
           OrderPriceType price_type, double price, int quantity) {
         ctp_.OrderInsert(MakeCtpOpenOrder(instrument, order_id, direction,
                                           price_type, price, quantity));
       },
-      [=](CTPReqCloseOrderAtom, const std::string& instrument,
-          const std::string& order_id, OrderDirection direction,
+      [=](CTPReqCloseOrderAtom, const std::string &instrument,
+          const std::string &order_id, OrderDirection direction,
           PositionEffect position_effect, OrderPriceType price_type,
           double price, int quantity) {
         ctp_.OrderInsert(MakeCtpCloseOrder(instrument, order_id, direction,
@@ -125,7 +124,7 @@ caf::behavior CtpTrader::make_behavior() {
         delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
       }
     },
-      
+      
       */
   };
 }
