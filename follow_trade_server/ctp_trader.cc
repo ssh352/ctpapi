@@ -66,6 +66,7 @@ void CtpApi::ReqQryInstrumentMarginRate(const std::string& instrument) {
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
   strcpy(field.InstrumentID, instrument.c_str());
+  field.HedgeFlag = THOST_FTDC_HF_Speculation;
   cta_api_->ReqQryInstrumentMarginRate(&field, 0);
 }
 
