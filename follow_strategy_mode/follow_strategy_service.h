@@ -1,11 +1,14 @@
 #ifndef FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
 #define FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
+#include <boost/scoped_ptr.hpp>
+#include "follow_strategy_mode/context.h"
 #include "follow_strategy_mode/defines.h"
 #include "follow_strategy_mode/follow_strategy.h"
-#include "follow_strategy_mode/context.h"
 #include "follow_strategy_mode/order_id_mananger.h"
+#include "follow_strategy_mode/base_follow_stragety_factory.h"
 
-class FollowStragetyService : public FollowStragety::Delegate {
+
+class FollowStragetyService : public BaseFollowStragety::Delegate {
  public:
   class Delegate {
    public:
@@ -26,10 +29,12 @@ class FollowStragetyService : public FollowStragety::Delegate {
     virtual void CancelOrder(const std::string& order_no) = 0;
   };
 
-  FollowStragetyService(const std::string& master_account,
-                        const std::string& slave_account,
-                        Delegate* delegate,
-                        int start_order_id_seq);
+  FollowStragetyService(
+      std::shared_ptr<BaseFollowStragetyFactory> stragety_factory,
+      const std::string& master_account,
+      const std::string& slave_account,
+      Delegate* delegate,
+      int start_order_id_seq);
 
   void InitPositions(const std::string& account_id,
                      std::vector<OrderPosition> quantitys);
@@ -57,7 +62,8 @@ class FollowStragetyService : public FollowStragety::Delegate {
   const Context& context() const;
   const std::string& master_account_id() const;
   const std::string& slave_account_id() const;
-private:
+
+ private:
   enum class StragetyStatus {
     kWaitReply,
     kReady,
@@ -70,7 +76,7 @@ private:
 
   StragetyStatus BeforeHandleOrder(OrderData order);
   Context context_;
-  FollowStragety stragety_;
+  std::unique_ptr<BaseFollowStragety> stragety_;
   Delegate* delegate_;
   std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
   std::deque<OrderData> outstanding_orders_;

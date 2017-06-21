@@ -1,4 +1,5 @@
 #include "follow_strategy_servcie_fixture.h"
+#include "follow_strategy_mode/follow_stragety_factory.h"
 
 const char kMasterAccountID[] = "5000";
 const char kSlaveAccountID[] = "5001";
@@ -217,10 +218,9 @@ FollowStragetyServiceFixture::PushCloseOrderForSlave(
     double price /*= 1234.1*/,
     PositionEffect position_effect /*= PositionEffect::kClose*/) {
   return PushOrderForSlave(order_id, direction, position_effect,
-                            filled_quantity == quantity
-                                ? OrderStatus::kAllFilled
-                                : OrderStatus::kActive,
-                            filled_quantity, quantity, price);
+                           filled_quantity == quantity ? OrderStatus::kAllFilled
+                                                       : OrderStatus::kActive,
+                           filled_quantity, quantity, price);
 }
 
 FollowStragetyServiceFixture::TestRetType
@@ -282,6 +282,7 @@ void FollowStragetyServiceFixture::InitDefaultOrderExchangeId(
 }
 
 void FollowStragetyServiceFixture::InitService(int seq) {
-  service = std::make_unique<FollowStragetyService>(kMasterAccountID,
-                                                    kSlaveAccountID, this, seq);
+  service = std::make_unique<FollowStragetyService>(
+      std::make_shared<FollowStragetyFactory<FollowStragety> >(),
+      kMasterAccountID, kSlaveAccountID, this, seq);
 }
