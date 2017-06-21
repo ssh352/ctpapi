@@ -2,11 +2,11 @@
 
 TEST_F(FollowStragetyServiceSyncFixture, Profolio) {
   service->InitPositions(kMasterAccountID,
-                         {{"ta1709", OrderDirection::kSell, 4}});
+                         {{"1", "ta1709", OrderDirection::kSell, 4}});
   service->InitPositions(kSlaveAccountID,
-                         {{"ta1709", OrderDirection::kSell, 4}});
-  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 4}});
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 4}});
+                         {{"1001", "ta1709", OrderDirection::kSell, 4}});
+  service->InitPositions(kMasterAccountID, {{"2", "abc", OrderDirection::kBuy, 4}});
+  service->InitPositions(kSlaveAccountID, {{"1002", "abc", OrderDirection::kBuy, 4}});
   OpenAndFilledOrder("1001", 10, 10, 10);
 
   PushNewCloseOrderForMaster("1002");

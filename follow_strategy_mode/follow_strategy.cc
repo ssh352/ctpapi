@@ -139,14 +139,14 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
           });
       if (yesterday_quantity > 0) {
         delegate_->CloseOrder(order_data.instrument(),
-                              context_->GenerateOrderId(),
+                              order_data.order_id(),
                               order_data.direction(), PositionEffect::kClose,
                               OrderPriceType::kMarket, 0, yesterday_quantity);
       }
 
       if (today_quantity > 0) {
         delegate_->CloseOrder(
-            order_data.instrument(), context_->GenerateOrderId(),
+            order_data.instrument(), order_data.order_id(),
             order_data.direction(), PositionEffect::kCloseToday,
             OrderPriceType::kMarket, 0, today_quantity);
       }
@@ -157,7 +157,7 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
                                      });
 
       delegate_->CloseOrder(order_data.instrument(),
-                            context_->GenerateOrderId(), order_data.direction(),
+                            order_data.order_id(), order_data.direction(),
                             PositionEffect::kCloseToday,
                             OrderPriceType::kMarket, 0, quantity);
     }

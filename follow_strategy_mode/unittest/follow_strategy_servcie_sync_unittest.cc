@@ -1,8 +1,8 @@
 #include "follow_strategy_mode/unittest/follow_strategy_servcie_sync_fixture.h"
 
 TEST_F(FollowStragetyServiceSyncFixture, CloseYesterdayPosition) {
-  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 10}});
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kMasterAccountID, {{"1", "abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kSlaveAccountID, {{"1001", "abc", OrderDirection::kBuy, 10}});
 
   auto ret = PushNewCloseOrderForMaster("1", OrderDirection::kSell, 10);
   auto order_insert = std::get<0>(ret);
@@ -14,8 +14,8 @@ TEST_F(FollowStragetyServiceSyncFixture, CloseYesterdayPosition) {
 
 TEST_F(FollowStragetyServiceSyncFixture, ClosePositionForSHFECase1) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 10}});
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kMasterAccountID, {{"1","abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kSlaveAccountID, {{"1001","abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1001");
 
   auto ret = PushNewCloseOrderForMaster("1002", OrderDirection::kSell, 10,
@@ -29,8 +29,8 @@ TEST_F(FollowStragetyServiceSyncFixture, ClosePositionForSHFECase1) {
 
 TEST_F(FollowStragetyServiceSyncFixture, ClosePositionForSHFECase2) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 10}});
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kMasterAccountID, {{"1","abc", OrderDirection::kBuy, 10}});
+  service->InitPositions(kSlaveAccountID, {{"1001", "abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1001");
 
   auto ret = PushNewCloseOrderForMaster("1002", OrderDirection::kSell, 10,
@@ -43,7 +43,7 @@ TEST_F(FollowStragetyServiceSyncFixture, ClosePositionForSHFECase2) {
 }
 
 TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase1) {
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 8}});
+  service->InitPositions(kSlaveAccountID, {{"1001", "abc", OrderDirection::kBuy, 8}});
   OpenAndFilledOrder("1001");
 
   {
@@ -67,7 +67,7 @@ TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase1) {
 
 TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase2) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  service->InitPositions(kSlaveAccountID, {{"abc", OrderDirection::kBuy, 8}});
+  service->InitPositions(kSlaveAccountID, {{"1001", "abc", OrderDirection::kBuy, 8}});
   OpenAndFilledOrder("1001");
 
   {
@@ -94,7 +94,7 @@ TEST_F(FollowStragetyServiceSyncFixture, CloseAllPositionCase2) {
 }
 
 TEST_F(FollowStragetyServiceSyncFixture, CancelPartyFillClose) {
-  service->InitPositions(kMasterAccountID, {{"abc", OrderDirection::kBuy, 4}});
+  service->InitPositions(kMasterAccountID, {{"1", "abc", OrderDirection::kBuy, 4}});
   OpenAndFilledOrder("1001", 2, 2, 2);
   {
     auto ret = PushNewCloseOrderForMaster("1002", OrderDirection::kSell, 4);

@@ -8,7 +8,7 @@ FollowStragetyService::FollowStragetyService(const std::string& master_account,
       delegate_(delegate),
       master_account_(master_account),
       slave_account_(slave_account),
-      context_(OrderIdMananger{master_account, start_order_id_seq}) {}
+      context_() {}
 
 void FollowStragetyService::InitPositions(
     const std::string& account_id,
@@ -18,18 +18,17 @@ void FollowStragetyService::InitPositions(
 
 void FollowStragetyService::InitRtnOrders(std::vector<OrderData> orders) {
   for (auto order : orders) {
-    (void)context_.HandlertnOrder(context_.AdjustOrder(order));
+    (void)context_.HandlertnOrder(order);
   }
 }
 
 void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
-  OrderData adjust_order = context_.AdjustOrder(std::move(rtn_order));
-  switch (BeforeHandleOrder(adjust_order)) {
+  switch (BeforeHandleOrder(rtn_order)) {
     case StragetyStatus::kWaitReply:
-      outstanding_orders_.push_back(std::move(adjust_order));
+      outstanding_orders_.push_back(std::move(rtn_order));
       break;
     case StragetyStatus::kReady:
-      DoHandleRtnOrder(std::move(adjust_order));
+      DoHandleRtnOrder(std::move(rtn_order));
       break;
     case StragetyStatus::kSkip:
       break;

@@ -10,7 +10,7 @@
 
 class Context {
  public:
-  Context(OrderIdMananger order_id_mgr);
+  Context();
 
   OrderEventType HandlertnOrder(const OrderData& rtn_order);
 
@@ -52,10 +52,6 @@ class Context {
                       const std::string& instrument,
                       OrderDirection direction) const;
 
-  std::string GenerateOrderId();
-
-  OrderData AdjustOrder(OrderData rtn_order);
-
   void InitPositions(const std::string& account_id,
                      std::vector<OrderPosition> quantitys);
 
@@ -72,7 +68,6 @@ class Context {
   std::vector<std::tuple<std::string, OrderDirection, bool, int> >
   GetUnfillOrders(const std::string& account_id) const;
 
-  OrderIdMananger order_id_mananger_;
   std::map<std::string, OrderManager> account_order_mgr_;
   std::map<std::string, PositionManager> account_position_mgr_;
   std::map<std::string, CloseCorrOrdersManager> account_close_corr_orders_mgr_;
