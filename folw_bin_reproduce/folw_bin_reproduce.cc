@@ -4,8 +4,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include <iostream>
 #include <chrono>
+#include <iostream>
 #include <thread>
 #include "follow_strategy_mode/defines.h"
 #include "follow_strategy_mode/follow_strategy_service.h"
@@ -28,9 +28,9 @@ class DummyServiceDelegate : public FollowStragetyService::Delegate {
     //           quantity
     //           << "\n";
 
-      if (order_no == "1208") {
-        std::cout << "Oops!\n";
-      }
+    if (order_no == "1208") {
+      std::cout << "Oops!\n";
+    }
   }
 
   virtual void CloseOrder(const std::string& instrument,
@@ -56,10 +56,14 @@ int main(int argc, char** argv) {
   std::vector<OrderData> view_orders;
   try {
     std::ifstream file(
-//         "c://Users//yjqpro//Desktop//fd//120350655-20170609-204000.bin",
-         // "c://Users//yjqpro//Desktop//fd//120350655-20170612-083501.bin",
-      // "c://Users//yjqpro//Desktop//fd//120350655-20170609-083501.bin",
-      "c://Users//yjqpro//Desktop//fd//120350655-20170615-113242.bin",
+        //         "c://Users//yjqpro//Desktop//fd//120350655-20170609-204000.bin",
+        // "c://Users//yjqpro//Desktop//fd//120350655-20170612-083501.bin",
+        // "c://Users//yjqpro//Desktop//fd//120350655-20170609-083501.bin",
+         "c:\\Users\\yjqpro\\Desktop\\120350655-20170626-083501.bin",
+//         "c:\\Users\\yjqpro\\Desktop\\120350655-20170626-204000.bin",
+//          "c:\\Users\\yjqpro\\Desktop\\120350655-20170627-083501.bin",
+//         "c:\\Users\\yjqpro\\Desktop\\120350655-20170627-204000.bin",
+//         "c:\\Users\\yjqpro\\Desktop\\120350655-20170628-083501.bin",
         std::ios_base::binary);
     boost::archive::binary_iarchive ia(file);
     std::string account_id;
@@ -99,13 +103,40 @@ int main(int argc, char** argv) {
     }
     follow_strategy_service.InitRtnOrders(orders);
 
-    orders.clear();
+    std::cout << FormatPortfolio(
+                     "120350655",
+                     follow_strategy_service.context().GetAccountPortfolios(
+                         "38030022"),
+                     follow_strategy_service.context().GetAccountPortfolios(
+                         "120350655"),
+                     true)
+              << std::endl;
+
     for (int i = 0; i < 9999; ++i) {
       OrderData order;
       ia >> order;
       view_orders.push_back(order);
-      // if (order.user_product_info() == kStrategyUserProductInfo) {
-      //   order.order_id_ = boost::lexical_cast<std::string>(
+      std::string status;
+      switch (order.status()) {
+        case OrderStatus::kActive:
+          status = "Active";
+          break;
+        case OrderStatus::kAllFilled:
+          status = "AllFilled";
+          break;
+        case OrderStatus::kCancel:
+          status = "Cancel";
+          break;
+        default:
+          status = "Unknow";
+          break;
+      }
+      // csv << order.datetime() << "," << order.account_id() << ","
+      //     << order.instrument() << ","
+      //     << (order.direction() == OrderDirection::kBuy ? "B" : "S") << ","
+      //     << status << "," << order.filled_quantity() << "," <<
+      //     order.quanitty()
+      //     << "," << order.user_product_info() << "\n";
       //       boost::lexical_cast<int>(order.order_id()) + 9000);
       // }
 
@@ -117,26 +148,42 @@ int main(int argc, char** argv) {
       //   std::cout << "Oops!\n";
       // }
 
-      if (order.account_id() == "38030022" && order.order_id() == "1451") {
+      if (order.account_id() == "38030022" && order.datetime() == "09:16:41") {
         std::cout << "Oops! " << order.order_id() << "\n";
       }
-      
 
-      if (order.order_id() == "1208") {
-        std::cout << "Oops!\n";
-      }
+      // if (order.order_id() == "1208") {
+      //   std::cout << "Oops!\n";
+      // }
 
+      // csv << order.datetime() << "\n";
       follow_strategy_service.HandleRtnOrder(std::move(order));
+      // csv << FormatPortfolio(
+      //                  "120350655",
+      //                  follow_strategy_service.context().GetAccountPortfolios(
+      //                      "38030022"),
+      //                  follow_strategy_service.context().GetAccountPortfolios(
+      //                      "120350655"),
+      //                  false)
+      //           << std::endl;
+      // std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
   } catch (boost::archive::archive_exception& err) {
     std::cout << "Done" << err.what() << "\n";
   }
 
+  std::cout << FormatPortfolio(
+      "120350655",
+      follow_strategy_service.context().GetAccountPortfolios("38030022"),
+      follow_strategy_service.context().GetAccountPortfolios("120350655"),
+      true);
   /*
     std::ofstream f("d:\\orders2.csv");
     for (auto order : view_orders) {
-      f << order.account_id() << "," << order.order_id() << "," << order.instrument() << "," << order.datetime() << "<" << order.user_product_info() << "\n";
+      f << order.account_id() << "," << order.order_id() << "," <<
+    order.instrument() << "," << order.datetime() << "<" <<
+    order.user_product_info() << "\n";
     }
   */
 
