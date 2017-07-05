@@ -4,11 +4,10 @@ FollowStragetyService::FollowStragetyService(
     std::shared_ptr<BaseFollowStragetyFactory> stragety_factory,
     const std::string& master_account,
     const std::string& slave_account,
-    Delegate* delegate,
-    int start_order_id_seq)
-    : delegate_(delegate),
-      master_account_(master_account),
-      slave_account_(slave_account) {
+    std::shared_ptr<Delegate> delegate)
+    : master_account_(master_account),
+      slave_account_(slave_account),
+      delegate_(delegate) {
   stragety_.reset(stragety_factory->Create(master_account, slave_account_, this,
                                            &context_));
 }
@@ -74,8 +73,10 @@ void FollowStragetyService::OpenOrder(const std::string& instrument,
                                       double price,
                                       int quantity) {
   Trade(order_no, OrderStatus::kActive);
-  delegate_->OpenOrder(instrument, order_no, direction, price_type, price,
-                       quantity);
+  if (delegate_ != nullptr) {
+    delegate_->OpenOrder(instrument, order_no, direction, price_type, price,
+                         quantity);
+  }
 }
 void FollowStragetyService::CloseOrder(const std::string& instrument,
                                        const std::string& order_no,
@@ -85,8 +86,10 @@ void FollowStragetyService::CloseOrder(const std::string& instrument,
                                        double price,
                                        int quantity) {
   Trade(order_no, OrderStatus::kActive);
-  delegate_->CloseOrder(instrument, order_no, direction, position_effect,
-                        price_type, price, quantity);
+  if (delegate_ != nullptr) {
+    delegate_->CloseOrder(instrument, order_no, direction, position_effect,
+                          price_type, price, quantity);
+  }
 }
 
 const Context& FollowStragetyService::context() const {
@@ -103,7 +106,10 @@ const std::string& FollowStragetyService::slave_account_id() const {
 
 void FollowStragetyService::CancelOrder(const std::string& order_no) {
   Trade(order_no, OrderStatus::kCancel);
-  delegate_->CancelOrder(order_no);
+
+  if (delegate_ != nullptr) {
+    delegate_->CancelOrder(order_no);
+  }
 }
 
 FollowStragetyService::StragetyStatus FollowStragetyService::BeforeHandleOrder(
