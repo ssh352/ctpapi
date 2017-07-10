@@ -1,40 +1,39 @@
 #include "follow_strategy_mode/context.h"
+#include <boost/lexical_cast.hpp>
 #include "follow_strategy_mode/order_util.h"
 
 Context::Context() {}
 
-OrderEventType Context::HandlertnOrder(const OrderData &rtn_order) {
+OrderEventType Context::HandlertnOrder(const OrderData& rtn_order) {
   account_position_mgr_[rtn_order.account_id()].HandleRtnOrder(
       rtn_order, &account_close_corr_orders_mgr_[rtn_order.account_id()]);
 
   return account_order_mgr_[rtn_order.account_id()].HandleRtnOrder(rtn_order);
 }
 
-void Context::InitPositions(const std::string &account_id,
+void Context::InitPositions(const std::string& account_id,
                             std::vector<OrderPosition> positions) {
-  // std::string order_id;
-  // OrderDirection direction;
-  // bool is_today_quantity;
-  // int quantity;
-  // int closeable_quantity;
   for (auto pos : positions) {
+    std::string order_id =
+        pos.instrument +
+        boost::lexical_cast<std::string>(static_cast<int>(pos.order_direction));
     account_position_mgr_[account_id].AddQuantity(
-        pos.instrument, {pos.order_id, pos.order_direction, false,
-                         pos.quantity, pos.quantity});
+        pos.instrument,
+        {order_id, pos.order_direction, false, pos.quantity, pos.quantity});
   }
 }
 
-boost::optional<OrderData>
-Context::GetOrderData(const std::string &account_id,
-                      const std::string &order_no) const {
+boost::optional<OrderData> Context::GetOrderData(
+    const std::string& account_id,
+    const std::string& order_no) const {
   if (account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
     return {};
   }
   return account_order_mgr_.at(account_id).order_data(order_no);
 }
 
-std::vector<AccountPortfolio>
-Context::GetAccountPortfolios(const std::string &account_id) const {
+std::vector<AccountPortfolio> Context::GetAccountPortfolios(
+    const std::string& account_id) const {
   std::vector<AccountPosition> positions = GetAccountPositions(account_id);
   std::vector<std::tuple<std::string, OrderDirection, bool, int>> orders =
       GetUnfillOrders(account_id);
@@ -84,9 +83,9 @@ Context::GetAccountPortfolios(const std::string &account_id) const {
   return protfolios;
 }
 
-std::vector<OrderQuantity>
-Context::GetQuantitys(const std::string &account_id,
-                      std::vector<std::string> orders) const {
+std::vector<OrderQuantity> Context::GetQuantitys(
+    const std::string& account_id,
+    std::vector<std::string> orders) const {
   if (orders.empty()) {
     return {};
   }
@@ -101,10 +100,10 @@ Context::GetQuantitys(const std::string &account_id,
           orders);
 }
 
-std::vector<OrderQuantity>
-Context::GetQuantitysIf(const std::string &account_id,
-                        const std::string &instrument,
-                        std::function<bool(const OrderQuantity &)> cond) const {
+std::vector<OrderQuantity> Context::GetQuantitysIf(
+    const std::string& account_id,
+    const std::string& instrument,
+    std::function<bool(const OrderQuantity&)> cond) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end() ||
       account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
     return {};
@@ -113,7 +112,8 @@ Context::GetQuantitysIf(const std::string &account_id,
 }
 
 int Context::GetCloseableQuantityWithOrderDirection(
-    const std::string &account_id, const std::string &instrument,
+    const std::string& account_id,
+    const std::string& instrument,
     OrderDirection direction) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return 0;
@@ -122,22 +122,22 @@ int Context::GetCloseableQuantityWithOrderDirection(
       .GetCloseableQuantityWithOrderDirection(instrument, direction);
 }
 
-std::vector<std::pair<std::string, int>>
-Context::GetCorrOrderQuantiys(const std::string &account_id,
-                              const std::string &order_id) {
+std::vector<std::pair<std::string, int>> Context::GetCorrOrderQuantiys(
+    const std::string& account_id,
+    const std::string& order_id) {
   return account_close_corr_orders_mgr_[account_id].GetCorrOrderQuantiys(
       order_id);
 }
 
-std::vector<std::string>
-Context::GetCloseCorrOrderIds(const std::string &account_id,
-                              const std::string &order_id) {
+std::vector<std::string> Context::GetCloseCorrOrderIds(
+    const std::string& account_id,
+    const std::string& order_id) {
   return account_close_corr_orders_mgr_[account_id].GetCloseCorrOrderIds(
       order_id);
 }
 
-int Context::ActiveOrderCount(const std::string &account_id,
-                              const std::string &instrument,
+int Context::ActiveOrderCount(const std::string& account_id,
+                              const std::string& instrument,
                               OrderDirection direction) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return 0;
@@ -146,10 +146,10 @@ int Context::ActiveOrderCount(const std::string &account_id,
       .ActiveOrderCount(instrument, direction);
 }
 
-std::vector<std::string>
-Context::ActiveOrderIds(const std::string &account_id,
-                        const std::string &instrument,
-                        OrderDirection direction) const {
+std::vector<std::string> Context::ActiveOrderIds(
+    const std::string& account_id,
+    const std::string& instrument,
+    OrderDirection direction) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return {};
   }
@@ -157,16 +157,16 @@ Context::ActiveOrderIds(const std::string &account_id,
       .ActiveOrderIds(instrument, direction);
 }
 
-bool Context::IsActiveOrder(const std::string &slave_account_id,
-                            const std::string &order_id) const {
+bool Context::IsActiveOrder(const std::string& slave_account_id,
+                            const std::string& order_id) const {
   if (account_order_mgr_.find(slave_account_id) == account_order_mgr_.end()) {
     return false;
   }
   return account_order_mgr_.at(slave_account_id).IsActiveOrder(order_id);
 }
 
-int Context::GetCloseableQuantity(const std::string &account_id,
-                                  const std::string &order_id) const {
+int Context::GetCloseableQuantity(const std::string& account_id,
+                                  const std::string& order_id) const {
   // account_close_corr_orders_mgr_
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return 0;
@@ -176,8 +176,8 @@ int Context::GetCloseableQuantity(const std::string &account_id,
       .GetCloseableQuantityWithInstrument(order_id);
 }
 
-bool Context::IsOppositeOpen(const std::string &account_id,
-                             const std::string &instrument,
+bool Context::IsOppositeOpen(const std::string& account_id,
+                             const std::string& instrument,
                              OrderDirection direction) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return false;
@@ -187,8 +187,8 @@ bool Context::IsOppositeOpen(const std::string &account_id,
                  instrument, OppositeOrderDirection(direction)) != 0;
 }
 
-std::vector<AccountPosition>
-Context::GetAccountPositions(const std::string &account_id) const {
+std::vector<AccountPosition> Context::GetAccountPositions(
+    const std::string& account_id) const {
   if (account_position_mgr_.find(account_id) == account_position_mgr_.end()) {
     return {};
   }
@@ -196,7 +196,7 @@ Context::GetAccountPositions(const std::string &account_id) const {
 }
 
 std::vector<std::tuple<std::string, OrderDirection, bool, int>>
-Context::GetUnfillOrders(const std::string &account_id) const {
+Context::GetUnfillOrders(const std::string& account_id) const {
   if (account_order_mgr_.find(account_id) == account_order_mgr_.end()) {
     return {};
   }

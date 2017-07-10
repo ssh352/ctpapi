@@ -1,5 +1,7 @@
 #ifndef FOLLOW_STRATEGY_MODE_FOLLOW_STRAGETY_FACTORY_H
 #define FOLLOW_STRATEGY_MODE_FOLLOW_STRAGETY_FACTORY_H
+#include "follow_strategy_mode/base_follow_stragety.h"
+
 
 template <class T>
 class FollowStragetyFactory : public BaseFollowStragetyFactory {

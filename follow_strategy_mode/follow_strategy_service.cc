@@ -14,8 +14,8 @@ FollowStragetyService::FollowStragetyService(
 
 void FollowStragetyService::InitPositions(
     const std::string& account_id,
-    std::vector<OrderPosition> quantitys) {
-  context_.InitPositions(account_id, quantitys);
+    std::vector<OrderPosition> positions) {
+  context_.InitPositions(account_id, std::move(positions));
 }
 
 void FollowStragetyService::InitRtnOrders(std::vector<OrderData> orders) {

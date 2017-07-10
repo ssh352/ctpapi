@@ -119,7 +119,6 @@ struct CorrOrderQuantity {
 };
 
 struct OrderPosition {
-  std::string order_id;
   std::string instrument;
   OrderDirection order_direction;
   int quantity;

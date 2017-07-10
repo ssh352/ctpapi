@@ -30,13 +30,13 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
   };
 
   FollowStragetyService(
-    std::shared_ptr<BaseFollowStragetyFactory> stragety_factory,
-    const std::string& master_account,
-    const std::string& slave_account,
-    std::shared_ptr<Delegate> delegate);
+      std::shared_ptr<BaseFollowStragetyFactory> stragety_factory,
+      const std::string& master_account,
+      const std::string& slave_account,
+      std::shared_ptr<Delegate> delegate);
 
   void InitPositions(const std::string& account_id,
-                     std::vector<OrderPosition> quantitys);
+                     std::vector<OrderPosition> positions);
 
   void InitRtnOrders(std::vector<OrderData> orders);
 
@@ -58,6 +58,7 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
                           OrderPriceType price_type,
                           double price,
                           int quantity) override;
+
   const Context& context() const;
   const std::string& master_account_id() const;
   const std::string& slave_account_id() const;
