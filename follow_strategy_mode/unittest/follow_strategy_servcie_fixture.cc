@@ -284,16 +284,9 @@ FollowStragetyServiceFixture::PopOrderEffectForTest() {
 }
 
 void FollowStragetyServiceFixture::SetUp() {
-  InitService(1);
 }
 
 void FollowStragetyServiceFixture::InitDefaultOrderExchangeId(
     std::string exchange_id) {
   default_order_exchange_id_ = std::move(exchange_id);
-}
-
-void FollowStragetyServiceFixture::InitService(int seq) {
-  // service = std::make_unique<FollowStragetyDispatch>(
-  //     std::make_shared<FollowStragetyFactory<FollowStragety> >(),
-  //     kMasterAccountID, kSlaveAccountID, this, seq);
 }

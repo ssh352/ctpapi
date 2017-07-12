@@ -15,7 +15,7 @@ OrderEventType OrdersContext::HandleRtnOrder(const OrderData& rtn_order) {
 void OrdersContext::InitPositions(std::vector<OrderPosition> positions) {
   for (auto pos : positions) {
     std::string order_id =
-        pos.instrument +
+        "0" + pos.instrument +
         boost::lexical_cast<std::string>(static_cast<int>(pos.order_direction));
     account_position_mgr_.AddQuantity(
         pos.instrument,

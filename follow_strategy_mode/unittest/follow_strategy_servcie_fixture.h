@@ -45,7 +45,6 @@ class FollowStragetyServiceFixture : public testing::Test,
 
  protected:
   void InitDefaultOrderExchangeId(std::string exchange_id);
-  void InitService(int seq);
 
   OrderInsertForTest PopOrderInsert();
 
