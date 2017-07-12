@@ -282,7 +282,7 @@ void FollowStragetyServiceFixture::InitDefaultOrderExchangeId(
 }
 
 void FollowStragetyServiceFixture::InitService(int seq) {
-  service = std::make_unique<FollowStragetyService>(
+  service = std::make_unique<FollowStragetyDispatch>(
       std::make_shared<FollowStragetyFactory<FollowStragety> >(),
       kMasterAccountID, kSlaveAccountID, this, seq);
 }

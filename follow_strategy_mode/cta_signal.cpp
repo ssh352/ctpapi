@@ -1,19 +1,25 @@
-#include "follow_strategy_mode/follow_strategy.h"
-#include "follow_strategy_mode/order_util.h"
-#include "follow_strategy_mode/string_util.h"
+#include "cta_signal.h"
+#include "string_util.h"
+#include "order_util.h"
 
-FollowStragety::FollowStragety(const std::string& master_account_id,
-                               const std::string& slave_account_id,
-                               Delegate* delegate,
-                               std::shared_ptr<OrdersContext> master_context,
-                               std::shared_ptr<OrdersContext> slave_context)
-    : delegate_(delegate),
-      master_account_id_(master_account_id),
-      slave_account_id_(slave_account_id),
-      master_context_(master_context),
-      slave_context_(slave_context) {}
 
-void FollowStragety::HandleOpening(const OrderData& order_data) {
+// CTASignal::CTASignal(const std::string& master_account_id,
+//                      const std::string& slave_account_id,
+//                      Delegate* delegate,
+//                      std::shared_ptr<OrdersContext> master_context,
+//                      std::shared_ptr<OrdersContext> slave_context)
+//     : delegate_(delegate),
+//       master_account_id_(master_account_id),
+//       slave_account_id_(slave_account_id),
+//       master_context_(master_context),
+//       slave_context_(slave_context) {}
+
+
+void CTASignal::SetObserver(EnterOrderObserver* observer) {
+  observer_ = observer;
+}
+
+void CTASignal::HandleOpening(const OrderData& order_data) {
   if (order_data.account_id_ != master_account_id_) {
     return;
   }
@@ -31,7 +37,7 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
     if (master_quantity == order_data.quanitty()) {
       if (slave_quantity > 0) {
         // Fully lock
-        delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+        observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
                              order_data.direction(), OrderPriceType::kLimit,
                              order_data.price(), slave_quantity);
       }
@@ -45,22 +51,22 @@ void FollowStragety::HandleOpening(const OrderData& order_data) {
         for (auto order_id : slave_context_->ActiveOrderIds(
                  order_data.instrument(),
                  OppositeOrderDirection(order_data.direction()))) {
-          delegate_->CancelOrder(order_id);
+          observer_->CancelOrder(order_id);
         }
       }
     } else {
-      delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+      observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
                            order_data.direction(), OrderPriceType::kLimit,
                            order_data.price(), order_data.quanitty());
     }
   } else {
-    delegate_->OpenOrder(order_data.instrument(), order_data.order_id(),
+    observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
                          order_data.direction(), OrderPriceType::kLimit,
                          order_data.price(), order_data.quanitty());
   }
 }
 
-void FollowStragety::HandleCloseing(const OrderData& order_data) {
+void CTASignal::HandleCloseing(const OrderData& order_data) {
   if (order_data.account_id() != master_account_id_) {
     return;
   }
@@ -86,29 +92,29 @@ void FollowStragety::HandleCloseing(const OrderData& order_data) {
 
     if (!master_context_->IsActiveOrder(master_corr_quantity.first) &&
         slave_context_->IsActiveOrder(master_corr_quantity.first)) {
-      delegate_->CancelOrder(master_corr_quantity.first);
+      observer_->CancelOrder(master_corr_quantity.first);
     }
   }
 
   if (close_quantity > 0) {
-    delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
+    observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                           order_data.direction(), order_data.position_effect(),
                           OrderPriceType::kLimit, order_data.price(),
                           close_quantity);
   }
 }
 
-void FollowStragety::HandleCanceled(const OrderData& order_data) {
+void CTASignal::HandleCanceled(const OrderData& order_data) {
   if (order_data.account_id() != master_account_id_) {
     return;
   }
 
   if (slave_context_->IsActiveOrder(order_data.order_id())) {
-    delegate_->CancelOrder(order_data.order_id());
+    observer_->CancelOrder(order_data.order_id());
   }
 }
 
-void FollowStragety::HandleClosed(const OrderData& order_data) {
+void CTASignal::HandleClosed(const OrderData& order_data) {
   if (order_data.account_id() != master_account_id_) {
     return;
   }
@@ -138,13 +144,13 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
                        : val;
           });
       if (yesterday_quantity > 0) {
-        delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
+        observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                               order_data.direction(), PositionEffect::kClose,
                               OrderPriceType::kMarket, 0, yesterday_quantity);
       }
 
       if (today_quantity > 0) {
-        delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
+        observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                               order_data.direction(),
                               PositionEffect::kCloseToday,
                               OrderPriceType::kMarket, 0, today_quantity);
@@ -155,7 +161,7 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
                                        return val + quantity.closeable_quantity;
                                      });
 
-      delegate_->CloseOrder(order_data.instrument(), order_data.order_id(),
+      observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                             order_data.direction(), PositionEffect::kCloseToday,
                             OrderPriceType::kMarket, 0, quantity);
     }
@@ -163,4 +169,4 @@ void FollowStragety::HandleClosed(const OrderData& order_data) {
   //  delegate_->CloseOrder(order_data.Instrument())
 }
 
-void FollowStragety::HandleOpened(const OrderData& rtn_order) {}
+void CTASignal::HandleOpened(const OrderData& rtn_order) {}

@@ -1,16 +1,16 @@
-#include "follow_stragety_run.h"
+#include "FollowStragetyService.h"
 #include <boost/lexical_cast.hpp>
 
-void FollowStrategyRun::Setup() {}
+void FollowStragetyService::Setup() {}
 
-void FollowStrategyRun::InitMasterPositions(
+void FollowStragetyService::InitMasterPositions(
     std::vector<OrderPosition> positions) {
   for (auto stragety : stragetys_) {
     stragety.second->InitPositions(master_account_id_, positions);
   }
 }
 
-void FollowStrategyRun::InitStragetyPositions(
+void FollowStragetyService::InitStragetyPositions(
     const std::string& stragety_id,
     std::vector<OrderPosition> positions) {
   if (stragetys_.find(stragety_id) != stragetys_.end()) {
@@ -19,7 +19,7 @@ void FollowStrategyRun::InitStragetyPositions(
   
 }
 
-void FollowStrategyRun::HandleRtnOrder(OrderData rtn_order) {
+void FollowStragetyService::HandleRtnOrder(OrderData rtn_order) {
   if (rtn_order.account_id() != master_account_id_) {
     auto it = stragety_order_.right.find(rtn_order.order_id());
     if (it != stragety_order_.right.end()) {
@@ -33,13 +33,9 @@ void FollowStrategyRun::HandleRtnOrder(OrderData rtn_order) {
       it->second->HandleRtnOrder(std::move(rtn_order));
     }
   }
-
-  // std::string instrument;
-  // OrderDirection order_direction;
-  // int quantity;
 }
 
-void FollowStrategyRun::OpenOrder(const std::string& stragety_id,
+void FollowStragetyService::OpenOrder(const std::string& stragety_id,
                                   const std::string& instrument,
                                   const std::string& order_no,
                                   OrderDirection direction,
@@ -54,7 +50,7 @@ void FollowStrategyRun::OpenOrder(const std::string& stragety_id,
                        price, quantity);
 }
 
-void FollowStrategyRun::CloseOrder(const std::string& stragety_id,
+void FollowStragetyService::CloseOrder(const std::string& stragety_id,
                                    const std::string& instrument,
                                    const std::string& order_no,
                                    OrderDirection direction,
@@ -70,7 +66,7 @@ void FollowStrategyRun::CloseOrder(const std::string& stragety_id,
                         price_type, price, quantity);
 }
 
-void FollowStrategyRun::CancelOrder(const std::string& stragety_id,
+void FollowStragetyService::CancelOrder(const std::string& stragety_id,
                                     const std::string& order_no) {
   auto it = stragety_order_.left.find(StragetyOrder{stragety_id, order_no});
   if (it != stragety_order_.left.end()) {

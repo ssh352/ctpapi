@@ -2,7 +2,7 @@
 #define _BASE_FOLLOW_STRAGETY_H
 #include "follow_strategy_mode/defines.h"
 
-class Context;
+class OrdersContext;
 class BaseFollowStragety {
  public:
   class Delegate {

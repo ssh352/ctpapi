@@ -9,7 +9,7 @@ class FollowStragetyFactory : public BaseFollowStragetyFactory {
   virtual BaseFollowStragety* Create(const std::string& master_account_id,
                                      const std::string& slave_account_id,
                                      BaseFollowStragety::Delegate* delegate,
-                                     Context* context) override {
+                                     OrdersContext* context) override {
     return new T(master_account_id, slave_account_id, delegate, context);
   }
 };

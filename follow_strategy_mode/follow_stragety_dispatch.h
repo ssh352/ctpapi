@@ -1,13 +1,13 @@
-#ifndef FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
-#define FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
+#ifndef FOLLOW_TRADE_FOLLOW_STRAGETY_DISPATCH_H
+#define FOLLOW_TRADE_FOLLOW_STRAGETY_DISPATCH_H
 #include <boost/scoped_ptr.hpp>
 #include "follow_strategy_mode/base_follow_stragety_factory.h"
-#include "follow_strategy_mode/context.h"
 #include "follow_strategy_mode/defines.h"
 #include "follow_strategy_mode/follow_strategy.h"
 #include "follow_strategy_mode/order_id_mananger.h"
+#include "follow_strategy_mode/orders_context.h"
 
-class FollowStragetyService : public BaseFollowStragety::Delegate {
+class FollowStragetyDispatch : public BaseFollowStragety::Delegate {
  public:
   class Delegate {
    public:
@@ -17,6 +17,7 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
                            OrderPriceType price_type,
                            double price,
                            int quantity) = 0;
+
 
     virtual void CloseOrder(const std::string& instrument,
                             const std::string& order_no,
@@ -29,16 +30,12 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
     virtual void CancelOrder(const std::string& order_no) = 0;
   };
 
-  FollowStragetyService(
-      std::shared_ptr<BaseFollowStragetyFactory> stragety_factory,
-      const std::string& master_account,
-      const std::string& slave_account,
-      std::shared_ptr<Delegate> delegate);
-
-  void InitPositions(const std::string& account_id,
-                     std::vector<OrderPosition> positions);
-
-  void InitRtnOrders(std::vector<OrderData> orders);
+  FollowStragetyDispatch(const std::string& master_account,
+                         const std::string& slave_account,
+                         std::shared_ptr<BaseFollowStragety> stragety,
+                         std::shared_ptr<Delegate> delegate,
+                         std::shared_ptr<OrdersContext> master_context,
+                         std::shared_ptr<OrdersContext> slave_context);
 
   void HandleRtnOrder(OrderData rtn_order);
 
@@ -59,8 +56,8 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
                           double price,
                           int quantity) override;
 
-  const Context& context() const;
   const std::string& master_account_id() const;
+
   const std::string& slave_account_id() const;
 
  private:
@@ -75,13 +72,24 @@ class FollowStragetyService : public BaseFollowStragety::Delegate {
   void DoHandleRtnOrder(OrderData rtn_order);
 
   StragetyStatus BeforeHandleOrder(OrderData order);
-  Context context_;
-  std::unique_ptr<BaseFollowStragety> stragety_;
+
+  OrderEventType OrdersContextHandleRtnOrder(OrderData order);
+
+  std::shared_ptr<OrdersContext> master_context_;
+
+  std::shared_ptr<OrdersContext> slave_context_;
+
   std::shared_ptr<Delegate> delegate_;
+
   std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
+
   std::deque<OrderData> outstanding_orders_;
+
+  std::shared_ptr<BaseFollowStragety> stragety_;
+
   std::string master_account_;
+
   std::string slave_account_;
 };
 
-#endif  // FOLLOW_TRADE_FOLLOW_strategy_SERVICE_H
+#endif  // FOLLOW_TRADE_FOLLOW_STRAGETY_DISPATCH_H
