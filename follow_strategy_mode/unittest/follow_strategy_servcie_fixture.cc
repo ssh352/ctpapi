@@ -1,5 +1,5 @@
 #include "follow_strategy_servcie_fixture.h"
-#include "follow_strategy_mode/follow_stragety_factory.h"
+
 
 const char kMasterAccountID[] = "5000";
 const char kSlaveAccountID[] = "5001";
