@@ -1,7 +1,12 @@
 #include "cta_signal.h"
-#include "string_util.h"
 #include "order_util.h"
+#include "string_util.h"
 
+void CTASignal::SetOrdersContext(OrdersContext* master_context,
+                                 OrdersContext* slave_context) {
+  master_context_ = master_context;
+  slave_context_ = slave_context;
+}
 
 // CTASignal::CTASignal(const std::string& master_account_id,
 //                      const std::string& slave_account_id,
@@ -9,18 +14,17 @@
 //                      std::shared_ptr<OrdersContext> master_context,
 //                      std::shared_ptr<OrdersContext> slave_context)
 //     : delegate_(delegate),
-//       master_account_id_(master_account_id),
+//       master_context_->account_id()(master_account_id),
 //       slave_account_id_(slave_account_id),
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
-
 
 void CTASignal::SetObserver(EnterOrderObserver* observer) {
   observer_ = observer;
 }
 
 void CTASignal::HandleOpening(const OrderData& order_data) {
-  if (order_data.account_id_ != master_account_id_) {
+  if (order_data.account_id_ != master_context_->account_id()) {
     return;
   }
   if (master_context_->IsOppositeOpen(order_data.instrument(),
@@ -67,7 +71,7 @@ void CTASignal::HandleOpening(const OrderData& order_data) {
 }
 
 void CTASignal::HandleCloseing(const OrderData& order_data) {
-  if (order_data.account_id() != master_account_id_) {
+  if (order_data.account_id() != master_context_->account_id()) {
     return;
   }
 
@@ -105,7 +109,7 @@ void CTASignal::HandleCloseing(const OrderData& order_data) {
 }
 
 void CTASignal::HandleCanceled(const OrderData& order_data) {
-  if (order_data.account_id() != master_account_id_) {
+  if (order_data.account_id() != master_context_->account_id()) {
     return;
   }
 
@@ -115,7 +119,7 @@ void CTASignal::HandleCanceled(const OrderData& order_data) {
 }
 
 void CTASignal::HandleClosed(const OrderData& order_data) {
-  if (order_data.account_id() != master_account_id_) {
+  if (order_data.account_id() != master_context_->account_id()) {
     return;
   }
 

@@ -3,8 +3,8 @@
 CTASignalDispatch::CTASignalDispatch(CTASignalObserver* signal_observer)
     : signal_observer_(signal_observer) {}
 
-void CTASignalDispatch::SubscribeEnterOrderObserver(EnterOrderObserver* observer)
-{
+void CTASignalDispatch::SubscribeEnterOrderObserver(
+    EnterOrderObserver* observer) {
   enter_order_observer_ = observer;
 }
 
@@ -59,34 +59,34 @@ void CTASignalDispatch::DoHandleRtnOrder(OrderData rtn_order) {
   }
 }
 
-void CTASignalDispatch::Trade(const std::string& order_no,
-                                   OrderStatus status) {
+void CTASignalDispatch::Trade(const std::string& order_no, OrderStatus status) {
   waiting_reply_order_.emplace_back(order_no, status);
 }
 
 void CTASignalDispatch::OpenOrder(const std::string& instrument,
-                                       const std::string& order_no,
-                                       OrderDirection direction,
-                                       OrderPriceType price_type,
-                                       double price,
-                                       int quantity) {
+                                  const std::string& order_no,
+                                  OrderDirection direction,
+                                  OrderPriceType price_type,
+                                  double price,
+                                  int quantity) {
   Trade(order_no, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->OpenOrder(instrument, order_no, direction, price_type, price,
-                         quantity);
+    enter_order_observer_->OpenOrder(instrument, order_no, direction,
+                                     price_type, price, quantity);
   }
 }
 void CTASignalDispatch::CloseOrder(const std::string& instrument,
-                                        const std::string& order_no,
-                                        OrderDirection direction,
-                                        PositionEffect position_effect,
-                                        OrderPriceType price_type,
-                                        double price,
-                                        int quantity) {
+                                   const std::string& order_no,
+                                   OrderDirection direction,
+                                   PositionEffect position_effect,
+                                   OrderPriceType price_type,
+                                   double price,
+                                   int quantity) {
   Trade(order_no, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->CloseOrder(instrument, order_no, direction, position_effect,
-                          price_type, price, quantity);
+    enter_order_observer_->CloseOrder(instrument, order_no, direction,
+                                      position_effect, price_type, price,
+                                      quantity);
   }
 }
 
@@ -98,12 +98,19 @@ void CTASignalDispatch::CancelOrder(const std::string& order_no) {
   }
 }
 
-CTASignalDispatch::StragetyStatus
-CTASignalDispatch::BeforeHandleOrder(OrderData order) {
+void CTASignalDispatch::SetOrdersContext(OrdersContext* master_context,
+                                         OrdersContext* slave_context) {
+  master_context_ = master_context;
+  slave_context_ = slave_context;
+}
+
+CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
+    OrderData order) {
   StragetyStatus status = waiting_reply_order_.empty()
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
-  if (!waiting_reply_order_.empty() && order.account_id() == slave_account_) {
+  if (!waiting_reply_order_.empty() &&
+      order.account_id() == slave_context_->account_id()) {
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
                      [&](auto i) { return i.first == order.order_id(); });
@@ -129,9 +136,8 @@ CTASignalDispatch::BeforeHandleOrder(OrderData order) {
   return status;
 }
 
-OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(
-    OrderData order) {
-  return order.account_id() == master_account_
+OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(OrderData order) {
+  return order.account_id() == master_context_->account_id()
              ? master_context_->HandleRtnOrder(order)
              : slave_context_->HandleRtnOrder(order);
 }

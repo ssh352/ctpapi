@@ -1,12 +1,11 @@
 #ifndef FOLLOW_STRATEGY_MODE_CTA_SIGNAL_DISPATCH_H
 #define FOLLOW_STRATEGY_MODE_CTA_SIGNAL_DISPATCH_H
 #include "cta_sigle_observer.h"
-#include "orders_context.h"
 #include "enter_order_observer.h"
+#include "orders_context.h"
 #include "rtn_order_observer.h"
 
-class CTASignalDispatch : public EnterOrderObserver,
-                          public RtnOrderObserver {
+class CTASignalDispatch : public EnterOrderObserver, public RtnOrderObserver {
  public:
   CTASignalDispatch(CTASignalObserver* signal_observer);
 
@@ -33,6 +32,9 @@ class CTASignalDispatch : public EnterOrderObserver,
 
   virtual void CancelOrder(const std::string& order_no) override;
 
+  void SetOrdersContext(OrdersContext* master_context,
+                        OrdersContext* slave_context);
+
  private:
   enum class StragetyStatus {
     kWaitReply,
@@ -51,11 +53,6 @@ class CTASignalDispatch : public EnterOrderObserver,
   std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
 
   std::deque<OrderData> outstanding_orders_;
-
-  std::string master_account_;
-
-  std::string slave_account_;
-
   CTASignalObserver* signal_observer_;
   EnterOrderObserver* enter_order_observer_;
   OrdersContext* master_context_;

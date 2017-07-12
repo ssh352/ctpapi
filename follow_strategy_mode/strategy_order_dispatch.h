@@ -1,9 +1,9 @@
 #ifndef FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #define FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #include <boost/bimap.hpp>
+#include "enter_order_observer.h"
 #include "rtn_order_observer.h"
 #include "strategy_enter_order_observable.h"
-#include "enter_order_observer.h"
 class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
                               public RtnOrderObserver {
  public:
@@ -30,6 +30,10 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   virtual void RtnOrder(OrderData order) override;
 
   void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
+
+  void SubscribeRtnOrderObserver(const std::string& account_id,
+                                 RtnOrderObserver* observer);
+
  private:
   struct StragetyOrder {
     std::string strategy_id;
@@ -43,7 +47,7 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   typedef boost::bimap<StragetyOrder, std::string> StragetyOrderBiMap;
   StragetyOrderBiMap stragety_orders_;
   EnterOrderObserver* enter_order_;
-  std::map<std::string, RtnOrderObserver*> stragetys_;
+  std::map<std::string, RtnOrderObserver*> rtn_order_observers_;
 };
 
 #endif  // FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H

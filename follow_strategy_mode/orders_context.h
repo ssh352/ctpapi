@@ -10,7 +10,7 @@
 
 class OrdersContext {
  public:
-  OrdersContext();
+  OrdersContext(std::string account_id);
 
   OrderEventType HandleRtnOrder(const OrderData& rtn_order);
 
@@ -48,6 +48,7 @@ class OrdersContext {
 
   std::vector<AccountPortfolio> GetAccountPortfolios() const;
 
+  const std::string& account_id() const;
  private:
   std::vector<AccountPosition> GetAccountPositions() const;
 
@@ -57,6 +58,7 @@ class OrdersContext {
   OrderManager account_order_mgr_;
   PositionManager account_position_mgr_;
   CloseCorrOrdersManager account_close_corr_orders_mgr_;
+  std::string account_id_;
 };
 
 #endif  // FOLLOW_TRADE_ORDERS_CONTEXT_H

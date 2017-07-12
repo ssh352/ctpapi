@@ -2,7 +2,8 @@
 #include <boost/lexical_cast.hpp>
 #include "follow_strategy_mode/order_util.h"
 
-OrdersContext::OrdersContext() {}
+OrdersContext::OrdersContext(std::string account_id)
+    : account_id_(std::move(account_id)) {}
 
 OrderEventType OrdersContext::HandleRtnOrder(const OrderData& rtn_order) {
   account_position_mgr_.HandleRtnOrder(rtn_order,
@@ -77,6 +78,10 @@ std::vector<AccountPortfolio> OrdersContext::GetAccountPortfolios() const {
   return protfolios;
 }
 
+const std::string& OrdersContext::account_id() const {
+  return account_id_;
+}
+
 std::vector<OrderQuantity> OrdersContext::GetQuantitys(
     std::vector<std::string> orders) const {
   if (orders.empty()) {
@@ -111,7 +116,7 @@ std::vector<std::string> OrdersContext::GetCloseCorrOrderIds(
 }
 
 int OrdersContext::ActiveOrderCount(const std::string& instrument,
-                              OrderDirection direction) const {
+                                    OrderDirection direction) const {
   return account_order_mgr_.ActiveOrderCount(instrument, direction);
 }
 
@@ -130,7 +135,7 @@ int OrdersContext::GetCloseableQuantity(const std::string& order_id) const {
 }
 
 bool OrdersContext::IsOppositeOpen(const std::string& instrument,
-                             OrderDirection direction) const {
+                                   OrderDirection direction) const {
   return account_position_mgr_.GetCloseableQuantityWithOrderDirection(
              instrument, OppositeOrderDirection(direction)) != 0;
 }

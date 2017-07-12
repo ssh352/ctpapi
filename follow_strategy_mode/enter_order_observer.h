@@ -1,5 +1,6 @@
 #ifndef FOLLOW_STRATEGY_MODE_ENTER_ORDER_OBSERVER_H
 #define FOLLOW_STRATEGY_MODE_ENTER_ORDER_OBSERVER_H
+#include "defines.h"
 
 class EnterOrderObserver {
  public:

@@ -9,7 +9,7 @@ void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
                                       double price,
                                       int quantity) {
   std::string adjust_order_no =
-      boost::lexical_cast<std::string>(stragety_orders_.size());
+      boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
   enter_order_->OpenOrder(instrument, adjust_order_no, direction, price_type,
@@ -25,7 +25,7 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
                                        double price,
                                        int quantity) {
   std::string adjust_order_no =
-      boost::lexical_cast<std::string>(stragety_orders_.size());
+      boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
   enter_order_->CloseOrder(instrument, adjust_order_no, direction,
@@ -44,7 +44,7 @@ void StrategyOrderDispatch::RtnOrder(OrderData order) {
   auto it = stragety_orders_.right.find(order.order_id());
   if (it != stragety_orders_.right.end()) {
     order.order_id_ = it->second.order_id;
-    stragetys_[it->second.strategy_id]->RtnOrder(std::move(order));
+    rtn_order_observers_[it->second.strategy_id]->RtnOrder(std::move(order));
   } else {
     // Exception or maybe muanul control
   }
@@ -53,4 +53,12 @@ void StrategyOrderDispatch::RtnOrder(OrderData order) {
 void StrategyOrderDispatch::SubscribeEnterOrderObserver(
     EnterOrderObserver* observer) {
   enter_order_ = observer;
+}
+
+void StrategyOrderDispatch::SubscribeRtnOrderObserver(
+    const std::string& account_id,
+    RtnOrderObserver* observer) {
+  if (rtn_order_observers_.find(account_id) == rtn_order_observers_.end()) {
+    rtn_order_observers_.insert({account_id, observer});
+  }
 }

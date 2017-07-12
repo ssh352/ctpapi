@@ -29,12 +29,5 @@ class TestDispatchEnterOrder : public EnterOrderObserver {
 };
 
 TEST(CTAStrategyTest, FirstTest) {
-  CTASignal signal;
-  CTASignalDispatch signal_dispath(&signal);
-  CTAGenericStrategy cta_strategy;
-  StrategyOrderDispatch strategy_dispatch;
-  cta_strategy.Subscribe(&strategy_dispatch);
-  signal_dispath.SubscribeEnterOrderObserver(&cta_strategy);
-  TestDispatchEnterOrder test_dispatch_enter_order;
-  strategy_dispatch.SubscribeEnterOrderObserver(&test_dispatch_enter_order);
+
 }

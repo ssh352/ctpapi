@@ -1,11 +1,13 @@
 #ifndef FOLLOW_STRATEGY_MODE_CTA_GENERIC_STRATEGY_H
 #define FOLLOW_STRATEGY_MODE_CTA_GENERIC_STRATEGY_H
-#include "strategy_enter_order_observable.h"
 #include "enter_order_observer.h"
+#include "strategy_enter_order_observable.h"
 
 class CTAGenericStrategy : public StrategyEnterOrderObservable,
                            public EnterOrderObserver {
  public:
+  CTAGenericStrategy(std::string strategy_id);
+
   virtual void Subscribe(
       StrategyEnterOrderObservable::Observer* observer) override;
 

@@ -4,7 +4,19 @@
 const char kMasterAccountID[] = "5000";
 const char kSlaveAccountID[] = "5001";
 
-FollowStragetyServiceFixture::FollowStragetyServiceFixture() {}
+FollowStragetyServiceFixture::FollowStragetyServiceFixture()
+    : signal_dispatch_(&signal_),
+      master_context_(kMasterAccountID),
+      slave_context_(kSlaveAccountID),
+      cta_strategy_("0") {
+  signal_dispatch_.SetOrdersContext(&master_context_, &slave_context_);
+  signal_.SetOrdersContext(&master_context_, &slave_context_);
+  signal_.SetObserver(&signal_dispatch_);
+  cta_strategy_.Subscribe(&strategy_dispatch_);
+  signal_dispatch_.SubscribeEnterOrderObserver(&cta_strategy_);
+  strategy_dispatch_.SubscribeEnterOrderObserver(this);
+  strategy_dispatch_.SubscribeRtnOrderObserver("0", &signal_dispatch_);
+}
 
 void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
                                               const std::string& order_no,
@@ -102,7 +114,7 @@ FollowStragetyServiceFixture::PushOpenOrderForMaster(
     const std::string& order_id,
     int quantity /*= 10*/,
     OrderDirection direction /*= OrderDirection::kBuy*/) {
-  service->HandleRtnOrder(
+  signal_dispatch_.RtnOrder(
       MakeMasterOrderData(order_id, direction, PositionEffect::kOpen,
                           OrderStatus::kActive, 0, quantity));
 
@@ -114,10 +126,9 @@ FollowStragetyServiceFixture::PushOpenOrderForSlave(
     const std::string& order_id,
     int quantity /*= 10*/,
     OrderDirection direction /*= OrderDirection::kBuy*/) {
-  service->HandleRtnOrder(
+  strategy_dispatch_.RtnOrder(
       MakeSlaveOrderData(order_id, direction, PositionEffect::kOpen,
                          OrderStatus::kActive, 0, quantity));
-
   return PopOrderEffectForTest();
 }
 
@@ -137,14 +148,14 @@ void FollowStragetyServiceFixture::OpenAndFilledOrder(
     OrderDirection direction /*= OrderDirection::kBuy*/) {
   PushOpenOrder(order_id, quantity, direction);
 
-  service->HandleRtnOrder(MakeMasterOrderData(
+  signal_dispatch_.RtnOrder(MakeMasterOrderData(
       order_id, direction, PositionEffect::kOpen,
       master_filled_quantity == quantity ? OrderStatus::kAllFilled
                                          : OrderStatus::kActive,
       master_filled_quantity, quantity));
 
   if (slave_filled_quantity > 0) {
-    service->HandleRtnOrder(MakeSlaveOrderData(
+    strategy_dispatch_.RtnOrder(MakeSlaveOrderData(
         order_id, direction, PositionEffect::kOpen,
         slave_filled_quantity == quantity ? OrderStatus::kAllFilled
                                           : OrderStatus::kActive,
@@ -230,7 +241,7 @@ FollowStragetyServiceFixture::PushCancelOrderForSlave(
     PositionEffect position_effect /*= PositionEffect::kOpen*/,
     int fill_quantity /*= 10*/,
     int quantity /*= 10*/) {
-  service->HandleRtnOrder(
+  strategy_dispatch_.RtnOrder(
       MakeSlaveOrderData(order_no, direction, position_effect,
                          OrderStatus::kCancel, fill_quantity, quantity));
   return PopOrderEffectForTest();
@@ -244,7 +255,7 @@ FollowStragetyServiceFixture::PushOrderForMaster(const std::string& order_no,
                                                  int filled_quantity,
                                                  int quantity,
                                                  double price) {
-  service->HandleRtnOrder(
+  signal_dispatch_.RtnOrder(
       MakeMasterOrderData(order_no, direction, position_effect, status,
                           filled_quantity, quantity, price));
   return PopOrderEffectForTest();
@@ -258,9 +269,9 @@ FollowStragetyServiceFixture::PushOrderForSlave(const std::string& order_no,
                                                 int filled_quantity,
                                                 int quantity,
                                                 double price) {
-  service->HandleRtnOrder(MakeSlaveOrderData(order_no, direction,
-                                             position_effect, status,
-                                             filled_quantity, quantity, price));
+  strategy_dispatch_.RtnOrder(
+      MakeSlaveOrderData(order_no, direction, position_effect, status,
+                         filled_quantity, quantity, price));
   return PopOrderEffectForTest();
 }
 
@@ -282,7 +293,7 @@ void FollowStragetyServiceFixture::InitDefaultOrderExchangeId(
 }
 
 void FollowStragetyServiceFixture::InitService(int seq) {
-  service = std::make_unique<FollowStragetyDispatch>(
-      std::make_shared<FollowStragetyFactory<FollowStragety> >(),
-      kMasterAccountID, kSlaveAccountID, this, seq);
+  // service = std::make_unique<FollowStragetyDispatch>(
+  //     std::make_shared<FollowStragetyFactory<FollowStragety> >(),
+  //     kMasterAccountID, kSlaveAccountID, this, seq);
 }

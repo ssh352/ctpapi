@@ -1,8 +1,11 @@
 #ifndef FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #include "gtest/gtest.h"
-#include "follow_strategy_mode/follow_stragety_dispatch.h"
 #include "follow_strategy_mode/string_util.h"
+#include "follow_strategy_mode/cta_signal.h"
+#include "follow_strategy_mode/cta_generic_strategy.h"
+#include "follow_strategy_mode/cta_signal_dispatch.h"
+#include "follow_strategy_mode/strategy_order_dispatch.h"
 
 extern const char kMasterAccountID[];
 extern const char kSlaveAccountID[];
@@ -18,7 +21,7 @@ struct OrderInsertForTest {
 };
 
 class FollowStragetyServiceFixture : public testing::Test,
-                                     public FollowStragetyDispatch::Delegate {
+                                     public EnterOrderObserver {
  public:
   typedef std::tuple<OrderInsertForTest, std::vector<std::string> > TestRetType;
   FollowStragetyServiceFixture();
@@ -158,13 +161,15 @@ class FollowStragetyServiceFixture : public testing::Test,
 
   virtual void SetUp() override;
 
-  std::unique_ptr<FollowStragetyDispatch> service;
-
   std::deque<OrderInsertForTest> order_inserts;
   std::vector<std::string> cancel_orders;
-
- private:
   std::string default_order_exchange_id_;
+  OrdersContext master_context_;
+  OrdersContext slave_context_;
+  CTASignal signal_;
+  CTAGenericStrategy cta_strategy_;
+  CTASignalDispatch signal_dispatch_;
+  StrategyOrderDispatch strategy_dispatch_;
 };
 
 #endif  // FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
