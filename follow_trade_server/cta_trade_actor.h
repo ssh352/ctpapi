@@ -43,7 +43,7 @@ private:
 
   caf::actor binary_log_;
 
-  std::vector<OrderData> rtn_orders_;
+  std::vector<CThostFtdcOrderField> rtn_orders_;
 
   std::vector<caf::strong_actor_ptr> rtn_orders_subscribers_;
 

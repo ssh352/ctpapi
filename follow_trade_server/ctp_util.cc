@@ -124,7 +124,7 @@ PositionEffect ParsePositionEffect(TThostFtdcOffsetFlagType flag) {
   return position_effect;
 }
 
-OrderData MakeOrderData(CThostFtdcOrderField* order) {
+OrderData MakeOrderData(const CThostFtdcOrderField& order) {
   // std::string account_id_;
   // std::string order_id_;
   // std::string instrument_;
@@ -141,20 +141,20 @@ OrderData MakeOrderData(CThostFtdcOrderField* order) {
   // OrderStatus status_;
   // PositionEffect position_effect_;
   return OrderData{
-      order->InvestorID,
-      order->OrderRef,
-      order->InstrumentID,
-      order->InsertTime,
-      order->UserProductInfo,
-      order->OrderSysID,
-      order->ExchangeID,
-      order->VolumeTotalOriginal,
-      order->VolumeTraded,
-      order->SessionID,
-      order->LimitPrice,
-      ParseOrderDirection(order->Direction),
-      ParseOrderPriceType(order->OrderPriceType),
-      ParseOrderStatus(order->OrderStatus),
-      ParsePositionEffect(order->CombOffsetFlag[0]),
+      order.InvestorID,
+      order.OrderRef,
+      order.InstrumentID,
+      order.InsertTime,
+      order.UserProductInfo,
+      order.OrderSysID,
+      order.ExchangeID,
+      order.VolumeTotalOriginal,
+      order.VolumeTraded,
+      order.SessionID,
+      order.LimitPrice,
+      ParseOrderDirection(order.Direction),
+      ParseOrderPriceType(order.OrderPriceType),
+      ParseOrderStatus(order.OrderStatus),
+      ParsePositionEffect(order.CombOffsetFlag[0]),
   };
 }

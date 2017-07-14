@@ -2,20 +2,28 @@
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/ctp_util.h"
 
-CtpTrader::CtpTrader(caf::actor_config &cfg, const std::string &front_server,
-                     const std::string &broker_id, const std::string &user_id,
-                     const std::string &password, caf::actor binary_log)
-    : caf::event_based_actor(cfg), ctp_(this, user_id + "_"),
-      front_server_(front_server), broker_id_(broker_id), user_id_(user_id),
-      password_(password), binary_log_(binary_log) {
+CtpTrader::CtpTrader(caf::actor_config& cfg,
+                     const std::string& front_server,
+                     const std::string& broker_id,
+                     const std::string& user_id,
+                     const std::string& password,
+                     caf::actor binary_log)
+    : caf::event_based_actor(cfg),
+      ctp_(this, user_id + "_"),
+      front_server_(front_server),
+      broker_id_(broker_id),
+      user_id_(user_id),
+      password_(password),
+      binary_log_(binary_log) {
   front_id_ = 0;
   session_id_ = 0;
 }
 
 CtpTrader::~CtpTrader() {}
 
-void CtpTrader::OnOrderData(CThostFtdcOrderField *field) {
-  send(this, CTPRtnOrderAtom::value, MakeOrderData(field));
+void CtpTrader::OnOrderData(CThostFtdcOrderField* field) {
+  // send(this, CTPRtnOrderAtom::value, MakeOrderData(field));
+  send(this, CTPRtnOrderAtom::value, *field);
   send(binary_log_, *field);
 }
 
@@ -32,12 +40,10 @@ void CtpTrader::OnSettlementInfoConfirm() {
 }
 
 void CtpTrader::OnRspQryInstrumentList(
-    std::vector<CThostFtdcInstrumentField> instruments) {
-}
+    std::vector<CThostFtdcInstrumentField> instruments) {}
 
 void CtpTrader::OnRspQryInstrumentMarginRate(
-    CThostFtdcInstrumentMarginRateField *pInstrumentMarginRate) {
-}
+    CThostFtdcInstrumentMarginRateField* pInstrumentMarginRate) {}
 
 caf::behavior CtpTrader::make_behavior() {
   return {
@@ -81,26 +87,29 @@ caf::behavior CtpTrader::make_behavior() {
       [=](CTPSubscribeRtnOrderAtom) {
         rtn_orders_subscribers_.push_back(current_sender());
       },
-      [=](CTPRtnOrderAtom, OrderData order) {
+      [=](CTPRtnOrderAtom, CThostFtdcOrderField order) {
         for (auto subscriber : rtn_orders_subscribers_) {
           send(caf::actor_cast<caf::actor>(subscriber), CTPRtnOrderAtom::value,
                order);
         }
-        rtn_orders_.push_back(order);
+        rtn_orders_.push_back(std::move(order));
       },
       [=](CTPReqHistoryRtnOrdersAtom,
           size_t start_seq) -> caf::result<std::vector<OrderData>> {
-        return std::vector<OrderData>{rtn_orders_.begin() + start_seq,
-                                      rtn_orders_.end()};
+        std::vector<OrderData> orders;
+        std::transform(rtn_orders_.begin() + start_seq, rtn_orders_.end(),
+                       orders.begin(),
+                       std::bind(&MakeOrderData, std::placeholders::_1));
+        return orders;
       },
-      [=](CTPReqOpenOrderAtom, const std::string &instrument,
-          const std::string &order_id, OrderDirection direction,
+      [=](CTPReqOpenOrderAtom, const std::string& instrument,
+          const std::string& order_id, OrderDirection direction,
           OrderPriceType price_type, double price, int quantity) {
         ctp_.OrderInsert(MakeCtpOpenOrder(instrument, order_id, direction,
                                           price_type, price, quantity));
       },
-      [=](CTPReqCloseOrderAtom, const std::string &instrument,
-          const std::string &order_id, OrderDirection direction,
+      [=](CTPReqCloseOrderAtom, const std::string& instrument,
+          const std::string& order_id, OrderDirection direction,
           PositionEffect position_effect, OrderPriceType price_type,
           double price, int quantity) {
         ctp_.OrderInsert(MakeCtpCloseOrder(instrument, order_id, direction,
@@ -124,7 +133,6 @@ caf::behavior CtpTrader::make_behavior() {
         delayed_send(this, std::chrono::seconds(1), ActorTimerAtom::value);
       }
     },
-      
       */
   };
 }

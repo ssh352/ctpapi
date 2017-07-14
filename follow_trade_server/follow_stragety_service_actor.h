@@ -1,9 +1,12 @@
 #ifndef FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #define FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #include "caf/all.hpp"
-#include "follow_strategy_mode/follow_strategy_service.h"
+#include "follow_strategy_mode/enter_order_observer.h"
+#include "follow_trade_server/ctp_portfolio.h"
+#include "follow_strategy_mode/orders_context.h"
+#include "follow_strategy_mode/rtn_order_observer.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
-                                   FollowStragetyService::Delegate {
+                                   EnterOrderObserver {
  public:
   FollowStragetyServiceActor(caf::actor_config& cfg,
                              const std::string& master_account_id,
@@ -40,13 +43,17 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   virtual caf::behavior make_behavior() override;
 
  private:
-  FollowStragetyService service_;
   caf::actor cta_;
   caf::actor follow_;
   caf::actor monitor_;
   int portfolio_age_;
   std::vector<OrderPosition>  master_init_positions_;
   std::vector<OrderData> master_history_rtn_orders_;
+  RtnOrderObserver* service_;
+  CTPPortfolio portfolio_;
+  OrdersContext master_context_;
+  OrdersContext slave_context_;
+  
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

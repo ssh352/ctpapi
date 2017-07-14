@@ -2,6 +2,7 @@
 #include <boost/lexical_cast.hpp>
 #include "follow_trade_server/caf_ctp_util.h"
 #include "follow_trade_server/caf_defines.h"
+#include "follow_trade_server/ctp_util.h"
 #include "follow_trade_server/util.h"
 
 static const int kAdultAge = 5;
@@ -18,10 +19,11 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor follow,
     caf::actor monitor)
     : caf::event_based_actor(cfg),
-      service_(master_account_id, slave_account_id, this, 1000),
       cta_(cta),
       follow_(follow),
-      monitor_(monitor) {
+      monitor_(monitor),
+      master_context_(master_account_id),
+      slave_context_(slave_account_id) {
   send(monitor_, master_account_id, master_init_positions);
   send(monitor_, master_history_rtn_orders);
   master_init_positions_ = std::move(master_init_positions);
@@ -51,33 +53,37 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& instrument,
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& order_no) {
-  if (auto order = service_.context().GetOrderData(service_.slave_account_id(),
+  /*
+  if (auto order = service_.context().GetOrderData(slave_context_.account_id(),
                                                    order_no)) {
     send(follow_, CTPCancelOrderAtom::value, order_no, order->order_sys_id(),
          order->exchange_id());
   }
+  */
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
-    caf::aout(block_self) << service_.slave_account_id() << " fail!\n";
+    caf::aout(block_self) << slave_context_.account_id() << " fail!\n";
     return {};
   }
 
-
   auto init_positions = BlockRequestInitPositions(follow_);
   auto history_orders = BlockRequestHistoryOrder(follow_);
-  send(monitor_, service_.slave_account_id(), init_positions);
+  send(monitor_, slave_context_.account_id(), init_positions);
   send(monitor_, history_orders);
 
-  service_.InitPositions(service_.master_account_id(), master_init_positions_);
+  master_context_.InitPositions(master_init_positions_);
+  slave_context_.InitPositions(std::move(init_positions));
 
-  service_.InitPositions(service_.slave_account_id(),
-                         std::move(init_positions));
+  for (auto order : master_history_rtn_orders_) {
+    (void)master_context_.HandleRtnOrder(order);
+  }
 
-  service_.InitRtnOrders(master_history_rtn_orders_);
-  service_.InitRtnOrders(std::move(history_orders));
+  for (auto order : history_orders) {
+    (void)slave_context_.HandleRtnOrder(order);
+  }
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
   SettlementInfoConfirm(follow_);
@@ -85,21 +91,14 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
-  // caf::aout(block_self) << service_.slave_account_id() << " ready.\n";
-  // auto mp =
-  // service_.context().GetAccountProfolios(service_.master_account_id());
-  send(monitor_, service_.slave_account_id(),
-       service_.context().GetAccountPortfolios(service_.master_account_id()),
-       service_.context().GetAccountPortfolios(service_.slave_account_id()),
-       true);
-
-  // ss << std::setw(80) << std::setfill('=') << "=" << "\n";
-
-  // caf::aout(block_self) << ss.str() << "\n";
+  send(monitor_, slave_context_.account_id(),
+       master_context_.GetAccountPortfolios(),
+       slave_context_.GetAccountPortfolios(), true);
   return {
-      [=](CTPRtnOrderAtom, OrderData order) {
-        service_.HandleRtnOrder(order);
-        send(monitor_, order);
+      [=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
+        OrderData order = MakeOrderData(field);
+        service_->RtnOrder(order);
+        send(monitor_, std::move(order));
 
         if (portfolio_age_ != 0) {
           portfolio_age_ = 0;
@@ -110,18 +109,20 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
         }
       },
       [=](DisplayPortfolioAtom) {
+        /*
         if (++portfolio_age_ == kAdultAge) {
-          send(monitor_, service_.slave_account_id(),
+          send(monitor_, slave_context_.account_id(),
                service_.context().GetAccountPortfolios(
-                   service_.master_account_id()),
+                   master_context_.account_id()),
                service_.context().GetAccountPortfolios(
-                   service_.slave_account_id()),
+                   slave_context_.account_id()),
                false);
           portfolio_age_ = 0;
         } else {
           delayed_send(this, std::chrono::milliseconds(100),
                        DisplayPortfolioAtom::value);
         }
+        */
       },
   };
 }

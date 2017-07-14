@@ -24,6 +24,6 @@ CThostFtdcInputOrderActionField MakeCtpCancelOrderAction(
     const std::string& order_id,
     const std::string& exchange_id,
     const std::string& order_sys_id);
-OrderData MakeOrderData(CThostFtdcOrderField* order);
+OrderData MakeOrderData(const CThostFtdcOrderField& order);
 
 #endif  // FOLLOW_TRADE_SERVER_CTP_UTIL_H
