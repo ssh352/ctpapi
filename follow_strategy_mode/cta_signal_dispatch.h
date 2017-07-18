@@ -5,7 +5,7 @@
 #include "orders_context.h"
 #include "rtn_order_observer.h"
 
-class CTASignalDispatch : public EnterOrderObserver, public RtnOrderObserver {
+class CTASignalDispatch : public CTASignalObserver::Observable, public RtnOrderObserver {
  public:
   CTASignalDispatch(std::shared_ptr<CTASignalObserver> signal_observer);
 

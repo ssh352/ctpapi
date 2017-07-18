@@ -19,9 +19,6 @@ void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-void CTASignal::SetObserver(EnterOrderObserver* observer) {
-  observer_ = observer;
-}
 
 void CTASignal::HandleOpening(const OrderData& order_data) {
   if (order_data.account_id_ != master_context_->account_id()) {
@@ -174,3 +171,8 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
 }
 
 void CTASignal::HandleOpened(const OrderData& rtn_order) {}
+
+void CTASignal::Subscribe(CTASignalObserver::Observable* observer)
+{
+  observer_ = observer;
+}

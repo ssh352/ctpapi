@@ -1,7 +1,8 @@
 #include "cta_generic_strategy.h"
 
 CTAGenericStrategy::CTAGenericStrategy(std::string strategy_id)
-    : strategy_id_(std::move(strategy_id)) {}
+    : strategy_id_(std::move(strategy_id)) {
+}
 
 void CTAGenericStrategy::Subscribe(
     StrategyEnterOrderObservable::Observer* observer) {

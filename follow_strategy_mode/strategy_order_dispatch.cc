@@ -1,5 +1,8 @@
 #include "strategy_order_dispatch.h"
 #include <boost/lexical_cast.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/utility/manipulators/add_value.hpp>
+#include "follow_strategy_mode/logging_defines.h"
 
 void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
                                       const std::string& instrument,
@@ -14,6 +17,10 @@ void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
   enter_order_->OpenOrder(instrument, adjust_order_no, direction, price_type,
                           price, quantity);
+  BOOST_LOG(log_) << boost::log::add_value("strategy_id", strategy_id)
+                  << "OpenOrder:" << instrument << "," << order_no << ","
+                  << (direction == OrderDirection::kBuy ? "B" : "S") << ","
+                  << price << "," << quantity;
 }
 
 void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
@@ -30,6 +37,11 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
   enter_order_->CloseOrder(instrument, adjust_order_no, direction,
                            position_effect, price_type, price, quantity);
+  BOOST_LOG(log_) << "CloseOrder:"
+                  << boost::log::add_value("strategy_id", strategy_id)
+                  << instrument << "," << order_no << ","
+                  << (direction == OrderDirection::kBuy ? "B" : "S") << ","
+                  << price << "," << quantity;
 }
 
 void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
@@ -38,12 +50,20 @@ void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
   if (it != stragety_orders_.left.end()) {
     enter_order_->CancelOrder(order_no);
   }
+  BOOST_LOG(log_) << "CancelOrder:"
+                  << boost::log::add_value("strategy_id", strategy_id)
+                  << order_no;
 }
 
 void StrategyOrderDispatch::RtnOrder(OrderData order) {
   auto it = stragety_orders_.right.find(order.order_id());
   if (it != stragety_orders_.right.end()) {
     order.order_id_ = it->second.order_id;
+    BOOST_LOG(log_) << boost::log::add_value("strategy_id", it->second.strategy_id)
+                    << "RtnOrder:" << order.instrument() << ","
+                    << order.order_id() << ","
+                    << (order.direction() == OrderDirection::kBuy ? "B" : "S")
+                    << "," << order.price();
     rtn_order_observers_[it->second.strategy_id]->RtnOrder(std::move(order));
   } else {
     // Exception or maybe muanul control

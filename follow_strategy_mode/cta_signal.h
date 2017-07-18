@@ -9,8 +9,6 @@ class CTASignal : public CTASignalObserver {
   void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                         std::shared_ptr<OrdersContext> slave_context);
 
-  void SetObserver(EnterOrderObserver* observer);
-
   virtual void HandleOpening(const OrderData& order_data) override;
 
   virtual void HandleCloseing(const OrderData& order_data) override;
@@ -21,10 +19,11 @@ class CTASignal : public CTASignalObserver {
 
   virtual void HandleOpened(const OrderData& order_data) override;
 
+  virtual void Subscribe(CTASignalObserver::Observable* observer) override;
  private:
   std::shared_ptr<OrdersContext> master_context_;
   std::shared_ptr<OrdersContext> slave_context_;
-  EnterOrderObserver* observer_;
+  CTASignalObserver::Observable* observer_;
 };
 
 #endif  // FOLLOW_STRATEGY_MODE_CTA_SIGNAL_H

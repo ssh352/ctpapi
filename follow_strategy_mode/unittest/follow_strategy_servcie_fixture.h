@@ -1,11 +1,38 @@
 #ifndef FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
+#include <boost/log/core.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
+#include <boost/log/sinks/text_ostream_backend.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/support/date_time.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/attributes.hpp>
+#include <boost/log/sinks.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/support/exception.hpp>
+#include <boost/exception/all.hpp>
+#include <boost/log/utility/setup/formatter_parser.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/severity_feature.hpp>
+#include <boost/log/utility/setup/file.hpp>
+
 #include "gtest/gtest.h"
 #include "follow_strategy_mode/string_util.h"
 #include "follow_strategy_mode/cta_signal.h"
 #include "follow_strategy_mode/cta_generic_strategy.h"
 #include "follow_strategy_mode/cta_signal_dispatch.h"
 #include "follow_strategy_mode/strategy_order_dispatch.h"
+#include "follow_strategy_mode/logging_defines.h"
+
+namespace logging = boost::log;
+namespace attrs = boost::log::attributes;
+namespace src = boost::log::sources;
+namespace sinks = boost::log::sinks;
+namespace expr = boost::log::expressions;
+namespace keywords = boost::log::keywords;
 
 extern const char kMasterAccountID[];
 extern const char kSlaveAccountID[];
@@ -25,6 +52,13 @@ class FollowStragetyServiceFixture : public testing::Test,
  public:
   typedef std::tuple<OrderInsertForTest, std::vector<std::string> > TestRetType;
   FollowStragetyServiceFixture();
+
+  static void SetUpTestCase() {
+    logging::add_file_log(
+      keywords::file_name = "unittest_%N.log",
+      keywords::format = "[%strategy_id%]:%Message%"
+    );
+  }
 
   virtual void CloseOrder(const std::string& instrument,
                           const std::string& order_no,
@@ -163,11 +197,11 @@ class FollowStragetyServiceFixture : public testing::Test,
   std::deque<OrderInsertForTest> order_inserts;
   std::vector<std::string> cancel_orders;
   std::string default_order_exchange_id_;
-  OrdersContext master_context_;
-  OrdersContext slave_context_;
-  CTASignal signal_;
-  CTAGenericStrategy cta_strategy_;
-  CTASignalDispatch signal_dispatch_;
+  std::shared_ptr<OrdersContext> master_context_;
+  std::shared_ptr<OrdersContext> slave_context_;
+  std::shared_ptr<CTASignal> signal_;
+  std::shared_ptr<CTAGenericStrategy> cta_strategy_;
+  std::shared_ptr<CTASignalDispatch> signal_dispatch_;
   StrategyOrderDispatch strategy_dispatch_;
 };
 

@@ -2,8 +2,8 @@
 #include "gtest/gtest.h"
 
 TEST_F(FollowStragetyServiceFixture, CloseYesterdayPosition) {
-  master_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
-  slave_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  master_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
 
   auto ret = PushNewCloseOrderForMaster("1", OrderDirection::kSell, 10);
   auto order_insert = std::get<0>(ret);
@@ -15,8 +15,8 @@ TEST_F(FollowStragetyServiceFixture, CloseYesterdayPosition) {
 
 TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase1) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  master_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
-  slave_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  master_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1");
 
   auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10,
@@ -30,8 +30,8 @@ TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase1) {
 
 TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase2) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  master_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
-  slave_context_.InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  master_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
+  slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1");
 
   auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10,
@@ -44,7 +44,7 @@ TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase2) {
 }
 
 TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase1) {
-  slave_context_.InitPositions({{"abc", OrderDirection::kBuy, 8}});
+  slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 8}});
   OpenAndFilledOrder("1");
 
   {
@@ -68,7 +68,7 @@ TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase1) {
 
 TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase2) {
   InitDefaultOrderExchangeId(kSHFEExchangeId);
-  slave_context_.InitPositions({{"abc", OrderDirection::kBuy, 8}});
+  slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 8}});
   OpenAndFilledOrder("1");
 
   {
@@ -95,7 +95,7 @@ TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase2) {
 }
 
 TEST_F(FollowStragetyServiceFixture, SyncCancelPartyFillClose) {
-  master_context_.InitPositions({{"abc", OrderDirection::kBuy, 4}});
+  master_context_->InitPositions({{"abc", OrderDirection::kBuy, 4}});
   OpenAndFilledOrder("1", 2, 2, 2);
   {
     auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 4);

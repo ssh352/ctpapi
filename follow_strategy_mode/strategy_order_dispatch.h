@@ -1,6 +1,8 @@
 #ifndef FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #define FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #include <boost/bimap.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/attributes.hpp>
 #include "enter_order_observer.h"
 #include "rtn_order_observer.h"
 #include "strategy_enter_order_observable.h"
@@ -49,6 +51,7 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   EnterOrderObserver* enter_order_;
   std::map<std::string, std::shared_ptr<RtnOrderObserver> >
       rtn_order_observers_;
+  boost::log::sources::logger log_;
 };
 
 #endif  // FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H

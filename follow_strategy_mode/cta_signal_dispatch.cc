@@ -2,7 +2,9 @@
 
 CTASignalDispatch::CTASignalDispatch(
     std::shared_ptr<CTASignalObserver> signal_observer)
-    : signal_observer_(signal_observer) {}
+    : signal_observer_(signal_observer) {
+  signal_observer_->Subscribe(this);
+}
 
 void CTASignalDispatch::SubscribeEnterOrderObserver(
     std::shared_ptr<EnterOrderObserver> observer) {
