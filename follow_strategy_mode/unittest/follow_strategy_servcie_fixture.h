@@ -1,31 +1,30 @@
 #ifndef FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
 #define FOLLOW_TRADE_UNITTEST_FOLLOW_STRATEGY_SERVCIE_FIXTURE_H
+#include <boost/exception/all.hpp>
+#include <boost/log/attributes.hpp>
+#include <boost/log/common.hpp>
 #include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/sinks.hpp>
 #include <boost/log/sinks/sync_frontend.hpp>
 #include <boost/log/sinks/text_ostream_backend.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/support/date_time.hpp>
-#include <boost/log/common.hpp>
-#include <boost/log/expressions.hpp>
-#include <boost/log/attributes.hpp>
-#include <boost/log/sinks.hpp>
 #include <boost/log/sources/logger.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/support/exception.hpp>
-#include <boost/exception/all.hpp>
-#include <boost/log/utility/setup/formatter_parser.hpp>
-#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
 #include <boost/log/sources/severity_feature.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/support/date_time.hpp>
+#include <boost/log/support/exception.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/formatter_parser.hpp>
 
-#include "gtest/gtest.h"
-#include "follow_strategy_mode/string_util.h"
-#include "follow_strategy_mode/cta_signal.h"
 #include "follow_strategy_mode/cta_generic_strategy.h"
+#include "follow_strategy_mode/cta_signal.h"
 #include "follow_strategy_mode/cta_signal_dispatch.h"
-#include "follow_strategy_mode/strategy_order_dispatch.h"
 #include "follow_strategy_mode/logging_defines.h"
+#include "follow_strategy_mode/strategy_order_dispatch.h"
+#include "follow_strategy_mode/string_util.h"
+#include "gtest/gtest.h"
 
 namespace logging = boost::log;
 namespace attrs = boost::log::attributes;
@@ -54,10 +53,30 @@ class FollowStragetyServiceFixture : public testing::Test,
   FollowStragetyServiceFixture();
 
   static void SetUpTestCase() {
-    logging::add_file_log(
-      keywords::file_name = "unittest_%N.log",
-      keywords::format = "[%strategy_id%]:%Message%"
-    );
+    //     logging::add_file_log(
+    //       keywords::file_name = "unittest_%N.log",
+    //       keywords::format = "[%strategy_id%]:%Message%"
+    //     );
+
+    boost::shared_ptr<logging::core> core = logging::core::get();
+
+    boost::shared_ptr<sinks::text_multifile_backend> backend =
+        boost::make_shared<sinks::text_multifile_backend>();
+    // Set up the file naming pattern
+    backend->set_file_name_composer(sinks::file::as_file_name_composer(
+        expr::stream << "logs/"
+                     << "unittest_%N_" << expr::attr<std::string>("strategy_id")
+                     << ".log"));
+
+    // Wrap it into the frontend and register in the core.
+    // The backend requires synchronization in the frontend.
+    typedef sinks::synchronous_sink<sinks::text_multifile_backend> sink_t;
+    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    sink->set_formatter(expr::stream << "["
+                                     << expr::attr<std::string>("strategy_id")
+                                     << "]: " << expr::smessage);
+
+    core->add_sink(sink);
   }
 
   virtual void CloseOrder(const std::string& instrument,
@@ -163,7 +182,6 @@ class FollowStragetyServiceFixture : public testing::Test,
       int quantity = 10,
       double price = 1234.1,
       PositionEffect position_effect = PositionEffect::kClose);
-
 
   TestRetType PushCancelOrderForSlave(
       const std::string& order_no = "0001",

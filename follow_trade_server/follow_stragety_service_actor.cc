@@ -115,17 +115,17 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
       },
       [=](DisplayPortfolioAtom) {
         /*
-        if (++portfolio_age_ == kAdultAge) {
-          send(monitor_, slave_context_.account_id(),
-               master_context_.GetAccountPortfolios(),
-               slave_context_.GetAccountPortfolios(),
-               false);
-          portfolio_age_ = 0;
-        } else {
-          delayed_send(this, std::chrono::milliseconds(100),
-                       DisplayPortfolioAtom::value);
-       }
-       */
+          if (++portfolio_age_ == kAdultAge) {
+            send(monitor_, slave_context_.account_id(),
+                 master_context_.GetAccountPortfolios(),
+                 slave_context_.GetAccountPortfolios(),
+                 false);
+            portfolio_age_ = 0;
+          } else {
+            delayed_send(this, std::chrono::milliseconds(100),
+                         DisplayPortfolioAtom::value);
+         }
+         */
       },
   };
 }
