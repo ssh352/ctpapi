@@ -2,8 +2,8 @@
 #include "order_util.h"
 #include "string_util.h"
 
-void CTASignal::SetOrdersContext(OrdersContext* master_context,
-                                 OrdersContext* slave_context) {
+void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
+                                 std::shared_ptr<OrdersContext> slave_context) {
   master_context_ = master_context;
   slave_context_ = slave_context;
 }

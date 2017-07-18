@@ -21,14 +21,13 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     : caf::event_based_actor(cfg),
       cta_(cta),
       follow_(follow),
-      monitor_(monitor),
-      master_context_(master_account_id),
-      slave_context_(slave_account_id) {
+      monitor_(monitor) {
   send(monitor_, master_account_id, master_init_positions);
   send(monitor_, master_history_rtn_orders);
   master_init_positions_ = std::move(master_init_positions);
   master_history_rtn_orders_ = std::move(master_history_rtn_orders);
   portfolio_age_ = 0;
+  service_.SubscribeEnterOrderObserver(this);
 }
 
 void FollowStragetyServiceActor::OpenOrder(const std::string& instrument,
@@ -53,37 +52,17 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& instrument,
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& order_no) {
-  /*
-  if (auto order = service_.context().GetOrderData(slave_context_.account_id(),
-                                                   order_no)) {
-    send(follow_, CTPCancelOrderAtom::value, order_no, order->order_sys_id(),
-         order->exchange_id());
-  }
-  */
+  send(follow_, CTPCancelOrderAtom::value, order_no);
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
-    caf::aout(block_self) << slave_context_.account_id() << " fail!\n";
+    caf::aout(block_self) << slave_account_id_ << " fail!\n";
     return {};
   }
 
-  auto init_positions = BlockRequestInitPositions(follow_);
-  auto history_orders = BlockRequestHistoryOrder(follow_);
-  send(monitor_, slave_context_.account_id(), init_positions);
-  send(monitor_, history_orders);
-
-  master_context_.InitPositions(master_init_positions_);
-  slave_context_.InitPositions(std::move(init_positions));
-
-  for (auto order : master_history_rtn_orders_) {
-    (void)master_context_.HandleRtnOrder(order);
-  }
-
-  for (auto order : history_orders) {
-    (void)slave_context_.HandleRtnOrder(order);
-  }
+  // portfolio_.InitYesterdayPosition(init_positions);
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
   SettlementInfoConfirm(follow_);
@@ -91,13 +70,39 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
-  send(monitor_, slave_context_.account_id(),
-       master_context_.GetAccountPortfolios(),
-       slave_context_.GetAccountPortfolios(), true);
+  for (int i = 0; i < 10; ++i) {
+    auto master_context = std::make_shared<OrdersContext>(master_account_id_);
+    auto slave_context = std::make_shared<OrdersContext>(slave_account_id_);
+
+    auto cta_strategy = std::make_shared<CTAGenericStrategy>(
+        boost::lexical_cast<std::string>(i));
+    cta_strategy->Subscribe(&service_);
+    auto signal = std::make_shared<CTASignal>();
+    signal->SetOrdersContext(master_context, slave_context);
+    auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
+    signal_dispatch->SubscribeEnterOrderObserver(cta_strategy);
+    signal_dispatch->SetOrdersContext(master_context, slave_context);
+    service_.SubscribeRtnOrderObserver(boost::lexical_cast<std::string>(i),
+                                       signal_dispatch);
+  }
+
   return {
       [=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
         OrderData order = MakeOrderData(field);
-        service_->RtnOrder(order);
+        if (order.account_id() == master_account_id_) {
+          std::pair<TThostFtdcSessionIDType, std::string> key =
+              std::make_pair(field.SessionID, field.OrderRef);
+          if (master_adjust_order_ids_.find(key) !=
+              master_adjust_order_ids_.end()) {
+            order.order_id_ = master_adjust_order_ids_[key];
+          } else {
+            order.order_id_ = boost::lexical_cast<std::string>(
+                master_adjust_order_ids_.size());
+            master_adjust_order_ids_.insert({key, order.order_id_});
+          }
+        }
+        service_.RtnOrder(order);
+        portfolio_.OnRtnOrder(std::move(field));
         send(monitor_, std::move(order));
 
         if (portfolio_age_ != 0) {
@@ -112,17 +117,15 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
         /*
         if (++portfolio_age_ == kAdultAge) {
           send(monitor_, slave_context_.account_id(),
-               service_.context().GetAccountPortfolios(
-                   master_context_.account_id()),
-               service_.context().GetAccountPortfolios(
-                   slave_context_.account_id()),
+               master_context_.GetAccountPortfolios(),
+               slave_context_.GetAccountPortfolios(),
                false);
           portfolio_age_ = 0;
         } else {
           delayed_send(this, std::chrono::milliseconds(100),
                        DisplayPortfolioAtom::value);
-        }
-        */
+       }
+       */
       },
   };
 }

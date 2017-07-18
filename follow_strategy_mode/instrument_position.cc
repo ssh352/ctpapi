@@ -97,8 +97,11 @@ void InstrumentPosition::HandleRtnOrder(
     for (auto order_quantity :
          close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id())) {
       if (positions_.find(order_quantity.first) != positions_.end()) {
-        positions_[order_quantity.first].closeable_quantity +=
-            order_quantity.second - rtn_order.filled_quantity();
+        if (positions_[order_quantity.first].closeable_quantity !=
+            positions_[order_quantity.first].quantity) {
+          positions_[order_quantity.first].closeable_quantity +=
+              order_quantity.second - rtn_order.filled_quantity();
+        }
       }
     }
   } else {

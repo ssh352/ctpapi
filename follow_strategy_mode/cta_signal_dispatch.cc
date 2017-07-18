@@ -1,10 +1,11 @@
 #include "cta_signal_dispatch.h"
 
-CTASignalDispatch::CTASignalDispatch(CTASignalObserver* signal_observer)
+CTASignalDispatch::CTASignalDispatch(
+    std::shared_ptr<CTASignalObserver> signal_observer)
     : signal_observer_(signal_observer) {}
 
 void CTASignalDispatch::SubscribeEnterOrderObserver(
-    EnterOrderObserver* observer) {
+    std::shared_ptr<EnterOrderObserver> observer) {
   enter_order_observer_ = observer;
 }
 
@@ -98,8 +99,9 @@ void CTASignalDispatch::CancelOrder(const std::string& order_no) {
   }
 }
 
-void CTASignalDispatch::SetOrdersContext(OrdersContext* master_context,
-                                         OrdersContext* slave_context) {
+void CTASignalDispatch::SetOrdersContext(
+    std::shared_ptr<OrdersContext> master_context,
+    std::shared_ptr<OrdersContext> slave_context) {
   master_context_ = master_context;
   slave_context_ = slave_context;
 }

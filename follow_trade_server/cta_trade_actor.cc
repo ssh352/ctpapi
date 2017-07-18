@@ -116,10 +116,9 @@ caf::behavior CtpTrader::make_behavior() {
                                            position_effect, price_type, price,
                                            quantity));
       },
-      [=](CTPCancelOrderAtom, std::string order_id, std::string order_sys_id,
-          std::string exchange_id) {
+      [=](CTPCancelOrderAtom, std::string order_id ) {
         ctp_.OrderAction(MakeCtpCancelOrderAction(
-            front_id_, session_id_, order_id, exchange_id, order_sys_id));
+            front_id_, session_id_, order_id));
       },
       /*
     [=](ActorTimerAtom) {

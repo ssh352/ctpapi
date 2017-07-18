@@ -21,9 +21,7 @@ CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
 CThostFtdcInputOrderActionField MakeCtpCancelOrderAction(
     int front_id,
     int session_id,
-    const std::string& order_id,
-    const std::string& exchange_id,
-    const std::string& order_sys_id);
+    const std::string& order_id );
 OrderData MakeOrderData(const CThostFtdcOrderField& order);
 
 #endif  // FOLLOW_TRADE_SERVER_CTP_UTIL_H

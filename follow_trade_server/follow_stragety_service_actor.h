@@ -1,10 +1,14 @@
 #ifndef FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #define FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #include "caf/all.hpp"
+#include "follow_strategy_mode/cta_generic_strategy.h"
+#include "follow_strategy_mode/cta_signal.h"
+#include "follow_strategy_mode/cta_signal_dispatch.h"
 #include "follow_strategy_mode/enter_order_observer.h"
-#include "follow_trade_server/ctp_portfolio.h"
 #include "follow_strategy_mode/orders_context.h"
 #include "follow_strategy_mode/rtn_order_observer.h"
+#include "follow_strategy_mode/strategy_order_dispatch.h"
+#include "follow_trade_server/ctp_portfolio.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
                                    EnterOrderObserver {
  public:
@@ -47,13 +51,17 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   caf::actor follow_;
   caf::actor monitor_;
   int portfolio_age_;
-  std::vector<OrderPosition>  master_init_positions_;
+  std::vector<OrderPosition> master_init_positions_;
   std::vector<OrderData> master_history_rtn_orders_;
-  RtnOrderObserver* service_;
+  //   CTASignal signal_;
+  //   CTAGenericStrategy cta_strategy_;
+  //   CTASignalDispatch signal_dispatch_;
+  StrategyOrderDispatch service_;
   CTPPortfolio portfolio_;
-  OrdersContext master_context_;
-  OrdersContext slave_context_;
-  
+  std::string master_account_id_;
+  std::string slave_account_id_;
+  std::map<std::pair<TThostFtdcSessionIDType, std::string>, std::string>
+      master_adjust_order_ids_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

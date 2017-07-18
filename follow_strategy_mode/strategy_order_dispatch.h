@@ -31,8 +31,8 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
 
   void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
 
-  void SubscribeRtnOrderObserver(const std::string& account_id,
-                                 RtnOrderObserver* observer);
+  void SubscribeRtnOrderObserver(const std::string& strategy_id,
+                                 std::shared_ptr<RtnOrderObserver> observer);
 
  private:
   struct StragetyOrder {
@@ -47,7 +47,8 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   typedef boost::bimap<StragetyOrder, std::string> StragetyOrderBiMap;
   StragetyOrderBiMap stragety_orders_;
   EnterOrderObserver* enter_order_;
-  std::map<std::string, RtnOrderObserver*> rtn_order_observers_;
+  std::map<std::string, std::shared_ptr<RtnOrderObserver> >
+      rtn_order_observers_;
 };
 
 #endif  // FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H

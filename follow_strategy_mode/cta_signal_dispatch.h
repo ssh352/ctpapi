@@ -7,9 +7,9 @@
 
 class CTASignalDispatch : public EnterOrderObserver, public RtnOrderObserver {
  public:
-  CTASignalDispatch(CTASignalObserver* signal_observer);
+  CTASignalDispatch(std::shared_ptr<CTASignalObserver> signal_observer);
 
-  virtual void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
+  virtual void SubscribeEnterOrderObserver(std::shared_ptr<EnterOrderObserver> observer);
 
   // RtnOrderObservable::Observer
   virtual void RtnOrder(OrderData order) override;
@@ -32,8 +32,8 @@ class CTASignalDispatch : public EnterOrderObserver, public RtnOrderObserver {
 
   virtual void CancelOrder(const std::string& order_no) override;
 
-  void SetOrdersContext(OrdersContext* master_context,
-                        OrdersContext* slave_context);
+  void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
+                        std::shared_ptr<OrdersContext> slave_context);
 
  private:
   enum class StragetyStatus {
@@ -53,9 +53,9 @@ class CTASignalDispatch : public EnterOrderObserver, public RtnOrderObserver {
   std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
 
   std::deque<OrderData> outstanding_orders_;
-  CTASignalObserver* signal_observer_;
-  EnterOrderObserver* enter_order_observer_;
-  OrdersContext* master_context_;
-  OrdersContext* slave_context_;
+  std::shared_ptr<CTASignalObserver> signal_observer_;
+  std::shared_ptr<EnterOrderObserver> enter_order_observer_;
+  std::shared_ptr<OrdersContext> master_context_;
+  std::shared_ptr<OrdersContext> slave_context_;
 };
 #endif  // FOLLOW_STRATEGY_MODE_CTA_SIGNAL_DISPATCH_H

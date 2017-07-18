@@ -56,9 +56,9 @@ void StrategyOrderDispatch::SubscribeEnterOrderObserver(
 }
 
 void StrategyOrderDispatch::SubscribeRtnOrderObserver(
-    const std::string& account_id,
-    RtnOrderObserver* observer) {
-  if (rtn_order_observers_.find(account_id) == rtn_order_observers_.end()) {
-    rtn_order_observers_.insert({account_id, observer});
+    const std::string& strategy_id,
+    std::shared_ptr<RtnOrderObserver> observer) {
+  if (rtn_order_observers_.find(strategy_id) == rtn_order_observers_.end()) {
+    rtn_order_observers_.insert({strategy_id, observer});
   }
 }

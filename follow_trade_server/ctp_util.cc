@@ -68,16 +68,14 @@ CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
 CThostFtdcInputOrderActionField MakeCtpCancelOrderAction(
     int front_id,
     int session_id,
-    const std::string& order_id,
-    const std::string& exchange_id,
-    const std::string& order_sys_id){
+    const std::string& order_id ){
   CThostFtdcInputOrderActionField order = {0};
   order.ActionFlag = THOST_FTDC_AF_Delete;
   order.FrontID = front_id;
   order.SessionID = session_id;
   strcpy(order.OrderRef, order_id.c_str());
-  strcpy(order.ExchangeID, exchange_id.c_str());
-  strcpy(order.OrderSysID, order_sys_id.c_str());
+//   strcpy(order.ExchangeID, exchange_id.c_str());
+//   strcpy(order.OrderSysID, order_sys_id.c_str());
   return order;
 }
 

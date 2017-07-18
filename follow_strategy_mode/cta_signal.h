@@ -6,8 +6,8 @@
 
 class CTASignal : public CTASignalObserver {
  public:
-  void SetOrdersContext(OrdersContext* master_context,
-                        OrdersContext* slave_context);
+  void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
+                        std::shared_ptr<OrdersContext> slave_context);
 
   void SetObserver(EnterOrderObserver* observer);
 
@@ -22,8 +22,8 @@ class CTASignal : public CTASignalObserver {
   virtual void HandleOpened(const OrderData& order_data) override;
 
  private:
-  OrdersContext* master_context_;
-  OrdersContext* slave_context_;
+  std::shared_ptr<OrdersContext> master_context_;
+  std::shared_ptr<OrdersContext> slave_context_;
   EnterOrderObserver* observer_;
 };
 

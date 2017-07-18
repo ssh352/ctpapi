@@ -16,7 +16,10 @@ void CTPPortfolio::OnRtnOrder(CThostFtdcOrderField order) {
   auto key = std::make_pair(order.SessionID, order.OrderRef);
   auto it = active_orders_.find(key);
   if (it == active_orders_.end()) {
-    active_orders_[key] = std::move(order);
+    if (order.OrderStatus != THOST_FTDC_OST_AllTraded &&
+        order.OrderStatus != THOST_FTDC_OST_AllTraded) {
+      active_orders_[key] = std::move(order);
+    }
   } else {
     if (order.OrderStatus == THOST_FTDC_OST_AllTraded ||
         order.OrderStatus == THOST_FTDC_OST_Canceled) {
