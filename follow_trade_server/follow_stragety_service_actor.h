@@ -47,6 +47,20 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   virtual caf::behavior make_behavior() override;
 
  private:
+  template <typename Atom>
+  class PortfolioProxy : public PortfolioObserver {
+   public:
+    PortfolioProxy(caf::actor self, std::string strategy_id)
+        : self_(self), strategy_id_(strategy_id) {}
+
+    virtual void Notify(std::vector<AccountPortfolio> portfolio) override {
+      caf::anon_send(self_, Atom::value, strategy_id_, std::move(portfolio));
+    }
+
+   private:
+    caf::actor self_;
+    std::string strategy_id_;
+  };
   caf::actor cta_;
   caf::actor follow_;
   caf::actor monitor_;
@@ -58,6 +72,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   //   CTASignalDispatch signal_dispatch_;
   StrategyOrderDispatch service_;
   CTPPortfolio portfolio_;
+  std::shared_ptr<OrdersContext> master_context_;
   std::string master_account_id_;
   std::string slave_account_id_;
   std::map<std::pair<TThostFtdcSessionIDType, std::string>, std::string>

@@ -4,12 +4,15 @@
 #include "enter_order_observer.h"
 #include "orders_context.h"
 #include "rtn_order_observer.h"
+#include "portfolio_observer.h"
 
-class CTASignalDispatch : public CTASignalObserver::Observable, public RtnOrderObserver {
+class CTASignalDispatch : public CTASignalObserver::Observable,
+                          public RtnOrderObserver {
  public:
   CTASignalDispatch(std::shared_ptr<CTASignalObserver> signal_observer);
 
-  virtual void SubscribeEnterOrderObserver(std::shared_ptr<EnterOrderObserver> observer);
+  virtual void SubscribeEnterOrderObserver(
+      std::shared_ptr<EnterOrderObserver> observer);
 
   // RtnOrderObservable::Observer
   virtual void RtnOrder(OrderData order) override;
@@ -35,6 +38,9 @@ class CTASignalDispatch : public CTASignalObserver::Observable, public RtnOrderO
   void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                         std::shared_ptr<OrdersContext> slave_context);
 
+
+
+  void SubscribePortfolioObserver(std::shared_ptr<PortfolioObserver> observer);
  private:
   enum class StragetyStatus {
     kWaitReply,
@@ -57,5 +63,6 @@ class CTASignalDispatch : public CTASignalObserver::Observable, public RtnOrderO
   std::shared_ptr<EnterOrderObserver> enter_order_observer_;
   std::shared_ptr<OrdersContext> master_context_;
   std::shared_ptr<OrdersContext> slave_context_;
+  std::shared_ptr<PortfolioObserver> portfolio_observer_;
 };
 #endif  // FOLLOW_STRATEGY_MODE_CTA_SIGNAL_DISPATCH_H

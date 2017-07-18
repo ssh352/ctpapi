@@ -38,6 +38,11 @@ void CTASignalDispatch::RtnOrder(OrderData rtn_order) {
     default:
       break;
   }
+
+  if (slave_context_->account_id() == rtn_order.account_id() &&
+      portfolio_observer_ != NULL) {
+    portfolio_observer_->Notify(slave_context_->GetAccountPortfolios());
+  }
 }
 
 void CTASignalDispatch::DoHandleRtnOrder(OrderData rtn_order) {
@@ -106,6 +111,11 @@ void CTASignalDispatch::SetOrdersContext(
     std::shared_ptr<OrdersContext> slave_context) {
   master_context_ = master_context;
   slave_context_ = slave_context;
+}
+
+void CTASignalDispatch::SubscribePortfolioObserver(
+    std::shared_ptr<PortfolioObserver> observer) {
+  portfolio_observer_ = observer;
 }
 
 CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(

@@ -71,17 +71,24 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
   for (int i = 0; i < 10; ++i) {
-    auto master_context = std::make_shared<OrdersContext>(master_account_id_);
+    master_context_ = std::make_shared<OrdersContext>(master_account_id_);
     auto slave_context = std::make_shared<OrdersContext>(slave_account_id_);
 
     auto cta_strategy = std::make_shared<CTAGenericStrategy>(
         boost::lexical_cast<std::string>(i));
     cta_strategy->Subscribe(&service_);
     auto signal = std::make_shared<CTASignal>();
-    signal->SetOrdersContext(master_context, slave_context);
+    signal->SetOrdersContext(master_context_, slave_context);
     auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
     signal_dispatch->SubscribeEnterOrderObserver(cta_strategy);
-    signal_dispatch->SetOrdersContext(master_context, slave_context);
+    signal_dispatch->SetOrdersContext(master_context_, slave_context);
+
+    // WARRNING:probably cann't quit program
+    signal_dispatch->SubscribePortfolioObserver(
+        std::make_shared<PortfolioProxy<DisplayPortfolioAtom>>(
+            caf::actor_cast<caf::actor>(this),
+            boost::lexical_cast<std::string>(i)));
+
     service_.SubscribeRtnOrderObserver(boost::lexical_cast<std::string>(i),
                                        signal_dispatch);
   }
@@ -105,6 +112,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
         portfolio_.OnRtnOrder(std::move(field));
         send(monitor_, std::move(order));
 
+        /*
         if (portfolio_age_ != 0) {
           portfolio_age_ = 0;
         } else {
@@ -112,20 +120,12 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
           delayed_send(this, std::chrono::milliseconds(100),
                        DisplayPortfolioAtom::value);
         }
+        */
       },
-      [=](DisplayPortfolioAtom) {
-        /*
-          if (++portfolio_age_ == kAdultAge) {
-            send(monitor_, slave_context_.account_id(),
-                 master_context_.GetAccountPortfolios(),
-                 slave_context_.GetAccountPortfolios(),
-                 false);
-            portfolio_age_ = 0;
-          } else {
-            delayed_send(this, std::chrono::milliseconds(100),
-                         DisplayPortfolioAtom::value);
-         }
-         */
+      [=](DisplayPortfolioAtom, std::string stragety_id,
+          std::vector<AccountPortfolio> portfolio) {
+        send(monitor_, slave_account_id_ + ":" + stragety_id,
+             master_context_->GetAccountPortfolios(), portfolio, true);
       },
   };
 }
