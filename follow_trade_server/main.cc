@@ -12,7 +12,6 @@
 #include "caf/all.hpp"
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
-#include "follow_strategy_mode/follow_strategy_service.h"
 #include "follow_strategy_mode/print_portfolio_helper.h"
 #include "follow_trade_server/binary_serialization.h"
 #include "follow_trade_server/caf_defines.h"

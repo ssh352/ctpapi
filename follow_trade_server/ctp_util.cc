@@ -68,16 +68,14 @@ CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
 CThostFtdcInputOrderActionField MakeCtpCancelOrderAction(
     int front_id,
     int session_id,
-    const std::string& order_id,
-    const std::string& exchange_id,
-    const std::string& order_sys_id){
+    const std::string& order_id ){
   CThostFtdcInputOrderActionField order = {0};
   order.ActionFlag = THOST_FTDC_AF_Delete;
   order.FrontID = front_id;
   order.SessionID = session_id;
   strcpy(order.OrderRef, order_id.c_str());
-  strcpy(order.ExchangeID, exchange_id.c_str());
-  strcpy(order.OrderSysID, order_sys_id.c_str());
+//   strcpy(order.ExchangeID, exchange_id.c_str());
+//   strcpy(order.OrderSysID, order_sys_id.c_str());
   return order;
 }
 
@@ -124,7 +122,7 @@ PositionEffect ParsePositionEffect(TThostFtdcOffsetFlagType flag) {
   return position_effect;
 }
 
-OrderData MakeOrderData(CThostFtdcOrderField* order) {
+OrderData MakeOrderData(const CThostFtdcOrderField& order) {
   // std::string account_id_;
   // std::string order_id_;
   // std::string instrument_;
@@ -141,20 +139,20 @@ OrderData MakeOrderData(CThostFtdcOrderField* order) {
   // OrderStatus status_;
   // PositionEffect position_effect_;
   return OrderData{
-      order->InvestorID,
-      order->OrderRef,
-      order->InstrumentID,
-      order->InsertTime,
-      order->UserProductInfo,
-      order->OrderSysID,
-      order->ExchangeID,
-      order->VolumeTotalOriginal,
-      order->VolumeTraded,
-      order->SessionID,
-      order->LimitPrice,
-      ParseOrderDirection(order->Direction),
-      ParseOrderPriceType(order->OrderPriceType),
-      ParseOrderStatus(order->OrderStatus),
-      ParsePositionEffect(order->CombOffsetFlag[0]),
+      order.InvestorID,
+      order.OrderRef,
+      order.InstrumentID,
+      order.InsertTime,
+      order.UserProductInfo,
+      order.OrderSysID,
+      order.ExchangeID,
+      order.VolumeTotalOriginal,
+      order.VolumeTraded,
+      order.SessionID,
+      order.LimitPrice,
+      ParseOrderDirection(order.Direction),
+      ParseOrderPriceType(order.OrderPriceType),
+      ParseOrderStatus(order.OrderStatus),
+      ParsePositionEffect(order.CombOffsetFlag[0]),
   };
 }

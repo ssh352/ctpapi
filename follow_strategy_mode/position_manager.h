@@ -9,6 +9,9 @@ class CloseCorrOrdersManager;
 
 class PositionManager {
  public:
+  void AddQuantitys(const std::string& instrument,
+                    std::vector<OrderQuantity> quantitys);
+
   void AddQuantity(const std::string& instrument, OrderQuantity quantitys);
 
   std::vector<OrderQuantity> GetQuantitys(

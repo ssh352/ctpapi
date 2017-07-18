@@ -1,5 +1,9 @@
 #include "follow_strategy_mode/position_manager.h"
 
+void PositionManager::AddQuantitys(const std::string& instrument,
+                                   std::vector<OrderQuantity> quantitys) {
+}
+
 void PositionManager::AddQuantity(const std::string& instrument,
                                   OrderQuantity quantitys) {
   instrument_positions_[instrument].AddQuantity(std::move(quantitys));

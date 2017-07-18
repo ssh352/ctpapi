@@ -2,6 +2,7 @@
 #include <boost/lexical_cast.hpp>
 #include "follow_trade_server/caf_ctp_util.h"
 #include "follow_trade_server/caf_defines.h"
+#include "follow_trade_server/ctp_util.h"
 #include "follow_trade_server/util.h"
 
 static const int kAdultAge = 5;
@@ -18,7 +19,6 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor follow,
     caf::actor monitor)
     : caf::event_based_actor(cfg),
-      service_(master_account_id, slave_account_id, this, 1000),
       cta_(cta),
       follow_(follow),
       monitor_(monitor) {
@@ -27,6 +27,7 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
   master_init_positions_ = std::move(master_init_positions);
   master_history_rtn_orders_ = std::move(master_history_rtn_orders);
   portfolio_age_ = 0;
+  service_.SubscribeEnterOrderObserver(this);
 }
 
 void FollowStragetyServiceActor::OpenOrder(const std::string& instrument,
@@ -51,33 +52,17 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& instrument,
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& order_no) {
-  if (auto order = service_.context().GetOrderData(service_.slave_account_id(),
-                                                   order_no)) {
-    send(follow_, CTPCancelOrderAtom::value, order_no, order->order_sys_id(),
-         order->exchange_id());
-  }
+  send(follow_, CTPCancelOrderAtom::value, order_no);
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
-    caf::aout(block_self) << service_.slave_account_id() << " fail!\n";
+    caf::aout(block_self) << slave_account_id_ << " fail!\n";
     return {};
   }
 
-
-  auto init_positions = BlockRequestInitPositions(follow_);
-  auto history_orders = BlockRequestHistoryOrder(follow_);
-  send(monitor_, service_.slave_account_id(), init_positions);
-  send(monitor_, history_orders);
-
-  service_.InitPositions(service_.master_account_id(), master_init_positions_);
-
-  service_.InitPositions(service_.slave_account_id(),
-                         std::move(init_positions));
-
-  service_.InitRtnOrders(master_history_rtn_orders_);
-  service_.InitRtnOrders(std::move(history_orders));
+  // portfolio_.InitYesterdayPosition(init_positions);
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
   SettlementInfoConfirm(follow_);
@@ -85,21 +70,40 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
-  // caf::aout(block_self) << service_.slave_account_id() << " ready.\n";
-  // auto mp =
-  // service_.context().GetAccountProfolios(service_.master_account_id());
-  send(monitor_, service_.slave_account_id(),
-       service_.context().GetAccountPortfolios(service_.master_account_id()),
-       service_.context().GetAccountPortfolios(service_.slave_account_id()),
-       true);
+  for (int i = 0; i < 10; ++i) {
+    auto master_context = std::make_shared<OrdersContext>(master_account_id_);
+    auto slave_context = std::make_shared<OrdersContext>(slave_account_id_);
 
-  // ss << std::setw(80) << std::setfill('=') << "=" << "\n";
+    auto cta_strategy = std::make_shared<CTAGenericStrategy>(
+        boost::lexical_cast<std::string>(i));
+    cta_strategy->Subscribe(&service_);
+    auto signal = std::make_shared<CTASignal>();
+    signal->SetOrdersContext(master_context, slave_context);
+    auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
+    signal_dispatch->SubscribeEnterOrderObserver(cta_strategy);
+    signal_dispatch->SetOrdersContext(master_context, slave_context);
+    service_.SubscribeRtnOrderObserver(boost::lexical_cast<std::string>(i),
+                                       signal_dispatch);
+  }
 
-  // caf::aout(block_self) << ss.str() << "\n";
   return {
-      [=](CTPRtnOrderAtom, OrderData order) {
-        service_.HandleRtnOrder(order);
-        send(monitor_, order);
+      [=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
+        OrderData order = MakeOrderData(field);
+        if (order.account_id() == master_account_id_) {
+          std::pair<TThostFtdcSessionIDType, std::string> key =
+              std::make_pair(field.SessionID, field.OrderRef);
+          if (master_adjust_order_ids_.find(key) !=
+              master_adjust_order_ids_.end()) {
+            order.order_id_ = master_adjust_order_ids_[key];
+          } else {
+            order.order_id_ = boost::lexical_cast<std::string>(
+                master_adjust_order_ids_.size());
+            master_adjust_order_ids_.insert({key, order.order_id_});
+          }
+        }
+        service_.RtnOrder(order);
+        portfolio_.OnRtnOrder(std::move(field));
+        send(monitor_, std::move(order));
 
         if (portfolio_age_ != 0) {
           portfolio_age_ = 0;
@@ -110,18 +114,18 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
         }
       },
       [=](DisplayPortfolioAtom) {
+        /*
         if (++portfolio_age_ == kAdultAge) {
-          send(monitor_, service_.slave_account_id(),
-               service_.context().GetAccountPortfolios(
-                   service_.master_account_id()),
-               service_.context().GetAccountPortfolios(
-                   service_.slave_account_id()),
+          send(monitor_, slave_context_.account_id(),
+               master_context_.GetAccountPortfolios(),
+               slave_context_.GetAccountPortfolios(),
                false);
           portfolio_age_ = 0;
         } else {
           delayed_send(this, std::chrono::milliseconds(100),
                        DisplayPortfolioAtom::value);
-        }
+       }
+       */
       },
   };
 }
