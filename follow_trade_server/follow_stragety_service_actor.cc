@@ -4,6 +4,7 @@
 #include "follow_trade_server/caf_defines.h"
 #include "follow_trade_server/ctp_util.h"
 #include "follow_trade_server/util.h"
+#include "websocket_util.h"
 
 static const int kAdultAge = 5;
 
@@ -137,11 +138,16 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
             //             send(monitor_, slave_account_id_ + ":" + stragety_id,
             //                  master_context_->GetAccountPortfolios(),
             //                  portfolio, true);
-            websocket_server_->send(hdl_, "hello",
-                                    websocketpp::frame::opcode::text);
+
+            websocket_server_->send(
+                hdl_,
+                MakePortfoilioJson(master_account_id_,
+                                   master_context_->GetAccountPortfolios(),
+                                   slave_account_id_, std::move(portfolio)),
+                websocketpp::frame::opcode::text);
           },
-          [=](StragetyPortfilioAtom, connection_hdl hdl) { 
-            hdl_ = hdl; 
+          [=](StragetyPortfilioAtom, connection_hdl hdl) {
+            hdl_ = hdl;
 
           }};
 }

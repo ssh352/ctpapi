@@ -123,13 +123,20 @@ struct LogonInfo {
 
 namespace pt = boost::property_tree;
 
-void on_message(caf::actor actor,
-                websocketpp::connection_hdl hdl,
-                message_ptr msg) {
-  caf::anon_send(actor, StragetyPortfilioAtom::value, hdl);
+void on_open(std::vector<caf::actor> actors, websocketpp::connection_hdl hdl) {
+  for (auto actor : actors) {
+    caf::anon_send(actor, StragetyPortfilioAtom::value, hdl);
+  }
 }
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  // struct AccountPortfolio {
+  //   std::string instrument;
+  //   OrderDirection direction;
+  //   int closeable;
+  //   int open;
+  //   int close;
+  // };
   Server m_server;
   m_server.init_asio();
 
@@ -178,7 +185,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                            slave.second.get<std::string>("password")});
     }
   }
-  std::vector<caf::actor> servcies;
+  std::vector<caf::actor> actors;
   for (auto follower : followers) {
     auto actor = system.spawn<FollowStragetyServiceActor>(
         &m_server, master_logon_info.user_id, follower.user_id,
@@ -188,10 +195,9 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
             follower.password,
             system.spawn(RtnOrderBinaryToFile, follower.user_id)),
         system.spawn(FolloweMonitor, follower.user_id));
-    servcies.push_back(actor);
-    m_server.set_message_handler(
-        std::bind(&on_message, actor, std::placeholders::_1, std::placeholders::_2));
+    actors.push_back(actor);
   }
+  m_server.set_open_handler(std::bind(&on_open, std::move(actors), std::placeholders::_1));
   m_server.listen(8888);
   // Start the server accept loop
   m_server.start_accept();
