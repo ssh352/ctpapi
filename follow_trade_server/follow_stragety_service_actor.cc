@@ -11,6 +11,7 @@ using DisplayPortfolioAtom = caf::atom_constant<caf::atom("dp")>;
 
 FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor_config& cfg,
+    Server* websocket_server,
     const std::string& master_account_id,
     const std::string& slave_account_id,
     std::vector<OrderPosition> master_init_positions,
@@ -19,9 +20,12 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor follow,
     caf::actor monitor)
     : caf::event_based_actor(cfg),
+      websocket_server_(websocket_server),
       cta_(cta),
       follow_(follow),
-      monitor_(monitor) {
+      monitor_(monitor),
+      master_account_id_(master_account_id),
+      slave_account_id_(slave_account_id) {
   send(monitor_, master_account_id, master_init_positions);
   send(monitor_, master_history_rtn_orders);
   master_init_positions_ = std::move(master_init_positions);
@@ -91,41 +95,53 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
     service_.SubscribeRtnOrderObserver(boost::lexical_cast<std::string>(i),
                                        signal_dispatch);
+    signal_dispatchs_.push_back(signal_dispatch);
   }
 
-  return {
-      [=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
-        OrderData order = MakeOrderData(field);
-        if (order.account_id() == master_account_id_) {
-          std::pair<TThostFtdcSessionIDType, std::string> key =
-              std::make_pair(field.SessionID, field.OrderRef);
-          if (master_adjust_order_ids_.find(key) !=
-              master_adjust_order_ids_.end()) {
-            order.order_id_ = master_adjust_order_ids_[key];
-          } else {
-            order.order_id_ = boost::lexical_cast<std::string>(
-                master_adjust_order_ids_.size());
-            master_adjust_order_ids_.insert({key, order.order_id_});
-          }
-        }
-        service_.RtnOrder(order);
-        portfolio_.OnRtnOrder(std::move(field));
-        send(monitor_, std::move(order));
+  return {[=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
+            OrderData order = MakeOrderData(field);
+            if (order.account_id() == master_account_id_) {
+              std::pair<TThostFtdcSessionIDType, std::string> key =
+                  std::make_pair(field.SessionID, field.OrderRef);
+              if (master_adjust_order_ids_.find(key) !=
+                  master_adjust_order_ids_.end()) {
+                order.order_id_ = master_adjust_order_ids_[key];
+              } else {
+                order.order_id_ = boost::lexical_cast<std::string>(
+                    master_adjust_order_ids_.size());
+                master_adjust_order_ids_.insert({key, order.order_id_});
+              }
 
-        /*
-        if (portfolio_age_ != 0) {
-          portfolio_age_ = 0;
-        } else {
-          ++portfolio_age_;
-          delayed_send(this, std::chrono::milliseconds(100),
-                       DisplayPortfolioAtom::value);
-        }
-        */
-      },
-      [=](DisplayPortfolioAtom, std::string stragety_id,
-          std::vector<AccountPortfolio> portfolio) {
-        send(monitor_, slave_account_id_ + ":" + stragety_id,
-             master_context_->GetAccountPortfolios(), portfolio, true);
-      },
-  };
+              std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
+                            std::bind(&CTASignalDispatch::RtnOrder,
+                                      std::placeholders::_1, order));
+
+            } else {
+              service_.RtnOrder(order);
+              portfolio_.OnRtnOrder(std::move(field));
+            }
+            send(monitor_, std::move(order));
+
+            /*
+            if (portfolio_age_ != 0) {
+              portfolio_age_ = 0;
+            } else {
+              ++portfolio_age_;
+              delayed_send(this, std::chrono::milliseconds(100),
+                           DisplayPortfolioAtom::value);
+            }
+            */
+          },
+          [=](DisplayPortfolioAtom, std::string stragety_id,
+              std::vector<AccountPortfolio> portfolio) {
+            //             send(monitor_, slave_account_id_ + ":" + stragety_id,
+            //                  master_context_->GetAccountPortfolios(),
+            //                  portfolio, true);
+            websocket_server_->send(hdl_, "hello",
+                                    websocketpp::frame::opcode::text);
+          },
+          [=](StragetyPortfilioAtom, connection_hdl hdl) { 
+            hdl_ = hdl; 
+
+          }};
 }

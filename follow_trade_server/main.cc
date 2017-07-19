@@ -7,8 +7,6 @@
 #include <boost/thread.hpp>
 #include <iostream>
 
-#include <windows.h>
-
 #include "caf/all.hpp"
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
@@ -18,6 +16,7 @@
 #include "follow_trade_server/cta_trade_actor.h"
 #include "follow_trade_server/ctp_trader.h"
 #include "follow_trade_server/util.h"
+#include "websocket_typedef.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -124,7 +123,16 @@ struct LogonInfo {
 
 namespace pt = boost::property_tree;
 
+void on_message(caf::actor actor,
+                websocketpp::connection_hdl hdl,
+                message_ptr msg) {
+  caf::anon_send(actor, StragetyPortfilioAtom::value, hdl);
+}
+
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  Server m_server;
+  m_server.init_asio();
+
   pt::ptree pt;
   try {
     pt::read_json(GetExecuableFileDirectoryPath() + "\\config.json", pt);
@@ -172,25 +180,25 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   }
   std::vector<caf::actor> servcies;
   for (auto follower : followers) {
-    servcies.push_back(system.spawn<FollowStragetyServiceActor>(
-        master_logon_info.user_id, follower.user_id, cta_init_positions,
-        cta_history_rnt_orders, cta_actor,
+    auto actor = system.spawn<FollowStragetyServiceActor>(
+        &m_server, master_logon_info.user_id, follower.user_id,
+        cta_init_positions, cta_history_rnt_orders, cta_actor,
         system.spawn<CtpTrader>(
             follower.front_server, follower.broker_id, follower.user_id,
             follower.password,
             system.spawn(RtnOrderBinaryToFile, follower.user_id)),
-        system.spawn(FolloweMonitor, follower.user_id)));
+        system.spawn(FolloweMonitor, follower.user_id));
+    servcies.push_back(actor);
+    m_server.set_message_handler(
+        std::bind(&on_message, actor, std::placeholders::_1, std::placeholders::_2));
   }
-
-  std::string input;
-  while (std::cin >> input) {
-    if (input == "exit") {
-      caf::anon_send_exit(cta_actor, caf::exit_reason::user_shutdown);
-      for (auto actor : servcies) {
-        caf::anon_send_exit(actor, caf::exit_reason::user_shutdown);
-      }
-      break;
-    }
+  m_server.listen(8888);
+  // Start the server accept loop
+  m_server.start_accept();
+  try {
+    m_server.run();
+  } catch (const std::exception& e) {
+    std::cout << e.what() << std::endl;
   }
   return 0;
 }

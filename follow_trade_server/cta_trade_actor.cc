@@ -97,6 +97,7 @@ caf::behavior CtpTrader::make_behavior() {
       [=](CTPReqHistoryRtnOrdersAtom,
           size_t start_seq) -> caf::result<std::vector<OrderData>> {
         std::vector<OrderData> orders;
+        orders.resize(rtn_orders_.size() - start_seq);
         std::transform(rtn_orders_.begin() + start_seq, rtn_orders_.end(),
                        orders.begin(),
                        std::bind(&MakeOrderData, std::placeholders::_1));

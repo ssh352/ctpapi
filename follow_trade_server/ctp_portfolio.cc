@@ -21,13 +21,13 @@ void CTPPortfolio::OnRtnOrder(CThostFtdcOrderField order) {
       active_orders_[key] = std::move(order);
     }
   } else {
+    auto position_key = std::make_pair(order.InstrumentID, order.Direction);
+    instrument_positions_[position_key].OnRtnOrder(it->second, order);
     if (order.OrderStatus == THOST_FTDC_OST_AllTraded ||
         order.OrderStatus == THOST_FTDC_OST_Canceled) {
       active_orders_.erase(it);
     } else {
       active_orders_[key] = std::move(order);
     }
-    auto position_key = std::make_pair(order.InstrumentID, order.Direction);
-    instrument_positions_[position_key].OnRtnOrder(it->second, order);
   }
 }

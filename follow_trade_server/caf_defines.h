@@ -3,6 +3,7 @@
 
 #include "caf/all.hpp"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
+#include "websocket_typedef.h"
 
 using CTPReqLogin = caf::atom_constant<caf::atom("lg")>;
 using CTPRspLogin = caf::atom_constant<caf::atom("rsplg")>;
@@ -16,6 +17,10 @@ using CTPRspSettlementInfoConfirm = caf::atom_constant<caf::atom("rspsttcnf")>;
 using CTPReqOpenOrderAtom = caf::atom_constant<caf::atom("reqoo")>;
 using CTPReqCloseOrderAtom = caf::atom_constant<caf::atom("reqco")>;
 using CTPCancelOrderAtom = caf::atom_constant<caf::atom("co")>;
+
+using StragetyPortfilioAtom = caf::atom_constant<caf::atom("sp")>;
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 

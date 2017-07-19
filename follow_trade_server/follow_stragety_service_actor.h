@@ -9,10 +9,12 @@
 #include "follow_strategy_mode/rtn_order_observer.h"
 #include "follow_strategy_mode/strategy_order_dispatch.h"
 #include "follow_trade_server/ctp_portfolio.h"
+#include "websocket_typedef.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
                                    EnterOrderObserver {
  public:
   FollowStragetyServiceActor(caf::actor_config& cfg,
+                             Server* websocket_server,
                              const std::string& master_account_id,
                              const std::string& slave_account_id,
                              std::vector<OrderPosition> master_init_positions,
@@ -77,6 +79,9 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   std::string slave_account_id_;
   std::map<std::pair<TThostFtdcSessionIDType, std::string>, std::string>
       master_adjust_order_ids_;
+  Server* websocket_server_;
+  connection_hdl hdl_;
+  std::vector<std::shared_ptr<CTASignalDispatch>> signal_dispatchs_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

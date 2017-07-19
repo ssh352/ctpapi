@@ -14,6 +14,7 @@
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+        '<(DEPTH)/third_party/websocketpp/websocketpp.gyp:*',
         '../follow_strategy_mode/follow_strategy_mode.gyp:follow_strategy_mode',
       ],
       'defines' : [
