@@ -39,8 +39,7 @@ void CTASignalDispatch::RtnOrder(OrderData rtn_order) {
       break;
   }
 
-  if (slave_context_->account_id() == rtn_order.account_id() &&
-      portfolio_observer_ != NULL) {
+  if (portfolio_observer_ != NULL) {
     portfolio_observer_->Notify(slave_context_->GetAccountPortfolios());
   }
 }

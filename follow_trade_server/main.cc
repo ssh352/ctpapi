@@ -5,6 +5,24 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+
+#include <boost/log/attributes.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/core.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/sinks.hpp>
+#include <boost/log/sinks/sync_frontend.hpp>
+#include <boost/log/sinks/text_ostream_backend.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+#include <boost/log/sources/severity_feature.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/support/date_time.hpp>
+#include <boost/log/support/exception.hpp>
+#include <boost/log/utility/setup/common_attributes.hpp>
+#include <boost/log/utility/setup/file.hpp>
+#include <boost/log/utility/setup/formatter_parser.hpp>
+
 #include <iostream>
 
 #include "caf/all.hpp"
@@ -129,7 +147,36 @@ void on_open(std::vector<caf::actor> actors, websocketpp::connection_hdl hdl) {
   }
 }
 
+void InitLogging() {
+  namespace logging = boost::log;
+  namespace attrs = boost::log::attributes;
+  namespace src = boost::log::sources;
+  namespace sinks = boost::log::sinks;
+  namespace expr = boost::log::expressions;
+  namespace keywords = boost::log::keywords;
+  boost::shared_ptr<logging::core> core = logging::core::get();
+
+  boost::shared_ptr<sinks::text_multifile_backend> backend =
+      boost::make_shared<sinks::text_multifile_backend>();
+  // Set up the file naming pattern
+  backend->set_file_name_composer(sinks::file::as_file_name_composer(
+      expr::stream << "logs/"
+                   << "order_%N_" << expr::attr<std::string>("strategy_id")
+                   << ".log"));
+
+  // Wrap it into the frontend and register in the core.
+  // The backend requires synchronization in the frontend.
+  typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+  boost::shared_ptr<sink_t> sink(new sink_t(backend));
+  sink->set_formatter(expr::stream << "["
+                                   << expr::attr<std::string>("strategy_id")
+                                   << "]: " << expr::smessage);
+
+  core->add_sink(sink);
+}
+
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  InitLogging();
   // struct AccountPortfolio {
   //   std::string instrument;
   //   OrderDirection direction;
@@ -197,7 +244,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
         system.spawn(FolloweMonitor, follower.user_id));
     actors.push_back(actor);
   }
-  m_server.set_open_handler(std::bind(&on_open, std::move(actors), std::placeholders::_1));
+  m_server.set_open_handler(
+      std::bind(&on_open, std::move(actors), std::placeholders::_1));
   m_server.listen(8888);
   // Start the server accept loop
   m_server.start_accept();
