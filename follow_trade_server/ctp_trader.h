@@ -1,6 +1,8 @@
 #ifndef CTP_TRADER_H
 #define CTP_TRADER_H
 #include <boost/lexical_cast.hpp>
+#include <boost/log/sources/logger.hpp>
+
 #include <fstream>
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "follow_strategy_mode/defines.h"
@@ -103,6 +105,8 @@ class CtpApi : public CThostFtdcTraderSpi {
   Delegate* delegate_;
   std::vector<OrderPosition> positions_;
   std::vector<CThostFtdcInstrumentField> instruments_;
+  
+  boost::log::sources::logger log_;
 };
 
 #endif /* CTP_TRADER_H */

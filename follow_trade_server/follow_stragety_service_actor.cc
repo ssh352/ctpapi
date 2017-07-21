@@ -139,12 +139,14 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
             //                  master_context_->GetAccountPortfolios(),
             //                  portfolio, true);
 
+            if (auto hdl = hdl_.lock()) {
             websocket_server_->send(
-                hdl_,
+                hdl,
                 MakePortfoilioJson(master_account_id_,
                                    master_context_->GetAccountPortfolios(),
                                    slave_account_id_, std::move(portfolio)),
                 websocketpp::frame::opcode::text);
+            }
           },
           [=](StragetyPortfilioAtom, connection_hdl hdl) {
             hdl_ = hdl;

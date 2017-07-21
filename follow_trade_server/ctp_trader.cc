@@ -2,6 +2,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/optional.hpp>
 #include <iostream>
+#include "follow_strategy_mode/logging_defines.h"
 #include "follow_strategy_mode/string_util.h"
 #include "follow_trade_server/util.h"
 
@@ -16,6 +17,8 @@ void CtpApi::LoginServer(const std::string& front_server,
                          const std::string& broker_id,
                          const std::string& user_id,
                          const std::string& password) {
+  log_.add_attribute("account_id",
+                     boost::log::attributes::constant<std::string>(user_id));
   broker_id_ = broker_id;
   user_id_ = user_id;
   password_ = password;
@@ -112,29 +115,36 @@ void CtpApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   //                           << "Instrument:" << pOrder->InstrumentID << ","
   //                           << "OC:" << pOrder->CombOffsetFlag[0] << ","
   //                           << "Direction:" << pOrder->Direction;
+  BOOST_LOG(log_) << "OnRtnOrder"
+                  << "," << pOrder->OrderRef << "," << pOrder->InstrumentID
+                  << "," << pOrder->CombOffsetFlag[0] << ","
+                  << pOrder->Direction << "," << pOrder->LimitPrice << ","
+                  << pOrder->VolumeTotalOriginal << "," << pOrder->VolumeTraded;
   delegate_->OnOrderData(pOrder);
 }
 
 void CtpApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
-  // std::cout << __FUNCTION__ << "\n";
+  BOOST_LOG(log_) << "OnRtnTrade"
+                  << "," << pTrade->OrderRef << "," << pTrade->InstrumentID
+                  << "," << pTrade->Direction;
 }
 
 void CtpApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                  CThostFtdcRspInfoField* pRspInfo) {
-  //   BOOST_LOG_TRIVIAL(warning)
-  //       << user_id_ << "]"
-  //       << "ErrRtnOrderInsert:" << pInputOrder->InstrumentID << ","
-  //       << "ErrorId:" << pRspInfo->ErrorID << ","
-  //       << "Err Message:" << pRspInfo->ErrorMsg;
+  BOOST_LOG(log_) << "OnErrRtnOrderInsert"
+                  << "," << pInputOrder->OrderRef << ","
+                  << pInputOrder->InstrumentID << ","
+                  << pInputOrder->CombOffsetFlag[0] << ","
+                  << pInputOrder->Direction << "," << pInputOrder->LimitPrice
+                  << "," << pInputOrder->VolumeTotalOriginal << ","
+                  << pRspInfo->ErrorID << "," << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                  CThostFtdcRspInfoField* pRspInfo) {
-  //   BOOST_LOG_TRIVIAL(warning)
-  //       << user_id_ << "]"
-  //       << "ErrRtnOrderAction:" << pOrderAction->InstrumentID << ","
-  //       << "ErrorId:" << pRspInfo->ErrorID << ","
-  //       << "Err Message:" << pRspInfo->ErrorMsg;
+  BOOST_LOG(log_) << "OnErrRtnOrderAction"
+                  << "," << pOrderAction->OrderRef << "," << pRspInfo->ErrorID
+                  << "," << pRspInfo->ErrorMsg;
 }
 
 void CtpApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,

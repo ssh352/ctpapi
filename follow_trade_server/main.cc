@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/log/attributes.hpp>
 #include <boost/log/common.hpp>
 #include <boost/log/core.hpp>
@@ -156,23 +157,44 @@ void InitLogging() {
   namespace keywords = boost::log::keywords;
   boost::shared_ptr<logging::core> core = logging::core::get();
 
-  boost::shared_ptr<sinks::text_multifile_backend> backend =
-      boost::make_shared<sinks::text_multifile_backend>();
-  // Set up the file naming pattern
-  backend->set_file_name_composer(sinks::file::as_file_name_composer(
-      expr::stream << "logs/"
-                   << "order_%N_" << expr::attr<std::string>("strategy_id")
-                   << ".log"));
+  {
+    boost::shared_ptr<sinks::text_multifile_backend> backend =
+        boost::make_shared<sinks::text_multifile_backend>();
+    // Set up the file naming pattern
+    backend->set_file_name_composer(sinks::file::as_file_name_composer(
+        expr::stream << "logs/"
+                     << "order_%N_" << expr::attr<std::string>("strategy_id")
+                     << ".log"));
 
-  // Wrap it into the frontend and register in the core.
-  // The backend requires synchronization in the frontend.
-  typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
-  boost::shared_ptr<sink_t> sink(new sink_t(backend));
-  sink->set_formatter(expr::stream << "["
-                                   << expr::attr<std::string>("strategy_id")
-                                   << "]: " << expr::smessage);
+    // Wrap it into the frontend and register in the core.
+    // The backend requires synchronization in the frontend.
+    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    sink->set_formatter(expr::stream << "["
+                                     << expr::attr<std::string>("strategy_id")
+                                     << "]: " << expr::smessage);
 
-  core->add_sink(sink);
+    core->add_sink(sink);
+  }
+  {
+    boost::shared_ptr<sinks::text_multifile_backend> backend =
+        boost::make_shared<sinks::text_multifile_backend>();
+    // Set up the file naming pattern
+    backend->set_file_name_composer(sinks::file::as_file_name_composer(
+        expr::stream << "logs/" << expr::attr<std::string>("account_id")
+                     << ".log"));
+
+    // Wrap it into the frontend and register in the core.
+    // The backend requires synchronization in the frontend.
+    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    sink->set_formatter(expr::format("[%1%] %2%") %
+                        expr::attr<boost::posix_time::ptime>("TimeStamp") %
+                        expr::smessage);
+    core->add_sink(sink);
+  }
+
+  boost::log::add_common_attributes();
 }
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
