@@ -1,5 +1,6 @@
 #ifndef CTP_BIND_DEMO_TRADER_H
 #define CTP_BIND_DEMO_TRADER_H
+#include <atomic>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -44,13 +45,12 @@ class Trader : public CThostFtdcTraderSpi {
   template <typename Fun, typename Field, typename Callback>
   void Request(Fun f, Field* field, Callback cb) {
     // CTPCallback c = cb;
-    int request_id = request_id_;
+    int request_id = request_id_.fetch_add(1);
     io_service_.post(
         [=](void) { 
       ctp_callbacks_.insert(std::make_pair(request_id, cb)); 
     });
-    // boost::bind(f, api_, field, request_id_)();
-    ++request_id_;
+    // boost::bind(f, api_, field, request_id)();
   }
 
   template <typename Field>
@@ -90,7 +90,7 @@ class Trader : public CThostFtdcTraderSpi {
   }
 
  private:
-  int request_id_ = 0;
+  std::atomic<int> request_id_ = 0;
   std::map<int, CTPCallback> ctp_callbacks_;
   CThostFtdcTraderApi* api_;
   boost::asio::io_service io_service_;
