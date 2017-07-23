@@ -59,7 +59,7 @@ class Trader : public CThostFtdcTraderSpi {
                           int request_id,
                           bool is_last) {
     CTPCallbackVisitor<Field*> visitor(&field, &rsp_info, is_last);
-    return [=](void) {
+    return [=, field{std::move(field)}, rsp_info{std::move(rsp_info)}](void) {
       if (ctp_callbacks_.find(request_id) != ctp_callbacks_.end()) {
         boost::apply_visitor(visitor, ctp_callbacks_[request_id]);
       }
