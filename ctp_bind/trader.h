@@ -30,6 +30,20 @@ class Trader : public CThostFtdcTraderSpi {
     CThostFtdcRspInfoField* rsp_info_;
     bool is_last_;
   };
+
+  struct CTPRspErrorCallbackVisitor : boost::static_visitor<> {
+    CTPRspErrorCallbackVisitor(CThostFtdcRspInfoField* rsp_info, bool is_last)
+        : rsp_info_(rsp_info), is_last_(is_last) {}
+
+    template <typename Field>
+    void operator()(std::function<void(Field, CThostFtdcRspInfoField*,bool)> callback) const {
+      callback(NULL, rsp_info_, is_last_);
+    }
+
+    CThostFtdcRspInfoField* rsp_info_;
+    bool is_last_;
+  };
+
   // virtual void OnRspOrderInsert(CThostFtdcInputOrderField *pInputOrder,
   // CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) {};
   typedef boost::variant<
@@ -47,9 +61,7 @@ class Trader : public CThostFtdcTraderSpi {
     // CTPCallback c = cb;
     int request_id = request_id_.fetch_add(1);
     io_service_.post(
-        [=](void) { 
-      ctp_callbacks_.insert(std::make_pair(request_id, cb)); 
-    });
+        [=](void) { ctp_callbacks_.insert(std::make_pair(request_id, cb)); });
     // boost::bind(f, api_, field, request_id)();
   }
 
@@ -59,7 +71,7 @@ class Trader : public CThostFtdcTraderSpi {
                           int request_id,
                           bool is_last) {
     CTPCallbackVisitor<Field*> visitor(&field, &rsp_info, is_last);
-    return [=, field{std::move(field)}, rsp_info{std::move(rsp_info)}](void) {
+    return [ =, field{std::move(field)}, rsp_info{std::move(rsp_info)} ](void) {
       if (ctp_callbacks_.find(request_id) != ctp_callbacks_.end()) {
         boost::apply_visitor(visitor, ctp_callbacks_[request_id]);
       }
@@ -87,6 +99,19 @@ class Trader : public CThostFtdcTraderSpi {
     io_service_.post(MakeHandleResponse(
         CThostFtdcInputOrderActionField(*pInputOrderAction),
         CThostFtdcRspInfoField(*pRspInfo), nRequestID, bIsLast));
+  }
+
+  virtual void OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                          int nRequestID,
+                          bool bIsLast) override {
+    CThostFtdcRspInfoField rsp_info(*pRspInfo);
+    io_service_.post([ =, rsp_info{std::move(rsp_info)} ](void) mutable {
+      if (ctp_callbacks_.find(nRequestID) != ctp_callbacks_.end()) {
+        // CTPRspErrorCallbackVisitor visitor(&rsp_info, bIsLast);
+        boost::apply_visitor(CTPRspErrorCallbackVisitor(&rsp_info, bIsLast),
+                             ctp_callbacks_[nRequestID]);
+      }
+    });
   }
 
  private:

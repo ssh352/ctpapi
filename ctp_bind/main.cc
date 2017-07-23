@@ -31,6 +31,19 @@ int main(int argc, char* argv[]) {
     trader.OnRspOrderAction(&field, &rsp_info, 1, true);
   }
 
+  {
+    CThostFtdcInputOrderActionField field;
+    trader.Request(
+        &CThostFtdcTraderApi::ReqOrderAction, &field,
+        // callback
+        [=](CThostFtdcInputOrderActionField* field, CThostFtdcRspInfoField* rsp_info,
+            bool is_last) { 
+      std::cout << "OnRspError\n"; }
+    );
+    CThostFtdcRspInfoField rsp_info;
+    trader.OnRspError(&rsp_info, 2, true);
+  }
+
   trader.Run();
 
   // virtual void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField
