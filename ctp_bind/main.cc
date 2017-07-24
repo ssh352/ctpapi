@@ -1,9 +1,14 @@
+#include <boost/make_shared.hpp>
 #include <iostream>
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "ctpapi/ThostFtdcTraderApi.h"
+
+#include "md.h"
+#include "md_observer.h"
 #include "trader.h"
 
 int main(int argc, char* argv[]) {
+  /*
   ctp_bind::Trader trader;
   {
     CThostFtdcInputOrderField field;
@@ -22,29 +27,45 @@ int main(int argc, char* argv[]) {
 
   {
     CThostFtdcInputOrderActionField field;
-    trader.Request(
-        &CThostFtdcTraderApi::ReqOrderAction, &field,
-        // callback
-        [=](CThostFtdcInputOrderActionField* order, CThostFtdcRspInfoField* rsp_info,
-            bool is_last) { std::cout << "OnRspOrderAction\n"; });
+    trader.Request(&CThostFtdcTraderApi::ReqOrderAction, &field,
+                   // callback
+                   [=](CThostFtdcInputOrderActionField* order,
+                       CThostFtdcRspInfoField* rsp_info,
+                       bool is_last) { std::cout << "OnRspOrderAction\n"; });
     CThostFtdcRspInfoField rsp_info;
     trader.OnRspOrderAction(&field, &rsp_info, 1, true);
   }
 
   {
     CThostFtdcInputOrderActionField field;
-    trader.Request(
-        &CThostFtdcTraderApi::ReqOrderAction, &field,
-        // callback
-        [=](CThostFtdcInputOrderActionField* field, CThostFtdcRspInfoField* rsp_info,
-            bool is_last) { 
-      std::cout << "OnRspError\n"; }
-    );
+    trader.Request(&CThostFtdcTraderApi::ReqOrderAction, &field,
+                   // callback
+                   [=](CThostFtdcInputOrderActionField* field,
+                       CThostFtdcRspInfoField* rsp_info,
+                       bool is_last) { std::cout << "OnRspError\n"; });
     CThostFtdcRspInfoField rsp_info;
     trader.OnRspError(&rsp_info, 2, true);
   }
+  */
 
-  trader.Run();
+  {
+    ctp_bind::Md md("tcp://180.168.146.187:10011", "9999", "053867", "8661188");
+    md.InitAsio();
+
+    md.Connect([=, &md](CThostFtdcRspUserLoginField* field,
+                        CThostFtdcRspInfoField* rsp_info) {
+      auto c = boost::make_shared<ctp_bind::MdObserver>(&md);
+      c->Subscribe({"c1709", "m1709"},
+                   [=](const CThostFtdcDepthMarketDataField* field) {
+                     std::cout << "[" << field->InstrumentID << "]"
+                               << " Bid:" << field->BidPrice1
+                               << ", Ask:" << field->AskPrice1 << "\n";
+                   });
+    });
+
+    md.Run();
+  }
+  // trader.Run();
 
   // virtual void OnRtnDepthMarketData(CThostFtdcDepthMarketDataField
   // *pDepthMarketData) {}; CThostFtdcSpecificInstrumentField
