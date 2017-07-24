@@ -38,29 +38,26 @@ void ctp_bind::Md::Run() {
 }
 
 void ctp_bind::Md::Subscribe(
-    std::vector<std::string> instruments,
-    std::function<void(const CThostFtdcDepthMarketDataField*)> callback,
-    boost::shared_ptr<MdObserver> tracker) {
-  MdSlotType::slot_type slot(callback);
-  slot.track(tracker);
-  io_service_->post([ =, instruments{std::move(instruments)} ](void) {
-    std::vector<char*> ctp_instruments;
-    for (auto& instrument : instruments) {
-      if (callbacks_.find(instrument) != callbacks_.end()) {
-        callbacks_[instrument].connect(slot);
-      } else {
-        ctp_instruments.push_back(const_cast<char*>(instrument.c_str()));
-        boost::signals2::signal<void(const CThostFtdcDepthMarketDataField*)>
-            signal;
-        signal.connect(slot);
-        callbacks_.insert(std::make_pair(instrument, std::move(signal)));
-      }
-    }
-    if (!ctp_instruments.empty()) {
-      api_->SubscribeMarketData(&ctp_instruments[0],
-                                static_cast<int>(ctp_instruments.size()));
-    }
-  });
+    std::vector<std::pair<std::string, MdSingnal::slot_type> >
+        instruments_slots) {
+  io_service_->post(
+      [ =, instruments_slots{std::move(instruments_slots)} ](void) {
+        std::vector<char*> ctp_instruments;
+        for (auto& instrument : instruments_slots) {
+          if (callbacks_.find(instrument.first) != callbacks_.end()) {
+            callbacks_[instrument.first].connect(instrument.second);
+          } else {
+            ctp_instruments.push_back(const_cast<char*>(instrument.first.c_str()));
+            MdSingnal signal;
+            signal.connect(instrument.second);
+            callbacks_.insert(std::make_pair(instrument.first, std::move(signal)));
+          }
+        }
+        if (!ctp_instruments.empty()) {
+          api_->SubscribeMarketData(&ctp_instruments[0],
+                                    static_cast<int>(ctp_instruments.size()));
+        }
+      });
 }
 
 void ctp_bind::Md::Unsbscribe(std::vector<std::string> instruments) {}

@@ -1,14 +1,14 @@
 #ifndef CTP_BIND_DEMO_MD_H
 #define CTP_BIND_DEMO_MD_H
 #include <boost/asio.hpp>
-#include <boost/signals2/signal.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/signals2/signal.hpp>
 #include "ctpapi/ThostFtdcMdApi.h"
 
 namespace ctp_bind {
 class MdObserver;
 typedef boost::signals2::signal<void(const CThostFtdcDepthMarketDataField*)>
-    MdSlotType;
+    MdSingnal;
 class Md : public CThostFtdcMdSpi {
  public:
   Md(std::string server,
@@ -25,9 +25,7 @@ class Md : public CThostFtdcMdSpi {
   void Run();
 
   void Subscribe(
-      std::vector<std::string> instruments,
-      std::function<void(const CThostFtdcDepthMarketDataField*)> callback,
-      boost::shared_ptr<MdObserver> tracker);
+      std::vector<std::pair<std::string, MdSingnal::slot_type> > instruments_slots);
 
   void Unsbscribe(std::vector<std::string> instruments);
 
@@ -85,7 +83,7 @@ class Md : public CThostFtdcMdSpi {
   CThostFtdcMdApi* api_;
   boost::asio::io_service* io_service_;
   std::shared_ptr<boost::asio::io_service::work> io_worker_;
-  std::map<std::string, MdSlotType> callbacks_;
+  std::map<std::string, MdSingnal> callbacks_;
 
   std::function<void(CThostFtdcRspUserLoginField* field,
                      CThostFtdcRspInfoField* rsp_info)>

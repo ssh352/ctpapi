@@ -52,15 +52,16 @@ int main(int argc, char* argv[]) {
     ctp_bind::Md md("tcp://180.168.146.187:10011", "9999", "053867", "8661188");
     md.InitAsio();
 
+    auto c = ctp_bind::MdObserver::Create(&md);
     md.Connect([=, &md](CThostFtdcRspUserLoginField* field,
                         CThostFtdcRspInfoField* rsp_info) {
-      auto c = boost::make_shared<ctp_bind::MdObserver>(&md);
       c->Subscribe({"c1709", "m1709"},
                    [=](const CThostFtdcDepthMarketDataField* field) {
                      std::cout << "[" << field->InstrumentID << "]"
                                << " Bid:" << field->BidPrice1
                                << ", Ask:" << field->AskPrice1 << "\n";
                    });
+      c->Unsubscribe({"m1709"});
     });
 
     md.Run();
