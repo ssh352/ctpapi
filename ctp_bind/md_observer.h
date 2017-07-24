@@ -5,9 +5,10 @@
 #include "md.h"
 
 namespace ctp_bind {
-class MdObserver : public boost::enable_shared_from_this<MdObserver> {
+class MdObserver {
   typedef std::function<void(const CThostFtdcDepthMarketDataField*)>
       MarketCallback;
+
  public:
   static boost::shared_ptr<MdObserver> Create(Md* md) {
     return boost::shared_ptr<MdObserver>(new MdObserver(md),
@@ -31,9 +32,9 @@ class MdObserver : public boost::enable_shared_from_this<MdObserver> {
 
   void Unsubscribe(std::vector<std::string> instruments) {
     for (auto& instrument : instruments) {
-      auto it = std::find_if(instrument_trackers_.begin(), instrument_trackers_.end(), [=](auto i){
-        return *i == instrument;
-      });
+      auto it =
+          std::find_if(instrument_trackers_.begin(), instrument_trackers_.end(),
+                       [=](auto i) { return *i == instrument; });
       if (it != instrument_trackers_.end()) {
         instrument_trackers_.erase(it);
       }

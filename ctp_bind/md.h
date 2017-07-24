@@ -85,6 +85,7 @@ class Md : public CThostFtdcMdSpi {
   std::shared_ptr<boost::asio::io_service::work> io_worker_;
   std::map<std::string, MdSingnal> callbacks_;
 
+
   std::function<void(CThostFtdcRspUserLoginField* field,
                      CThostFtdcRspInfoField* rsp_info)>
       on_connect_;

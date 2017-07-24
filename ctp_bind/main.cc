@@ -55,12 +55,14 @@ int main(int argc, char* argv[]) {
     auto c = ctp_bind::MdObserver::Create(&md);
     md.Connect([=, &md](CThostFtdcRspUserLoginField* field,
                         CThostFtdcRspInfoField* rsp_info) {
+      std::string str;
       c->Subscribe({"c1709", "m1709"},
                    [=](const CThostFtdcDepthMarketDataField* field) {
                      std::cout << "[" << field->InstrumentID << "]"
                                << " Bid:" << field->BidPrice1
                                << ", Ask:" << field->AskPrice1 << "\n";
                    });
+
       c->Unsubscribe({"m1709"});
     });
 
