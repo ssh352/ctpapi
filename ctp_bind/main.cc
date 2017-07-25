@@ -1,14 +1,14 @@
+#include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <iostream>
 #include <thread>
-#include <boost/format.hpp>
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "ctpapi/ThostFtdcTraderApi.h"
 
+#include "api_struct.h"
 #include "md.h"
 #include "md_observer.h"
 #include "trader.h"
-#include "api_struct.h"
 
 int main(int argc, char* argv[]) {
   ctp_bind::Trader trader("tcp://180.168.146.187:10000", "9999", "053867",
@@ -24,44 +24,14 @@ int main(int argc, char* argv[]) {
 
     std::string order_ref = "100";
     {
-      strcpy(field.InstrumentID, "c1709");
-      strcpy(field.OrderRef, order_ref.c_str());
-      field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-      field.Direction = true ? THOST_FTDC_D_Buy : THOST_FTDC_D_Sell;
-      field.CombOffsetFlag[0] = THOST_FTDC_OF_Open;
-      strcpy(field.CombHedgeFlag, "1");
-      field.LimitPrice = 1661.0;
-      field.VolumeTotalOriginal = 1;
-      field.TimeCondition = THOST_FTDC_TC_GFD;
-      strcpy(field.GTDDate, "");
-      field.VolumeCondition = THOST_FTDC_VC_AV;
-      field.MinVolume = 1;
-      field.ContingentCondition = THOST_FTDC_CC_Immediately;
-      field.StopPrice = 0;
-      field.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
-      field.IsAutoSuspend = 0;
-      field.UserForceClose = 0;
-      /*
-      trader.Request(&CThostFtdcTraderApi::ReqOrderInsert, &field,
-                     // callback
-                     [=](CThostFtdcInputOrderField* order,
-                         CThostFtdcRspInfoField* rsp_info, bool is_last) {
-                       std::cout << "call1111\n";
-
-                     });
-                     */
+      trader.InputOrder("c1709", PositionEffect::kOpen, OrderDirection::kBuy,
+                        1640, 1, order_ref);
     }
-
-    trader.SubscribeRtnOrder(
-        [=,&trader](boost::shared_ptr<OrderField> order) {
-      /*
-          if (order->FrontID == rsp_field->FrontID &&
-              order->SessionID == rsp_field->SessionID) {
-            trader.CancelOrder(str(boost::format("%d:%d:%s") % order->FrontID %
-                                   order->SessionID % order->OrderRef));
-          }
-          */
-        });
+    trader.SubscribeRtnOrder([=, &trader](boost::shared_ptr<OrderField> order) {
+      if (order->addition_info == order_ref) {
+        trader.CancelOrder(order->order_id);
+      }
+    });
   });
 
   trader.Run();
