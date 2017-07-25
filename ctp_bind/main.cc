@@ -8,6 +8,7 @@
 #include "md.h"
 #include "md_observer.h"
 #include "trader.h"
+#include "api_struct.h"
 
 int main(int argc, char* argv[]) {
   ctp_bind::Trader trader("tcp://180.168.146.187:10000", "9999", "053867",
@@ -41,6 +42,7 @@ int main(int argc, char* argv[]) {
       field.IsAutoSuspend = 0;
       field.UserForceClose = 0;
 
+      /*
       trader.Request(&CThostFtdcTraderApi::ReqOrderInsert, &field,
                      // callback
                      [=](CThostFtdcInputOrderField* order,
@@ -48,15 +50,18 @@ int main(int argc, char* argv[]) {
                        std::cout << "call1111\n";
 
                      });
+                     */
     }
 
     trader.SubscribeRtnOrder(
-        [=,&trader](boost::shared_ptr<CThostFtdcOrderField> order) {
+        [=,&trader](boost::shared_ptr<OrderField> order) {
+      /*
           if (order->FrontID == rsp_field->FrontID &&
               order->SessionID == rsp_field->SessionID) {
             trader.CancelOrder(str(boost::format("%d:%d:%s") % order->FrontID %
                                    order->SessionID % order->OrderRef));
           }
+          */
         });
   });
 
