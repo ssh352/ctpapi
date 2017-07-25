@@ -14,7 +14,7 @@
 
 namespace ctp_bind {
 class Trader : public CThostFtdcTraderSpi {
-  public:
+ public:
   Trader(std::string server,
          std::string broker_id,
          std::string user_id,
@@ -27,17 +27,12 @@ class Trader : public CThostFtdcTraderSpi {
 
   void Run();
 
-  void OpenOrder(std::string instrument,
-                 TThostFtdcDirectionType direction,
-                 double price,
-                 int volume,
-                 std::string order_ref = "");
-
-  void CloseOrder(std::string instrument,
-                  TThostFtdcDirectionType direction,
+  void InputOrder(std::string instrument,
+                  PositionEffect position_effect,
+                  OrderDirection direction,
                   double price,
                   int volume,
-                  std::string order_ref = "");
+                  std::string addition_info);
 
   void CancelOrder(std::string order_id);
 
@@ -88,7 +83,9 @@ class Trader : public CThostFtdcTraderSpi {
 
   void OnRtnOrderOnIOThread(boost::shared_ptr<CThostFtdcOrderField> order);
 
-  std::string MakeOrderId(TThostFtdcFrontIDType front_id, TThostFtdcSessionIDType session_id, const std::string& order_ref) const;
+  std::string MakeOrderId(TThostFtdcFrontIDType front_id,
+                          TThostFtdcSessionIDType session_id,
+                          const std::string& order_ref) const;
 
   OrderStatus ParseTThostFtdcOrderStatus(
       boost::shared_ptr<CThostFtdcOrderField> order) const;
@@ -102,12 +99,15 @@ class Trader : public CThostFtdcTraderSpi {
   std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField> >
       orders_;
 
+  std::unordered_map<std::string, std::string> order_addition_infos_;
+
   std::function<void(CThostFtdcRspUserLoginField*, CThostFtdcRspInfoField*)>
       on_connect_;
 
   std::function<void(boost::shared_ptr<OrderField>)> on_rtn_order_;
 
   std::atomic<int> request_id_ = 0;
+  std::atomic<int> order_ref_index_ = 0;
   std::string server_;
   std::string broker_id_;
   std::string user_id_;
@@ -115,6 +115,10 @@ class Trader : public CThostFtdcTraderSpi {
   TThostFtdcSessionIDType session_id_ = 0;
   TThostFtdcFrontIDType front_id_ = 0;
   bool IsErrorRspInfo(CThostFtdcRspInfoField* pRspInfo) const;
+  TThostFtdcDirectionType OrderDirectionToTThostOrderDireciton(
+      OrderDirection direction);
+  TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(
+      PositionEffect position_effect);
 };
 }  // namespace ctp_bind
 

@@ -39,6 +39,7 @@ struct OrderField {
   int error_id;
   int raw_error_id;
   std::string raw_error_message;
+  std::string addition_info;
 };
 
 #endif  // CTP_BIND_API_STRUCT_H

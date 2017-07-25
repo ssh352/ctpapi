@@ -1,5 +1,6 @@
 #include "trader.h"
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 
 void ctp_bind::Trader::OnRspAuthenticate(
@@ -43,8 +44,9 @@ void ctp_bind::Trader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
 
 void ctp_bind::Trader::OnRtnOrderOnIOThread(
     boost::shared_ptr<CThostFtdcOrderField> order) {
-  orders_.insert_or_assign(
-      MakeOrderId(order->FrontID, order->SessionID, order->OrderRef), order);
+  std::string order_id =
+      MakeOrderId(order->FrontID, order->SessionID, order->OrderRef);
+  orders_.insert_or_assign(order_id, order);
 
   auto order_field = boost::make_shared<OrderField>();
   // order_field->instrument_name = order->InstrumentName;
@@ -70,6 +72,10 @@ void ctp_bind::Trader::OnRtnOrderOnIOThread(
   order_field->raw_error_id = 0;
 
   if (on_rtn_order_ != NULL) {
+    if (order_addition_infos_.find(order_id) != order_addition_infos_.end()) {
+      order_field->addition_info = order_addition_infos_[order_id];
+    }
+
     on_rtn_order_(std::move(order_field));
   }
 }
@@ -121,6 +127,21 @@ bool ctp_bind::Trader::IsErrorRspInfo(CThostFtdcRspInfoField* pRspInfo) const {
   return (pRspInfo != NULL) && (pRspInfo->ErrorID != 0);
 }
 
+TThostFtdcDirectionType ctp_bind::Trader::OrderDirectionToTThostOrderDireciton(
+    OrderDirection direction) {
+  return direction == OrderDirection::kBuy ? THOST_FTDC_D_Buy
+                                           : THOST_FTDC_D_Sell;
+}
+
+TThostFtdcOffsetFlagType ctp_bind::Trader::PositionEffectToTThostOffsetFlag(
+    PositionEffect position_effect) {
+  return position_effect == PositionEffect::kOpen
+             ? THOST_FTDC_OF_Open
+             : (position_effect == PositionEffect::kCloseToday
+                    ? THOST_FTDC_OF_CloseToday
+                    : THOST_FTDC_OF_Close);
+}
+
 ctp_bind::Trader::Trader(std::string server,
                          std::string broker_id,
                          std::string user_id,
@@ -155,20 +176,30 @@ void ctp_bind::Trader::Run() {
   io_service_->run();
 }
 
-void ctp_bind::Trader::OpenOrder(std::string instrument,
-                                 TThostFtdcDirectionType direction,
-                                 double price,
-                                 int volume,
-                                 std::string order_ref /*= ""*/) {
+void ctp_bind::Trader::InputOrder(std::string instrument,
+                                  PositionEffect position_effect,
+                                  OrderDirection direction,
+                                  double price,
+                                  int volume,
+                                  std::string addition_info) {
+  std::string order_ref =
+      boost::lexical_cast<std::string>(order_ref_index_.fetch_add(1));
+  if (!addition_info.empty()) {
+    io_service_->post([
+      =, order_id(MakeOrderId(front_id_, session_id_, order_ref)),
+      addition_info(std::move(addition_info))
+    ]() { order_addition_infos_.insert_or_assign(order_id, addition_info); });
+  }
   CThostFtdcInputOrderField field = {0};
   // strcpy(filed.BrokerID, "");
   // strcpy(filed.InvestorID, "");
+  // strcpy(filed.UserID, );
+
   strcpy(field.InstrumentID, instrument.c_str());
   strcpy(field.OrderRef, order_ref.c_str());
-  // strcpy(filed.UserID, );
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-  field.Direction = direction == direction;
-  field.CombOffsetFlag[0] = THOST_FTDC_OF_Open;
+  field.Direction = OrderDirectionToTThostOrderDireciton(direction);
+  field.CombOffsetFlag[0] = PositionEffectToTThostOffsetFlag(position_effect);
   strcpy(field.CombHedgeFlag, "1");
   field.LimitPrice = price;
   field.VolumeTotalOriginal = volume;
@@ -186,12 +217,6 @@ void ctp_bind::Trader::OpenOrder(std::string instrument,
   strcpy(field.InvestorID, user_id_.c_str());
   api_->ReqOrderInsert(&field, 0);
 }
-
-void ctp_bind::Trader::CloseOrder(std::string instrument,
-                                  TThostFtdcDirectionType direction,
-                                  double price,
-                                  int volume,
-                                  std::string order_ref /*= ""*/) {}
 
 void ctp_bind::Trader::CancelOrder(std::string order_id) {
   io_service_->post(
@@ -228,13 +253,18 @@ void ctp_bind::Trader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                         bool bIsLast) {
   if (IsErrorRspInfo(pRspInfo) && pInputOrder != NULL) {
     auto order_field = boost::make_shared<OrderField>();
-    order_field->order_id =
+    std::string order_id =
         MakeOrderId(front_id_, session_id_, pInputOrder->OrderRef);
+    order_field->order_id = order_id;
     order_field->status = OrderStatus::kRejected;
     order_field->raw_error_id = pRspInfo->ErrorID;
     order_field->raw_error_message = pRspInfo->ErrorMsg;
     io_service_->post([ =, order_field(std::move(order_field)) ]() {
       if (on_rtn_order_ != NULL) {
+        if (order_addition_infos_.find(order_id) !=
+            order_addition_infos_.end()) {
+          order_field->addition_info = order_addition_infos_[order_id];
+        }
         on_rtn_order_(std::move(order_field));
       }
     });
@@ -245,9 +275,7 @@ void ctp_bind::Trader::OnRspOrderAction(
     CThostFtdcInputOrderActionField* pInputOrderAction,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
-    bool bIsLast) {
-
-}
+    bool bIsLast) {}
 
 void ctp_bind::Trader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                                   int nRequestID,

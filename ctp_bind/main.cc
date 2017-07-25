@@ -41,7 +41,6 @@ int main(int argc, char* argv[]) {
       field.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
       field.IsAutoSuspend = 0;
       field.UserForceClose = 0;
-
       /*
       trader.Request(&CThostFtdcTraderApi::ReqOrderInsert, &field,
                      // callback
