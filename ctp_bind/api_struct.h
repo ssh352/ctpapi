@@ -17,7 +17,8 @@ enum class OrderStatus {
   kActive,
   kAllFilled,
   kCanceled,
-  kRejected,
+  kInputRejected,
+  kCancelRejected,
 };
 
 struct OrderField {

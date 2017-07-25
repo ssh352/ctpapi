@@ -230,21 +230,17 @@ void ctp_bind::Trader::SubscribeRtnOrder(
 
 void ctp_bind::Trader::CancelOrderOnIOThread(std::string order_id) {
   if (orders_.find(order_id) != orders_.end()) {
-    ReqCancelOrder(orders_[order_id]);
+    auto order = orders_[order_id];
+    CThostFtdcInputOrderActionField field = {0};
+    field.ActionFlag = THOST_FTDC_AF_Delete;
+    field.FrontID = front_id_;
+    field.SessionID = session_id_;
+    strcpy(field.OrderRef, order->OrderRef);
+    strcpy(field.ExchangeID, order->ExchangeID);
+    strcpy(field.OrderSysID, order->OrderSysID);
+    strcpy(field.BrokerID, order->BrokerID);
+    api_->ReqOrderAction(&field, request_id_.fetch_add(1));
   }
-}
-
-void ctp_bind::Trader::ReqCancelOrder(
-    boost::shared_ptr<CThostFtdcOrderField> order) {
-  CThostFtdcInputOrderActionField field = {0};
-  field.ActionFlag = THOST_FTDC_AF_Delete;
-  field.FrontID = front_id_;
-  field.SessionID = session_id_;
-  strcpy(field.OrderRef, order->OrderRef);
-  strcpy(field.ExchangeID, order->ExchangeID);
-  strcpy(field.OrderSysID, order->OrderSysID);
-  strcpy(field.BrokerID, order->BrokerID);
-  api_->ReqOrderAction(&field, request_id_.fetch_add(1));
 }
 
 void ctp_bind::Trader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
@@ -256,7 +252,7 @@ void ctp_bind::Trader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
     std::string order_id =
         MakeOrderId(front_id_, session_id_, pInputOrder->OrderRef);
     order_field->order_id = order_id;
-    order_field->status = OrderStatus::kRejected;
+    order_field->status = OrderStatus::kInputRejected;
     order_field->raw_error_id = pRspInfo->ErrorID;
     order_field->raw_error_message = pRspInfo->ErrorMsg;
     io_service_->post([ =, order_field(std::move(order_field)) ]() {
@@ -275,7 +271,26 @@ void ctp_bind::Trader::OnRspOrderAction(
     CThostFtdcInputOrderActionField* pInputOrderAction,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
-    bool bIsLast) {}
+    bool bIsLast) {
+  if (IsErrorRspInfo(pRspInfo) && pInputOrderAction != NULL) {
+    auto order_field = boost::make_shared<OrderField>();
+    std::string order_id =
+        MakeOrderId(front_id_, session_id_, pInputOrderAction->OrderRef);
+    order_field->order_id = order_id;
+    order_field->status = OrderStatus::kCancelRejected;
+    order_field->raw_error_id = pRspInfo->ErrorID;
+    order_field->raw_error_message = pRspInfo->ErrorMsg;
+    io_service_->post([ =, order_field(std::move(order_field)) ]() {
+      if (on_rtn_order_ != NULL) {
+        if (order_addition_infos_.find(order_id) !=
+            order_addition_infos_.end()) {
+          order_field->addition_info = order_addition_infos_[order_id];
+        }
+        on_rtn_order_(std::move(order_field));
+      }
+    });
+  }
+}
 
 void ctp_bind::Trader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                                   int nRequestID,

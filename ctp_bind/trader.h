@@ -77,8 +77,6 @@ class Trader : public CThostFtdcTraderSpi {
   virtual void OnFrontDisconnected(int nReason) override;
 
  private:
-  void ReqCancelOrder(boost::shared_ptr<CThostFtdcOrderField> order);
-
   void CancelOrderOnIOThread(std::string);
 
   void OnRtnOrderOnIOThread(boost::shared_ptr<CThostFtdcOrderField> order);
