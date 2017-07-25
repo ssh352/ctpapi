@@ -9,7 +9,7 @@
       'variables' : {
       },
       'sources' : [
-       # '<!@(python ../build/glob_files.py . *.h *.cc)',
+       '<!@(python ../build/glob_files.py . *.h *.cc *.cpp)',
       ],
       'sources!':[
         'main.cc'
