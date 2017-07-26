@@ -1,7 +1,7 @@
 #ifndef FOLLOW_TRADE_ORDER_MANAGER_H
 #define FOLLOW_TRADE_ORDER_MANAGER_H
 #include <boost/optional.hpp>
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 #include "follow_strategy_mode/order.h"
 
 class OrderManager {

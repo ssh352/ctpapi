@@ -9,6 +9,8 @@
 static const int kAdultAge = 5;
 
 using DisplayPortfolioAtom = caf::atom_constant<caf::atom("dp")>;
+using RtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
+using CTARtnOrderAtom = caf::atom_constant<caf::atom("cta_ro")>;
 
 FollowStragetyServiceActor::FollowStragetyServiceActor(
     caf::actor_config& cfg,
@@ -18,12 +20,12 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     std::vector<OrderPosition> master_init_positions,
     std::vector<OrderData> master_history_rtn_orders,
     caf::actor cta,
-    caf::actor follow,
+    std::unique_ptr<ctp_bind::Trader> trader,
     caf::actor monitor)
     : caf::event_based_actor(cfg),
       websocket_server_(websocket_server),
       cta_(cta),
-      follow_(follow),
+      trader_(std::move(trader)),
       monitor_(monitor),
       master_account_id_(master_account_id),
       slave_account_id_(slave_account_id) {
@@ -40,6 +42,8 @@ void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
                                            OrderDirection direction,
                                            double price,
                                            int quantity) {
+  trader_->LimitOrder(strategy_id, order_id, instrument, PositionEffect::kOpen,
+                      direction, price, quantity);
 }
 
 void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
@@ -49,19 +53,32 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
                                             PositionEffect position_effect,
                                             double price,
                                             int quantity) {
+  trader_->LimitOrder(strategy_id, order_id, instrument, position_effect,
+                      direction, price, quantity);
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
                                              const std::string& order_id) {
+  trader_->CancelOrder(strategy_id, order_id);
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
+  // trader_->InitAsio();
+  trader_->Connect([=](CThostFtdcRspUserLoginField* rsp_field,
+                       CThostFtdcRspInfoField* rsp_info) {
+    if (rsp_info != NULL && rsp_info->ErrorID == 0) {
+    }
+  });
+  /*
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
     caf::aout(block_self) << slave_account_id_ << " fail!\n";
     return {};
   }
 
+  */
+
+  /*
   // portfolio_.InitYesterdayPosition(init_positions);
 
   std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -69,7 +86,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
-
+  */
 
   auto stragetys = {"Foo", "Bar"};
 
@@ -92,33 +109,23 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
             boost::lexical_cast<std::string>(s)));
 
     signal_dispatchs_.push_back(signal_dispatch);
-
   }
 
-  return {[=](CTPRtnOrderAtom, CThostFtdcOrderField field) {
-            OrderData order = MakeOrderData(field);
+  return {[=]() {
+
+          },
+          [=](CTARtnOrderAtom, boost::shared_ptr<OrderField> order) {
+            std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
+                          std::bind(&CTASignalDispatch::RtnOrder,
+                                    std::placeholders::_1, order));
+          },
+          [=](RtnOrderAtom, boost::shared_ptr<OrderField> order) {
             if (order.account_id() == master_account_id_) {
-              std::pair<TThostFtdcSessionIDType, std::string> key =
-                  std::make_pair(field.SessionID, field.OrderRef);
-              if (master_adjust_order_ids_.find(key) !=
-                  master_adjust_order_ids_.end()) {
-                order.order_id_ = master_adjust_order_ids_[key];
-              } else {
-                order.order_id_ = boost::lexical_cast<std::string>(
-                    master_adjust_order_ids_.size());
-                master_adjust_order_ids_.insert({key, order.order_id_});
-              }
-
-              std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
-                            std::bind(&CTASignalDispatch::RtnOrder,
-                                      std::placeholders::_1, order));
-
             } else {
               // service_.RtnOrder(order);
               portfolio_.OnRtnOrder(std::move(field));
             }
             send(monitor_, std::move(order));
-
             /*
             if (portfolio_age_ != 0) {
               portfolio_age_ = 0;

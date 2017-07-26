@@ -1,7 +1,7 @@
 #ifndef FOLLOW_TRADE_SERVER_CAF_CTP_UTIL_H
 #define FOLLOW_TRADE_SERVER_CAF_CTP_UTIL_H
 #include "caf/all.hpp"
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 bool Logon(caf::actor actor);
 

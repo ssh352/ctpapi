@@ -183,7 +183,7 @@ void ctp_bind::Trader::Run() {
   io_service_->run();
 }
 
-void ctp_bind::Trader::InputOrder(std::string instrument,
+void ctp_bind::Trader::LimitOrder(std::string instrument,
                                   PositionEffect position_effect,
                                   OrderDirection direction,
                                   double price,
@@ -220,7 +220,7 @@ void ctp_bind::Trader::InputOrder(std::string instrument,
   */
 }
 
-void ctp_bind::Trader::InputOrder(std::string sub_account_id,
+void ctp_bind::Trader::LimitOrder(std::string sub_account_id,
                                   std::string sub_order_id,
                                   std::string instrument,
                                   PositionEffect position_effect,

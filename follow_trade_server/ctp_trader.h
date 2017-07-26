@@ -5,7 +5,7 @@
 
 #include <fstream>
 #include "ctpapi/ThostFtdcTraderApi.h"
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 class CtpApi : public CThostFtdcTraderSpi {
  public:
   class Delegate {

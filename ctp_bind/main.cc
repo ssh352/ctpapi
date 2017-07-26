@@ -5,7 +5,7 @@
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "ctpapi/ThostFtdcTraderApi.h"
 
-#include "api_struct.h"
+#include "common/api_struct.h"
 #include "md.h"
 #include "md_observer.h"
 #include "trader.h"
@@ -24,12 +24,12 @@ int main(int argc, char* argv[]) {
 
 
     {
-      trader.InputOrder("S1", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
+      trader.LimitOrder("S1", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
                         1642, 1);
     }
 
     {
-      trader.InputOrder("S2", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
+      trader.LimitOrder("S2", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
                         1643, 1);
     }
     bool cancel = true;

@@ -1,4 +1,4 @@
-#include "defines.h"
+#include "common/api_struct.h"
 #ifndef FOLLOW_STRATEGY_MODE_STRATEGY_ENTER_ORDER_OBSERVABLE_H
 #define FOLLOW_STRATEGY_MODE_STRATEGY_ENTER_ORDER_OBSERVABLE_H
 

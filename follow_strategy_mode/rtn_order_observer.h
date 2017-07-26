@@ -1,6 +1,6 @@
 #ifndef FOLLOW_STRATEGY_MODE_RTN_ORDER_OBSERVER_H
 #define FOLLOW_STRATEGY_MODE_RTN_ORDER_OBSERVER_H
-#include "defines.h"
+#include "common/api_struct.h"
 
 class RtnOrderObserver {
  public:

@@ -9,7 +9,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
-#include "api_struct.h"
+#include "common/api_struct.h"
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 
@@ -28,7 +28,7 @@ class Trader : public CThostFtdcTraderSpi {
 
   void Run();
 
-  void InputOrder(std::string sub_account_id,
+  void LimitOrder(std::string sub_account_id,
                   std::string sub_order_id,
                   std::string instrument,
                   PositionEffect position_effect,
@@ -36,7 +36,7 @@ class Trader : public CThostFtdcTraderSpi {
                   double price,
                   int volume);
 
-  void InputOrder(std::string instrument,
+  void LimitOrder(std::string instrument,
                   PositionEffect position_effect,
                   OrderDirection direction,
                   double price,

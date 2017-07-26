@@ -1,6 +1,6 @@
 #include "gtest/gtest.h"
 #include "follow_strategy_servcie_fixture.h"
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 TEST_F(FollowStragetyServiceFixture, Profolio) {
   master_context_->InitPositions(

@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_ORDER_H
 #define FOLLOW_TRADE_ORDER_H
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 class Order {
  public:

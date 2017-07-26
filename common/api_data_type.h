@@ -1,5 +1,5 @@
-#ifndef FOLLOW_TRADE_DEFINES_H
-#define FOLLOW_TRADE_DEFINES_H
+﻿#ifndef COMMON_API_DATA_TYPE_H
+#define COMMON_API_DATA_TYPE_H
 
 enum class OrderEventType {
   kIgnore,
@@ -13,14 +13,14 @@ enum class OrderEventType {
 enum class OrderDirection {
   kUndefine,
   kBuy,
-  kSell 
+  kSell
 };
 
-enum class PositionEffect { 
+enum class PositionEffect {
   kUndefine,
   kOpen,
   kClose,
-  kCloseToday 
+  kCloseToday
 };
 
 enum class OrderStatus {
@@ -31,5 +31,4 @@ enum class OrderStatus {
   kCancelRejected,
 };
 
-
-#endif  // FOLLOW_TRADE_DEFINES_H
+#endif // COMMON_API_DATA_TYPE_H

@@ -1,6 +1,6 @@
 #ifndef FOLLOW_STRATEGY_MODE_CTA_SIGLE_OBSERVER_H
 #define FOLLOW_STRATEGY_MODE_CTA_SIGLE_OBSERVER_H
-#include "defines.h"
+#include "common/api_struct.h"
 
 class CTASignalObserver {
 public:

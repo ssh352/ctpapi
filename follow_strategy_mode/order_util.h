@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_ORDER_UTIL_H
 #define FOLLOW_TRADE_ORDER_UTIL_H
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 bool IsCloseOrder(PositionEffect position_effect);
 

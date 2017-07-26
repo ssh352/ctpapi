@@ -3,7 +3,7 @@
 #include <map>
 #include <vector>
 #include "follow_strategy_mode/close_corr_orders_manager.h"
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 #include "follow_strategy_mode/order_manager.h"
 #include "follow_strategy_mode/position_manager.h"

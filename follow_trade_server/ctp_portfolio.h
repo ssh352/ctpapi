@@ -2,7 +2,7 @@
 #define FOLLOW_TRADE_SERVER_CTP_PORTFOLIO_H
 #include "ctp_instrument_position.h"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 
 class CTPPortfolio {
  public:

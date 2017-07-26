@@ -1,6 +1,6 @@
 #ifndef FOLLOW_TRADE_SERVER_BINARY_SERIALIZATION_H
 #define FOLLOW_TRADE_SERVER_BINARY_SERIALIZATION_H
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 
 namespace boost {

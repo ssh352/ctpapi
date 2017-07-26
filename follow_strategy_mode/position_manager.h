@@ -2,7 +2,7 @@
 #define FOLLOW_TRADE_POSITION_MANAGER_H
 
 #include <boost/optional.hpp>
-#include "follow_strategy_mode/defines.h"
+#include "common/api_struct.h"
 #include "follow_strategy_mode/instrument_position.h"
 
 class CloseCorrOrdersManager;

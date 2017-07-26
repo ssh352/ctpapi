@@ -36,6 +36,7 @@
 #include "follow_trade_server/ctp_trader.h"
 #include "follow_trade_server/util.h"
 #include "websocket_typedef.h"
+#include "ctp_bind/trader.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -259,10 +260,9 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
     auto actor = system.spawn<FollowStragetyServiceActor>(
         &m_server, master_logon_info.user_id, follower.user_id,
         cta_init_positions, cta_history_rnt_orders, cta_actor,
-        system.spawn<CtpTrader>(
-            follower.front_server, follower.broker_id, follower.user_id,
-            follower.password,
-            system.spawn(RtnOrderBinaryToFile, follower.user_id)),
+        std::unique_ptr<ctp_bind::Trader>(
+            new ctp_bind::Trader(follower.front_server, follower.broker_id,
+                       follower.user_id, follower.password)),
         system.spawn(FolloweMonitor, follower.user_id));
     actors.push_back(actor);
   }
