@@ -19,7 +19,6 @@ class CTASignalNoCacheDispatch : public EnterOrderObserver,
   virtual void OpenOrder(const std::string& instrument,
                          const std::string& order_no,
                          OrderDirection direction,
-                         OrderPriceType price_type,
                          double price,
                          int quantity) override;
 
@@ -27,7 +26,6 @@ class CTASignalNoCacheDispatch : public EnterOrderObserver,
                           const std::string& order_no,
                           OrderDirection direction,
                           PositionEffect position_effect,
-                          OrderPriceType price_type,
                           double price,
                           int quantity) override;
 

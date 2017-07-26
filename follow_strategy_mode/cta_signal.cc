@@ -19,7 +19,6 @@ void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-
 void CTASignal::HandleOpening(const OrderData& order_data) {
   if (order_data.account_id_ != master_context_->account_id()) {
     return;
@@ -39,8 +38,8 @@ void CTASignal::HandleOpening(const OrderData& order_data) {
       if (slave_quantity > 0) {
         // Fully lock
         observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                             order_data.direction(), OrderPriceType::kLimit,
-                             order_data.price(), slave_quantity);
+                             order_data.direction(), order_data.price(),
+                             slave_quantity);
       }
 
       if (master_context_->ActiveOrderCount(
@@ -57,12 +56,12 @@ void CTASignal::HandleOpening(const OrderData& order_data) {
       }
     } else {
       observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                           order_data.direction(), OrderPriceType::kLimit,
-                           order_data.price(), order_data.quanitty());
+                           order_data.direction(), order_data.price(),
+                           order_data.quanitty());
     }
   } else {
     observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                         order_data.direction(), OrderPriceType::kLimit,
+                         order_data.direction(),
                          order_data.price(), order_data.quanitty());
   }
 }
@@ -100,7 +99,7 @@ void CTASignal::HandleCloseing(const OrderData& order_data) {
   if (close_quantity > 0) {
     observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                           order_data.direction(), order_data.position_effect(),
-                          OrderPriceType::kLimit, order_data.price(),
+                          order_data.price(),
                           close_quantity);
   }
 }
@@ -147,14 +146,14 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
       if (yesterday_quantity > 0) {
         observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                               order_data.direction(), PositionEffect::kClose,
-                              OrderPriceType::kMarket, 0, yesterday_quantity);
+                              0, yesterday_quantity);
       }
 
       if (today_quantity > 0) {
         observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                               order_data.direction(),
                               PositionEffect::kCloseToday,
-                              OrderPriceType::kMarket, 0, today_quantity);
+                              0, today_quantity);
       }
     } else {
       int quantity = std::accumulate(quantitys.begin(), quantitys.end(), 0,
@@ -164,7 +163,7 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
 
       observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
                             order_data.direction(), PositionEffect::kCloseToday,
-                            OrderPriceType::kMarket, 0, quantity);
+                            0, quantity);
     }
   }
   //  delegate_->CloseOrder(order_data.Instrument())
@@ -172,7 +171,6 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
 
 void CTASignal::HandleOpened(const OrderData& rtn_order) {}
 
-void CTASignal::Subscribe(CTASignalObserver::Observable* observer)
-{
+void CTASignal::Subscribe(CTASignalObserver::Observable* observer) {
   observer_ = observer;
 }

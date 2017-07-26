@@ -10,11 +10,6 @@ enum class OrderEventType {
   kCanceled,
 };
 
-enum class OrderPriceType {
-  kLimit,
-  kMarket,
-};
-
 enum class OrderDirection {
   kUndefine,
   kBuy,
@@ -71,7 +66,6 @@ struct OrderData {
   int session_id_;
   double price_;
   OrderDirection direction_;
-  OrderPriceType type_;
   OrderStatus status_;
   PositionEffect position_effect_;
 
@@ -87,7 +81,6 @@ struct OrderData {
   int session_id() const { return session_id_; }
   double price() const { return price_; }
   OrderDirection direction() const { return direction_; }
-  OrderPriceType type() const { return type_; }
   OrderStatus status() const { return status_; }
   PositionEffect position_effect() const { return position_effect_; }
 };

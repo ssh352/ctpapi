@@ -73,26 +73,24 @@ void CTASignalDispatch::Trade(const std::string& order_no, OrderStatus status) {
 void CTASignalDispatch::OpenOrder(const std::string& instrument,
                                   const std::string& order_no,
                                   OrderDirection direction,
-                                  OrderPriceType price_type,
                                   double price,
                                   int quantity) {
   Trade(order_no, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->OpenOrder(instrument, order_no, direction,
-                                     price_type, price, quantity);
+                                     price, quantity);
   }
 }
 void CTASignalDispatch::CloseOrder(const std::string& instrument,
                                    const std::string& order_no,
                                    OrderDirection direction,
                                    PositionEffect position_effect,
-                                   OrderPriceType price_type,
                                    double price,
                                    int quantity) {
   Trade(order_no, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->CloseOrder(instrument, order_no, direction,
-                                      position_effect, price_type, price,
+                                      position_effect, price,
                                       quantity);
   }
 }

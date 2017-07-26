@@ -90,7 +90,6 @@ TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase2) {
     EXPECT_EQ(8, order_insert.quantity);
     EXPECT_EQ("3", order_insert.order_no);
     EXPECT_EQ(PositionEffect::kClose, order_insert.position_effect);
-    EXPECT_EQ(OrderPriceType::kMarket, order_insert.price_type);
   }
 }
 

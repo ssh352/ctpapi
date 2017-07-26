@@ -21,23 +21,19 @@ void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
                                               const std::string& order_no,
                                               OrderDirection direction,
                                               PositionEffect position_effect,
-                                              OrderPriceType price_type,
                                               double price,
                                               int quantity) {
   order_inserts.push_back(OrderInsertForTest{instrument, order_no, direction,
-                                             position_effect, price_type, price,
-                                             quantity});
+                                             position_effect, price, quantity});
 }
 
 void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
                                              const std::string& order_no,
                                              OrderDirection direction,
-                                             OrderPriceType price_type,
                                              double price,
                                              int quantity) {
-  order_inserts.push_back(OrderInsertForTest{instrument, order_no, direction,
-                                             PositionEffect::kOpen, price_type,
-                                             price, quantity});
+  order_inserts.push_back(OrderInsertForTest{
+      instrument, order_no, direction, PositionEffect::kOpen, price, quantity});
 }
 
 void FollowStragetyServiceFixture::CancelOrder(const std::string& order_no) {
@@ -73,7 +69,6 @@ OrderData FollowStragetyServiceFixture::MakeMasterOrderData(
       0,                           // session_id,
       order_price,                 // price,
       order_direction,             // direction
-      OrderPriceType::kLimit,      // type
       status,                      // status
       position_effect              // position_effect
   };
@@ -102,7 +97,6 @@ OrderData FollowStragetyServiceFixture::MakeSlaveOrderData(
       1,                           // session_id,
       order_price,                 // price,
       order_direction,             // direction
-      OrderPriceType::kLimit,      // type
       status,                      // status
       position_effect              // position_effect
   };

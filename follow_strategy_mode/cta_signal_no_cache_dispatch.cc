@@ -48,32 +48,30 @@ void CTASignalNoCacheDispatch::RtnOrder(OrderData rtn_order) {
 void CTASignalNoCacheDispatch::OpenOrder(const std::string& instrument,
                                          const std::string& order_no,
                                          OrderDirection direction,
-                                         OrderPriceType price_type,
                                          double price,
                                          int quantity) {
   slave_context_->HandleRtnOrder(
       OrderData{slave_context_->account_id(), order_no, instrument, "", "", "",
-                "", quantity, 0, 0, price, direction, price_type,
+                "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, PositionEffect::kOpen});
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->OpenOrder(instrument, order_no, direction,
-                                     price_type, price, quantity);
+                                     price, quantity);
   }
 }
 void CTASignalNoCacheDispatch::CloseOrder(const std::string& instrument,
                                           const std::string& order_no,
                                           OrderDirection direction,
                                           PositionEffect position_effect,
-                                          OrderPriceType price_type,
                                           double price,
                                           int quantity) {
   slave_context_->HandleRtnOrder(
       OrderData{slave_context_->account_id(), order_no, instrument, "", "", "",
-                "", quantity, 0, 0, price, direction, price_type,
+                "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, position_effect});
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->CloseOrder(instrument, order_no, direction,
-                                      position_effect, price_type, price,
+                                      position_effect, price,
                                       quantity);
   }
 }

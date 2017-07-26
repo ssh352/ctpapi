@@ -8,14 +8,13 @@ void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
                                       const std::string& instrument,
                                       const std::string& order_no,
                                       OrderDirection direction,
-                                      OrderPriceType price_type,
                                       double price,
                                       int quantity) {
   std::string adjust_order_no =
       boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
-  enter_order_->OpenOrder(instrument, adjust_order_no, direction, price_type,
+  enter_order_->OpenOrder(instrument, adjust_order_no, direction,
                           price, quantity);
   BOOST_LOG(log_) << boost::log::add_value("strategy_id", strategy_id)
                   << "OpenOrder:" << instrument << "," << order_no << ","
@@ -28,7 +27,6 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
                                        const std::string& order_no,
                                        OrderDirection direction,
                                        PositionEffect position_effect,
-                                       OrderPriceType price_type,
                                        double price,
                                        int quantity) {
   std::string adjust_order_no =
@@ -36,7 +34,7 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
   stragety_orders_.insert(
       StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
   enter_order_->CloseOrder(instrument, adjust_order_no, direction,
-                           position_effect, price_type, price, quantity);
+                           position_effect, price, quantity);
   BOOST_LOG(log_) << "CloseOrder:"
                   << boost::log::add_value("strategy_id", strategy_id)
                   << instrument << "," << order_no << ","
