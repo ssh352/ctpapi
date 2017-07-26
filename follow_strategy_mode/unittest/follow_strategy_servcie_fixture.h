@@ -116,8 +116,7 @@ class FollowStragetyServiceFixture : public testing::Test,
       int filled_quantity = 0,
       int quantity = 10,
       double order_price = 1234.1,
-      const std::string& instrument = "abc",
-      const std::string& user_product_info = kStrategyUserProductInfo);
+      const std::string& instrument = "abc");
 
   TestRetType PushOpenOrderForMaster(
       const std::string& order_id,

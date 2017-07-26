@@ -51,7 +51,7 @@ void CTASignalNoCacheDispatch::OpenOrder(const std::string& instrument,
                                          double price,
                                          int quantity) {
   slave_context_->HandleRtnOrder(
-      OrderData{slave_context_->account_id(), order_no, instrument, "", "", "",
+      OrderData{slave_context_->account_id(), order_no, instrument, "", "",
                 "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, PositionEffect::kOpen});
   if (enter_order_observer_ != nullptr) {
@@ -66,7 +66,7 @@ void CTASignalNoCacheDispatch::CloseOrder(const std::string& instrument,
                                           double price,
                                           int quantity) {
   slave_context_->HandleRtnOrder(
-      OrderData{slave_context_->account_id(), order_no, instrument, "", "", "",
+      OrderData{slave_context_->account_id(), order_no, instrument, "", "",
                 "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, position_effect});
   if (enter_order_observer_ != nullptr) {

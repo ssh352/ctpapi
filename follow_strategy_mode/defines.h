@@ -58,7 +58,6 @@ struct OrderData {
   std::string order_id_;
   std::string instrument_;
   std::string datetime_;
-  std::string user_product_info_;
   std::string order_sys_id_;
   std::string exchange_id_;
   int quanitty_;
@@ -74,7 +73,6 @@ struct OrderData {
   const std::string& order_sys_id() const { return order_sys_id_; }
   const std::string& instrument() const { return instrument_; }
   const std::string& datetime() const { return datetime_; }
-  const std::string& user_product_info() const { return user_product_info_; }
   const std::string& exchange_id() const { return exchange_id_; }
   int quanitty() const { return quanitty_; }
   int filled_quantity() const { return filled_quantity_; }

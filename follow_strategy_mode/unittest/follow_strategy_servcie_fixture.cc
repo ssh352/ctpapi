@@ -61,7 +61,6 @@ OrderData FollowStragetyServiceFixture::MakeMasterOrderData(
       order_no,          // order_id,
       instrument,        // instrument,
       "",                // datetime,
-      "q7",              // user_product_info,
       order_no,
       default_order_exchange_id_,  // exchange_id
       quantity,                    // quanitty,
@@ -82,14 +81,12 @@ OrderData FollowStragetyServiceFixture::MakeSlaveOrderData(
     int filled_quantity /*= 0*/,
     int quantity /*= 10*/,
     double order_price /*= 1234.1*/,
-    const std::string& instrument /*= "abc"*/,
-    const std::string& user_product_info /*= kStrategyUserProductInfo*/) {
+    const std::string& instrument /*= "abc"*/) {
   return OrderData{
       kSlaveAccountID,           // account_id,
       order_no,                  // order_id,
       instrument,                // instrument,
       "",                        // datetime,
-      kStrategyUserProductInfo,  // user_product_info,
       order_no,
       default_order_exchange_id_,  // Exchange Id
       quantity,                    // quanitty,
