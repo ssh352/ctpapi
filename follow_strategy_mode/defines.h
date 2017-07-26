@@ -1,51 +1,6 @@
 #ifndef FOLLOW_TRADE_DEFINES_H
 #define FOLLOW_TRADE_DEFINES_H
 
-enum class RequestBy {
-  kInvalid,
-  kCTA,
-  kStrategy,
-  kApp,
-};
-enum class OrderRtnFrom {
-  kInvalid,
-  kSource,
-  kDest,
-};
-
-enum class OrderDirection {
-  kUnkown,
-  kBuy,
-  kSell,
-};
-
-enum class EnterOrderAction {
-  kInvalid,
-  kOpen,
-  kClose,
-  kOpenConfirm,
-  kCloseConfirm,
-  kOpenReverseOrder,
-  kOpenReverseOrderConfirm,
-  kCancelForTest,
-};
-
-enum class OrderStatus {
-  kActive,
-  kAllFilled,
-  kCancel,
-};
-
-enum class OldOrderStatus {
-  kInvalid,
-  kOpening,
-  kCloseing,
-  kOpened,
-  kClosed,
-  kOpenCanceled,
-  kCloseCanceled,
-};
-
 enum class OrderEventType {
   kIgnore,
   kNewOpen,
@@ -55,27 +10,52 @@ enum class OrderEventType {
   kCanceled,
 };
 
-enum class OpenClose {
-  kInvalid,
-  kOpen,
-  kClose,
-};
-
 enum class OrderPriceType {
   kLimit,
   kMarket,
 };
 
-enum class PositionEffect {
-  kOpen,
-  kClose,
-  kCloseToday,
+enum class OrderDirection {
+  kUndefine,
+  kBuy,
+  kSell 
 };
 
-struct OpenOrderData {
-  std::string instrument;
+enum class PositionEffect { 
+  kUndefine,
+  kOpen,
+  kClose,
+  kCloseToday 
+};
+
+enum class OrderStatus {
+  kActive,
+  kAllFilled,
+  kCanceled,
+  kInputRejected,
+  kCancelRejected,
+};
+
+struct OrderField {
+  // std::string instrument_name;
+  std::string account_id;
+  std::string instrument_id;
+  std::string exchange_id;
   OrderDirection direction;
-  OldOrderStatus order_status;
+  int qty;
+  double price;
+  PositionEffect position_effect;
+  std::string date;
+  std::string input_time;
+  std::string update_time;
+  std::string order_id;
+  OrderStatus status;
+  int leaves_qty;
+  int traded_qty;
+  double avg_price;
+  int error_id;
+  int raw_error_id;
+  std::string raw_error_message;
 };
 
 struct OrderData {

@@ -80,7 +80,7 @@ void CTASignalNoCacheDispatch::CloseOrder(const std::string& instrument,
 
 void CTASignalNoCacheDispatch::CancelOrder(const std::string& order_no) {
   auto order = slave_context_->GetOrderData(order_no);
-  order->status_ = OrderStatus::kCancel;
+  order->status_ = OrderStatus::kCanceled;
   slave_context_->HandleRtnOrder(*order);
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->CancelOrder(order_no);

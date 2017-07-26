@@ -236,7 +236,7 @@ TEST_F(FollowStragetyServiceFixture, CancelOrderCase3) {
 
   signal_dispatch_->RtnOrder(MakeMasterOrderData("1", OrderDirection::kBuy,
                                               PositionEffect::kOpen,
-                                              OrderStatus::kCancel, 0, 10));
+                                              OrderStatus::kCanceled, 0, 10));
 
   (void)PopOrderInsert();
 

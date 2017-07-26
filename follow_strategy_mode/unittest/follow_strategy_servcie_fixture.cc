@@ -205,7 +205,7 @@ FollowStragetyServiceFixture::PushCancelOrderForMaster(
     int fill_quantity /*= 0*/,
     int quantity /*= 10*/) {
   return PushOrderForMaster(order_no, direction, position_effect,
-                            OrderStatus::kCancel, fill_quantity, quantity,
+                            OrderStatus::kCanceled, fill_quantity, quantity,
                             1234.1);
 }
 
@@ -242,7 +242,7 @@ FollowStragetyServiceFixture::PushCancelOrderForSlave(
     int quantity /*= 10*/) {
   strategy_dispatch_.RtnOrder(
       MakeSlaveOrderData(order_no, direction, position_effect,
-                         OrderStatus::kCancel, fill_quantity, quantity));
+                         OrderStatus::kCanceled, fill_quantity, quantity));
   return PopOrderEffectForTest();
 }
 

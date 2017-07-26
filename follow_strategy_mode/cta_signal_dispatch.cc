@@ -98,7 +98,7 @@ void CTASignalDispatch::CloseOrder(const std::string& instrument,
 }
 
 void CTASignalDispatch::CancelOrder(const std::string& order_no) {
-  Trade(order_no, OrderStatus::kCancel);
+  Trade(order_no, OrderStatus::kCanceled);
 
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->CancelOrder(order_no);

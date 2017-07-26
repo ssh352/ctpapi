@@ -55,7 +55,7 @@ boost::optional<int> InstrumentPosition::GetCloseableQuantityWithOrderId(
 void InstrumentPosition::HandleRtnOrder(
     const OrderData& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
-  if (rtn_order.status() != OrderStatus::kCancel &&
+  if (rtn_order.status() != OrderStatus::kCanceled &&
       IsOpenOrder(rtn_order.position_effect()) &&
       rtn_order.filled_quantity() != 0) {
     auto it = std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
@@ -93,7 +93,7 @@ void InstrumentPosition::HandleRtnOrder(
     }
     close_corr_orders_mgr->AddCloseCorrOrders(rtn_order.order_id(),
                                               std::move(close_corr_orders));
-  } else if (rtn_order.status() == OrderStatus::kCancel) {
+  } else if (rtn_order.status() == OrderStatus::kCanceled) {
     for (auto order_quantity :
          close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id())) {
       if (positions_.find(order_quantity.first) != positions_.end()) {

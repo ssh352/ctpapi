@@ -6,7 +6,7 @@ OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
   if (orders_.find(order.order_id()) == orders_.end()) {
     ret_type = IsCloseOrder(order.position_effect()) ? OrderEventType::kNewClose
                                                      : OrderEventType::kNewOpen;
-  } else if (order.status() == OrderStatus::kCancel) {
+  } else if (order.status() == OrderStatus::kCanceled) {
     ret_type = OrderEventType::kCanceled;
   } else if (orders_[order.order_id()].IsQuantityChange(
                  order.filled_quantity())) {
