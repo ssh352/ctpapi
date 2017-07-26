@@ -22,16 +22,29 @@ int main(int argc, char* argv[]) {
     strcpy(field.UserID, rsp_field->UserID);
     strcpy(field.InvestorID, rsp_field->UserID);
 
-    std::string order_ref = "100";
+
     {
-      trader.InputOrder("c1709", PositionEffect::kOpen, OrderDirection::kBuy,
-                        1640, 1, order_ref);
+      trader.InputOrder("S1", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
+                        1642, 1);
     }
-    trader.SubscribeRtnOrder([=, &trader](boost::shared_ptr<OrderField> order) {
-      if (order->addition_info == order_ref) {
-        trader.CancelOrder(order->order_id);
-      }
-    });
+
+    {
+      trader.InputOrder("S2", "111", "c1709", PositionEffect::kOpen, OrderDirection::kBuy,
+                        1643, 1);
+    }
+    bool cancel = true;
+     trader.SubscribeRtnOrder("S1", [=,&cancel, &trader](boost::shared_ptr<OrderField> order) {
+       if (order->order_id == "111" && cancel) {
+         trader.CancelOrder("S1", order->order_id);
+         cancel = false;
+       }
+     });
+
+     trader.SubscribeRtnOrder("S2", [=, &trader](boost::shared_ptr<OrderField> order) {
+       if (order->order_id == "111") {
+         // trader.CancelOrder("S2", order->order_id);
+       }
+     });
   });
 
   trader.Run();

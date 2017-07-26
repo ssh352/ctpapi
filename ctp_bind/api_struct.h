@@ -23,6 +23,7 @@ enum class OrderStatus {
 
 struct OrderField {
   // std::string instrument_name;
+  std::string account_id;
   std::string instrument_id;
   std::string exchange_id;
   OrderDirection direction;
@@ -40,7 +41,6 @@ struct OrderField {
   int error_id;
   int raw_error_id;
   std::string raw_error_message;
-  std::string addition_info;
 };
 
 #endif  // CTP_BIND_API_STRUCT_H

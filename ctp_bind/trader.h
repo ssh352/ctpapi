@@ -5,6 +5,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
+#include <boost/bimap.hpp>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -27,14 +28,27 @@ class Trader : public CThostFtdcTraderSpi {
 
   void Run();
 
+  void InputOrder(std::string sub_account_id,
+                  std::string sub_order_id,
+                  std::string instrument,
+                  PositionEffect position_effect,
+                  OrderDirection direction,
+                  double price,
+                  int volume);
+
   void InputOrder(std::string instrument,
                   PositionEffect position_effect,
                   OrderDirection direction,
                   double price,
-                  int volume,
-                  std::string addition_info);
+                  int volume);
 
-  void CancelOrder(std::string order_id);
+  void CancelOrder(std::string sub_accont_id, std::string sub_order_id);
+
+  // void CancelOrder(std::string order_id);
+
+  void SubscribeRtnOrder(
+      std::string sub_account_id,
+      std::function<void(boost::shared_ptr<OrderField>)> callback);
 
   void SubscribeRtnOrder(
       std::function<void(boost::shared_ptr<OrderField>)> callback);
@@ -77,7 +91,7 @@ class Trader : public CThostFtdcTraderSpi {
   virtual void OnFrontDisconnected(int nReason) override;
 
  private:
-  void CancelOrderOnIOThread(std::string);
+  void CancelOrderOnIOThread(std::string sub_accont_id, std::string order_id);
 
   void OnRtnOrderOnIOThread(boost::shared_ptr<CThostFtdcOrderField> order);
 
@@ -94,10 +108,15 @@ class Trader : public CThostFtdcTraderSpi {
   boost::asio::io_service* io_service_;
   std::shared_ptr<boost::asio::io_service::work> io_worker_;
 
-  std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField> >
+  std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField>>
       orders_;
 
-  std::unordered_map<std::string, std::string> order_addition_infos_;
+  typedef boost::bimap<std::pair<std::string, std::string>, std::string> SubOrderIDBiomap;
+  SubOrderIDBiomap sub_order_ids_;
+
+  std::unordered_map<std::string,
+                     std::function<void(boost::shared_ptr<OrderField>)>>
+      sub_account_on_rtn_order_callbacks_;
 
   std::function<void(CThostFtdcRspUserLoginField*, CThostFtdcRspInfoField*)>
       on_connect_;

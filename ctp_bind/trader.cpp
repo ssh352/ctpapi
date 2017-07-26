@@ -62,8 +62,7 @@ void ctp_bind::Trader::OnRtnOrderOnIOThread(
   order_field->date = order->InsertDate;
   order_field->input_time = order->InsertTime;
   order_field->update_time = order->UpdateTime;
-  order_field->order_id = str(boost::format("%d:%d:%s") % order->FrontID %
-                              order->SessionID % order->OrderRef);
+  order_field->order_id = order_id;
 
   order_field->status = ParseTThostFtdcOrderStatus(order);
   order_field->leaves_qty = order->VolumeTotal;
@@ -71,11 +70,19 @@ void ctp_bind::Trader::OnRtnOrderOnIOThread(
   order_field->error_id = 0;
   order_field->raw_error_id = 0;
 
-  if (on_rtn_order_ != NULL) {
-    if (order_addition_infos_.find(order_id) != order_addition_infos_.end()) {
-      order_field->addition_info = order_addition_infos_[order_id];
+  auto sub_order_id_it = sub_order_ids_.right.find(order_id);
+  ;
+  if (sub_order_id_it != sub_order_ids_.right.end()) {
+    auto callback_it =
+        sub_account_on_rtn_order_callbacks_.find(sub_order_id_it->second.first);
+    if (callback_it != sub_account_on_rtn_order_callbacks_.end()) {
+      order_field->account_id = sub_order_id_it->second.first;
+      order_field->order_id = sub_order_id_it->second.second;
+      callback_it->second(order_field);
     }
+  }
 
+  if (on_rtn_order_ != NULL) {
     on_rtn_order_(std::move(order_field));
   }
 }
@@ -180,16 +187,10 @@ void ctp_bind::Trader::InputOrder(std::string instrument,
                                   PositionEffect position_effect,
                                   OrderDirection direction,
                                   double price,
-                                  int volume,
-                                  std::string addition_info) {
+                                  int volume) {
+  /*
   std::string order_ref =
       boost::lexical_cast<std::string>(order_ref_index_.fetch_add(1));
-  if (!addition_info.empty()) {
-    io_service_->post([
-      =, order_id(MakeOrderId(front_id_, session_id_, order_ref)),
-      addition_info(std::move(addition_info))
-    ]() { order_addition_infos_.insert_or_assign(order_id, addition_info); });
-  }
   CThostFtdcInputOrderField field = {0};
   // strcpy(filed.BrokerID, "");
   // strcpy(filed.InvestorID, "");
@@ -216,11 +217,78 @@ void ctp_bind::Trader::InputOrder(std::string instrument,
   strcpy(field.UserID, user_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
   api_->ReqOrderInsert(&field, 0);
+  */
 }
 
+void ctp_bind::Trader::InputOrder(std::string sub_account_id,
+                                  std::string sub_order_id,
+                                  std::string instrument,
+                                  PositionEffect position_effect,
+                                  OrderDirection direction,
+                                  double price,
+                                  int volume) {
+  std::string order_ref =
+      boost::lexical_cast<std::string>(order_ref_index_.fetch_add(1));
+
+  io_service_->post([=]() {
+    sub_order_ids_.insert(SubOrderIDBiomap::value_type(
+        {sub_account_id, sub_order_id},
+        MakeOrderId(front_id_, session_id_, order_ref)));
+  });
+
+  CThostFtdcInputOrderField field = {0};
+  // strcpy(filed.BrokerID, "");
+  // strcpy(filed.InvestorID, "");
+  // strcpy(filed.UserID, );
+
+  strcpy(field.InstrumentID, instrument.c_str());
+  strcpy(field.OrderRef, order_ref.c_str());
+  field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
+  field.Direction = OrderDirectionToTThostOrderDireciton(direction);
+  field.CombOffsetFlag[0] = PositionEffectToTThostOffsetFlag(position_effect);
+  strcpy(field.CombHedgeFlag, "1");
+  field.LimitPrice = price;
+  field.VolumeTotalOriginal = volume;
+  field.TimeCondition = THOST_FTDC_TC_GFD;
+  strcpy(field.GTDDate, "");
+  field.VolumeCondition = THOST_FTDC_VC_AV;
+  field.MinVolume = 1;
+  field.ContingentCondition = THOST_FTDC_CC_Immediately;
+  field.StopPrice = 0;
+  field.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
+  field.IsAutoSuspend = 0;
+  field.UserForceClose = 0;
+  strcpy(field.BrokerID, broker_id_.c_str());
+  strcpy(field.UserID, user_id_.c_str());
+  strcpy(field.InvestorID, user_id_.c_str());
+
+  if (api_->ReqOrderInsert(&field, 0) != 0) {
+    auto order_field = boost::make_shared<OrderField>();
+    order_field->account_id = sub_account_id;
+    order_field->order_id = sub_order_id;
+    order_field->status = OrderStatus::kInputRejected;
+    io_service_->post([ =, order_field(std::move(order_field)) ]() {
+      auto cb_it = sub_account_on_rtn_order_callbacks_.find(sub_account_id);
+      if (cb_it == sub_account_on_rtn_order_callbacks_.end()) {
+        return;
+      }
+      cb_it->second(order_field);
+    });
+  }
+}
+
+/*
 void ctp_bind::Trader::CancelOrder(std::string order_id) {
   io_service_->post(
       boost::bind(&Trader::CancelOrderOnIOThread, this, std::move(order_id)));
+}
+
+*/
+void ctp_bind::Trader::CancelOrder(std::string sub_accont_id,
+                                   std::string sub_order_id) {
+  io_service_->post(boost::bind(&Trader::CancelOrderOnIOThread, this,
+                                std::move(sub_accont_id),
+                                std::move(sub_order_id)));
 }
 
 void ctp_bind::Trader::SubscribeRtnOrder(
@@ -228,9 +296,30 @@ void ctp_bind::Trader::SubscribeRtnOrder(
   io_service_->post([=](void) { on_rtn_order_ = callback; });
 }
 
-void ctp_bind::Trader::CancelOrderOnIOThread(std::string order_id) {
-  if (orders_.find(order_id) != orders_.end()) {
-    auto order = orders_[order_id];
+void ctp_bind::Trader::SubscribeRtnOrder(
+    std::string sub_account_id,
+    std::function<void(boost::shared_ptr<OrderField>)> callback) {
+  io_service_->post([
+    =, sub_account_id(std::move(sub_account_id)), callback(std::move(callback))
+  ](void) {
+    if (sub_account_on_rtn_order_callbacks_.find(sub_account_id) !=
+        sub_account_on_rtn_order_callbacks_.end()) {
+      return;
+    }
+    sub_account_on_rtn_order_callbacks_.insert(
+        std::make_pair(sub_account_id, callback));
+  });
+}
+
+void ctp_bind::Trader::CancelOrderOnIOThread(std::string sub_accont_id,
+                                             std::string order_id) {
+  auto it = sub_order_ids_.left.find(std::make_pair(sub_accont_id, order_id));
+  if (it == sub_order_ids_.left.end()) {
+    return;
+  }
+
+  if (orders_.find(it->second) != orders_.end()) {
+    auto order = orders_[it->second];
     CThostFtdcInputOrderActionField field = {0};
     field.ActionFlag = THOST_FTDC_AF_Delete;
     field.FrontID = front_id_;
@@ -239,7 +328,8 @@ void ctp_bind::Trader::CancelOrderOnIOThread(std::string order_id) {
     strcpy(field.ExchangeID, order->ExchangeID);
     strcpy(field.OrderSysID, order->OrderSysID);
     strcpy(field.BrokerID, order->BrokerID);
-    api_->ReqOrderAction(&field, request_id_.fetch_add(1));
+    if (api_->ReqOrderAction(&field, request_id_.fetch_add(1)) != 0) {
+    }
   }
 }
 
@@ -257,10 +347,6 @@ void ctp_bind::Trader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
     order_field->raw_error_message = pRspInfo->ErrorMsg;
     io_service_->post([ =, order_field(std::move(order_field)) ]() {
       if (on_rtn_order_ != NULL) {
-        if (order_addition_infos_.find(order_id) !=
-            order_addition_infos_.end()) {
-          order_field->addition_info = order_addition_infos_[order_id];
-        }
         on_rtn_order_(std::move(order_field));
       }
     });
@@ -282,10 +368,6 @@ void ctp_bind::Trader::OnRspOrderAction(
     order_field->raw_error_message = pRspInfo->ErrorMsg;
     io_service_->post([ =, order_field(std::move(order_field)) ]() {
       if (on_rtn_order_ != NULL) {
-        if (order_addition_infos_.find(order_id) !=
-            order_addition_infos_.end()) {
-          order_field->addition_info = order_addition_infos_[order_id];
-        }
         on_rtn_order_(std::move(order_field));
       }
     });
