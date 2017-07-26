@@ -70,12 +70,14 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   send(cta_, CTPSubscribeRtnOrderAtom::value);
   send(follow_, CTPSubscribeRtnOrderAtom::value);
 
-  for (int i = 0; i < 10; ++i) {
+
+  auto stragetys = {"Foo", "Bar"};
+
+  for (auto s : stragetys) {
     master_context_ = std::make_shared<OrdersContext>(master_account_id_);
     auto slave_context = std::make_shared<OrdersContext>(slave_account_id_);
 
-    auto cta_strategy = std::make_shared<CTAGenericStrategy>(
-        boost::lexical_cast<std::string>(i));
+    auto cta_strategy = std::make_shared<CTAGenericStrategy>(s);
     cta_strategy->Subscribe(this);
     auto signal = std::make_shared<CTASignal>();
     signal->SetOrdersContext(master_context_, slave_context);
@@ -87,9 +89,10 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
     signal_dispatch->SubscribePortfolioObserver(
         std::make_shared<PortfolioProxy<DisplayPortfolioAtom>>(
             caf::actor_cast<caf::actor>(this),
-            boost::lexical_cast<std::string>(i)));
+            boost::lexical_cast<std::string>(s)));
 
     signal_dispatchs_.push_back(signal_dispatch);
+
   }
 
   return {[=](CTPRtnOrderAtom, CThostFtdcOrderField field) {

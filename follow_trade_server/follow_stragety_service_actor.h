@@ -71,9 +71,6 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   int portfolio_age_;
   std::vector<OrderPosition> master_init_positions_;
   std::vector<OrderData> master_history_rtn_orders_;
-  //   CTASignal signal_;
-  //   CTAGenericStrategy cta_strategy_;
-  //   CTASignalDispatch signal_dispatch_;
   CTPPortfolio portfolio_;
   std::shared_ptr<OrdersContext> master_context_;
   std::string master_account_id_;
