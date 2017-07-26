@@ -92,7 +92,6 @@ void CtpApi::OnFrontConnected() {
   strcpy(req.BrokerID, broker_id_.c_str());
   strcpy(req.UserID, user_id_.c_str());
   strcpy(req.Password, password_.c_str());
-  strcpy(req.UserProductInfo, kStrategyUserProductInfo);
   int iResult = cta_api_->ReqUserLogin(&req, 0);
 }
 

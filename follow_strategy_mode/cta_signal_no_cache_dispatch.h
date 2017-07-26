@@ -17,19 +17,19 @@ class CTASignalNoCacheDispatch : public EnterOrderObserver,
 
   // EnterOrderObservable::Observer
   virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_no,
+                         const std::string& order_id,
                          OrderDirection direction,
                          double price,
                          int quantity) override;
 
   virtual void CloseOrder(const std::string& instrument,
-                          const std::string& order_no,
+                          const std::string& order_id,
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override;
 
-  virtual void CancelOrder(const std::string& order_no) override;
+  virtual void CancelOrder(const std::string& order_id) override;
 
   void SetOrdersContext(OrdersContext* master_context,
                         OrdersContext* slave_context);

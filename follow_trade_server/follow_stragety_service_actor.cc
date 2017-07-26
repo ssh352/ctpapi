@@ -32,32 +32,27 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
   master_init_positions_ = std::move(master_init_positions);
   master_history_rtn_orders_ = std::move(master_history_rtn_orders);
   portfolio_age_ = 0;
-  service_.SubscribeEnterOrderObserver(this);
 }
 
-void FollowStragetyServiceActor::OpenOrder(const std::string& instrument,
-                                           const std::string& order_no,
+void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
+                                           const std::string& instrument,
+                                           const std::string& order_id,
                                            OrderDirection direction,
-                                           OrderPriceType price_type,
                                            double price,
                                            int quantity) {
-  send(follow_, CTPReqOpenOrderAtom::value, instrument, order_no, direction,
-       price_type, price, quantity);
 }
 
-void FollowStragetyServiceActor::CloseOrder(const std::string& instrument,
-                                            const std::string& order_no,
+void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
+                                            const std::string& instrument,
+                                            const std::string& order_id,
                                             OrderDirection direction,
                                             PositionEffect position_effect,
-                                            OrderPriceType price_type,
                                             double price,
                                             int quantity) {
-  send(follow_, CTPReqCloseOrderAtom::value, instrument, order_no, direction,
-       position_effect, price_type, price, quantity);
 }
 
-void FollowStragetyServiceActor::CancelOrder(const std::string& order_no) {
-  send(follow_, CTPCancelOrderAtom::value, order_no);
+void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
+                                             const std::string& order_id) {
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
@@ -81,7 +76,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
     auto cta_strategy = std::make_shared<CTAGenericStrategy>(
         boost::lexical_cast<std::string>(i));
-    cta_strategy->Subscribe(&service_);
+    cta_strategy->Subscribe(this);
     auto signal = std::make_shared<CTASignal>();
     signal->SetOrdersContext(master_context_, slave_context);
     auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
@@ -94,8 +89,6 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
             caf::actor_cast<caf::actor>(this),
             boost::lexical_cast<std::string>(i)));
 
-    service_.SubscribeRtnOrderObserver(boost::lexical_cast<std::string>(i),
-                                       signal_dispatch);
     signal_dispatchs_.push_back(signal_dispatch);
   }
 
@@ -118,7 +111,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
                                       std::placeholders::_1, order));
 
             } else {
-              service_.RtnOrder(order);
+              // service_.RtnOrder(order);
               portfolio_.OnRtnOrder(std::move(field));
             }
             send(monitor_, std::move(order));
@@ -140,12 +133,12 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
             //                  portfolio, true);
 
             if (auto hdl = hdl_.lock()) {
-            websocket_server_->send(
-                hdl,
-                MakePortfoilioJson(master_account_id_,
-                                   master_context_->GetAccountPortfolios(),
-                                   slave_account_id_, std::move(portfolio)),
-                websocketpp::frame::opcode::text);
+              websocket_server_->send(
+                  hdl,
+                  MakePortfoilioJson(master_account_id_,
+                                     master_context_->GetAccountPortfolios(),
+                                     slave_account_id_, std::move(portfolio)),
+                  websocketpp::frame::opcode::text);
             }
           },
           [=](StragetyPortfilioAtom, connection_hdl hdl) {

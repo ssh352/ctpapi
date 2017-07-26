@@ -9,24 +9,24 @@ void CTAGenericStrategy::Subscribe(
 }
 
 void CTAGenericStrategy::OpenOrder(const std::string& instrument,
-                                   const std::string& order_no,
+                                   const std::string& order_id,
                                    OrderDirection direction,
                                    double price,
                                    int quantity) {
-  observer_->OpenOrder(strategy_id_, instrument, order_no, direction, price,
+  observer_->OpenOrder(strategy_id_, instrument, order_id, direction, price,
                        quantity);
 }
 
 void CTAGenericStrategy::CloseOrder(const std::string& instrument,
-                                    const std::string& order_no,
+                                    const std::string& order_id,
                                     OrderDirection direction,
                                     PositionEffect position_effect,
                                     double price,
                                     int quantity) {
-  observer_->CloseOrder(strategy_id_, instrument, order_no, direction,
+  observer_->CloseOrder(strategy_id_, instrument, order_id, direction,
                         position_effect, price, quantity);
 }
 
-void CTAGenericStrategy::CancelOrder(const std::string& order_no) {
-  observer_->CancelOrder(strategy_id_, order_no);
+void CTAGenericStrategy::CancelOrder(const std::string& order_id) {
+  observer_->CancelOrder(strategy_id_, order_id);
 }

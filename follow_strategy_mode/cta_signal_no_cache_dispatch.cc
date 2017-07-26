@@ -46,42 +46,42 @@ void CTASignalNoCacheDispatch::RtnOrder(OrderData rtn_order) {
 }
 
 void CTASignalNoCacheDispatch::OpenOrder(const std::string& instrument,
-                                         const std::string& order_no,
+                                         const std::string& order_id,
                                          OrderDirection direction,
                                          double price,
                                          int quantity) {
   slave_context_->HandleRtnOrder(
-      OrderData{slave_context_->account_id(), order_no, instrument, "", "",
+      OrderData{slave_context_->account_id(), order_id, instrument, "", "",
                 "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, PositionEffect::kOpen});
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->OpenOrder(instrument, order_no, direction,
+    enter_order_observer_->OpenOrder(instrument, order_id, direction,
                                      price, quantity);
   }
 }
 void CTASignalNoCacheDispatch::CloseOrder(const std::string& instrument,
-                                          const std::string& order_no,
+                                          const std::string& order_id,
                                           OrderDirection direction,
                                           PositionEffect position_effect,
                                           double price,
                                           int quantity) {
   slave_context_->HandleRtnOrder(
-      OrderData{slave_context_->account_id(), order_no, instrument, "", "",
+      OrderData{slave_context_->account_id(), order_id, instrument, "", "",
                 "", quantity, 0, 0, price, direction, 
                 OrderStatus::kActive, position_effect});
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->CloseOrder(instrument, order_no, direction,
+    enter_order_observer_->CloseOrder(instrument, order_id, direction,
                                       position_effect, price,
                                       quantity);
   }
 }
 
-void CTASignalNoCacheDispatch::CancelOrder(const std::string& order_no) {
-  auto order = slave_context_->GetOrderData(order_no);
+void CTASignalNoCacheDispatch::CancelOrder(const std::string& order_id) {
+  auto order = slave_context_->GetOrderData(order_id);
   order->status_ = OrderStatus::kCanceled;
   slave_context_->HandleRtnOrder(*order);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->CancelOrder(order_no);
+    enter_order_observer_->CancelOrder(order_id);
   }
 }
 

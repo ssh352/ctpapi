@@ -4,17 +4,15 @@
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 
 CThostFtdcInputOrderField MakeCtpOpenOrder(const std::string& instrument,
-                                           const std::string& order_no,
+                                           const std::string& order_id,
                                            OrderDirection direction,
-                                           OrderPriceType price_type,
                                            double price,
                                            int quantity);
 
 CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
-                                            const std::string& order_no,
+                                            const std::string& order_id,
                                             OrderDirection direction,
                                             PositionEffect position_effect,
-                                            OrderPriceType price_type,
                                             double price,
                                             int quantity);
 

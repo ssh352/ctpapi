@@ -19,7 +19,6 @@ void serialize(Archive& ar, OrderData& order, const unsigned int version) {
   ar & order.order_id_;
   ar & order.instrument_;
   ar & order.datetime_;
-  ar & order.user_product_info_;
   ar & order.order_sys_id_;
   ar & order.exchange_id_;
   ar & order.quanitty_;
@@ -27,7 +26,6 @@ void serialize(Archive& ar, OrderData& order, const unsigned int version) {
   ar & order.session_id_;
   ar & order.price_;
   ar & order.direction_;
-  ar & order.type_;
   ar & order.status_;
   ar & order.position_effect_;
 }

@@ -66,40 +66,40 @@ void CTASignalDispatch::DoHandleRtnOrder(OrderData rtn_order) {
   }
 }
 
-void CTASignalDispatch::Trade(const std::string& order_no, OrderStatus status) {
-  waiting_reply_order_.emplace_back(order_no, status);
+void CTASignalDispatch::Trade(const std::string& order_id, OrderStatus status) {
+  waiting_reply_order_.emplace_back(order_id, status);
 }
 
 void CTASignalDispatch::OpenOrder(const std::string& instrument,
-                                  const std::string& order_no,
+                                  const std::string& order_id,
                                   OrderDirection direction,
                                   double price,
                                   int quantity) {
-  Trade(order_no, OrderStatus::kActive);
+  Trade(order_id, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->OpenOrder(instrument, order_no, direction,
+    enter_order_observer_->OpenOrder(instrument, order_id, direction,
                                      price, quantity);
   }
 }
 void CTASignalDispatch::CloseOrder(const std::string& instrument,
-                                   const std::string& order_no,
+                                   const std::string& order_id,
                                    OrderDirection direction,
                                    PositionEffect position_effect,
                                    double price,
                                    int quantity) {
-  Trade(order_no, OrderStatus::kActive);
+  Trade(order_id, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->CloseOrder(instrument, order_no, direction,
+    enter_order_observer_->CloseOrder(instrument, order_id, direction,
                                       position_effect, price,
                                       quantity);
   }
 }
 
-void CTASignalDispatch::CancelOrder(const std::string& order_no) {
-  Trade(order_no, OrderStatus::kCanceled);
+void CTASignalDispatch::CancelOrder(const std::string& order_id) {
+  Trade(order_id, OrderStatus::kCanceled);
 
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->CancelOrder(order_no);
+    enter_order_observer_->CancelOrder(order_id);
   }
 }
 

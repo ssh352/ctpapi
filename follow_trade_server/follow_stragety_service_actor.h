@@ -11,7 +11,7 @@
 #include "follow_trade_server/ctp_portfolio.h"
 #include "websocket_typedef.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
-                                   EnterOrderObserver {
+                                   StrategyEnterOrderObservable::Observer {
  public:
   FollowStragetyServiceActor(caf::actor_config& cfg,
                              Server* websocket_server,
@@ -23,27 +23,28 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                              caf::actor follow,
                              caf::actor monitor);
 
-  virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_no,
-                         OrderDirection direction,
-                         OrderPriceType price_type,
-                         double price,
-                         int quantity) override;
-
-  virtual void CloseOrder(const std::string& instrument,
-                          const std::string& order_no,
-                          OrderDirection direction,
-                          PositionEffect position_effect,
-                          OrderPriceType price_type,
-                          double price,
-                          int quantity) override;
-
-  virtual void CancelOrder(const std::string& order_no) override;
-
   void on_exit() override {
     destroy(cta_);
     destroy(follow_);
   }
+
+  virtual void OpenOrder(const std::string& strategy_id,
+                         const std::string& instrument,
+                         const std::string& order_id,
+                         OrderDirection direction,
+                         double price,
+                         int quantity) override;
+
+  virtual void CloseOrder(const std::string& strategy_id,
+                          const std::string& instrument,
+                          const std::string& order_id,
+                          OrderDirection direction,
+                          PositionEffect position_effect,
+                          double price,
+                          int quantity) override;
+
+  virtual void CancelOrder(const std::string& strategy_id,
+                           const std::string& order_id) override;
 
  protected:
   virtual caf::behavior make_behavior() override;
@@ -63,6 +64,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
     caf::actor self_;
     std::string strategy_id_;
   };
+
   caf::actor cta_;
   caf::actor follow_;
   caf::actor monitor_;
@@ -72,7 +74,6 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   //   CTASignal signal_;
   //   CTAGenericStrategy cta_strategy_;
   //   CTASignalDispatch signal_dispatch_;
-  StrategyOrderDispatch service_;
   CTPPortfolio portfolio_;
   std::shared_ptr<OrdersContext> master_context_;
   std::string master_account_id_;

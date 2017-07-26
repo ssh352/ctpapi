@@ -84,7 +84,7 @@ struct OrderData {
 };
 
 struct CorrOrderQuantity {
-  std::string order_no;
+  std::string order_id;
   int quantity;
   int corr_quantity;
 };

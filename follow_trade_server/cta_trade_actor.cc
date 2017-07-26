@@ -104,22 +104,20 @@ caf::behavior CtpTrader::make_behavior() {
         return orders;
       },
       [=](CTPReqOpenOrderAtom, const std::string& instrument,
-          const std::string& order_id, OrderDirection direction,
-          OrderPriceType price_type, double price, int quantity) {
-        ctp_.OrderInsert(MakeCtpOpenOrder(instrument, order_id, direction,
-                                          price_type, price, quantity));
+          const std::string& order_id, OrderDirection direction, double price,
+          int quantity) {
+        ctp_.OrderInsert(
+            MakeCtpOpenOrder(instrument, order_id, direction, price, quantity));
       },
       [=](CTPReqCloseOrderAtom, const std::string& instrument,
           const std::string& order_id, OrderDirection direction,
-          PositionEffect position_effect, OrderPriceType price_type,
-          double price, int quantity) {
+          PositionEffect position_effect, double price, int quantity) {
         ctp_.OrderInsert(MakeCtpCloseOrder(instrument, order_id, direction,
-                                           position_effect, price_type, price,
-                                           quantity));
+                                           position_effect, price, quantity));
       },
-      [=](CTPCancelOrderAtom, std::string order_id ) {
-        ctp_.OrderAction(MakeCtpCancelOrderAction(
-            front_id_, session_id_, order_id));
+      [=](CTPCancelOrderAtom, std::string order_id) {
+        ctp_.OrderAction(
+            MakeCtpCancelOrderAction(front_id_, session_id_, order_id));
       },
       /*
     [=](ActorTimerAtom) {

@@ -38,7 +38,7 @@ extern const char kSlaveAccountID[];
 
 struct OrderInsertForTest {
   std::string instrument;
-  std::string order_no;
+  std::string order_id;
   OrderDirection direction;
   PositionEffect position_effect;
   double price;
@@ -79,26 +79,26 @@ class FollowStragetyServiceFixture : public testing::Test,
   }
 
   virtual void CloseOrder(const std::string& instrument,
-                          const std::string& order_no,
+                          const std::string& order_id,
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override;
 
   virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_no,
+                         const std::string& order_id,
                          OrderDirection direction,
                          double price,
                          int quantity) override;
 
-  virtual void CancelOrder(const std::string& order_no) override;
+  virtual void CancelOrder(const std::string& order_id) override;
 
  protected:
   void InitDefaultOrderExchangeId(std::string exchange_id);
 
   OrderInsertForTest PopOrderInsert();
 
-  OrderData MakeMasterOrderData(const std::string& order_no,
+  OrderData MakeMasterOrderData(const std::string& order_id,
                                 OrderDirection order_direction,
                                 PositionEffect position_effect,
                                 OrderStatus status,
@@ -109,7 +109,7 @@ class FollowStragetyServiceFixture : public testing::Test,
                                 const std::string& user_product_info = "Q7");
 
   OrderData MakeSlaveOrderData(
-      const std::string& order_no,
+      const std::string& order_id,
       OrderDirection order_direction,
       PositionEffect position_effect,
       OrderStatus status,
@@ -139,7 +139,7 @@ class FollowStragetyServiceFixture : public testing::Test,
                           OrderDirection direction = OrderDirection::kBuy);
 
   TestRetType PushNewOpenOrderForMaster(
-      const std::string& order_no = "0001",
+      const std::string& order_id = "0001",
       OrderDirection direction = OrderDirection::kBuy,
       int quantity = 10);
 
@@ -159,7 +159,7 @@ class FollowStragetyServiceFixture : public testing::Test,
       PositionEffect position_effect = PositionEffect::kClose);
 
   TestRetType PushCancelOrderForMaster(
-      const std::string& order_no = "0001",
+      const std::string& order_id = "0001",
       OrderDirection direction = OrderDirection::kBuy,
       PositionEffect position_effect = PositionEffect::kOpen,
       int fill_quantity = 0,
@@ -180,14 +180,14 @@ class FollowStragetyServiceFixture : public testing::Test,
       PositionEffect position_effect = PositionEffect::kClose);
 
   TestRetType PushCancelOrderForSlave(
-      const std::string& order_no = "0001",
+      const std::string& order_id = "0001",
       OrderDirection direction = OrderDirection::kBuy,
       PositionEffect position_effect = PositionEffect::kOpen,
       int fill_quantity = 0,
       int quantity = 10);
 
   FollowStragetyServiceFixture::TestRetType PushOrderForMaster(
-      const std::string& order_no,
+      const std::string& order_id,
       OrderDirection direction,
       PositionEffect position_effect,
       OrderStatus status,
@@ -196,7 +196,7 @@ class FollowStragetyServiceFixture : public testing::Test,
       double price);
 
   FollowStragetyServiceFixture::TestRetType PushOrderForSlave(
-      const std::string& order_no,
+      const std::string& order_id,
       OrderDirection direction,
       PositionEffect position_effect,
       OrderStatus status,

@@ -8,21 +8,21 @@ class StrategyEnterOrderObservable {
    public:
     virtual void OpenOrder(const std::string& strategy_id,
                            const std::string& instrument,
-                           const std::string& order_no,
+                           const std::string& order_id,
                            OrderDirection direction,
                            double price,
                            int quantity) = 0;
 
     virtual void CloseOrder(const std::string& strategy_id,
                             const std::string& instrument,
-                            const std::string& order_no,
+                            const std::string& order_id,
                             OrderDirection direction,
                             PositionEffect position_effect,
                             double price,
                             int quantity) = 0;
 
     virtual void CancelOrder(const std::string& strategy_id,
-                             const std::string& order_no) = 0;
+                             const std::string& order_id) = 0;
   };
   virtual void Subscribe(Observer* observer) = 0;
 };

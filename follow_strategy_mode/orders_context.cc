@@ -24,8 +24,8 @@ void OrdersContext::InitPositions(std::vector<OrderPosition> positions) {
 }
 
 boost::optional<OrderData> OrdersContext::GetOrderData(
-    const std::string& order_no) const {
-  return account_order_mgr_.order_data(order_no);
+    const std::string& order_id) const {
+  return account_order_mgr_.order_data(order_id);
 }
 
 std::vector<AccountPortfolio> OrdersContext::GetAccountPortfolios() const {

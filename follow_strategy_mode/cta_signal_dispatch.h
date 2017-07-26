@@ -19,19 +19,19 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
 
   // EnterOrderObservable::Observer
   virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_no,
+                         const std::string& order_id,
                          OrderDirection direction,
                          double price,
                          int quantity) override;
 
   virtual void CloseOrder(const std::string& instrument,
-                          const std::string& order_no,
+                          const std::string& order_id,
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override;
 
-  virtual void CancelOrder(const std::string& order_no) override;
+  virtual void CancelOrder(const std::string& order_id) override;
 
   void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                         std::shared_ptr<OrdersContext> slave_context);
@@ -46,7 +46,7 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
     kSkip,
   };
 
-  void Trade(const std::string& order_no, OrderStatus status);
+  void Trade(const std::string& order_id, OrderStatus status);
 
   void DoHandleRtnOrder(OrderData rtn_order);
 

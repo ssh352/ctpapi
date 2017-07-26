@@ -6,51 +6,51 @@
 
 void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
                                       const std::string& instrument,
-                                      const std::string& order_no,
+                                      const std::string& order_id,
                                       OrderDirection direction,
                                       double price,
                                       int quantity) {
-  std::string adjust_order_no =
+  std::string adjust_order_id =
       boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
-      StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
-  enter_order_->OpenOrder(instrument, adjust_order_no, direction,
+      StragetyOrderBiMap::value_type({strategy_id, order_id}, adjust_order_id));
+  enter_order_->OpenOrder(instrument, adjust_order_id, direction,
                           price, quantity);
   BOOST_LOG(log_) << boost::log::add_value("strategy_id", strategy_id)
-                  << "OpenOrder:" << instrument << "," << order_no << ","
+                  << "OpenOrder:" << instrument << "," << order_id << ","
                   << (direction == OrderDirection::kBuy ? "B" : "S") << ","
                   << price << "," << quantity;
 }
 
 void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
                                        const std::string& instrument,
-                                       const std::string& order_no,
+                                       const std::string& order_id,
                                        OrderDirection direction,
                                        PositionEffect position_effect,
                                        double price,
                                        int quantity) {
-  std::string adjust_order_no =
+  std::string adjust_order_id =
       boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
-      StragetyOrderBiMap::value_type({strategy_id, order_no}, adjust_order_no));
-  enter_order_->CloseOrder(instrument, adjust_order_no, direction,
+      StragetyOrderBiMap::value_type({strategy_id, order_id}, adjust_order_id));
+  enter_order_->CloseOrder(instrument, adjust_order_id, direction,
                            position_effect, price, quantity);
   BOOST_LOG(log_) << "CloseOrder:"
                   << boost::log::add_value("strategy_id", strategy_id)
-                  << instrument << "," << order_no << ","
+                  << instrument << "," << order_id << ","
                   << (direction == OrderDirection::kBuy ? "B" : "S") << ","
                   << price << "," << quantity;
 }
 
 void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
-                                        const std::string& order_no) {
-  auto it = stragety_orders_.left.find(StragetyOrder{strategy_id, order_no});
+                                        const std::string& order_id) {
+  auto it = stragety_orders_.left.find(StragetyOrder{strategy_id, order_id});
   if (it != stragety_orders_.left.end()) {
-    enter_order_->CancelOrder(order_no);
+    enter_order_->CancelOrder(order_id);
   }
   BOOST_LOG(log_) << "CancelOrder:"
                   << boost::log::add_value("strategy_id", strategy_id)
-                  << order_no;
+                  << order_id;
 }
 
 void StrategyOrderDispatch::RtnOrder(OrderData order) {

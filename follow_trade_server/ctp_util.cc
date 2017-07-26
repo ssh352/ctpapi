@@ -1,16 +1,15 @@
 #include "ctp_util.h"
 
 CThostFtdcInputOrderField MakeCtpOpenOrder(const std::string& instrument,
-                                           const std::string& order_no,
+                                           const std::string& order_id,
                                            OrderDirection direction,
-                                           OrderPriceType price_type,
                                            double price,
                                            int quantity) {
   CThostFtdcInputOrderField field = {0};
   // strcpy(filed.BrokerID, "");
   // strcpy(filed.InvestorID, "");
   strcpy(field.InstrumentID, instrument.c_str());
-  strcpy(field.OrderRef, order_no.c_str());
+  strcpy(field.OrderRef, order_id.c_str());
   // strcpy(filed.UserID, );
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
   field.Direction =
@@ -32,17 +31,16 @@ CThostFtdcInputOrderField MakeCtpOpenOrder(const std::string& instrument,
 }
 
 CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
-                                            const std::string& order_no,
+                                            const std::string& order_id,
                                             OrderDirection direction,
                                             PositionEffect position_effect,
-                                            OrderPriceType price_type,
                                             double price,
                                             int quantity) {
   CThostFtdcInputOrderField field = {0};
   // strcpy(filed.BrokerID, "");
   // strcpy(filed.InvestorID, "");
   strcpy(field.InstrumentID, instrument.c_str());
-  strcpy(field.OrderRef, order_no.c_str());
+  strcpy(field.OrderRef, order_id.c_str());
   // strcpy(filed.UserID, );
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
   field.Direction =
@@ -68,26 +66,20 @@ CThostFtdcInputOrderField MakeCtpCloseOrder(const std::string& instrument,
 CThostFtdcInputOrderActionField MakeCtpCancelOrderAction(
     int front_id,
     int session_id,
-    const std::string& order_id ){
+    const std::string& order_id) {
   CThostFtdcInputOrderActionField order = {0};
   order.ActionFlag = THOST_FTDC_AF_Delete;
   order.FrontID = front_id;
   order.SessionID = session_id;
   strcpy(order.OrderRef, order_id.c_str());
-//   strcpy(order.ExchangeID, exchange_id.c_str());
-//   strcpy(order.OrderSysID, order_sys_id.c_str());
+  //   strcpy(order.ExchangeID, exchange_id.c_str());
+  //   strcpy(order.OrderSysID, order_sys_id.c_str());
   return order;
 }
 
 OrderDirection ParseOrderDirection(TThostFtdcDirectionType direction) {
   return direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy
                                        : OrderDirection::kSell;
-}
-
-OrderPriceType ParseOrderPriceType(
-    TThostFtdcOrderPriceTypeType order_price_type) {
-  return order_price_type == THOST_FTDC_OPT_AnyPrice ? OrderPriceType::kMarket
-                                                     : OrderPriceType::kLimit;
 }
 
 OrderStatus ParseOrderStatus(TThostFtdcOffsetFlagType flag) {
@@ -97,7 +89,7 @@ OrderStatus ParseOrderStatus(TThostFtdcOffsetFlagType flag) {
       status = OrderStatus::kAllFilled;
       break;
     case THOST_FTDC_OST_Canceled:
-      status = OrderStatus::kCancel;
+      status = OrderStatus::kCanceled;
     default:
       break;
   }
@@ -143,7 +135,6 @@ OrderData MakeOrderData(const CThostFtdcOrderField& order) {
       order.OrderRef,
       order.InstrumentID,
       order.InsertTime,
-      order.UserProductInfo,
       order.OrderSysID,
       order.ExchangeID,
       order.VolumeTotalOriginal,
@@ -151,7 +142,6 @@ OrderData MakeOrderData(const CThostFtdcOrderField& order) {
       order.SessionID,
       order.LimitPrice,
       ParseOrderDirection(order.Direction),
-      ParseOrderPriceType(order.OrderPriceType),
       ParseOrderStatus(order.OrderStatus),
       ParsePositionEffect(order.CombOffsetFlag[0]),
   };

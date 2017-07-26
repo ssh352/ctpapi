@@ -11,21 +11,21 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
  public:
   virtual void OpenOrder(const std::string& strategy_id,
                          const std::string& instrument,
-                         const std::string& order_no,
+                         const std::string& order_id,
                          OrderDirection direction,
                          double price,
                          int quantity) override;
 
   virtual void CloseOrder(const std::string& strategy_id,
                           const std::string& instrument,
-                          const std::string& order_no,
+                          const std::string& order_id,
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override;
 
   virtual void CancelOrder(const std::string& strategy_id,
-                           const std::string& order_no) override;
+                           const std::string& order_id) override;
 
   virtual void RtnOrder(OrderData order) override;
 

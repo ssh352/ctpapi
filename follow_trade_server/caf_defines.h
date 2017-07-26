@@ -27,9 +27,9 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderData& x) {
   return f(caf::meta::type_name("OrderData"), x.account_id_, x.order_id_,
-           x.instrument_, x.datetime_, x.user_product_info_, x.order_sys_id_,
-           x.exchange_id_, x.quanitty_, x.filled_quantity_, x.session_id_,
-           x.price_, x.direction_, x.type_, x.status_, x.position_effect_);
+           x.instrument_, x.datetime_, x.order_sys_id_, x.exchange_id_,
+           x.quanitty_, x.filled_quantity_, x.session_id_, x.price_,
+           x.direction_, x.status_, x.position_effect_);
 }
 
 template <class Inspector>
@@ -67,7 +67,7 @@ typename Inspector::result_type inspect(Inspector& f, AccountPortfolio& x) {
 /*
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, EnterOrderData& x) {
-return f(caf::meta::type_name("EnterOrderData"), x.instrument, x.order_no,
+return f(caf::meta::type_name("EnterOrderData"), x.instrument, x.order_id,
        x.action, x.order_direction, x.order_price, x.volume);
 }
 

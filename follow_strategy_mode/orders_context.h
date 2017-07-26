@@ -44,7 +44,7 @@ class OrdersContext {
 
   void InitPositions(std::vector<OrderPosition> quantitys);
 
-  boost::optional<OrderData> GetOrderData(const std::string& order_no) const;
+  boost::optional<OrderData> GetOrderData(const std::string& order_id) const;
 
   std::vector<AccountPortfolio> GetAccountPortfolios() const;
 
