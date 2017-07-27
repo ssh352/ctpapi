@@ -12,7 +12,7 @@ class OrdersContext {
  public:
   OrdersContext(std::string account_id);
 
-  OrderEventType HandleRtnOrder(const OrderData& rtn_order);
+  OrderEventType HandleRtnOrder(const OrderField& rtn_order);
 
   std::vector<OrderQuantity> GetQuantitys(
       std::vector<std::string> order_ids) const;
@@ -44,7 +44,7 @@ class OrdersContext {
 
   void InitPositions(std::vector<OrderPosition> quantitys);
 
-  boost::optional<OrderData> GetOrderData(const std::string& order_id) const;
+  boost::optional<OrderField> GetOrderData(const std::string& order_id) const;
 
   std::vector<AccountPortfolio> GetAccountPortfolios() const;
 

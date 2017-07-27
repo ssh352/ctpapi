@@ -2,7 +2,6 @@
 #include <boost/lexical_cast.hpp>
 #include "follow_trade_server/caf_ctp_util.h"
 #include "follow_trade_server/caf_defines.h"
-#include "follow_trade_server/ctp_util.h"
 #include "follow_trade_server/util.h"
 #include "websocket_util.h"
 
@@ -18,7 +17,7 @@ FollowStragetyServiceActor::FollowStragetyServiceActor(
     const std::string& master_account_id,
     const std::string& slave_account_id,
     std::vector<OrderPosition> master_init_positions,
-    std::vector<OrderData> master_history_rtn_orders,
+    std::vector<OrderField> master_history_rtn_orders,
     caf::actor cta,
     std::unique_ptr<ctp_bind::Trader> trader,
     caf::actor monitor)
@@ -114,45 +113,47 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
   return {[=]() {
 
           },
-          [=](CTARtnOrderAtom, boost::shared_ptr<OrderField> order) {
-            std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
-                          std::bind(&CTASignalDispatch::RtnOrder,
-                                    std::placeholders::_1, order));
-          },
-          [=](RtnOrderAtom, boost::shared_ptr<OrderField> order) {
-            if (order.account_id() == master_account_id_) {
-            } else {
-              // service_.RtnOrder(order);
-              portfolio_.OnRtnOrder(std::move(field));
-            }
-            send(monitor_, std::move(order));
-            /*
-            if (portfolio_age_ != 0) {
-              portfolio_age_ = 0;
-            } else {
-              ++portfolio_age_;
-              delayed_send(this, std::chrono::milliseconds(100),
-                           DisplayPortfolioAtom::value);
-            }
-            */
-          },
-          [=](DisplayPortfolioAtom, std::string stragety_id,
-              std::vector<AccountPortfolio> portfolio) {
-            //             send(monitor_, slave_account_id_ + ":" + stragety_id,
-            //                  master_context_->GetAccountPortfolios(),
-            //                  portfolio, true);
+//           [=](CTARtnOrderAtom, boost::shared_ptr<OrderField> order) {
+//             std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
+//                           std::bind(&CTASignalDispatch::RtnOrder,
+//                                     std::placeholders::_1, order));
+//           },
+//           [=](RtnOrderAtom, boost::shared_ptr<OrderField> order) {
+//             if (order.account_id() == master_account_id_) {
+//             } else {
+//               // service_.RtnOrder(order);
+//               portfolio_.OnRtnOrder(std::move(field));
+//             }
+//             send(monitor_, std::move(order));
+//             /*
+//             if (portfolio_age_ != 0) {
+//               portfolio_age_ = 0;
+//             } else {
+//               ++portfolio_age_;
+//               delayed_send(this, std::chrono::milliseconds(100),
+//                            DisplayPortfolioAtom::value);
+//             }
+//             */
+//           },
+//           [=](DisplayPortfolioAtom, std::string stragety_id,
+//               std::vector<AccountPortfolio> portfolio) {
+//             //             send(monitor_, slave_account_id_ + ":" + stragety_id,
+//             //                  master_context_->GetAccountPortfolios(),
+//             //                  portfolio, true);
+// 
+//             if (auto hdl = hdl_.lock()) {
+//               websocket_server_->send(
+//                   hdl,
+//                   MakePortfoilioJson(master_account_id_,
+//                                      master_context_->GetAccountPortfolios(),
+//                                      slave_account_id_, std::move(portfolio)),
+//                   websocketpp::frame::opcode::text);
+//             }
+//           },
+//           [=](StragetyPortfilioAtom, connection_hdl hdl) {
+//             hdl_ = hdl;
+// 
+//           }
 
-            if (auto hdl = hdl_.lock()) {
-              websocket_server_->send(
-                  hdl,
-                  MakePortfoilioJson(master_account_id_,
-                                     master_context_->GetAccountPortfolios(),
-                                     slave_account_id_, std::move(portfolio)),
-                  websocketpp::frame::opcode::text);
-            }
-          },
-          [=](StragetyPortfilioAtom, connection_hdl hdl) {
-            hdl_ = hdl;
-
-          }};
+  };
 }

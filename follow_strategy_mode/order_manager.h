@@ -6,7 +6,7 @@
 
 class OrderManager {
  public:
-  OrderEventType HandleRtnOrder(OrderData order);
+  OrderEventType HandleRtnOrder(OrderField order);
 
   const std::string& GetOrderInstrument(const std::string& order_id) const;
 
@@ -21,7 +21,7 @@ class OrderManager {
 
   bool IsActiveOrder(const std::string& order_id) const;
 
-  boost::optional<OrderData> order_data(const std::string& order_id) const;
+  boost::optional<OrderField> order_data(const std::string& order_id) const;
 
  private:
   int GetUnfillQuantity(const std::string& instrument,

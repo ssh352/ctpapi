@@ -1,20 +1,20 @@
 #include "follow_strategy_mode/order_manager.h"
 #include "follow_strategy_mode/order_util.h"
 
-OrderEventType OrderManager::HandleRtnOrder(OrderData order) {
+OrderEventType OrderManager::HandleRtnOrder(OrderField order) {
   OrderEventType ret_type = OrderEventType::kIgnore;
-  if (orders_.find(order.order_id()) == orders_.end()) {
-    ret_type = IsCloseOrder(order.position_effect()) ? OrderEventType::kNewClose
+  if (orders_.find(order.order_id) == orders_.end()) {
+    ret_type = IsCloseOrder(order.position_effect) ? OrderEventType::kNewClose
                                                      : OrderEventType::kNewOpen;
-  } else if (order.status() == OrderStatus::kCanceled) {
+  } else if (order.status == OrderStatus::kCanceled) {
     ret_type = OrderEventType::kCanceled;
-  } else if (orders_[order.order_id()].IsQuantityChange(
-                 order.filled_quantity())) {
-    ret_type = IsCloseOrder(order.position_effect())
+  } else if (orders_[order.order_id].IsQuantityChange(
+                 order.traded_qty)) {
+    ret_type = IsCloseOrder(order.position_effect)
                    ? OrderEventType::kCloseTraded
                    : OrderEventType::kOpenTraded;
   }
-  std::swap(orders_[order.order_id()], Order(std::move(order)));
+  std::swap(orders_[order.order_id], Order(std::move(order)));
   return ret_type;
 }
 
@@ -81,7 +81,7 @@ bool OrderManager::IsActiveOrder(const std::string& order_id) const {
   return orders_.at(order_id).IsActiveOrder();
 }
 
-boost::optional<OrderData> OrderManager::order_data(
+boost::optional<OrderField> OrderManager::order_data(
     const std::string& order_id) const {
   if (orders_.find(order_id) == orders_.end()) {
     return {};

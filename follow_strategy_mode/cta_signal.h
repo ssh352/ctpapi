@@ -9,15 +9,15 @@ class CTASignal : public CTASignalObserver {
   void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                         std::shared_ptr<OrdersContext> slave_context);
 
-  virtual void HandleOpening(const OrderData& order_data) override;
+  virtual void HandleOpening(const OrderField& order_data) override;
 
-  virtual void HandleCloseing(const OrderData& order_data) override;
+  virtual void HandleCloseing(const OrderField& order_data) override;
 
-  virtual void HandleCanceled(const OrderData& order_data) override;
+  virtual void HandleCanceled(const OrderField& order_data) override;
 
-  virtual void HandleClosed(const OrderData& order_data) override;
+  virtual void HandleClosed(const OrderField& order_data) override;
 
-  virtual void HandleOpened(const OrderData& order_data) override;
+  virtual void HandleOpened(const OrderField& order_data) override;
 
   virtual void Subscribe(CTASignalObserver::Observable* observer) override;
  private:

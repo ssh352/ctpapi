@@ -34,7 +34,7 @@ class PositionManager {
   int GetCloseableQuantityWithOrderDirection(const std::string& instrument,
                                              OrderDirection direction) const;
 
-  void HandleRtnOrder(const OrderData& rtn_order,
+  void HandleRtnOrder(const OrderField& rtn_order,
                       CloseCorrOrdersManager* close_corr_orders_mgr);
 
  private:

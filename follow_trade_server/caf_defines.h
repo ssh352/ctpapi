@@ -21,16 +21,10 @@ using CTPCancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 using StragetyPortfilioAtom = caf::atom_constant<caf::atom("sp")>;
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderField)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderField>)
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
-
-template <class Inspector>
-typename Inspector::result_type inspect(Inspector& f, OrderData& x) {
-  return f(caf::meta::type_name("OrderData"), x.account_id_, x.order_id_,
-           x.instrument_, x.datetime_, x.order_sys_id_, x.exchange_id_,
-           x.quanitty_, x.filled_quantity_, x.session_id_, x.price_,
-           x.direction_, x.status_, x.position_effect_);
-}
 
 template <class Inspector>
 typename Inspector::result_type inspect(Inspector& f, OrderPosition& x) {

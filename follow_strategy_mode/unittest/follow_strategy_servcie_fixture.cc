@@ -46,7 +46,7 @@ OrderInsertForTest FollowStragetyServiceFixture::PopOrderInsert() {
   return order_insert;
 }
 
-OrderData FollowStragetyServiceFixture::MakeMasterOrderData(
+OrderField FollowStragetyServiceFixture::MakeMasterOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
     PositionEffect position_effect,
@@ -56,24 +56,21 @@ OrderData FollowStragetyServiceFixture::MakeMasterOrderData(
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= "Q7"*/) {
-  return OrderData{
-      kMasterAccountID,  // account_id,
-      order_id,          // order_id,
-      instrument,        // instrument,
-      "",                // datetime,
-      order_id,
-      default_order_exchange_id_,  // exchange_id
-      quantity,                    // quanitty,
-      filled_quantity,             // filled_quantity,
-      0,                           // session_id,
-      order_price,                 // price,
-      order_direction,             // direction
-      status,                      // status
-      position_effect              // position_effect
-  };
+  OrderField field;
+  field.account_id = kMasterAccountID;
+  field.instrument_id = instrument;
+  field.exchange_id = default_order_exchange_id_;
+  field.direction = order_direction;
+  field.order_id = order_id;
+  field.qty = quantity;
+  field.traded_qty = filled_quantity;
+  field.price = order_price;
+  field.status = status;
+  field.position_effect = position_effect;
+  return field;
 }
 
-OrderData FollowStragetyServiceFixture::MakeSlaveOrderData(
+OrderField FollowStragetyServiceFixture::MakeSlaveOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
     PositionEffect position_effect,
@@ -82,21 +79,18 @@ OrderData FollowStragetyServiceFixture::MakeSlaveOrderData(
     int quantity /*= 10*/,
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/) {
-  return OrderData{
-      kSlaveAccountID,           // account_id,
-      order_id,                  // order_id,
-      instrument,                // instrument,
-      "",                        // datetime,
-      order_id,
-      default_order_exchange_id_,  // Exchange Id
-      quantity,                    // quanitty,
-      filled_quantity,             // filled_quantity,
-      1,                           // session_id,
-      order_price,                 // price,
-      order_direction,             // direction
-      status,                      // status
-      position_effect              // position_effect
-  };
+  OrderField field;
+  field.account_id = kSlaveAccountID;
+  field.instrument_id = instrument;
+  field.exchange_id = default_order_exchange_id_;
+  field.direction = order_direction;
+  field.order_id = order_id;
+  field.qty = quantity;
+  field.traded_qty = filled_quantity;
+  field.price = order_price;
+  field.status = status;
+  field.position_effect = position_effect;
+  return field;
 }
 
 FollowStragetyServiceFixture::TestRetType

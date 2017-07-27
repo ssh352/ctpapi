@@ -7,7 +7,7 @@ bool Logon(caf::actor actor);
 
 std::vector<OrderPosition> BlockRequestInitPositions(caf::actor actor);
 
-std::vector<OrderData> BlockRequestHistoryOrder(caf::actor actor);
+std::vector<OrderField> BlockRequestHistoryOrder(caf::actor actor);
 
 void SettlementInfoConfirm(caf::actor actor);
 

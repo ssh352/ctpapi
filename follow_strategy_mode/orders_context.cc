@@ -5,7 +5,7 @@
 OrdersContext::OrdersContext(std::string account_id)
     : account_id_(std::move(account_id)) {}
 
-OrderEventType OrdersContext::HandleRtnOrder(const OrderData& rtn_order) {
+OrderEventType OrdersContext::HandleRtnOrder(const OrderField& rtn_order) {
   account_position_mgr_.HandleRtnOrder(rtn_order,
                                        &account_close_corr_orders_mgr_);
 
@@ -23,7 +23,7 @@ void OrdersContext::InitPositions(std::vector<OrderPosition> positions) {
   }
 }
 
-boost::optional<OrderData> OrdersContext::GetOrderData(
+boost::optional<OrderField> OrdersContext::GetOrderData(
     const std::string& order_id) const {
   return account_order_mgr_.order_data(order_id);
 }

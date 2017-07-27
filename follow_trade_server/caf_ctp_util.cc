@@ -17,14 +17,14 @@ std::vector<OrderPosition> BlockRequestInitPositions(caf::actor actor) {
       ->get_as<std::vector<OrderPosition>>(0);
 }
 
-std::vector<OrderData> BlockRequestHistoryOrder(caf::actor actor) {
+std::vector<OrderField> BlockRequestHistoryOrder(caf::actor actor) {
   auto f = caf::make_function_view(actor);
 
-  std::vector<OrderData> history_orders;
+  std::vector<OrderField> history_orders;
   size_t next_seq = 0;
   while (true) {
     auto ret = f(CTPReqHistoryRtnOrdersAtom::value, next_seq);
-    auto orders = ret->get_as<std::vector<OrderData>>(0);
+    auto orders = ret->get_as<std::vector<OrderField>>(0);
     if (orders.empty()) {
       break;
     }

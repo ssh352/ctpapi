@@ -5,26 +5,25 @@
 class Order {
  public:
   Order() = default;
-  Order(OrderData&& data);
+  Order(OrderField&& data);
   const std::string& instrument() const {
-    return data_.instrument();
+    return data_.instrument_id;
   }
 
   OrderDirection direction() const {
-    return data_.direction();
+    return data_.direction;
   }
   
-  bool IsQuantityChange(int filled_quantity) const;
-
+  bool IsQuantityChange(int traded_qty) const;
   bool IsActiveOrder() const;
 
   bool IsOpen() const;
 
   int unfill_quantity() const;
 
-  OrderData order_data() const;
+  OrderField order_data() const;
  private:
-  OrderData data_;
+  OrderField data_;
   std::vector<std::pair<std::string, int> > order_quantitys_;
 };
 

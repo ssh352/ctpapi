@@ -19,60 +19,60 @@ void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-void CTASignal::HandleOpening(const OrderData& order_data) {
-  if (order_data.account_id_ != master_context_->account_id()) {
+void CTASignal::HandleOpening(const OrderField& order_data) {
+  if (order_data.account_id != master_context_->account_id()) {
     return;
   }
-  if (master_context_->IsOppositeOpen(order_data.instrument(),
-                                      order_data.direction())) {
+  if (master_context_->IsOppositeOpen(order_data.instrument_id,
+                                      order_data.direction)) {
     int master_quantity =
         master_context_->GetCloseableQuantityWithOrderDirection(
-            order_data.instrument(),
-            OppositeOrderDirection(order_data.direction()));
+            order_data.instrument_id,
+            OppositeOrderDirection(order_data.direction));
 
     int slave_quantity = slave_context_->GetCloseableQuantityWithOrderDirection(
-        order_data.instrument(),
-        OppositeOrderDirection(order_data.direction()));
+        order_data.instrument_id,
+        OppositeOrderDirection(order_data.direction));
 
-    if (master_quantity == order_data.quanitty()) {
+    if (master_quantity == order_data.qty) {
       if (slave_quantity > 0) {
         // Fully lock
-        observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                             order_data.direction(), order_data.price(),
+        observer_->OpenOrder(order_data.instrument_id, order_data.order_id,
+                             order_data.direction, order_data.price,
                              slave_quantity);
       }
 
       if (master_context_->ActiveOrderCount(
-              order_data.instrument(),
-              OppositeOrderDirection(order_data.direction())) == 0 &&
+              order_data.instrument_id,
+              OppositeOrderDirection(order_data.direction)) == 0 &&
           slave_context_->ActiveOrderCount(
-              order_data.instrument(),
-              OppositeOrderDirection(order_data.direction())) != 0) {
+              order_data.instrument_id,
+              OppositeOrderDirection(order_data.direction)) != 0) {
         for (auto order_id : slave_context_->ActiveOrderIds(
-                 order_data.instrument(),
-                 OppositeOrderDirection(order_data.direction()))) {
+                 order_data.instrument_id,
+                 OppositeOrderDirection(order_data.direction))) {
           observer_->CancelOrder(order_id);
         }
       }
     } else {
-      observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                           order_data.direction(), order_data.price(),
-                           order_data.quanitty());
+      observer_->OpenOrder(order_data.instrument_id, order_data.order_id,
+                           order_data.direction, order_data.price,
+                           order_data.qty);
     }
   } else {
-    observer_->OpenOrder(order_data.instrument(), order_data.order_id(),
-                         order_data.direction(),
-                         order_data.price(), order_data.quanitty());
+    observer_->OpenOrder(order_data.instrument_id, order_data.order_id,
+                         order_data.direction,
+                         order_data.price, order_data.qty);
   }
 }
 
-void CTASignal::HandleCloseing(const OrderData& order_data) {
-  if (order_data.account_id() != master_context_->account_id()) {
+void CTASignal::HandleCloseing(const OrderField& order_data) {
+  if (order_data.account_id != master_context_->account_id()) {
     return;
   }
 
   std::vector<std::pair<std::string, int> > master_corr_order_quantitys =
-      master_context_->GetCorrOrderQuantiys(order_data.order_id());
+      master_context_->GetCorrOrderQuantiys(order_data.order_id);
 
   int close_quantity = 0;
   for (auto master_corr_quantity : master_corr_order_quantitys) {
@@ -97,40 +97,40 @@ void CTASignal::HandleCloseing(const OrderData& order_data) {
   }
 
   if (close_quantity > 0) {
-    observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
-                          order_data.direction(), order_data.position_effect(),
-                          order_data.price(),
+    observer_->CloseOrder(order_data.instrument_id, order_data.order_id,
+                          order_data.direction, order_data.position_effect,
+                          order_data.price,
                           close_quantity);
   }
 }
 
-void CTASignal::HandleCanceled(const OrderData& order_data) {
-  if (order_data.account_id() != master_context_->account_id()) {
+void CTASignal::HandleCanceled(const OrderField& order_data) {
+  if (order_data.account_id != master_context_->account_id()) {
     return;
   }
 
-  if (slave_context_->IsActiveOrder(order_data.order_id())) {
-    observer_->CancelOrder(order_data.order_id());
+  if (slave_context_->IsActiveOrder(order_data.order_id)) {
+    observer_->CancelOrder(order_data.order_id);
   }
 }
 
-void CTASignal::HandleClosed(const OrderData& order_data) {
-  if (order_data.account_id() != master_context_->account_id()) {
+void CTASignal::HandleClosed(const OrderField& order_data) {
+  if (order_data.account_id != master_context_->account_id()) {
     return;
   }
 
   if (master_context_->GetCloseableQuantityWithOrderDirection(
-          order_data.instrument(),
-          OppositeOrderDirection(order_data.direction())) == 0 &&
+          order_data.instrument_id,
+          OppositeOrderDirection(order_data.direction)) == 0 &&
       slave_context_->GetCloseableQuantityWithOrderDirection(
-          order_data.instrument(),
-          OppositeOrderDirection(order_data.direction())) != 0) {
+          order_data.instrument_id,
+          OppositeOrderDirection(order_data.direction)) != 0) {
     // Close all position
     auto quantitys = slave_context_->GetQuantitysIf(
-        order_data.instrument(),
+        order_data.instrument_id,
         [](auto quantity) { return quantity.closeable_quantity != 0; });
 
-    if (order_data.exchange_id() == kSHFEExchangeId) {
+    if (order_data.exchange_id == kSHFEExchangeId) {
       int today_quantity = std::accumulate(
           quantitys.begin(), quantitys.end(), 0, [](int val, auto quantity) {
             return quantity.is_today_quantity
@@ -144,14 +144,14 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
                        : val;
           });
       if (yesterday_quantity > 0) {
-        observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
-                              order_data.direction(), PositionEffect::kClose,
+        observer_->CloseOrder(order_data.instrument_id, order_data.order_id,
+                              order_data.direction, PositionEffect::kClose,
                               0, yesterday_quantity);
       }
 
       if (today_quantity > 0) {
-        observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
-                              order_data.direction(),
+        observer_->CloseOrder(order_data.instrument_id, order_data.order_id,
+                              order_data.direction,
                               PositionEffect::kCloseToday,
                               0, today_quantity);
       }
@@ -161,15 +161,15 @@ void CTASignal::HandleClosed(const OrderData& order_data) {
                                        return val + quantity.closeable_quantity;
                                      });
 
-      observer_->CloseOrder(order_data.instrument(), order_data.order_id(),
-                            order_data.direction(), PositionEffect::kCloseToday,
+      observer_->CloseOrder(order_data.instrument_id, order_data.order_id,
+                            order_data.direction, PositionEffect::kCloseToday,
                             0, quantity);
     }
   }
   //  delegate_->CloseOrder(order_data.Instrument())
 }
 
-void CTASignal::HandleOpened(const OrderData& rtn_order) {}
+void CTASignal::HandleOpened(const OrderField& rtn_order) {}
 
 void CTASignal::Subscribe(CTASignalObserver::Observable* observer) {
   observer_ = observer;

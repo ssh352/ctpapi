@@ -19,7 +19,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                              const std::string& master_account_id,
                              const std::string& slave_account_id,
                              std::vector<OrderPosition> master_init_positions,
-                             std::vector<OrderData> master_history_rtn_orders,
+                             std::vector<OrderField> master_history_rtn_orders,
                              caf::actor ctp,
                              std::unique_ptr<ctp_bind::Trader> trader,
                              caf::actor monitor);
@@ -68,7 +68,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
 
   int portfolio_age_;
   std::vector<OrderPosition> master_init_positions_;
-  std::vector<OrderData> master_history_rtn_orders_;
+  std::vector<OrderField> master_history_rtn_orders_;
   CTPPortfolio portfolio_;
   std::shared_ptr<OrdersContext> master_context_;
   std::string master_account_id_;

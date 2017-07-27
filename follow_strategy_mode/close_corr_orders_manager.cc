@@ -25,10 +25,10 @@ std::vector<std::string> CloseCorrOrdersManager::GetCloseCorrOrderIds(
   return order_ids;
 }
 
-bool CloseCorrOrdersManager::IsNewCloseOrder(const OrderData& rtn_order) const {
-  return IsCloseOrder(rtn_order.position_effect()) &&
-         rtn_order.filled_quantity() == 0 &&
-         close_corr_orders_.find(rtn_order.order_id()) ==
+bool CloseCorrOrdersManager::IsNewCloseOrder(const OrderField& rtn_order) const {
+  return IsCloseOrder(rtn_order.position_effect) &&
+         rtn_order.traded_qty == 0 &&
+         close_corr_orders_.find(rtn_order.order_id) ==
              close_corr_orders_.end();
 }
 

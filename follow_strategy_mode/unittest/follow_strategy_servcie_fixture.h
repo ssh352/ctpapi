@@ -98,7 +98,7 @@ class FollowStragetyServiceFixture : public testing::Test,
 
   OrderInsertForTest PopOrderInsert();
 
-  OrderData MakeMasterOrderData(const std::string& order_id,
+  OrderField MakeMasterOrderData(const std::string& order_id,
                                 OrderDirection order_direction,
                                 PositionEffect position_effect,
                                 OrderStatus status,
@@ -108,7 +108,7 @@ class FollowStragetyServiceFixture : public testing::Test,
                                 const std::string& instrument = "abc",
                                 const std::string& user_product_info = "Q7");
 
-  OrderData MakeSlaveOrderData(
+  OrderField MakeSlaveOrderData(
       const std::string& order_id,
       OrderDirection order_direction,
       PositionEffect position_effect,

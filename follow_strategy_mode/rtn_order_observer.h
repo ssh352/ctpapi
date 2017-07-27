@@ -4,7 +4,7 @@
 
 class RtnOrderObserver {
  public:
-  virtual void RtnOrder(OrderData order) = 0;
+  virtual void RtnOrder(OrderField order) = 0;
 };
 
 #endif  // FOLLOW_STRATEGY_MODE_RTN_ORDER_OBSERVER_H

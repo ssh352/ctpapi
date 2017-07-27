@@ -32,7 +32,7 @@
 #include "follow_strategy_mode/print_portfolio_helper.h"
 #include "follow_trade_server/binary_serialization.h"
 #include "follow_trade_server/caf_defines.h"
-#include "follow_trade_server/cta_trade_actor.h"
+// #include "follow_trade_server/cta_trade_actor.h"
 #include "follow_trade_server/ctp_trader.h"
 #include "follow_trade_server/util.h"
 #include "websocket_typedef.h"
@@ -111,12 +111,12 @@ caf::behavior FolloweMonitor(caf::stateful_actor<LogBinaryArchive>* self,
             std::for_each(positions.begin(), positions.end(),
                           [&](auto pos) { *self->state.oa << pos; });
           },
-          [=](std::vector<OrderData> orders) {
+          [=](std::vector<OrderField> orders) {
             *self->state.oa << orders.size();
             std::for_each(orders.begin(), orders.end(),
                           [&](auto order) { *self->state.oa << order; });
           },
-          [=](OrderData order) { *self->state.oa << order; },
+          [=](OrderField order) { *self->state.oa << order; },
           [=](std::string account_id,
               std::vector<AccountPortfolio> master_portfolio,
               std::vector<AccountPortfolio> slave_portfolio, bool fully) {
@@ -207,6 +207,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   //   int open;
   //   int close;
   // };
+  /*
   Server m_server;
   m_server.init_asio();
 
@@ -276,6 +277,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   } catch (const std::exception& e) {
     std::cout << e.what() << std::endl;
   }
+  */
   return 0;
 }
 

@@ -22,11 +22,11 @@ public:
     virtual void CancelOrder(const std::string& order_id) = 0;
   };
 
-  virtual void HandleOpening(const OrderData& order_data) = 0;
-  virtual void HandleCloseing(const OrderData& order_data) = 0;
-  virtual void HandleCanceled(const OrderData& order_data) = 0;
-  virtual void HandleClosed(const OrderData& order_data) = 0;
-  virtual void HandleOpened(const OrderData& order_data) = 0;
+  virtual void HandleOpening(const OrderField& order_data) = 0;
+  virtual void HandleCloseing(const OrderField& order_data) = 0;
+  virtual void HandleCanceled(const OrderField& order_data) = 0;
+  virtual void HandleClosed(const OrderField& order_data) = 0;
+  virtual void HandleOpened(const OrderField& order_data) = 0;
 
   virtual void Subscribe(Observable* observer) = 0;
 };

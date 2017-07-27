@@ -10,7 +10,7 @@ class CloseCorrOrdersManager {
   std::vector<std::string> GetCloseCorrOrderIds(
       const std::string& order_id) const;
 
-  bool IsNewCloseOrder(const OrderData& rtn_order) const;
+  bool IsNewCloseOrder(const OrderField& rtn_order) const;
 
   void AddCloseCorrOrders(
       const std::string& order_id,

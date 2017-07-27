@@ -53,32 +53,32 @@ boost::optional<int> InstrumentPosition::GetCloseableQuantityWithOrderId(
 }
 
 void InstrumentPosition::HandleRtnOrder(
-    const OrderData& rtn_order,
+    const OrderField& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
-  if (rtn_order.status() != OrderStatus::kCanceled &&
-      IsOpenOrder(rtn_order.position_effect()) &&
-      rtn_order.filled_quantity() != 0) {
+  if (rtn_order.status != OrderStatus::kCanceled &&
+      IsOpenOrder(rtn_order.position_effect) &&
+      rtn_order.traded_qty != 0) {
     auto it = std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
-      return pos.second.order_id == rtn_order.order_id();
+      return pos.second.order_id == rtn_order.order_id;
     });
 
     if (it != positions_.end()) {
-      int new_quantity = rtn_order.filled_quantity() - it->second.quantity;
+      int new_quantity = rtn_order.traded_qty - it->second.quantity;
       it->second.quantity += new_quantity;
       it->second.closeable_quantity += new_quantity;
     } else {
-      positions_[rtn_order.order_id()] = {
-          rtn_order.order_id(), rtn_order.direction(), true,
-          rtn_order.filled_quantity(), rtn_order.filled_quantity()};
+      positions_[rtn_order.order_id] = {
+          rtn_order.order_id, rtn_order.direction, true,
+          rtn_order.traded_qty, rtn_order.traded_qty};
     }
   } else if (close_corr_orders_mgr->IsNewCloseOrder(rtn_order)) {
     std::vector<std::pair<std::string, int> > close_corr_orders;
-    int outstanding_quantity = rtn_order.quanitty();
+    int outstanding_quantity = rtn_order.qty;
     for (auto& pos : positions_) {
-      if (pos.second.direction == rtn_order.direction() ||
+      if (pos.second.direction == rtn_order.direction ||
           pos.second.closeable_quantity == 0 ||
-          !TestPositionEffect(rtn_order.exchange_id(),
-                              rtn_order.position_effect(),
+          !TestPositionEffect(rtn_order.exchange_id,
+                              rtn_order.position_effect,
                               pos.second.is_today_quantity)) {
         continue;
       }
@@ -91,16 +91,16 @@ void InstrumentPosition::HandleRtnOrder(
         break;
       }
     }
-    close_corr_orders_mgr->AddCloseCorrOrders(rtn_order.order_id(),
+    close_corr_orders_mgr->AddCloseCorrOrders(rtn_order.order_id,
                                               std::move(close_corr_orders));
-  } else if (rtn_order.status() == OrderStatus::kCanceled) {
+  } else if (rtn_order.status == OrderStatus::kCanceled) {
     for (auto order_quantity :
-         close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id())) {
+         close_corr_orders_mgr->GetCorrOrderQuantiys(rtn_order.order_id)) {
       if (positions_.find(order_quantity.first) != positions_.end()) {
         if (positions_[order_quantity.first].closeable_quantity !=
             positions_[order_quantity.first].quantity) {
           positions_[order_quantity.first].closeable_quantity +=
-              order_quantity.second - rtn_order.filled_quantity();
+              order_quantity.second - rtn_order.traded_qty;
         }
       }
     }

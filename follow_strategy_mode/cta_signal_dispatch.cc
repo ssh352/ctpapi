@@ -25,7 +25,7 @@ void CTASignalDispatch::SubscribeEnterOrderObserver(
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-void CTASignalDispatch::RtnOrder(OrderData rtn_order) {
+void CTASignalDispatch::RtnOrder(OrderField rtn_order) {
   switch (BeforeHandleOrder(rtn_order)) {
     case StragetyStatus::kWaitReply:
       outstanding_orders_.push_back(std::move(rtn_order));
@@ -44,7 +44,7 @@ void CTASignalDispatch::RtnOrder(OrderData rtn_order) {
   }
 }
 
-void CTASignalDispatch::DoHandleRtnOrder(OrderData rtn_order) {
+void CTASignalDispatch::DoHandleRtnOrder(OrderField rtn_order) {
   switch (OrdersContextHandleRtnOrder(rtn_order)) {
     case OrderEventType::kNewOpen:
       signal_observer_->HandleOpening(rtn_order);
@@ -116,18 +116,18 @@ void CTASignalDispatch::SubscribePortfolioObserver(
 }
 
 CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
-    OrderData order) {
+    OrderField order) {
   StragetyStatus status = waiting_reply_order_.empty()
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() &&
-      order.account_id() == slave_context_->account_id()) {
+      order.account_id == slave_context_->account_id()) {
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
-                     [&](auto i) { return i.first == order.order_id(); });
+                     [&](auto i) { return i.first == order.order_id; });
     if (it != waiting_reply_order_.end()) {
-      if (it->second == order.status() ||
-          order.status() == OrderStatus::kAllFilled) {
+      if (it->second == order.status ||
+          order.status == OrderStatus::kAllFilled) {
         waiting_reply_order_.erase(it);
         DoHandleRtnOrder(order);
         status = StragetyStatus::kSkip;
@@ -147,8 +147,8 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
   return status;
 }
 
-OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(OrderData order) {
-  return order.account_id() == master_context_->account_id()
+OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(OrderField order) {
+  return order.account_id == master_context_->account_id()
              ? master_context_->HandleRtnOrder(order)
              : slave_context_->HandleRtnOrder(order);
 }

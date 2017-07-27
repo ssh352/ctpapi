@@ -53,15 +53,15 @@ void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
                   << order_id;
 }
 
-void StrategyOrderDispatch::RtnOrder(OrderData order) {
-  auto it = stragety_orders_.right.find(order.order_id());
+void StrategyOrderDispatch::RtnOrder(OrderField order) {
+  auto it = stragety_orders_.right.find(order.order_id);
   if (it != stragety_orders_.right.end()) {
-    order.order_id_ = it->second.order_id;
+    order.order_id = it->second.order_id;
     BOOST_LOG(log_) << boost::log::add_value("strategy_id", it->second.strategy_id)
-                    << "RtnOrder:" << order.instrument() << ","
-                    << order.order_id() << ","
-                    << (order.direction() == OrderDirection::kBuy ? "B" : "S")
-                    << "," << order.price();
+                    << "RtnOrder:" << order.instrument_id << ","
+                    << order.order_id << ","
+                    << (order.direction == OrderDirection::kBuy ? "B" : "S")
+                    << "," << order.price;
     rtn_order_observers_[it->second.strategy_id]->RtnOrder(std::move(order));
   } else {
     // Exception or maybe muanul control

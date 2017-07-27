@@ -14,20 +14,8 @@ void serialize(Archive& ar, OrderPosition& order, const unsigned int version) {
 }
 
 template <class Archive>
-void serialize(Archive& ar, OrderData& order, const unsigned int version) {
-  ar & order.account_id_;
-  ar & order.order_id_;
-  ar & order.instrument_;
-  ar & order.datetime_;
-  ar & order.order_sys_id_;
-  ar & order.exchange_id_;
-  ar & order.quanitty_;
-  ar & order.filled_quantity_;
-  ar & order.session_id_;
-  ar & order.price_;
-  ar & order.direction_;
-  ar & order.status_;
-  ar & order.position_effect_;
+void serialize(Archive& ar, OrderField& order, const unsigned int version) {
+
 }
 
 template <class Archive>

@@ -15,7 +15,7 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
       std::shared_ptr<EnterOrderObserver> observer);
 
   // RtnOrderObservable::Observer
-  virtual void RtnOrder(OrderData order) override;
+  virtual void RtnOrder(OrderField order) override;
 
   // EnterOrderObservable::Observer
   virtual void OpenOrder(const std::string& instrument,
@@ -48,15 +48,15 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
 
   void Trade(const std::string& order_id, OrderStatus status);
 
-  void DoHandleRtnOrder(OrderData rtn_order);
+  void DoHandleRtnOrder(OrderField rtn_order);
 
-  StragetyStatus BeforeHandleOrder(OrderData order);
+  StragetyStatus BeforeHandleOrder(OrderField order);
 
-  OrderEventType OrdersContextHandleRtnOrder(OrderData order);
+  OrderEventType OrdersContextHandleRtnOrder(OrderField order);
 
   std::vector<std::pair<std::string, OrderStatus> > waiting_reply_order_;
 
-  std::deque<OrderData> outstanding_orders_;
+  std::deque<OrderField> outstanding_orders_;
   std::shared_ptr<CTASignalObserver> signal_observer_;
   std::shared_ptr<EnterOrderObserver> enter_order_observer_;
   std::shared_ptr<OrdersContext> master_context_;

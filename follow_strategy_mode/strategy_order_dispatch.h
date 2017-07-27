@@ -27,7 +27,7 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   virtual void CancelOrder(const std::string& strategy_id,
                            const std::string& order_id) override;
 
-  virtual void RtnOrder(OrderData order) override;
+  virtual void RtnOrder(OrderField order) override;
 
   void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
 
