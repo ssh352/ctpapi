@@ -83,6 +83,7 @@ void CTASignalDispatch::OpenOrder(const std::string& instrument,
                                      quantity);
   }
 }
+
 void CTASignalDispatch::CloseOrder(const std::string& instrument,
                                    const std::string& order_id,
                                    OrderDirection direction,

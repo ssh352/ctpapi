@@ -30,24 +30,14 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   virtual void RtnOrder(
       const boost::shared_ptr<const OrderField>& order) override;
 
-  void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
+  void SubscribeEnterOrderObserver(
+      StrategyEnterOrderObservable::Observer* observer);
 
   void SubscribeRtnOrderObserver(const std::string& strategy_id,
                                  std::shared_ptr<RtnOrderObserver> observer);
 
  private:
-  struct StragetyOrder {
-    std::string strategy_id;
-    std::string order_id;
-    bool operator<(const StragetyOrder& r) const {
-      return std::make_pair(strategy_id, order_id) <
-             std::make_pair(r.strategy_id, r.order_id);
-    }
-  };
-
-  typedef boost::bimap<StragetyOrder, std::string> StragetyOrderBiMap;
-  StragetyOrderBiMap stragety_orders_;
-  EnterOrderObserver* enter_order_;
+  StrategyEnterOrderObservable::Observer* enter_order_;
   std::map<std::string, std::shared_ptr<RtnOrderObserver> >
       rtn_order_observers_;
   boost::log::sources::logger log_;

@@ -86,9 +86,9 @@ void ctp_bind::Trader::OnRtnOrderOnIOThread(
   order_field->traded_qty = order->VolumeTraded;
   order_field->error_id = 0;
   order_field->raw_error_id = 0;
+  order_field->account_id = order->UserID;
 
   auto sub_order_id_it = sub_order_ids_.right.find(order_id);
-  ;
   if (sub_order_id_it != sub_order_ids_.right.end()) {
     auto callback_it =
         sub_account_on_rtn_order_callbacks_.find(sub_order_id_it->second.first);
@@ -193,6 +193,8 @@ void ctp_bind::Trader::Connect(
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
   api_->RegisterSpi(this);
   api_->RegisterFront(const_cast<char*>(server_.c_str()));
+  api_->SubscribePublicTopic(THOST_TERT_QUICK);
+  api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
 }
 

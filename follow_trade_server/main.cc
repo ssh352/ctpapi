@@ -214,7 +214,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
   boost::asio::io_service io_service;
 
-  ClearUpCTPFolwDirectory();
+  // ClearUpCTPFolwDirectory();
 
   std::vector<LogonInfo> followers;
   for (auto slave : pt.get_child("slaves")) {
@@ -225,6 +225,13 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                            slave.second.get<std::string>("password")});
     }
   }
+  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+  //                            "140616"};
+  LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
+                              pt.get<std::string>("master.broker_id"),
+                              pt.get<std::string>("master.user_id"),
+                              pt.get<std::string>("master.password")};
+
   std::vector<caf::actor> actors;
   std::vector<boost::shared_ptr<ctp_bind::Trader>> traders;
   for (auto follower : followers) {
@@ -232,16 +239,11 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
         new ctp_bind::Trader(follower.front_server, follower.broker_id,
                              follower.user_id, follower.password));
     trader->InitAsio(&io_service);
-    auto actor = system.spawn<FollowStragetyServiceActor>(trader.get());
+    auto actor = system.spawn<FollowStragetyServiceActor>(
+        trader.get(), master_logon_info.user_id);
     actors.push_back(actor);
     traders.push_back(std::move(trader));
   }
-  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
-  //                            "140616"};
-  LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
-                              pt.get<std::string>("master.broker_id"),
-                              pt.get<std::string>("master.user_id"),
-                              pt.get<std::string>("master.password")};
 
   ctp_bind::Trader cta_trader(
       master_logon_info.front_server, master_logon_info.broker_id,

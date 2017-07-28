@@ -14,7 +14,9 @@
 class FollowStragetyServiceActor : public caf::event_based_actor,
                                    StrategyEnterOrderObservable::Observer {
  public:
-  FollowStragetyServiceActor(caf::actor_config& cfg, ctp_bind::Trader* trader);
+  FollowStragetyServiceActor(caf::actor_config& cfg,
+                             ctp_bind::Trader* trader,
+                             std::string master_account_id);
 
   void on_exit() override {}
 
@@ -55,9 +57,10 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
     std::string strategy_id_;
   };
 
-  std::vector<std::shared_ptr<CTASignalDispatch>> signal_dispatchs_;
+  StrategyOrderDispatch strategy_server_;
 
   ctp_bind::Trader* trader_;
+  std::string master_account_id_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

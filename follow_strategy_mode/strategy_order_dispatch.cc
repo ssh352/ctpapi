@@ -10,11 +10,7 @@ void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
                                       OrderDirection direction,
                                       double price,
                                       int quantity) {
-  std::string adjust_order_id =
-      boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
-  stragety_orders_.insert(
-      StragetyOrderBiMap::value_type({strategy_id, order_id}, adjust_order_id));
-  enter_order_->OpenOrder(instrument, adjust_order_id, direction, price,
+  enter_order_->OpenOrder(strategy_id, instrument, order_id, direction, price,
                           quantity);
   BOOST_LOG(log_) << boost::log::add_value("strategy_id", strategy_id)
                   << "OpenOrder:" << instrument << "," << order_id << ","
@@ -29,11 +25,7 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
                                        PositionEffect position_effect,
                                        double price,
                                        int quantity) {
-  std::string adjust_order_id =
-      boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
-  stragety_orders_.insert(
-      StragetyOrderBiMap::value_type({strategy_id, order_id}, adjust_order_id));
-  enter_order_->CloseOrder(instrument, adjust_order_id, direction,
+  enter_order_->CloseOrder(strategy_id, instrument, order_id, direction,
                            position_effect, price, quantity);
   BOOST_LOG(log_) << "CloseOrder:"
                   << boost::log::add_value("strategy_id", strategy_id)
@@ -44,10 +36,7 @@ void StrategyOrderDispatch::CloseOrder(const std::string& strategy_id,
 
 void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
                                         const std::string& order_id) {
-  auto it = stragety_orders_.left.find(StragetyOrder{strategy_id, order_id});
-  if (it != stragety_orders_.left.end()) {
-    enter_order_->CancelOrder(order_id);
-  }
+  enter_order_->CancelOrder(strategy_id, order_id);
   BOOST_LOG(log_) << "CancelOrder:"
                   << boost::log::add_value("strategy_id", strategy_id)
                   << order_id;
@@ -55,24 +44,23 @@ void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
 
 void StrategyOrderDispatch::RtnOrder(
     const boost::shared_ptr<const OrderField>& order) {
-  auto it = stragety_orders_.right.find(order->order_id);
-  if (it != stragety_orders_.right.end()) {
-    auto adjust_order = boost::make_shared<OrderField>(*order);
-    adjust_order->order_id = it->second.order_id;
-    BOOST_LOG(log_) << boost::log::add_value("strategy_id",
-                                             it->second.strategy_id)
-                    << "RtnOrder:" << order->instrument_id << ","
-                    << order->order_id << ","
-                    << (order->direction == OrderDirection::kBuy ? "B" : "S")
-                    << "," << order->price;
-    rtn_order_observers_[it->second.strategy_id]->RtnOrder(adjust_order);
+  BOOST_LOG(log_) << boost::log::add_value("strategy_id", order->account_id)
+                  << "RtnOrder:" << order->instrument_id << ","
+                  << order->order_id << ","
+                  << (order->direction == OrderDirection::kBuy ? "B" : "S")
+                  << "," << order->price;
+  auto it = rtn_order_observers_.find(order->account_id);
+  if (it != rtn_order_observers_.end()) {
+    it->second->RtnOrder(order);
   } else {
-    // Exception or maybe muanul control
+    for (auto o : rtn_order_observers_) {
+      o.second->RtnOrder(order);
+    }
   }
 }
 
 void StrategyOrderDispatch::SubscribeEnterOrderObserver(
-    EnterOrderObserver* observer) {
+    StrategyEnterOrderObservable::Observer* observer) {
   enter_order_ = observer;
 }
 
