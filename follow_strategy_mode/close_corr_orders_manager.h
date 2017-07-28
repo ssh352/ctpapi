@@ -1,6 +1,7 @@
 #ifndef FOLLOW_TRADE_CLOSE_CORR_ORDERS_MANAGER_H
 #define FOLLOW_TRADE_CLOSE_CORR_ORDERS_MANAGER_H
 #include "common/api_struct.h"
+#include <boost/shared_ptr.hpp>
 
 class CloseCorrOrdersManager {
  public:
@@ -10,7 +11,8 @@ class CloseCorrOrdersManager {
   std::vector<std::string> GetCloseCorrOrderIds(
       const std::string& order_id) const;
 
-  bool IsNewCloseOrder(const OrderField& rtn_order) const;
+  bool IsNewCloseOrder(
+      const boost::shared_ptr<const OrderField>& rtn_order) const;
 
   void AddCloseCorrOrders(
       const std::string& order_id,

@@ -79,8 +79,8 @@ int PositionManager::GetCloseableQuantityWithOrderDirection(
 }
 
 void PositionManager::HandleRtnOrder(
-    const OrderField& rtn_order,
+    const boost::shared_ptr<const OrderField>& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
-  instrument_positions_[rtn_order.instrument_id].HandleRtnOrder(
+  instrument_positions_[rtn_order->instrument_id].HandleRtnOrder(
       rtn_order, close_corr_orders_mgr);
 }

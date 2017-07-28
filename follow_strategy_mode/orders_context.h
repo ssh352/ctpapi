@@ -2,8 +2,8 @@
 #define FOLLOW_TRADE_ORDERS_CONTEXT_H
 #include <map>
 #include <vector>
-#include "follow_strategy_mode/close_corr_orders_manager.h"
 #include "common/api_struct.h"
+#include "follow_strategy_mode/close_corr_orders_manager.h"
 
 #include "follow_strategy_mode/order_manager.h"
 #include "follow_strategy_mode/position_manager.h"
@@ -12,7 +12,8 @@ class OrdersContext {
  public:
   OrdersContext(std::string account_id);
 
-  OrderEventType HandleRtnOrder(const OrderField& rtn_order);
+  OrderEventType HandleRtnOrder(
+      const boost::shared_ptr<const OrderField>& rtn_order);
 
   std::vector<OrderQuantity> GetQuantitys(
       std::vector<std::string> order_ids) const;
@@ -49,6 +50,7 @@ class OrdersContext {
   std::vector<AccountPortfolio> GetAccountPortfolios() const;
 
   const std::string& account_id() const;
+
  private:
   std::vector<AccountPosition> GetAccountPositions() const;
 

@@ -5,7 +5,8 @@
 OrdersContext::OrdersContext(std::string account_id)
     : account_id_(std::move(account_id)) {}
 
-OrderEventType OrdersContext::HandleRtnOrder(const OrderField& rtn_order) {
+OrderEventType OrdersContext::HandleRtnOrder(
+    const boost::shared_ptr<const OrderField>& rtn_order) {
   account_position_mgr_.HandleRtnOrder(rtn_order,
                                        &account_close_corr_orders_mgr_);
 

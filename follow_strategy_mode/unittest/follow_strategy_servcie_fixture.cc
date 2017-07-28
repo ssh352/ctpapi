@@ -46,7 +46,8 @@ OrderInsertForTest FollowStragetyServiceFixture::PopOrderInsert() {
   return order_insert;
 }
 
-OrderField FollowStragetyServiceFixture::MakeMasterOrderData(
+boost::shared_ptr<const OrderField>
+FollowStragetyServiceFixture::MakeMasterOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
     PositionEffect position_effect,
@@ -56,21 +57,22 @@ OrderField FollowStragetyServiceFixture::MakeMasterOrderData(
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= "Q7"*/) {
-  OrderField field;
-  field.account_id = kMasterAccountID;
-  field.instrument_id = instrument;
-  field.exchange_id = default_order_exchange_id_;
-  field.direction = order_direction;
-  field.order_id = order_id;
-  field.qty = quantity;
-  field.traded_qty = filled_quantity;
-  field.price = order_price;
-  field.status = status;
-  field.position_effect = position_effect;
+  boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
+  field->account_id = kMasterAccountID;
+  field->instrument_id = instrument;
+  field->exchange_id = default_order_exchange_id_;
+  field->direction = order_direction;
+  field->order_id = order_id;
+  field->qty = quantity;
+  field->traded_qty = filled_quantity;
+  field->price = order_price;
+  field->status = status;
+  field->position_effect = position_effect;
   return field;
 }
 
-OrderField FollowStragetyServiceFixture::MakeSlaveOrderData(
+boost::shared_ptr<const OrderField>
+FollowStragetyServiceFixture::MakeSlaveOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
     PositionEffect position_effect,
@@ -79,17 +81,17 @@ OrderField FollowStragetyServiceFixture::MakeSlaveOrderData(
     int quantity /*= 10*/,
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/) {
-  OrderField field;
-  field.account_id = kSlaveAccountID;
-  field.instrument_id = instrument;
-  field.exchange_id = default_order_exchange_id_;
-  field.direction = order_direction;
-  field.order_id = order_id;
-  field.qty = quantity;
-  field.traded_qty = filled_quantity;
-  field.price = order_price;
-  field.status = status;
-  field.position_effect = position_effect;
+  boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
+  field->account_id = kSlaveAccountID;
+  field->instrument_id = instrument;
+  field->exchange_id = default_order_exchange_id_;
+  field->direction = order_direction;
+  field->order_id = order_id;
+  field->qty = quantity;
+  field->traded_qty = filled_quantity;
+  field->price = order_price;
+  field->status = status;
+  field->position_effect = position_effect;
   return field;
 }
 

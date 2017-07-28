@@ -19,6 +19,23 @@ void ctp_bind::Trader::OnFrontConnected() {
 
 void ctp_bind::Trader::OnFrontDisconnected(int nReason) {}
 
+void ctp_bind::Trader::OnRspQryInvestorPosition(
+    CThostFtdcInvestorPositionField* pInvestorPosition,
+    CThostFtdcRspInfoField* pRspInfo,
+    int nRequestID,
+    bool bIsLast) {
+  InvestorPositionField position;
+  io_service_->post([ =, position(std::move(position)) ]() {
+    if (pRspInfo != NULL && !IsErrorRspInfo(pRspInfo)) {
+      auto it = response_.find(nRequestID);
+      if (it != response_.end()) {
+        boost::any_cast<std::function<void(InvestorPositionField, bool)> >(
+            it->second)(std::move(position), bIsLast);
+      }
+    }
+  });
+}
+
 void ctp_bind::Trader::OnRspUserLogin(
     CThostFtdcRspUserLoginField* pRspUserLogin,
     CThostFtdcRspInfoField* pRspInfo,
@@ -294,6 +311,16 @@ void ctp_bind::Trader::CancelOrder(std::string sub_accont_id,
 void ctp_bind::Trader::SubscribeRtnOrder(
     std::function<void(boost::shared_ptr<OrderField>)> callback) {
   io_service_->post([=](void) { on_rtn_order_ = callback; });
+}
+
+void ctp_bind::Trader::ReqInvestorPosition(
+    std::function<void(InvestorPositionField, bool)> callback) {
+  CThostFtdcQryInvestorPositionField field{0};
+  strcpy(field.BrokerID, broker_id_.c_str());
+  strcpy(field.InvestorID, user_id_.c_str());
+  int request_id = request_id_++;
+  api_->ReqQryInvestorPosition(&field, request_id);
+  io_service_->post([=](void) { response_.insert({request_id, callback}); });
 }
 
 void ctp_bind::Trader::SubscribeRtnOrder(

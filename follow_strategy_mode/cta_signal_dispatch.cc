@@ -25,13 +25,14 @@ void CTASignalDispatch::SubscribeEnterOrderObserver(
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-void CTASignalDispatch::RtnOrder(OrderField rtn_order) {
+void CTASignalDispatch::RtnOrder(
+    const boost::shared_ptr<const OrderField>& rtn_order) {
   switch (BeforeHandleOrder(rtn_order)) {
     case StragetyStatus::kWaitReply:
-      outstanding_orders_.push_back(std::move(rtn_order));
+      outstanding_orders_.push_back(rtn_order);
       break;
     case StragetyStatus::kReady:
-      DoHandleRtnOrder(std::move(rtn_order));
+      DoHandleRtnOrder(rtn_order);
       break;
     case StragetyStatus::kSkip:
       break;
@@ -44,7 +45,8 @@ void CTASignalDispatch::RtnOrder(OrderField rtn_order) {
   }
 }
 
-void CTASignalDispatch::DoHandleRtnOrder(OrderField rtn_order) {
+void CTASignalDispatch::DoHandleRtnOrder(
+    const boost::shared_ptr<const OrderField>& rtn_order) {
   switch (OrdersContextHandleRtnOrder(rtn_order)) {
     case OrderEventType::kNewOpen:
       signal_observer_->HandleOpening(rtn_order);
@@ -77,8 +79,8 @@ void CTASignalDispatch::OpenOrder(const std::string& instrument,
                                   int quantity) {
   Trade(order_id, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
-    enter_order_observer_->OpenOrder(instrument, order_id, direction,
-                                     price, quantity);
+    enter_order_observer_->OpenOrder(instrument, order_id, direction, price,
+                                     quantity);
   }
 }
 void CTASignalDispatch::CloseOrder(const std::string& instrument,
@@ -90,8 +92,7 @@ void CTASignalDispatch::CloseOrder(const std::string& instrument,
   Trade(order_id, OrderStatus::kActive);
   if (enter_order_observer_ != nullptr) {
     enter_order_observer_->CloseOrder(instrument, order_id, direction,
-                                      position_effect, price,
-                                      quantity);
+                                      position_effect, price, quantity);
   }
 }
 
@@ -116,18 +117,18 @@ void CTASignalDispatch::SubscribePortfolioObserver(
 }
 
 CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
-    OrderField order) {
+    const boost::shared_ptr<const OrderField>& order) {
   StragetyStatus status = waiting_reply_order_.empty()
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() &&
-      order.account_id == slave_context_->account_id()) {
+      order->account_id == slave_context_->account_id()) {
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
-                     [&](auto i) { return i.first == order.order_id; });
+                     [&](auto i) { return i.first == order->order_id; });
     if (it != waiting_reply_order_.end()) {
-      if (it->second == order.status ||
-          order.status == OrderStatus::kAllFilled) {
+      if (it->second == order->status ||
+          order->status == OrderStatus::kAllFilled) {
         waiting_reply_order_.erase(it);
         DoHandleRtnOrder(order);
         status = StragetyStatus::kSkip;
@@ -147,8 +148,9 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
   return status;
 }
 
-OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(OrderField order) {
-  return order.account_id == master_context_->account_id()
+OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(
+    const boost::shared_ptr<const OrderField>& order) {
+  return order->account_id == master_context_->account_id()
              ? master_context_->HandleRtnOrder(order)
              : slave_context_->HandleRtnOrder(order);
 }

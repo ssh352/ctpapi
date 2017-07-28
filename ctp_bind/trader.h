@@ -1,11 +1,12 @@
 #ifndef CTP_BIND_DEMO_TRADER_H
 #define CTP_BIND_DEMO_TRADER_H
 #include <atomic>
+#include <boost/any.hpp>
 #include <boost/asio.hpp>
+#include <boost/bimap.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/variant.hpp>
-#include <boost/bimap.hpp>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -53,6 +54,9 @@ class Trader : public CThostFtdcTraderSpi {
   void SubscribeRtnOrder(
       std::function<void(boost::shared_ptr<OrderField>)> callback);
 
+  void ReqInvestorPosition(
+      std::function<void(InvestorPositionField, bool)> callback);
+
   virtual void OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                 CThostFtdcRspInfoField* pRspInfo,
                                 int nRequestID,
@@ -90,6 +94,12 @@ class Trader : public CThostFtdcTraderSpi {
 
   virtual void OnFrontDisconnected(int nReason) override;
 
+  virtual void OnRspQryInvestorPosition(
+      CThostFtdcInvestorPositionField* pInvestorPosition,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast) override;
+
  private:
   void CancelOrderOnIOThread(std::string sub_accont_id, std::string order_id);
 
@@ -111,12 +121,15 @@ class Trader : public CThostFtdcTraderSpi {
   std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField>>
       orders_;
 
-  typedef boost::bimap<std::pair<std::string, std::string>, std::string> SubOrderIDBiomap;
+  typedef boost::bimap<std::pair<std::string, std::string>, std::string>
+      SubOrderIDBiomap;
   SubOrderIDBiomap sub_order_ids_;
 
   std::unordered_map<std::string,
                      std::function<void(boost::shared_ptr<OrderField>)>>
       sub_account_on_rtn_order_callbacks_;
+
+  std::unordered_map<int, boost::any> response_;
 
   std::function<void(CThostFtdcRspUserLoginField*, CThostFtdcRspInfoField*)>
       on_connect_;

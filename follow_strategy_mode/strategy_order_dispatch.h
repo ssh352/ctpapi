@@ -1,8 +1,8 @@
 #ifndef FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #define FOLLOW_STRATEGY_MODE_STRATEGY_ORDER_DISPATCH_H
 #include <boost/bimap.hpp>
-#include <boost/log/sources/logger.hpp>
 #include <boost/log/attributes.hpp>
+#include <boost/log/sources/logger.hpp>
 #include "enter_order_observer.h"
 #include "rtn_order_observer.h"
 #include "strategy_enter_order_observable.h"
@@ -27,7 +27,8 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
   virtual void CancelOrder(const std::string& strategy_id,
                            const std::string& order_id) override;
 
-  virtual void RtnOrder(OrderField order) override;
+  virtual void RtnOrder(
+      const boost::shared_ptr<const OrderField>& order) override;
 
   void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
 

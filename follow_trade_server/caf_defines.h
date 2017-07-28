@@ -18,11 +18,18 @@ using CTPReqOpenOrderAtom = caf::atom_constant<caf::atom("reqoo")>;
 using CTPReqCloseOrderAtom = caf::atom_constant<caf::atom("reqco")>;
 using CTPCancelOrderAtom = caf::atom_constant<caf::atom("co")>;
 
+
+using CTASignalInitAtom = caf::atom_constant<caf::atom("cta_init")>;
+using CTASignalRtnOrderAtom = caf::atom_constant<caf::atom("cta_ro")>;
+using CTASignalInverstorPositionAtom = caf::atom_constant<caf::atom("cta_ip")>;
+
 using StragetyPortfilioAtom = caf::atom_constant<caf::atom("sp")>;
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderField)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderField>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<OrderField>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<std::vector<InvestorPositionField>>)
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 

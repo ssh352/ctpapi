@@ -1,20 +1,20 @@
 #include "follow_strategy_mode/order_manager.h"
 #include "follow_strategy_mode/order_util.h"
 
-OrderEventType OrderManager::HandleRtnOrder(OrderField order) {
+OrderEventType OrderManager::HandleRtnOrder(
+    const boost::shared_ptr<const OrderField>& order) {
   OrderEventType ret_type = OrderEventType::kIgnore;
-  if (orders_.find(order.order_id) == orders_.end()) {
-    ret_type = IsCloseOrder(order.position_effect) ? OrderEventType::kNewClose
-                                                     : OrderEventType::kNewOpen;
-  } else if (order.status == OrderStatus::kCanceled) {
+  if (orders_.find(order->order_id) == orders_.end()) {
+    ret_type = IsCloseOrder(order->position_effect) ? OrderEventType::kNewClose
+                                                   : OrderEventType::kNewOpen;
+  } else if (order->status == OrderStatus::kCanceled) {
     ret_type = OrderEventType::kCanceled;
-  } else if (orders_[order.order_id].IsQuantityChange(
-                 order.traded_qty)) {
-    ret_type = IsCloseOrder(order.position_effect)
+  } else if (orders_[order->order_id].IsQuantityChange(order->traded_qty)) {
+    ret_type = IsCloseOrder(order->position_effect)
                    ? OrderEventType::kCloseTraded
                    : OrderEventType::kOpenTraded;
   }
-  std::swap(orders_[order.order_id], Order(std::move(order)));
+  std::swap(orders_[order->order_id], Order(order));
   return ret_type;
 }
 

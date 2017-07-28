@@ -14,8 +14,8 @@ void StrategyOrderDispatch::OpenOrder(const std::string& strategy_id,
       boost::lexical_cast<std::string>(stragety_orders_.size() + 1);
   stragety_orders_.insert(
       StragetyOrderBiMap::value_type({strategy_id, order_id}, adjust_order_id));
-  enter_order_->OpenOrder(instrument, adjust_order_id, direction,
-                          price, quantity);
+  enter_order_->OpenOrder(instrument, adjust_order_id, direction, price,
+                          quantity);
   BOOST_LOG(log_) << boost::log::add_value("strategy_id", strategy_id)
                   << "OpenOrder:" << instrument << "," << order_id << ","
                   << (direction == OrderDirection::kBuy ? "B" : "S") << ","
@@ -53,16 +53,19 @@ void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
                   << order_id;
 }
 
-void StrategyOrderDispatch::RtnOrder(OrderField order) {
-  auto it = stragety_orders_.right.find(order.order_id);
+void StrategyOrderDispatch::RtnOrder(
+    const boost::shared_ptr<const OrderField>& order) {
+  auto it = stragety_orders_.right.find(order->order_id);
   if (it != stragety_orders_.right.end()) {
-    order.order_id = it->second.order_id;
-    BOOST_LOG(log_) << boost::log::add_value("strategy_id", it->second.strategy_id)
-                    << "RtnOrder:" << order.instrument_id << ","
-                    << order.order_id << ","
-                    << (order.direction == OrderDirection::kBuy ? "B" : "S")
-                    << "," << order.price;
-    rtn_order_observers_[it->second.strategy_id]->RtnOrder(std::move(order));
+    auto adjust_order = boost::make_shared<OrderField>(*order);
+    adjust_order->order_id = it->second.order_id;
+    BOOST_LOG(log_) << boost::log::add_value("strategy_id",
+                                             it->second.strategy_id)
+                    << "RtnOrder:" << order->instrument_id << ","
+                    << order->order_id << ","
+                    << (order->direction == OrderDirection::kBuy ? "B" : "S")
+                    << "," << order->price;
+    rtn_order_observers_[it->second.strategy_id]->RtnOrder(adjust_order);
   } else {
     // Exception or maybe muanul control
   }

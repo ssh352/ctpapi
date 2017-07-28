@@ -10,30 +10,11 @@ static const int kAdultAge = 5;
 using DisplayPortfolioAtom = caf::atom_constant<caf::atom("dp")>;
 using RtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 using CTARtnOrderAtom = caf::atom_constant<caf::atom("cta_ro")>;
+using TraderConnectAtom = caf::atom_constant<caf::atom("connect")>;
 
-FollowStragetyServiceActor::FollowStragetyServiceActor(
-    caf::actor_config& cfg,
-    Server* websocket_server,
-    const std::string& master_account_id,
-    const std::string& slave_account_id,
-    std::vector<OrderPosition> master_init_positions,
-    std::vector<OrderField> master_history_rtn_orders,
-    caf::actor cta,
-    std::unique_ptr<ctp_bind::Trader> trader,
-    caf::actor monitor)
-    : caf::event_based_actor(cfg),
-      websocket_server_(websocket_server),
-      cta_(cta),
-      trader_(std::move(trader)),
-      monitor_(monitor),
-      master_account_id_(master_account_id),
-      slave_account_id_(slave_account_id) {
-  send(monitor_, master_account_id, master_init_positions);
-  send(monitor_, master_history_rtn_orders);
-  master_init_positions_ = std::move(master_init_positions);
-  master_history_rtn_orders_ = std::move(master_history_rtn_orders);
-  portfolio_age_ = 0;
-}
+FollowStragetyServiceActor::FollowStragetyServiceActor(caf::actor_config& cfg,
+                                                       ctp_bind::Trader* trader)
+    : caf::event_based_actor(cfg), trader_(trader) {}
 
 void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
                                            const std::string& instrument,
@@ -63,11 +44,6 @@ void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   // trader_->InitAsio();
-  trader_->Connect([=](CThostFtdcRspUserLoginField* rsp_field,
-                       CThostFtdcRspInfoField* rsp_info) {
-    if (rsp_info != NULL && rsp_info->ErrorID == 0) {
-    }
-  });
   /*
   caf::scoped_actor block_self(system());
   if (!Logon(follow_)) {
@@ -89,6 +65,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
   auto stragetys = {"Foo", "Bar"};
 
+  /*
   for (auto s : stragetys) {
     master_context_ = std::make_shared<OrdersContext>(master_account_id_);
     auto slave_context = std::make_shared<OrdersContext>(slave_account_id_);
@@ -109,51 +86,68 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
     signal_dispatchs_.push_back(signal_dispatch);
   }
+  */
 
-  return {[=]() {
-
-          },
-//           [=](CTARtnOrderAtom, boost::shared_ptr<OrderField> order) {
-//             std::for_each(signal_dispatchs_.begin(), signal_dispatchs_.end(),
-//                           std::bind(&CTASignalDispatch::RtnOrder,
-//                                     std::placeholders::_1, order));
-//           },
-//           [=](RtnOrderAtom, boost::shared_ptr<OrderField> order) {
-//             if (order.account_id() == master_account_id_) {
-//             } else {
-//               // service_.RtnOrder(order);
-//               portfolio_.OnRtnOrder(std::move(field));
-//             }
-//             send(monitor_, std::move(order));
-//             /*
-//             if (portfolio_age_ != 0) {
-//               portfolio_age_ = 0;
-//             } else {
-//               ++portfolio_age_;
-//               delayed_send(this, std::chrono::milliseconds(100),
-//                            DisplayPortfolioAtom::value);
-//             }
-//             */
-//           },
-//           [=](DisplayPortfolioAtom, std::string stragety_id,
-//               std::vector<AccountPortfolio> portfolio) {
-//             //             send(monitor_, slave_account_id_ + ":" + stragety_id,
-//             //                  master_context_->GetAccountPortfolios(),
-//             //                  portfolio, true);
-// 
-//             if (auto hdl = hdl_.lock()) {
-//               websocket_server_->send(
-//                   hdl,
-//                   MakePortfoilioJson(master_account_id_,
-//                                      master_context_->GetAccountPortfolios(),
-//                                      slave_account_id_, std::move(portfolio)),
-//                   websocketpp::frame::opcode::text);
-//             }
-//           },
-//           [=](StragetyPortfilioAtom, connection_hdl hdl) {
-//             hdl_ = hdl;
-// 
-//           }
-
+  return {
+      [=](CTASignalInitAtom) {
+        become(caf::keep_behavior, [=](CTASignalRtnOrderAtom,
+                   boost::shared_ptr<OrderField> order) { return caf::skip(); },
+               [=](TraderConnectAtom, bool sccuess) {
+                  unbecome();
+               });
+        trader_->Connect([=](CThostFtdcRspUserLoginField* rsp_field,
+                             CThostFtdcRspInfoField* rsp_info) {
+          if (rsp_info != NULL && rsp_info->ErrorID == 0) {
+            send(this, TraderConnectAtom::value, true);
+          }
+        });
+      },
+      [](CTASignalRtnOrderAtom, boost::shared_ptr<OrderField> order) {
+        int i = 0;
+      },
   };
+  //           [=](CTARtnOrderAtom, boost::shared_ptr<OrderField> order) {
+  //             std::for_each(signal_dispatchs_.begin(),
+  //             signal_dispatchs_.end(),
+  //                           std::bind(&CTASignalDispatch::RtnOrder,
+  //                                     std::placeholders::_1, order));
+  //           },
+  //           [=](RtnOrderAtom, boost::shared_ptr<OrderField> order) {
+  //             if (order.account_id() == master_account_id_) {
+  //             } else {
+  //               // service_.RtnOrder(order);
+  //               portfolio_.OnRtnOrder(std::move(field));
+  //             }
+  //             send(monitor_, std::move(order));
+  //             /*
+  //             if (portfolio_age_ != 0) {
+  //               portfolio_age_ = 0;
+  //             } else {
+  //               ++portfolio_age_;
+  //               delayed_send(this, std::chrono::milliseconds(100),
+  //                            DisplayPortfolioAtom::value);
+  //             }
+  //             */
+  //           },
+  //           [=](DisplayPortfolioAtom, std::string stragety_id,
+  //               std::vector<AccountPortfolio> portfolio) {
+  //             //             send(monitor_, slave_account_id_ + ":" +
+  //             stragety_id,
+  //             // master_context_->GetAccountPortfolios(),
+  //             //                  portfolio, true);
+  //
+  //             if (auto hdl = hdl_.lock()) {
+  //               websocket_server_->send(
+  //                   hdl,
+  //                   MakePortfoilioJson(master_account_id_,
+  //                                      master_context_->GetAccountPortfolios(),
+  //                                      slave_account_id_,
+  //                                      std::move(portfolio)),
+  //                   websocketpp::frame::opcode::text);
+  //             }
+  //           },
+  //           [=](StragetyPortfilioAtom, connection_hdl hdl) {
+  //             hdl_ = hdl;
+  //
+  //           }
 }

@@ -1,6 +1,7 @@
 #ifndef FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #define FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #include "caf/all.hpp"
+#include "ctp_bind/trader.h"
 #include "follow_strategy_mode/cta_generic_strategy.h"
 #include "follow_strategy_mode/cta_signal.h"
 #include "follow_strategy_mode/cta_signal_dispatch.h"
@@ -10,21 +11,12 @@
 #include "follow_strategy_mode/strategy_order_dispatch.h"
 #include "follow_trade_server/ctp_portfolio.h"
 #include "websocket_typedef.h"
-#include "ctp_bind/trader.h"
 class FollowStragetyServiceActor : public caf::event_based_actor,
                                    StrategyEnterOrderObservable::Observer {
  public:
-  FollowStragetyServiceActor(caf::actor_config& cfg,
-                             Server* websocket_server,
-                             const std::string& master_account_id,
-                             const std::string& slave_account_id,
-                             std::vector<OrderPosition> master_init_positions,
-                             std::vector<OrderField> master_history_rtn_orders,
-                             caf::actor ctp,
-                             std::unique_ptr<ctp_bind::Trader> trader,
-                             caf::actor monitor);
+  FollowStragetyServiceActor(caf::actor_config& cfg, ctp_bind::Trader* trader);
 
-  void on_exit() override { destroy(cta_); }
+  void on_exit() override {}
 
   virtual void OpenOrder(const std::string& strategy_id,
                          const std::string& instrument,
@@ -63,23 +55,9 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
     std::string strategy_id_;
   };
 
-  caf::actor cta_;
-  caf::actor monitor_;
-
-  int portfolio_age_;
-  std::vector<OrderPosition> master_init_positions_;
-  std::vector<OrderField> master_history_rtn_orders_;
-  CTPPortfolio portfolio_;
-  std::shared_ptr<OrdersContext> master_context_;
-  std::string master_account_id_;
-  std::string slave_account_id_;
-  std::map<std::pair<TThostFtdcSessionIDType, std::string>, std::string>
-      master_adjust_order_ids_;
   std::vector<std::shared_ptr<CTASignalDispatch>> signal_dispatchs_;
-  std::unique_ptr<ctp_bind::Trader> trader_;
 
-  Server* websocket_server_;
-  connection_hdl hdl_;
+  ctp_bind::Trader* trader_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

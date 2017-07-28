@@ -1,12 +1,14 @@
 #ifndef FOLLOW_TRADE_ORDER_MANAGER_H
 #define FOLLOW_TRADE_ORDER_MANAGER_H
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 #include "common/api_struct.h"
 #include "follow_strategy_mode/order.h"
 
 class OrderManager {
  public:
-  OrderEventType HandleRtnOrder(OrderField order);
+  OrderEventType HandleRtnOrder(
+      const boost::shared_ptr<const OrderField>& order);
 
   const std::string& GetOrderInstrument(const std::string& order_id) const;
 
@@ -25,8 +27,8 @@ class OrderManager {
 
  private:
   int GetUnfillQuantity(const std::string& instrument,
-                         OrderDirection direction,
-                         bool is_open) const;
+                        OrderDirection direction,
+                        bool is_open) const;
   std::map<std::string, Order> orders_;
   std::string dummpy_empty_;
 };

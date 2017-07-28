@@ -1,7 +1,8 @@
 #ifndef FOLLOW_TRADE_INSTRUMENT_POSITION_H
 #define FOLLOW_TRADE_INSTRUMENT_POSITION_H
-#include "common/api_struct.h"
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+#include "common/api_struct.h"
 class CloseCorrOrdersManager;
 
 class InstrumentPosition {
@@ -14,13 +15,15 @@ class InstrumentPosition {
 
   int GetCloseableQuantityWithOrderDirection(OrderDirection direction) const;
 
-  boost::optional<int> GetCloseableQuantityWithOrderId(const std::string& order_id) const;
+  boost::optional<int> GetCloseableQuantityWithOrderId(
+      const std::string& order_id) const;
 
-  void HandleRtnOrder(const OrderField& rtn_order,
+  void HandleRtnOrder(const boost::shared_ptr<const OrderField>& rtn_order,
                       CloseCorrOrdersManager* close_corr_orders_mgr);
 
   void AddQuantity(OrderQuantity quantity);
-private:
+
+ private:
   bool TestPositionEffect(const std::string& exchange_id,
                           PositionEffect position_effect,
                           bool is_today_quantity);

@@ -98,17 +98,7 @@ class FollowStragetyServiceFixture : public testing::Test,
 
   OrderInsertForTest PopOrderInsert();
 
-  OrderField MakeMasterOrderData(const std::string& order_id,
-                                OrderDirection order_direction,
-                                PositionEffect position_effect,
-                                OrderStatus status,
-                                int filled_quantity = 0,
-                                int quantity = 10,
-                                double order_price = 1234.1,
-                                const std::string& instrument = "abc",
-                                const std::string& user_product_info = "Q7");
-
-  OrderField MakeSlaveOrderData(
+  boost::shared_ptr<const OrderField> MakeMasterOrderData(
       const std::string& order_id,
       OrderDirection order_direction,
       PositionEffect position_effect,
@@ -116,7 +106,17 @@ class FollowStragetyServiceFixture : public testing::Test,
       int filled_quantity = 0,
       int quantity = 10,
       double order_price = 1234.1,
-      const std::string& instrument = "abc");
+      const std::string& instrument = "abc",
+      const std::string& user_product_info = "Q7");
+
+  boost::shared_ptr<const OrderField> MakeSlaveOrderData(const std::string& order_id,
+                                OrderDirection order_direction,
+                                PositionEffect position_effect,
+                                OrderStatus status,
+                                int filled_quantity = 0,
+                                int quantity = 10,
+                                double order_price = 1234.1,
+                                const std::string& instrument = "abc");
 
   TestRetType PushOpenOrderForMaster(
       const std::string& order_id,

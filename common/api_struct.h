@@ -23,6 +23,11 @@ struct OrderField {
   std::string raw_error_message;
 };
 
+struct InvestorPositionField {
+
+};
+
+
 struct CorrOrderQuantity {
   std::string order_id;
   int quantity;

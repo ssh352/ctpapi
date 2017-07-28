@@ -1,5 +1,6 @@
 #ifndef FOLLOW_STRATEGY_MODE_CTA_SIGLE_OBSERVER_H
 #define FOLLOW_STRATEGY_MODE_CTA_SIGLE_OBSERVER_H
+#include <boost/shared_ptr.hpp>
 #include "common/api_struct.h"
 
 class CTASignalObserver {
@@ -22,11 +23,11 @@ public:
     virtual void CancelOrder(const std::string& order_id) = 0;
   };
 
-  virtual void HandleOpening(const OrderField& order_data) = 0;
-  virtual void HandleCloseing(const OrderField& order_data) = 0;
-  virtual void HandleCanceled(const OrderField& order_data) = 0;
-  virtual void HandleClosed(const OrderField& order_data) = 0;
-  virtual void HandleOpened(const OrderField& order_data) = 0;
+  virtual void HandleOpening(const boost::shared_ptr<const OrderField>& order_data) = 0;
+  virtual void HandleCloseing(const boost::shared_ptr<const OrderField>& order_data) = 0;
+  virtual void HandleCanceled(const boost::shared_ptr<const OrderField>& order_data) = 0;
+  virtual void HandleClosed(const boost::shared_ptr<const OrderField>& order_data) = 0;
+  virtual void HandleOpened(const boost::shared_ptr<const OrderField>& order_data) = 0;
 
   virtual void Subscribe(Observable* observer) = 0;
 };
