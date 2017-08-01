@@ -1,6 +1,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -38,6 +39,9 @@
 #include "follow_trade_server/ctp_trader.h"
 #include "follow_trade_server/util.h"
 #include "websocket_typedef.h"
+
+#include "ctp_bind/strategy_trader.h"
+#include "sqlite/sqlite3.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -94,6 +98,127 @@ caf::behavior foo(caf::event_based_actor* self) {
 }
 
 */
+
+caf::behavior Sqlite(caf::event_based_actor* slef) {
+  sqlite3* db;
+  char* zErrMsg = 0;
+  int rc;
+
+  /* Open database */
+  rc = sqlite3_open("test.db", &db);
+
+  {
+    if (rc) {
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+    } else {
+      fprintf(stdout, "Opened database successfully\n");
+    }
+
+    /* Create SQL statement */
+    const char* sql =
+        R"(
+        CREATE
+            TABLE IF NOT EXISTS Orders
+            (
+                AccountID VARCHAR(50) NOT NULL,
+                InstrumentID VARCHAR(50) NOT NULL,
+                OrderID VARCHAR(50) NOT NULL,
+                Status INT NOT NULL,
+                Price DOUBLE NULL,
+                AvgPrice DOUBLE NULL,
+                Qty INT NOT NULL,
+                LeavesQty INT NOT NULL,
+                TradedQty INT NULL,
+                ExchangeID VARCHAR(50) NOT NULL,
+                Date VARCHAR(50) NOT NULL,
+                InputTime VARCHAR(50) NOT NULL,
+                UpdateTime VARCHAR(50) NOT NULL,
+                ErrorID INT NULL,
+                RawErrorID INT NULL,
+                RawErrorMessage VARCHAR(100) NOT NULL
+            );
+        )";
+
+    /* Execute SQL statement */
+    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+
+    if (rc != SQLITE_OK) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    } else {
+      fprintf(stdout, "Table created successfully\n");
+    }
+  }
+  {
+    const char* sql =
+        R"(
+        CREATE
+            TABLE IF NOT EXISTS StrategyRtnOrder
+            (
+                AccountID VARCHAR(50) NOT NULL,
+                StrategyID VARCHAR(50) NOT NULL,
+                InstrumentID VARCHAR(50) NOT NULL,
+                OrderID VARCHAR(50) NOT NULL,
+                RelativeOrderID VARCHAR(50) NOT NULL,
+                Status INT NOT NULL,
+                Price DOUBLE NULL,
+                AvgPrice DOUBLE NULL,
+                Qty INT NOT NULL,
+                LeavesQty INT NOT NULL,
+                TradedQty INT NULL,
+                ExchangeID VARCHAR(50) NOT NULL,
+                Date VARCHAR(50) NOT NULL,
+                InputTime VARCHAR(50) NOT NULL,
+                UpdateTime VARCHAR(50) NOT NULL,
+                ErrorID INT NULL,
+                RawErrorID INT NULL,
+                RawErrorMessage VARCHAR(100) NOT NULL
+            );
+        )";
+
+    /* Execute SQL statement */
+    rc = sqlite3_exec(db, sql, 0, 0, &zErrMsg);
+
+    if (rc != SQLITE_OK) {
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    } else {
+      fprintf(stdout, "Table created successfully\n");
+    }
+  }
+
+  return {
+      [=](SqliteRecordAtom, const boost::shared_ptr<OrderField> order,
+          const std::string& account_id, const std::string& order_id) {
+        char* error = NULL;
+        auto rc = sqlite3_exec(
+            db,
+            str(boost::format("INSERT INTO StrategyRtnOrder VALUES('%s', '%s', "
+                              "'%s',  '%s','%s', %d, %lf, "
+                              "%lf, %d, %d, %d, '%s', '%s', '%s', '%s', %d, "
+                              "%d, '%s');") %
+                account_id % order->account_id % order->instrument_id %
+                order->order_id % order_id % static_cast<int>(order->status) %
+                order->price % order->avg_price % order->qty %
+                order->leaves_qty % order->traded_qty % order->exchange_id %
+                order->date % order->input_time % order->update_time %
+                order->error_id % order->raw_error_id %
+                order->raw_error_message)
+                .c_str(),
+            0, 0, &error);
+      },
+      [=](QueryStrategyRntOrderAtom, const std::string& strategy_id)
+          -> std::vector<boost::shared_ptr<OrderField>> {
+        return std::vector<boost::shared_ptr<OrderField>>{
+            boost::make_shared<OrderField>()};
+      },
+      [=](QueryStrategyOrderIDMapAtom, const std::string& strategyid)
+          -> std::vector<std::tuple<std::string, std::string, std::string>> {
+        return {std::make_tuple("1", "2", "3")};
+      }
+
+  };
+}
 
 struct LogBinaryArchive {
   std::ofstream file;
@@ -165,16 +290,17 @@ void InitLogging() {
     // Set up the file naming pattern
     backend->set_file_name_composer(sinks::file::as_file_name_composer(
         expr::stream << "logs/"
-                     << "order_%N_" << expr::attr<std::string>("strategy_id")
+                     << "order_" << expr::attr<std::string>("strategy_id")
                      << ".log"));
 
     // Wrap it into the frontend and register in the core.
     // The backend requires synchronization in the frontend.
     typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
     boost::shared_ptr<sink_t> sink(new sink_t(backend));
-    sink->set_formatter(expr::stream << "["
-                                     << expr::attr<std::string>("strategy_id")
-                                     << "]: " << expr::smessage);
+    sink->set_formatter(expr::stream
+                        << expr::attr<boost::posix_time::ptime>("TimeStamp")
+                        << "[" << expr::attr<std::string>("strategy_id")
+                        << "]: " << expr::smessage);
 
     core->add_sink(sink);
   }
@@ -201,8 +327,11 @@ void InitLogging() {
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   InitLogging();
-  Server m_server;
-  m_server.init_asio();
+
+  auto sqlite = system.spawn(Sqlite);
+
+  system.registry().put(caf::atom("db"),
+                        caf::actor_cast<caf::strong_actor_ptr>(sqlite));
 
   pt::ptree pt;
   try {
@@ -213,9 +342,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   }
 
   boost::asio::io_service io_service;
-
   // ClearUpCTPFolwDirectory();
-
   std::vector<LogonInfo> followers;
   for (auto slave : pt.get_child("slaves")) {
     if (slave.second.get<bool>("enable")) {
@@ -227,10 +354,40 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   }
   // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
   //                            "140616"};
+
+  caf::group grp = system.groups().anonymous();
+
   LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
                               pt.get<std::string>("master.broker_id"),
                               pt.get<std::string>("master.user_id"),
                               pt.get<std::string>("master.password")};
+
+  caf::scoped_actor self(system);
+  self->join(grp);
+
+  auto trader = system.spawn<ctp_bind::StrategyTrader>(
+      grp, master_logon_info.front_server, master_logon_info.broker_id,
+      master_logon_info.user_id, master_logon_info.password);
+
+  bool running = true;
+  self->receive_while(running)(
+      [sqlite](const boost::shared_ptr<OrderField>& order,
+               const std::string& account_id, const std::string& order_id) {
+        caf::anon_send(sqlite, SqliteRecordAtom::value, order, account_id,
+                       order_id);
+      },
+      caf::after(std::chrono::seconds(2)) >> [&running] { running = false; });
+//   caf::anon_send_exit(sqlite, caf::exit_reason::user_shutdown);
+//   caf::anon_send_exit(trader, caf::exit_reason::user_shutdown);
+  self->leave(grp);
+  system.await_all_actors_done();
+  std::string input;
+  while (std::cin >> input) {
+    if (input == "exit") {
+      break;
+    }
+  }
+  /*
 
   std::vector<caf::actor> actors;
   std::vector<boost::shared_ptr<ctp_bind::Trader>> traders;
@@ -240,22 +397,25 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                              follower.user_id, follower.password));
     trader->InitAsio(&io_service);
     auto actor = system.spawn<FollowStragetyServiceActor>(
-        trader.get(), master_logon_info.user_id);
+        sqlite, trader.get(), master_logon_info.user_id);
     actors.push_back(actor);
     traders.push_back(std::move(trader));
   }
-
   ctp_bind::Trader cta_trader(
       master_logon_info.front_server, master_logon_info.broker_id,
       master_logon_info.user_id, master_logon_info.password);
   cta_trader.InitAsio(&io_service);
 
-  cta_trader.SubscribeRtnOrder([actors](boost::shared_ptr<OrderField> order) {
-    for (auto actor : actors) {
-      // caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
-      caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
-    }
-  });
+  cta_trader.SubscribeRtnOrder(
+      [sqlite, actors](boost::shared_ptr<OrderField> order) {
+        std::cout << "Order:" << order->order_id << "\n";
+        caf::anon_send(sqlite, SqliteRecordAtom::value, order);
+
+        for (auto actor : actors) {
+          // caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
+          caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
+        }
+      });
 
   cta_trader.Connect([actors, &cta_trader](CThostFtdcRspUserLoginField* rsp,
                                            CThostFtdcRspInfoField* rsp_info) {
@@ -276,10 +436,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
           }
         });
   });
-
-  boost::thread_group group;
-
-  group.create_thread(boost::bind(&boost::asio::io_service::run, &io_service));
+  */
 
   /*
   group.create_thread(boost::bind(&ctp_bind::Trader::Run, &cta_trader));
@@ -288,8 +445,6 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
     group.create_thread(boost::bind(&ctp_bind::Trader::Run, trader));
   }
   */
-
-  group.join_all();
 
   /*
   auto cta_actor = system.spawn<CtpTrader>(

@@ -105,7 +105,6 @@ class CtpApi : public CThostFtdcTraderSpi {
   Delegate* delegate_;
   std::vector<OrderPosition> positions_;
   std::vector<CThostFtdcInstrumentField> instruments_;
-  
   boost::log::sources::logger log_;
 };
 

@@ -97,6 +97,9 @@ void ctp_bind::Trader::OnRtnOrderOnIOThread(
       order_field->order_id = sub_order_id_it->second.second;
       callback_it->second(order_field);
     }
+    sequence_orders_.push_back(order_field);
+  } else {
+    sequence_orders_.push_back(order_field);
   }
 
   if (on_rtn_order_ != NULL) {
@@ -190,7 +193,8 @@ void ctp_bind::Trader::Connect(
         callback) {
   on_connect_ = callback;
 
-  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
+  std::string flow_path = ".\\" + user_id_ + "\\";
+  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
   api_->RegisterSpi(this);
   api_->RegisterFront(const_cast<char*>(server_.c_str()));
   api_->SubscribePublicTopic(THOST_TERT_QUICK);
@@ -337,6 +341,9 @@ void ctp_bind::Trader::SubscribeRtnOrder(
     }
     sub_account_on_rtn_order_callbacks_.insert(
         std::make_pair(sub_account_id, callback));
+    for (auto order : sequence_orders_) {
+      callback(order);
+    }
   });
 }
 

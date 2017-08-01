@@ -1,6 +1,7 @@
 #ifndef CAF_DEFINES_H
 #define CAF_DEFINES_H
 
+#include <tuple>
 #include "caf/all.hpp"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 #include "websocket_typedef.h"
@@ -25,11 +26,15 @@ using CTASignalInverstorPositionAtom = caf::atom_constant<caf::atom("cta_ip")>;
 
 using StragetyPortfilioAtom = caf::atom_constant<caf::atom("sp")>;
 
+using SqliteRecordAtom = caf::atom_constant<caf::atom("sqr")>;
+
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderField)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderField>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<OrderField>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<std::vector<InvestorPositionField>>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<boost::shared_ptr<OrderField> >)
+// CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::tuple<std::string, std::string, std::string>)
 
 // using TALoginAtom = caf::atom_constant<caf::atom("login")>;
 

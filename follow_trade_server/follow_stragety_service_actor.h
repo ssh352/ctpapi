@@ -15,6 +15,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                                    StrategyEnterOrderObservable::Observer {
  public:
   FollowStragetyServiceActor(caf::actor_config& cfg,
+                             caf::actor sqlite,
                              ctp_bind::Trader* trader,
                              std::string master_account_id);
 
@@ -61,6 +62,7 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
 
   ctp_bind::Trader* trader_;
   std::string master_account_id_;
+  caf::actor db_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

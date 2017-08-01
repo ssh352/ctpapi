@@ -15,6 +15,7 @@
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
         '<(DEPTH)/third_party/websocketpp/websocketpp.gyp:*',
+        '<(DEPTH)/third_party/sqlite/sqlite.gyp:*',
         '../follow_strategy_mode/follow_strategy_mode.gyp:follow_strategy_mode',
         '../ctp_bind/ctp_bind.gyp:ctp_bind',
       ],

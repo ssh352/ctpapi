@@ -121,6 +121,8 @@ class Trader : public CThostFtdcTraderSpi {
   std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField>>
       orders_;
 
+  std::list<boost::shared_ptr<OrderField> > sequence_orders_;
+
   typedef boost::bimap<std::pair<std::string, std::string>, std::string>
       SubOrderIDBiomap;
   SubOrderIDBiomap sub_order_ids_;
@@ -149,6 +151,8 @@ class Trader : public CThostFtdcTraderSpi {
       OrderDirection direction);
   TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(
       PositionEffect position_effect);
+  
+
 };
 }  // namespace ctp_bind
 

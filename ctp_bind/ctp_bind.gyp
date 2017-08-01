@@ -16,6 +16,7 @@
       ],
       'dependencies' : [
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+        '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:*',
       ],
       'defines' : [
       ],

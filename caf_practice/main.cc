@@ -1,84 +1,106 @@
-#include "caf/all.hpp"
-#include <iostream>
 #include <boost/lexical_cast.hpp>
+#include <iostream>
+#include "caf/all.hpp"
 
-extern "C" {  
-#include "lua.h"  
-#include "lualib.h"  
-#include "lauxlib.h"  
-}  
-
-
-static int caf_send(lua_State* L) {
-  
-  caf::actor_id id = boost::lexical_cast<caf::actor_id>(lua_tostring(L, 1));
-  // caf::actor self = caf::actor_cast<caf::actor>();  
-  return 0;
-}
+using SubscribeRtnOrderAtom = caf::atom_constant<caf::atom("subro")>;
 
 caf::behavior foo(caf::event_based_actor* self) {
-  return {
-    [](int i) {
-    std::cout << i << std::endl;
+  return {[](const std::string& str) { std::cout << "func: " << str << "\n"; }};
 }
 
-  };
-}
+class Bar : public caf::event_based_actor {
+ public:
+  Bar(caf::actor_config& cfg) : caf::event_based_actor(cfg) {
+    // grp_ = system().groups().anonymous();
 
-
-
-int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  auto actor = system.spawn(foo);
-  /*
-  system.registry().put(caf::atom("foo"), caf::actor_cast<caf::strong_actor_ptr>(actor));
-
-  auto self = system.registry().get(caf::atom("foo"));
-
-  caf::anon_send(caf::actor_cast<caf::actor>(self), 100);
-  
-  */
-
-    lua_State *L = luaL_newstate();  
-    if (L == NULL)  
-    {  
-        return 0;  
-    }  
-    luaL_openlibs(L);  
-    lua_register(L, "caf_send", caf_send);  
-  
-    int bRet = luaL_loadfile(L,"hello.lua");  
-    if(bRet)  
-    {  
-        std::cout<<"load file error"<<std::endl;  
-        return 0;  
-    }  
-
-    bRet = lua_pcall(L,0,0,0);  
-    if(bRet)  
-    {  
-        std::cout<<"pcall error"<<std::endl;  
-        return 0;  
-    }  
-  
-    lua_getglobal(L, "send");
-    lua_pushinteger(L, actor->address());
-    int iRet= lua_pcall(L, 1, 0, 0);
-    if (iRet)                      
-    {  
-        const char *pErrorMsg = lua_tostring(L, -1);  
-        std::cout << pErrorMsg << std::endl;  
-        lua_close(L);  
-        return 0;  
-    }  
-
-  std::string input;
-  while (std::cin >> input) {
-    break;
+    std::string module = "local";
+    std::string id = "foo";
+    auto expected_grp = system().groups().get(module, id);
+    if (!expected_grp) {
+      std::cerr << "*** cannot load group: "
+                << system().render(expected_grp.error()) << std::endl;
+      return;
+    }
+    auto grp = std::move(*expected_grp);
+    join(grp);
   }
 
-  system.registry().erase(caf::atom("foo"));
+  caf::behavior make_behavior() override {
+    set_exit_handler([=](caf::scheduled_actor* self, const caf::exit_msg& em) {
+      grp_ = nullptr;
+      caf::aout(this) << "errr\n";
+    });
+    return {[=](bool) { std::cout << "abc\n"; },
+            [=](const std::string& str) {
+              send(grp_, str);
+              quit();
+            },
+            [=](SubscribeRtnOrderAtom) { return grp_; },
+            [=](const caf::exit_msg& msg) { caf::aout(this) << "errr\n"; }};
+  }
 
-  return 1;
+ private:
+  caf::group grp_;
+};
+
+class Foo : public caf::event_based_actor {
+ public:
+  Foo(caf::actor_config& cfg) : caf::event_based_actor(cfg) {
+    // grp_ = system().groups().anonymous();
+
+    std::string module = "local";
+    std::string id = "foo";
+    auto expected_grp = system().groups().get(module, id);
+    if (!expected_grp) {
+      std::cerr << "*** cannot load group: "
+                << system().render(expected_grp.error()) << std::endl;
+      return;
+    }
+    auto grp = std::move(*expected_grp);
+    join(grp);
+  }
+
+  caf::behavior make_behavior() override {
+    set_exit_handler([=](caf::scheduled_actor* self, const caf::exit_msg& em) {
+      grp_ = nullptr;
+      caf::aout(this) << "errr\n";
+    });
+    return {[=](bool) { std::cout << "abc\n"; },
+            [=](const std::string& str) {
+              send(grp_, str);
+              quit();
+            },
+            [=](SubscribeRtnOrderAtom) { return grp_; },
+            [=](const caf::exit_msg& msg) { caf::aout(this) << "errr\n"; }};
+  }
+
+ private:
+  caf::group grp_;
+};
+
+int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  auto bar = system.spawn<Bar>();
+  auto foo = system.spawn<Foo>();
+
+  std::string module = "local";
+  std::string id = "foo";
+  auto expected_grp = system.groups().get(module, id);
+  if (!expected_grp) {
+    std::cerr << "*** cannot load group: "
+              << system.render(expected_grp.error()) << std::endl;
+    return 1;
+  }
+  auto grp = std::move(*expected_grp);
+
+  caf::scoped_actor self(system);
+  self->send(grp, false);
+  caf::anon_send_exit(bar, caf::exit_reason::user_shutdown);
+
+  system.await_all_actors_done();
+
+  //  self->receive([](const std::string& str) { std::cout << str << "\n"; });
+
+  return 0;
 }
 
 CAF_MAIN()
