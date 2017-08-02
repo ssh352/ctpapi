@@ -1,5 +1,5 @@
-#ifndef CTP_BIND_STRATEGY_TRADER_H
-#define CTP_BIND_STRATEGY_TRADER_H
+#ifndef FOLLOW_TRADE_SERVER_STRATEGY_TRADER_H
+#define FOLLOW_TRADE_SERVER_STRATEGY_TRADER_H
 
 #include <atomic>
 #include <boost/any.hpp>
@@ -14,11 +14,7 @@
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 
-using QueryStrategyRntOrderAtom = caf::atom_constant<caf::atom("qrto")>;
-using QueryStrategyOrderIDMapAtom = caf::atom_constant<caf::atom("qid")>;
-
 using SubscribeRtnOrderAtom = caf::atom_constant<caf::atom("subro")>;
-namespace ctp_bind {
 class StrategyTrader : public caf::event_based_actor,
                        public CThostFtdcTraderSpi {
  public:
@@ -122,7 +118,7 @@ class StrategyTrader : public caf::event_based_actor,
 
   SubOrderIDBiomap sub_order_ids_;
 
-  std::unordered_map<std::string, caf::group>
+  std::unordered_map<std::string, std::set<caf::strong_actor_ptr>>
       sub_account_on_rtn_order_callbacks_;
 
   std::unordered_map<int, boost::any> response_;
@@ -149,6 +145,9 @@ class StrategyTrader : public caf::event_based_actor,
  protected:
   virtual caf::behavior make_behavior() override;
 };
-}  // namespace ctp_bind
 
-#endif  // CTP_BIND_STRATEGY_TRADER_H
+
+#endif // FOLLOW_TRADE_SERVER_STRATEGY_TRADER_H
+
+
+

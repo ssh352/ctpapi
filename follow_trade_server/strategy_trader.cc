@@ -2,19 +2,19 @@
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
+#include "atom_defines.h"
 
 using CallOnActorAtom = caf::atom_constant<caf::atom("self")>;
 using RtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::function<void(void)>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<OrderField>)
 
-ctp_bind::StrategyTrader::StrategyTrader(caf::actor_config& cfg,
-                                         caf::group rtn_order_grp,
-                                         std::string server,
-                                         std::string broker_id,
-                                         std::string user_id,
-                                         std::string password)
+StrategyTrader::StrategyTrader(caf::actor_config& cfg,
+                               caf::group rtn_order_grp,
+                               std::string server,
+                               std::string broker_id,
+                               std::string user_id,
+                               std::string password)
     : caf::event_based_actor(cfg),
       rtn_order_grp_(rtn_order_grp),
       server_(server),
@@ -24,13 +24,13 @@ ctp_bind::StrategyTrader::StrategyTrader(caf::actor_config& cfg,
   db_ = system().registry().get(caf::atom("db"));
 }
 
-void ctp_bind::StrategyTrader::OnRspAuthenticate(
+void StrategyTrader::OnRspAuthenticate(
     CThostFtdcRspAuthenticateField* pRspAuthenticateField,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
     bool bIsLast) {}
 
-void ctp_bind::StrategyTrader::OnFrontConnected() {
+void StrategyTrader::OnFrontConnected() {
   CThostFtdcReqUserLoginField field{0};
   strcpy(field.UserID, user_id_.c_str());
   strcpy(field.Password, password_.c_str());
@@ -38,9 +38,9 @@ void ctp_bind::StrategyTrader::OnFrontConnected() {
   api_->ReqUserLogin(&field, 0);
 }
 
-void ctp_bind::StrategyTrader::OnFrontDisconnected(int nReason) {}
+void StrategyTrader::OnFrontDisconnected(int nReason) {}
 
-void ctp_bind::StrategyTrader::OnRspQryInvestorPosition(
+void StrategyTrader::OnRspQryInvestorPosition(
     CThostFtdcInvestorPositionField* pInvestorPosition,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
@@ -50,14 +50,14 @@ void ctp_bind::StrategyTrader::OnRspQryInvestorPosition(
     if (pRspInfo != NULL && !IsErrorRspInfo(pRspInfo)) {
       auto it = response_.find(nRequestID);
       if (it != response_.end()) {
-        boost::any_cast<std::function<void(InvestorPositionField, bool)> >(
+        boost::any_cast<std::function<void(InvestorPositionField, bool)>>(
             it->second)(std::move(position), bIsLast);
       }
     }
   });
 }
 
-caf::behavior ctp_bind::StrategyTrader::make_behavior() {
+caf::behavior StrategyTrader::make_behavior() {
   std::string flow_path = ".\\" + user_id_ + "\\";
   //   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
   //   api_->RegisterSpi(this);
@@ -68,35 +68,61 @@ caf::behavior ctp_bind::StrategyTrader::make_behavior() {
 
   auto db = caf::actor_cast<caf::actor>(db_);
   auto db_delegate = caf::make_function_view(db);
+
+  auto r = db_delegate(QueryStrategyOrderIDMapAtom::value, user_id_);
+  if (r) {
+    auto tupels = r->get_as<
+        std::vector<std::tuple<std::string, std::string, std::string>>>(0);
+    for (const auto& t : tupels) {
+      sub_order_ids_.insert(SubOrderIDBiomap::value_type(
+          {std::get<0>(t), std::get<1>(t)}, std::get<2>(t)));
+    }
+  }
   for (auto strategy_id : {"foo", "bar"}) {
-    { 
-      auto r = db_delegate(QueryStrategyOrderIDMapAtom::value, strategy_id); 
-      for (auto i : r->get_as<>) {
-        bool b = false;
+    {
+      auto r = db_delegate(QueryStrategyRntOrderAtom::value, strategy_id);
+      if (r) {
+        auto orders = r->get_as<std::vector<boost::shared_ptr<OrderField>>>(0);
+        for (auto order : orders) {
+        }
       }
     }
-    { auto r = db_delegate(QueryStrategyRntOrderAtom::value, strategy_id); }
   }
+
+  set_down_handler([=](const caf::down_msg& msg) {
+    for (auto& strategy_actors : sub_account_on_rtn_order_callbacks_) {
+      auto i = std::find_if(
+          strategy_actors.second.begin(), strategy_actors.second.end(),
+          [&](const caf::strong_actor_ptr& a) { return a == msg.source; });
+      if (i != strategy_actors.second.end()) {
+        strategy_actors.second.erase(i);
+      }
+    }
+  });
   return {[](CallOnActorAtom, std::function<void(void)> func) { func(); },
           [](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
 
           },
           [=](SubscribeRtnOrderAtom, const std::string& strategy_id) {
-            auto it = sub_account_on_rtn_order_callbacks_.find(strategy_id);
-            if (it != sub_account_on_rtn_order_callbacks_.end()) {
-              return it->second;
+            caf::strong_actor_ptr actor =
+                caf::actor_cast<caf::strong_actor_ptr>(current_sender());
+            if (sub_account_on_rtn_order_callbacks_[strategy_id]
+                    .insert(actor)
+                    .second) {
+              monitor(actor);
+
+              for (const auto& order : sequence_orders_) {
+                send(caf::actor_cast<caf::actor>(actor), RtnOrderAtom::value,
+                     order);
+              }
             }
-            auto grp = system().groups().anonymous();
-            sub_account_on_rtn_order_callbacks_.insert({strategy_id, grp});
-            return std::move(grp);
           }};
 }
 
-void ctp_bind::StrategyTrader::OnRspUserLogin(
-    CThostFtdcRspUserLoginField* pRspUserLogin,
-    CThostFtdcRspInfoField* pRspInfo,
-    int nRequestID,
-    bool bIsLast) {
+void StrategyTrader::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
+                                    CThostFtdcRspInfoField* pRspInfo,
+                                    int nRequestID,
+                                    bool bIsLast) {
   front_id_ = pRspUserLogin->FrontID;
   session_id_ = pRspUserLogin->SessionID;
   if (on_connect_ != NULL) {
@@ -104,18 +130,17 @@ void ctp_bind::StrategyTrader::OnRspUserLogin(
   }
 }
 
-void ctp_bind::StrategyTrader::OnRspUserLogout(
-    CThostFtdcUserLogoutField* pUserLogout,
-    CThostFtdcRspInfoField* pRspInfo,
-    int nRequestID,
-    bool bIsLast) {}
+void StrategyTrader::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
+                                     CThostFtdcRspInfoField* pRspInfo,
+                                     int nRequestID,
+                                     bool bIsLast) {}
 
-void ctp_bind::StrategyTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
+void StrategyTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   CallOnActor(boost::bind(&StrategyTrader::OnRtnOrderOnIOThread, this,
                           boost::make_shared<CThostFtdcOrderField>(*pOrder)));
 }
 
-void ctp_bind::StrategyTrader::OnRtnOrderOnIOThread(
+void StrategyTrader::OnRtnOrderOnIOThread(
     boost::shared_ptr<CThostFtdcOrderField> order) {
   std::string order_id =
       MakeOrderId(order->FrontID, order->SessionID, order->OrderRef);
@@ -144,12 +169,15 @@ void ctp_bind::StrategyTrader::OnRtnOrderOnIOThread(
 
   auto sub_order_id_it = sub_order_ids_.right.find(order_id);
   if (sub_order_id_it != sub_order_ids_.right.end()) {
-    auto callback_it =
+    auto actor_it =
         sub_account_on_rtn_order_callbacks_.find(sub_order_id_it->second.first);
-    if (callback_it != sub_account_on_rtn_order_callbacks_.end()) {
+    if (actor_it != sub_account_on_rtn_order_callbacks_.end()) {
       order_field->account_id = sub_order_id_it->second.first;
       order_field->order_id = sub_order_id_it->second.second;
-      send(callback_it->second, order_field);
+      for (const auto& ptr : actor_it->second) {
+        send(caf::actor_cast<caf::actor>(ptr), RtnOrderAtom::value,
+             order_field);
+      }
     }
     sequence_orders_.push_back(order_field);
   }
@@ -157,14 +185,13 @@ void ctp_bind::StrategyTrader::OnRtnOrderOnIOThread(
   send(rtn_order_grp_, order_field, std::string(order->UserID), order_id);
 }
 
-std::string ctp_bind::StrategyTrader::MakeOrderId(
-    TThostFtdcFrontIDType front_id,
-    TThostFtdcSessionIDType session_id,
-    const std::string& order_ref) const {
+std::string StrategyTrader::MakeOrderId(TThostFtdcFrontIDType front_id,
+                                        TThostFtdcSessionIDType session_id,
+                                        const std::string& order_ref) const {
   return str(boost::format("%d:%d:%s") % front_id % session_id % order_ref);
 }
 
-OrderStatus ctp_bind::StrategyTrader::ParseTThostFtdcOrderStatus(
+OrderStatus StrategyTrader::ParseTThostFtdcOrderStatus(
     boost::shared_ptr<CThostFtdcOrderField> order) const {
   OrderStatus os = OrderStatus::kActive;
   switch (order->OrderStatus) {
@@ -180,7 +207,7 @@ OrderStatus ctp_bind::StrategyTrader::ParseTThostFtdcOrderStatus(
   return os;
 }
 
-PositionEffect ctp_bind::StrategyTrader::ParseTThostFtdcPositionEffect(
+PositionEffect StrategyTrader::ParseTThostFtdcPositionEffect(
     TThostFtdcOffsetFlagType flag) {
   PositionEffect ps = PositionEffect::kUndefine;
   switch (flag) {
@@ -201,20 +228,17 @@ PositionEffect ctp_bind::StrategyTrader::ParseTThostFtdcPositionEffect(
   return ps;
 }
 
-bool ctp_bind::StrategyTrader::IsErrorRspInfo(
-    CThostFtdcRspInfoField* pRspInfo) const {
+bool StrategyTrader::IsErrorRspInfo(CThostFtdcRspInfoField* pRspInfo) const {
   return (pRspInfo != NULL) && (pRspInfo->ErrorID != 0);
 }
 
-TThostFtdcDirectionType
-ctp_bind::StrategyTrader::OrderDirectionToTThostOrderDireciton(
+TThostFtdcDirectionType StrategyTrader::OrderDirectionToTThostOrderDireciton(
     OrderDirection direction) {
   return direction == OrderDirection::kBuy ? THOST_FTDC_D_Buy
                                            : THOST_FTDC_D_Sell;
 }
 
-TThostFtdcOffsetFlagType
-ctp_bind::StrategyTrader::PositionEffectToTThostOffsetFlag(
+TThostFtdcOffsetFlagType StrategyTrader::PositionEffectToTThostOffsetFlag(
     PositionEffect position_effect) {
   return position_effect == PositionEffect::kOpen
              ? THOST_FTDC_OF_Open
@@ -223,20 +247,23 @@ ctp_bind::StrategyTrader::PositionEffectToTThostOffsetFlag(
                     : THOST_FTDC_OF_Close);
 }
 
-void ctp_bind::StrategyTrader::LimitOrder(std::string sub_account_id,
-                                          std::string sub_order_id,
-                                          std::string instrument,
-                                          PositionEffect position_effect,
-                                          OrderDirection direction,
-                                          double price,
-                                          int volume) {
+void StrategyTrader::LimitOrder(std::string sub_account_id,
+                                std::string sub_order_id,
+                                std::string instrument,
+                                PositionEffect position_effect,
+                                OrderDirection direction,
+                                double price,
+                                int volume) {
   std::string order_ref =
       boost::lexical_cast<std::string>(order_ref_index_.fetch_add(1));
 
   CallOnActor([=]() {
-    sub_order_ids_.insert(SubOrderIDBiomap::value_type(
-        {sub_account_id, sub_order_id},
-        MakeOrderId(front_id_, session_id_, order_ref)));
+    std::string order_id = MakeOrderId(front_id_, session_id_, order_ref);
+    sub_order_ids_.insert(
+        SubOrderIDBiomap::value_type({sub_account_id, sub_order_id}, order_id));
+
+    send(caf::actor_cast<caf::actor>(db_), InsertStrategyOrderIDAtom::value,
+         sub_account_id, sub_order_id, order_id);
   });
 
   CThostFtdcInputOrderField field = {0};
@@ -275,26 +302,30 @@ void ctp_bind::StrategyTrader::LimitOrder(std::string sub_account_id,
       if (cb_it == sub_account_on_rtn_order_callbacks_.end()) {
         return;
       }
-      //       cb_it->second(order_field);
+
+      for (const auto& ptr : cb_it->second) {
+        send(caf::actor_cast<caf::actor>(ptr), RtnOrderAtom::value,
+             order_field);
+      }
     });
   }
 }
 
 /*
-void ctp_bind::StrategyTrader::CancelOrder(std::string order_id) {
+void StrategyTrader::CancelOrder(std::string order_id) {
   CallOnActor(
       boost::bind(&StrategyTrader::CancelOrderOnIOThread, this,
 std::move(order_id)));
 }
 
 */
-void ctp_bind::StrategyTrader::CancelOrder(std::string sub_accont_id,
-                                           std::string sub_order_id) {
+void StrategyTrader::CancelOrder(std::string sub_accont_id,
+                                 std::string sub_order_id) {
   CallOnActor(boost::bind(&StrategyTrader::CancelOrderOnIOThread, this,
                           std::move(sub_accont_id), std::move(sub_order_id)));
 }
 
-void ctp_bind::StrategyTrader::ReqInvestorPosition(
+void StrategyTrader::ReqInvestorPosition(
     std::function<void(InvestorPositionField, bool)> callback) {
   CThostFtdcQryInvestorPositionField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
@@ -304,7 +335,7 @@ void ctp_bind::StrategyTrader::ReqInvestorPosition(
   CallOnActor([=](void) { response_.insert({request_id, callback}); });
 }
 
-// void ctp_bind::StrategyTrader::SubscribeRtnOrder(
+// void StrategyTrader::SubscribeRtnOrder(
 //     std::string sub_account_id,
 //     std::function<void(boost::shared_ptr<OrderField>)> callback) {
 //   CallOnActor([
@@ -323,12 +354,12 @@ void ctp_bind::StrategyTrader::ReqInvestorPosition(
 //   });
 // }
 
-void ctp_bind::StrategyTrader::CallOnActor(std::function<void(void)> func) {
+void StrategyTrader::CallOnActor(std::function<void(void)> func) {
   caf::anon_send(this, CallOnActorAtom::value, func);
 }
 
-void ctp_bind::StrategyTrader::CancelOrderOnIOThread(std::string sub_accont_id,
-                                                     std::string order_id) {
+void StrategyTrader::CancelOrderOnIOThread(std::string sub_accont_id,
+                                           std::string order_id) {
   auto it = sub_order_ids_.left.find(std::make_pair(sub_accont_id, order_id));
   if (it == sub_order_ids_.left.end()) {
     return;
@@ -349,11 +380,10 @@ void ctp_bind::StrategyTrader::CancelOrderOnIOThread(std::string sub_accont_id,
   }
 }
 
-void ctp_bind::StrategyTrader::OnRspOrderInsert(
-    CThostFtdcInputOrderField* pInputOrder,
-    CThostFtdcRspInfoField* pRspInfo,
-    int nRequestID,
-    bool bIsLast) {
+void StrategyTrader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                      CThostFtdcRspInfoField* pRspInfo,
+                                      int nRequestID,
+                                      bool bIsLast) {
   if (IsErrorRspInfo(pRspInfo) && pInputOrder != NULL) {
     auto order_field = boost::make_shared<OrderField>();
     std::string order_id =
@@ -370,7 +400,7 @@ void ctp_bind::StrategyTrader::OnRspOrderInsert(
   }
 }
 
-void ctp_bind::StrategyTrader::OnRspOrderAction(
+void StrategyTrader::OnRspOrderAction(
     CThostFtdcInputOrderActionField* pInputOrderAction,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
@@ -391,6 +421,6 @@ void ctp_bind::StrategyTrader::OnRspOrderAction(
   }
 }
 
-void ctp_bind::StrategyTrader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
-                                          int nRequestID,
-                                          bool bIsLast) {}
+void StrategyTrader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                                int nRequestID,
+                                bool bIsLast) {}

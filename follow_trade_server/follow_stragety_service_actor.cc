@@ -1,7 +1,7 @@
 #include "follow_stragety_service_actor.h"
 #include <boost/lexical_cast.hpp>
 #include "follow_trade_server/caf_ctp_util.h"
-#include "follow_trade_server/caf_defines.h"
+#include "follow_trade_server/atom_defines.h"
 #include "follow_trade_server/util.h"
 #include "websocket_util.h"
 
@@ -91,7 +91,7 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
         strategy_server_.RtnOrder(order);
       },
       [=](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
-        send(db_, SqliteRecordAtom::value, order);
+        send(db_, InsertStrategyRtnOrder::value, order);
         strategy_server_.RtnOrder(order);
       }};
 }

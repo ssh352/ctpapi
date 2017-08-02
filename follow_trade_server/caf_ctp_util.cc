@@ -1,5 +1,7 @@
 #include "caf_ctp_util.h"
-#include "follow_trade_server/caf_defines.h"
+#include "follow_trade_server/atom_defines.h"
+/*
+
 
 bool Logon(caf::actor actor) {
   auto f = caf::make_function_view(actor, {caf::time_unit::seconds, 3});
@@ -39,3 +41,5 @@ void SettlementInfoConfirm(caf::actor actor) {
   auto f = caf::make_function_view(actor);
   f(CTPReqSettlementInfoConfirm::value);
 }
+*/
+
