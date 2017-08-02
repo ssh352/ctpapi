@@ -14,7 +14,6 @@
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "ctpapi/ThostFtdcUserApiStruct.h"
 
-using SubscribeRtnOrderAtom = caf::atom_constant<caf::atom("subro")>;
 class StrategyTrader : public caf::event_based_actor,
                        public CThostFtdcTraderSpi {
  public:

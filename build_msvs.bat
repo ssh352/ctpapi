@@ -16,5 +16,4 @@ python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi download_margin_rate\download_margin_rate.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
-REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_bind\ctp_bind.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp

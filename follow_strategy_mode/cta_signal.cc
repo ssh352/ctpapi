@@ -19,8 +19,9 @@ void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
 //       master_context_(master_context),
 //       slave_context_(slave_context) {}
 
-void CTASignal::HandleOpening(const boost::shared_ptr<const OrderField>& order_data) {
-  if (order_data->account_id != master_context_->account_id()) {
+void CTASignal::HandleOpening(
+    const boost::shared_ptr<const OrderField>& order_data) {
+  if (order_data->strategy_id != master_context_->account_id()) {
     return;
   }
   if (master_context_->IsOppositeOpen(order_data->instrument_id,
@@ -61,13 +62,14 @@ void CTASignal::HandleOpening(const boost::shared_ptr<const OrderField>& order_d
     }
   } else {
     observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
-                         order_data->direction,
-                         order_data->price, order_data->qty);
+                         order_data->direction, order_data->price,
+                         order_data->qty);
   }
 }
 
-void CTASignal::HandleCloseing(const boost::shared_ptr<const OrderField>& order_data) {
-  if (order_data->account_id != master_context_->account_id()) {
+void CTASignal::HandleCloseing(
+    const boost::shared_ptr<const OrderField>& order_data) {
+  if (order_data->strategy_id != master_context_->account_id()) {
     return;
   }
 
@@ -99,13 +101,13 @@ void CTASignal::HandleCloseing(const boost::shared_ptr<const OrderField>& order_
   if (close_quantity > 0) {
     observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
                           order_data->direction, order_data->position_effect,
-                          order_data->price,
-                          close_quantity);
+                          order_data->price, close_quantity);
   }
 }
 
-void CTASignal::HandleCanceled(const boost::shared_ptr<const OrderField>& order_data) {
-  if (order_data->account_id != master_context_->account_id()) {
+void CTASignal::HandleCanceled(
+    const boost::shared_ptr<const OrderField>& order_data) {
+  if (order_data->strategy_id != master_context_->account_id()) {
     return;
   }
 
@@ -114,8 +116,9 @@ void CTASignal::HandleCanceled(const boost::shared_ptr<const OrderField>& order_
   }
 }
 
-void CTASignal::HandleClosed(const boost::shared_ptr<const OrderField>& order_data) {
-  if (order_data->account_id != master_context_->account_id()) {
+void CTASignal::HandleClosed(
+    const boost::shared_ptr<const OrderField>& order_data) {
+  if (order_data->strategy_id != master_context_->account_id()) {
     return;
   }
 
@@ -145,15 +148,14 @@ void CTASignal::HandleClosed(const boost::shared_ptr<const OrderField>& order_da
           });
       if (yesterday_quantity > 0) {
         observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
-                              order_data->direction, PositionEffect::kClose,
-                              0, yesterday_quantity);
+                              order_data->direction, PositionEffect::kClose, 0,
+                              yesterday_quantity);
       }
 
       if (today_quantity > 0) {
         observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
                               order_data->direction,
-                              PositionEffect::kCloseToday,
-                              0, today_quantity);
+                              PositionEffect::kCloseToday, 0, today_quantity);
       }
     } else {
       int quantity = std::accumulate(quantitys.begin(), quantitys.end(), 0,
@@ -169,7 +171,8 @@ void CTASignal::HandleClosed(const boost::shared_ptr<const OrderField>& order_da
   //  delegate_->CloseOrder(order_data->Instrument())
 }
 
-void CTASignal::HandleOpened(const boost::shared_ptr<const OrderField>& order_data) {}
+void CTASignal::HandleOpened(
+    const boost::shared_ptr<const OrderField>& order_data) {}
 
 void CTASignal::Subscribe(CTASignalObserver::Observable* observer) {
   observer_ = observer;

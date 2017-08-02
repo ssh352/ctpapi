@@ -7,6 +7,13 @@ using QueryStrategyRntOrderAtom = caf::atom_constant<caf::atom("qrto")>;
 using QueryStrategyOrderIDMapAtom = caf::atom_constant<caf::atom("qid")>;
 using InsertStrategyOrderIDAtom = caf::atom_constant<caf::atom("sgyid")>;
 
+using SubscribeRtnOrderAtom = caf::atom_constant<caf::atom("subro")>;
+using LimitOrderAtom = caf::atom_constant<caf::atom("limit")>;
+using CancelOrderAtom = caf::atom_constant<caf::atom("cancel")>;
+using RtnOrderAtom = caf::atom_constant<caf::atom("rto")>;
+using QueryInverstorPositionAtom = caf::atom_constant<caf::atom("qip")>;
+
+
 using CTPReqLogin = caf::atom_constant<caf::atom("lg")>;
 using CTPRspLogin = caf::atom_constant<caf::atom("rsplg")>;
 using CTPReqQryInvestorPositionsAtom = caf::atom_constant<caf::atom("qryipa")>;
@@ -35,6 +42,11 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderField>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<OrderField>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(boost::shared_ptr<std::vector<InvestorPositionField>>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<boost::shared_ptr<OrderField> >)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::list<boost::shared_ptr<OrderField> >)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderPosition)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderPosition>)
+
+
 
 #endif // FOLLOW_TRADE_SERVER_ATOM_DEFINES_H
 

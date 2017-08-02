@@ -32,16 +32,17 @@
 #include "caf_ctp_util.h"
 #include "follow_stragety_service_actor.h"
 #include "follow_strategy_mode/print_portfolio_helper.h"
-#include "follow_trade_server/binary_serialization.h"
 #include "follow_trade_server/atom_defines.h"
+#include "follow_trade_server/binary_serialization.h"
 // #include "follow_trade_server/cta_trade_actor.h"
-#include "ctp_bind/trader.h"
+#include "atom_defines.h"
+#include "cta_signal_trader.h"
+
+#include "db_store.h"
 #include "follow_trade_server/ctp_trader.h"
 #include "follow_trade_server/util.h"
-#include "websocket_typedef.h"
 #include "strategy_trader.h"
-#include "db_store.h"
-#include "atom_defines.h"
+#include "websocket_typedef.h"
 
 /*
 behavior StrategyListener(event_based_actor* self,
@@ -203,9 +204,7 @@ void InitLogging() {
   boost::log::add_common_attributes();
 }
 
-int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  InitLogging();
-
+int main2(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto sqlite = system.spawn<DBStore>();
   system.registry().put(caf::atom("db"),
                         caf::actor_cast<caf::strong_actor_ptr>(sqlite));
@@ -232,7 +231,6 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
   //                            "140616"};
 
-
   LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
                               pt.get<std::string>("master.broker_id"),
                               pt.get<std::string>("master.user_id"),
@@ -248,10 +246,8 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
   bool running = true;
   self->receive_while(running)(
-      [sqlite](const boost::shared_ptr<OrderField>& order,
-               const std::string& account_id, const std::string& order_id) {
-        caf::anon_send(sqlite, InsertStrategyRtnOrder::value, order, account_id,
-                       order_id);
+      [sqlite](const boost::shared_ptr<OrderField>& order) {
+        caf::anon_send(sqlite, InsertStrategyRtnOrder::value, order);
       },
       caf::after(std::chrono::seconds(2)) >> [&running] { running = false; });
   //   caf::anon_send_exit(sqlite, caf::exit_reason::user_shutdown);
@@ -264,6 +260,71 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
       break;
     }
   }
+  return 0;
+}
+
+int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
+  InitLogging();
+
+  auto sqlite = system.spawn<DBStore>();
+  system.registry().put(caf::atom("db"),
+                        caf::actor_cast<caf::strong_actor_ptr>(sqlite));
+
+  pt::ptree pt;
+  try {
+    pt::read_json(GetExecuableFileDirectoryPath() + "\\config.json", pt);
+  } catch (pt::ptree_error& err) {
+    std::cout << "Read Confirg File Error:" << err.what() << "\n";
+    return 1;
+  }
+
+  // ClearUpCTPFolwDirectory();
+  std::vector<LogonInfo> followers;
+  for (auto slave : pt.get_child("slaves")) {
+    if (slave.second.get<bool>("enable")) {
+      followers.push_back({slave.second.get<std::string>("front_server"),
+                           slave.second.get<std::string>("broker_id"),
+                           slave.second.get<std::string>("user_id"),
+                           slave.second.get<std::string>("password")});
+    }
+  }
+  // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
+  //                            "140616"};
+
+  LogonInfo master_logon_info{pt.get<std::string>("master.front_server"),
+                              pt.get<std::string>("master.broker_id"),
+                              pt.get<std::string>("master.user_id"),
+                              pt.get<std::string>("master.password")};
+
+  auto cta = system.spawn<CTASignalTrader>(
+      master_logon_info.front_server, master_logon_info.broker_id,
+      master_logon_info.user_id, master_logon_info.password);
+  caf::group grp = system.groups().anonymous();
+  caf::scoped_actor self(system);
+  bool running = true;
+
+  /*
+  self->request(cta, caf::infinite, SubscribeRtnOrderAtom::value,
+                caf::actor_cast<caf::strong_actor_ptr>(self))
+      .receive(
+          [=](const std::list<boost::shared_ptr<OrderField> > orders) {
+            for (const auto& order : orders) {
+              std::cout << order->order_id << ":" << order->input_time << "\n";
+            }
+          },
+          [](const caf::error& err) {});
+  
+  */
+  // caf::anon_send_exit(sqlite, caf::exit_reason::user_shutdown);
+  // caf::anon_send_exit(trader, caf::exit_reason::user_shutdown);
+  std::string input;
+  while (std::cin >> input) {
+    if (input == "exit") {
+      break;
+    }
+  }
+
+  system.registry().erase(caf::atom("db"));
   /*
 
   std::vector<caf::actor> actors;

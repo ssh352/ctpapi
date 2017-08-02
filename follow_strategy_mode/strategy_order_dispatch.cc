@@ -44,12 +44,12 @@ void StrategyOrderDispatch::CancelOrder(const std::string& strategy_id,
 
 void StrategyOrderDispatch::RtnOrder(
     const boost::shared_ptr<const OrderField>& order) {
-  BOOST_LOG(log_) << boost::log::add_value("strategy_id", order->account_id)
+  BOOST_LOG(log_) << boost::log::add_value("strategy_id", order->strategy_id)
                   << "RtnOrder:" << order->instrument_id << ","
                   << order->order_id << ","
                   << (order->direction == OrderDirection::kBuy ? "B" : "S")
                   << "," << order->price;
-  auto it = rtn_order_observers_.find(order->account_id);
+  auto it = rtn_order_observers_.find(order->strategy_id);
   if (it != rtn_order_observers_.end()) {
     it->second->RtnOrder(order);
   } else {

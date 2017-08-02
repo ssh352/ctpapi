@@ -58,12 +58,14 @@ class Foo : public caf::event_based_actor {
     }
     auto grp = std::move(*expected_grp);
     join(grp);
+    leave(grp);
   }
 
   caf::behavior make_behavior() override {
     set_exit_handler([=](caf::scheduled_actor* self, const caf::exit_msg& em) {
       grp_ = nullptr;
       caf::aout(this) << "errr\n";
+      quit();
     });
     return {[=](bool) { std::cout << "abc\n"; },
             [=](const std::string& str) {
@@ -79,27 +81,10 @@ class Foo : public caf::event_based_actor {
 };
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
-  auto bar = system.spawn<Bar>();
-  auto foo = system.spawn<Foo>();
-
-  std::string module = "local";
-  std::string id = "foo";
-  auto expected_grp = system.groups().get(module, id);
-  if (!expected_grp) {
-    std::cerr << "*** cannot load group: "
-              << system.render(expected_grp.error()) << std::endl;
-    return 1;
-  }
-  auto grp = std::move(*expected_grp);
-
-  caf::scoped_actor self(system);
-  self->send(grp, false);
-  caf::anon_send_exit(bar, caf::exit_reason::user_shutdown);
-
+  // auto actor = system.spawn<foo>();
+  auto actor = system.spawn(foo);
   system.await_all_actors_done();
-
-  //  self->receive([](const std::string& str) { std::cout << str << "\n"; });
-
+  // caf::anon_send_exit(actor, caf::exit_reason::user_shutdown);
   return 0;
 }
 

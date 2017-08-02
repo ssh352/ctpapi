@@ -1,25 +1,22 @@
 #include "follow_stragety_service_actor.h"
 #include <boost/lexical_cast.hpp>
-#include "follow_trade_server/caf_ctp_util.h"
 #include "follow_trade_server/atom_defines.h"
+#include "follow_trade_server/caf_ctp_util.h"
 #include "follow_trade_server/util.h"
 #include "websocket_util.h"
 
 static const int kAdultAge = 5;
 
-using DisplayPortfolioAtom = caf::atom_constant<caf::atom("dp")>;
-using RtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
-using TraderConnectAtom = caf::atom_constant<caf::atom("connect")>;
-
 FollowStragetyServiceActor::FollowStragetyServiceActor(caf::actor_config& cfg,
-                                                       caf::actor db,
-                                                       ctp_bind::Trader* trader,
+                                                       caf::actor trader,
+                                                       caf::actor cta_signal,
                                                        std::string account_id)
     : caf::event_based_actor(cfg),
       trader_(trader),
-      db_(db),
+      cta_signal_(cta_signal),
       master_account_id_(std::move(account_id)) {
   strategy_server_.SubscribeEnterOrderObserver(this);
+  db_ = system().registry().get(caf::atom("db"));
 }
 
 void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
@@ -28,8 +25,8 @@ void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
                                            OrderDirection direction,
                                            double price,
                                            int quantity) {
-  trader_->LimitOrder(strategy_id, order_id, instrument, PositionEffect::kOpen,
-                      direction, price, quantity);
+  send(trader_, strategy_id, order_id, instrument, PositionEffect::kOpen,
+       direction, price, quantity);
 }
 
 void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
@@ -39,20 +36,56 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
                                             PositionEffect position_effect,
                                             double price,
                                             int quantity) {
-  trader_->LimitOrder(strategy_id, order_id, instrument, position_effect,
-                      direction, price, quantity);
+  send(trader_, strategy_id, order_id, instrument, position_effect, direction,
+       price, quantity);
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
                                              const std::string& order_id) {
-  trader_->CancelOrder(strategy_id, order_id);
+  send(trader_, strategy_id, order_id);
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
+  auto block_trader = caf::make_function_view(trader_);
+  auto block_cta_signal = caf::make_function_view(cta_signal_);
+
+  auto r = block_cta_signal(SubscribeRtnOrderAtom::value,
+                            caf::actor_cast<caf::strong_actor_ptr>(this));
+  std::list<boost::shared_ptr<OrderField>> cta_rtn_orders;
+  if (r) {
+    cta_rtn_orders = r->get_as<std::list<boost::shared_ptr<OrderField>>>(0);
+  }
+
+  r = block_cta_signal(QueryInverstorPositionAtom::value);
+  std::vector<OrderPosition> cta_inverstor_positions;
+  if (r) {
+    cta_inverstor_positions = r->get_as<std::vector<OrderPosition>>(0);
+  }
+
   auto stragetys = {"Foo", "Bar"};
   for (auto s : stragetys) {
     auto master_context_ = std::make_shared<OrdersContext>(master_account_id_);
+    for (auto o : cta_rtn_orders) {
+      master_context_->HandleRtnOrder(o);
+    }
+
+    master_context_->InitPositions(cta_inverstor_positions);
+
     auto slave_context = std::make_shared<OrdersContext>(s);
+
+    auto r = block_trader(SubscribeRtnOrderAtom::value, s,
+                          caf::actor_cast<caf::strong_actor_ptr>(this));
+    if (r) {
+      auto orders = r->get_as<std::list<boost::shared_ptr<OrderField>>>(0);
+      for (auto order : orders) {
+        (void)slave_context->HandleRtnOrder(order);
+      }
+    }
+    r = block_trader(QueryInverstorPositionAtom::value, s);
+    if (r) {
+      slave_context->InitPositions(r->get_as<std::vector<OrderPosition>>(0));
+      
+    }
 
     auto cta_strategy = std::make_shared<CTAGenericStrategy>(s);
     cta_strategy->Subscribe(&strategy_server_);
@@ -65,33 +98,9 @@ caf::behavior FollowStragetyServiceActor::make_behavior() {
 
     strategy_server_.SubscribeRtnOrderObserver(s, signal_dispatch);
 
-    trader_->SubscribeRtnOrder(s, [=](boost::shared_ptr<OrderField> order) {
-      send(this, RtnOrderAtom::value, order);
-    });
   }
 
-  return {
-      [=](CTASignalInitAtom) {
-        become(caf::keep_behavior,
-               [=](CTASignalRtnOrderAtom, boost::shared_ptr<OrderField> order) {
-                 return caf::skip();
-               },
-               [=](CTASignalRtnOrderAtom,
-                   const boost::shared_ptr<OrderField>& order) { caf::skip(); },
-               [=](TraderConnectAtom, bool sccuess) { unbecome(); });
-
-        trader_->Connect([=](CThostFtdcRspUserLoginField* rsp_field,
-                             CThostFtdcRspInfoField* rsp_info) {
-          if (rsp_info != NULL && rsp_info->ErrorID == 0) {
-            send(this, TraderConnectAtom::value, true);
-          }
-        });
-      },
-      [=](CTASignalRtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
-        strategy_server_.RtnOrder(order);
-      },
-      [=](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
-        send(db_, InsertStrategyRtnOrder::value, order);
-        strategy_server_.RtnOrder(order);
-      }};
+  return {[=](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
+    strategy_server_.RtnOrder(order);
+  }};
 }

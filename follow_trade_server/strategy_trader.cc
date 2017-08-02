@@ -5,7 +5,6 @@
 #include "atom_defines.h"
 
 using CallOnActorAtom = caf::atom_constant<caf::atom("self")>;
-using RtnOrderAtom = caf::atom_constant<caf::atom("ro")>;
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::function<void(void)>)
 
@@ -59,12 +58,12 @@ void StrategyTrader::OnRspQryInvestorPosition(
 
 caf::behavior StrategyTrader::make_behavior() {
   std::string flow_path = ".\\" + user_id_ + "\\";
-  //   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
-  //   api_->RegisterSpi(this);
-  //   api_->RegisterFront(const_cast<char*>(server_.c_str()));
-  //   api_->SubscribePublicTopic(THOST_TERT_RESTART);
-  //   api_->SubscribePrivateTopic(THOST_TERT_RESTART);
-  //   api_->Init();
+  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
+  api_->RegisterSpi(this);
+  api_->RegisterFront(const_cast<char*>(server_.c_str()));
+  api_->SubscribePublicTopic(THOST_TERT_RESTART);
+  api_->SubscribePrivateTopic(THOST_TERT_RESTART);
+  api_->Init();
 
   auto db = caf::actor_cast<caf::actor>(db_);
   auto db_delegate = caf::make_function_view(db);
@@ -99,24 +98,33 @@ caf::behavior StrategyTrader::make_behavior() {
       }
     }
   });
-  return {[](CallOnActorAtom, std::function<void(void)> func) { func(); },
-          [](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
+  return {
+      [=](LimitOrderAtom, std::string sub_account_id, std::string sub_order_id,
+          std::string instrument, PositionEffect position_effect,
+          OrderDirection direction, double price, int volume) {
+        LimitOrder(sub_account_id, sub_order_id, instrument, position_effect,
+                   direction, price, volume);
+      },
+      [=](CancelOrderAtom, const std::string& sub_accont_id,
+          const std::string& sub_order_id) {
+        // CancelOrder(sub_accont_id, sub_order_id);
+        CancelOrderOnIOThread(sub_accont_id, sub_order_id);
+      },
+      [](CallOnActorAtom, std::function<void(void)> func) { func(); },
+      [](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {
 
-          },
-          [=](SubscribeRtnOrderAtom, const std::string& strategy_id) {
-            caf::strong_actor_ptr actor =
-                caf::actor_cast<caf::strong_actor_ptr>(current_sender());
-            if (sub_account_on_rtn_order_callbacks_[strategy_id]
-                    .insert(actor)
-                    .second) {
-              monitor(actor);
-
-              for (const auto& order : sequence_orders_) {
-                send(caf::actor_cast<caf::actor>(actor), RtnOrderAtom::value,
-                     order);
-              }
-            }
-          }};
+      },
+      [=](SubscribeRtnOrderAtom, const std::string& strategy_id,
+          const caf::strong_actor_ptr& actor)
+          -> std::list<boost::shared_ptr<OrderField>> {
+        if (sub_account_on_rtn_order_callbacks_[strategy_id]
+                .insert(actor)
+                .second) {
+          monitor(actor);
+          return sequence_orders_;
+        }
+        return std::list<boost::shared_ptr<OrderField>>();
+      }};
 }
 
 void StrategyTrader::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
@@ -172,7 +180,7 @@ void StrategyTrader::OnRtnOrderOnIOThread(
     auto actor_it =
         sub_account_on_rtn_order_callbacks_.find(sub_order_id_it->second.first);
     if (actor_it != sub_account_on_rtn_order_callbacks_.end()) {
-      order_field->account_id = sub_order_id_it->second.first;
+      order_field->strategy_id = sub_order_id_it->second.first;
       order_field->order_id = sub_order_id_it->second.second;
       for (const auto& ptr : actor_it->second) {
         send(caf::actor_cast<caf::actor>(ptr), RtnOrderAtom::value,
@@ -182,7 +190,7 @@ void StrategyTrader::OnRtnOrderOnIOThread(
     sequence_orders_.push_back(order_field);
   }
 
-  send(rtn_order_grp_, order_field, std::string(order->UserID), order_id);
+  send(rtn_order_grp_, order_field);
 }
 
 std::string StrategyTrader::MakeOrderId(TThostFtdcFrontIDType front_id,
@@ -257,14 +265,12 @@ void StrategyTrader::LimitOrder(std::string sub_account_id,
   std::string order_ref =
       boost::lexical_cast<std::string>(order_ref_index_.fetch_add(1));
 
-  CallOnActor([=]() {
-    std::string order_id = MakeOrderId(front_id_, session_id_, order_ref);
-    sub_order_ids_.insert(
-        SubOrderIDBiomap::value_type({sub_account_id, sub_order_id}, order_id));
+  std::string order_id = MakeOrderId(front_id_, session_id_, order_ref);
+  sub_order_ids_.insert(
+      SubOrderIDBiomap::value_type({sub_account_id, sub_order_id}, order_id));
 
-    send(caf::actor_cast<caf::actor>(db_), InsertStrategyOrderIDAtom::value,
-         sub_account_id, sub_order_id, order_id);
-  });
+  send(caf::actor_cast<caf::actor>(db_), InsertStrategyOrderIDAtom::value,
+       sub_account_id, sub_order_id, order_id);
 
   CThostFtdcInputOrderField field = {0};
   // strcpy(filed.BrokerID, "");
@@ -294,7 +300,7 @@ void StrategyTrader::LimitOrder(std::string sub_account_id,
 
   if (api_->ReqOrderInsert(&field, 0) != 0) {
     auto order_field = boost::make_shared<OrderField>();
-    order_field->account_id = sub_account_id;
+    order_field->strategy_id = sub_account_id;
     order_field->order_id = sub_order_id;
     order_field->status = OrderStatus::kInputRejected;
     CallOnActor([ =, order_field(std::move(order_field)) ]() {
@@ -392,10 +398,17 @@ void StrategyTrader::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
     order_field->status = OrderStatus::kInputRejected;
     order_field->raw_error_id = pRspInfo->ErrorID;
     order_field->raw_error_message = pRspInfo->ErrorMsg;
-    CallOnActor([ =, order_field(std::move(order_field)) ](){
-        //       if (on_rtn_order_ != NULL) {
-        //         on_rtn_order_(std::move(order_field));
-        //       }
+    CallOnActor([ =, order_field(std::move(order_field)) ]() {
+      auto it = sub_order_ids_.right.find(order_id);
+      if (it != sub_order_ids_.right.end()) {
+        order_field->strategy_id = it->second.first;
+        order_field->order_id = it->second.second;
+        for (const auto& observer :
+             sub_account_on_rtn_order_callbacks_[it->second.first]) {
+          send(caf::actor_cast<caf::actor>(observer), RtnOrderAtom::value,
+               std::move(order_field));
+        }
+      }
     });
   }
 }

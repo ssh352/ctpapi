@@ -123,7 +123,7 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() &&
-      order->account_id == slave_context_->account_id()) {
+      order->strategy_id == slave_context_->account_id()) {
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
                      [&](auto i) { return i.first == order->order_id; });
@@ -151,7 +151,7 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
 
 OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(
     const boost::shared_ptr<const OrderField>& order) {
-  return order->account_id == master_context_->account_id()
+  return order->strategy_id == master_context_->account_id()
              ? master_context_->HandleRtnOrder(order)
              : slave_context_->HandleRtnOrder(order);
 }

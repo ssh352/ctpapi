@@ -115,22 +115,20 @@ void DBStore::CreateStrategyOrderIDTableIfNotExists() {
 
 caf::behavior DBStore::make_behavior() {
   return {
-      [=](InsertStrategyRtnOrder, const boost::shared_ptr<OrderField> order,
-          const std::string& account_id, const std::string& order_id) {
+      [=](InsertStrategyRtnOrder, const boost::shared_ptr<OrderField> order) {
         char* error = NULL;
         auto rc = sqlite3_exec(
             db_,
             str(boost::format("INSERT INTO StrategyRtnOrder VALUES('%s', '%s', "
-                              "'%s',  '%s','%s', %d, %lf, "
+                              "'%s', %d, %lf, "
                               "%lf, %d, %d, %d, '%s', '%s', '%s', '%s', %d, "
                               "%d, '%s');") %
-                order->account_id % order->instrument_id %
-                order->order_id % order_id % static_cast<int>(order->status) %
-                order->price % order->avg_price % order->qty %
-                order->leaves_qty % order->traded_qty % order->exchange_id %
-                order->date % order->input_time % order->update_time %
-                order->error_id % order->raw_error_id %
-                order->raw_error_message)
+                order->strategy_id % order->instrument_id % order->order_id %
+                static_cast<int>(order->status) % order->price %
+                order->avg_price % order->qty % order->leaves_qty %
+                order->traded_qty % order->exchange_id % order->date %
+                order->input_time % order->update_time % order->error_id %
+                order->raw_error_id % order->raw_error_message)
                 .c_str(),
             0, 0, &error);
         if (rc != SQLITE_OK) {
@@ -190,7 +188,7 @@ caf::behavior DBStore::make_behavior() {
           if (ret != SQLITE_ROW)
             break;
           auto order = boost::make_shared<OrderField>();
-          order->account_id = strategy_id;
+          order->strategy_id = strategy_id;
           order->instrument_id =
               reinterpret_cast<const char*>(sqlite3_column_text(
                   stmt, static_cast<int>(Column::kInstrumentID)));

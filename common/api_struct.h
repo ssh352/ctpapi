@@ -13,7 +13,7 @@ struct OrderField {
   int raw_error_id;
   double price;
   double avg_price;
-  std::string account_id;
+  std::string strategy_id;
   std::string instrument_id;
   std::string exchange_id;
   std::string date;
@@ -24,9 +24,11 @@ struct OrderField {
 };
 
 struct InvestorPositionField {
-
+  int qty;
+  OrderDirection direction;
+  double price;
+  std::string instrument_id;
 };
-
 
 struct CorrOrderQuantity {
   std::string order_id;
@@ -61,6 +63,5 @@ struct AccountPosition {
   OrderDirection direction;
   int closeable;
 };
-
 
 #endif  // COMMON_API_STRUCT_H

@@ -1,7 +1,6 @@
 #ifndef FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #define FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H
 #include "caf/all.hpp"
-#include "ctp_bind/trader.h"
 #include "follow_strategy_mode/cta_generic_strategy.h"
 #include "follow_strategy_mode/cta_signal.h"
 #include "follow_strategy_mode/cta_signal_dispatch.h"
@@ -15,8 +14,8 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                                    StrategyEnterOrderObservable::Observer {
  public:
   FollowStragetyServiceActor(caf::actor_config& cfg,
-                             caf::actor sqlite,
-                             ctp_bind::Trader* trader,
+                             caf::actor trader,
+                             caf::actor cta_signal,
                              std::string master_account_id);
 
   void on_exit() override {}
@@ -59,10 +58,10 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
   };
 
   StrategyOrderDispatch strategy_server_;
-
-  ctp_bind::Trader* trader_;
   std::string master_account_id_;
-  caf::actor db_;
+  caf::strong_actor_ptr db_;
+  caf::actor trader_;
+  caf::actor cta_signal_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

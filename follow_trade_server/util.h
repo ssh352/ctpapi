@@ -3,8 +3,9 @@
 
 std::string GetExecuableFileDirectoryPath();
 
-std::string MakeDataBinaryFileName(const std::string& slave_account, const std::string& sub_dir);
+std::string MakeDataBinaryFileName(const std::string& slave_account,
+                                   const std::string& sub_dir);
 
 void ClearUpCTPFolwDirectory();
 
-#endif // FOLLOW_TRADE_SERVER_UTIL_H
+#endif  // FOLLOW_TRADE_SERVER_UTIL_H
