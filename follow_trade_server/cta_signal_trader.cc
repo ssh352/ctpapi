@@ -2,8 +2,11 @@
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/sources/logger.hpp>
 #include <boost/make_shared.hpp>
 #include "atom_defines.h"
+#include "logging.h"
 CTASignalTrader::CTASignalTrader(caf::actor_config& cfg,
                                  std::string server,
                                  std::string broker_id,
@@ -49,11 +52,15 @@ void CTASignalTrader::OnRspQryInvestorPosition(
         pInvestorPosition->YdPosition};
 
     CallOnActor([ =, position(std::move(position)) ] {
-      yesterday_positions_.push_back(position);
+      if (position.quantity != 0) {
+        yesterday_positions_.push_back(std::move(position));
+      }
     });
   }
 
   if (bIsLast) {
+    auto& lg = g_logger::get();
+    BOOST_LOG(lg) << "CTA Restart rtn order.";
     CallOnActor([=]() {
       delayed_send(this, std::chrono::seconds(1),
                    CheckHistoryRtnOrderIsDoneAtom::value,
@@ -70,6 +77,14 @@ void CTASignalTrader::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
                                      CThostFtdcRspInfoField* pRspInfo,
                                      int nRequestID,
                                      bool bIsLast) {
+  auto& lg = g_logger::get();
+  if (pRspInfo != nullptr && pRspInfo->ErrorID == 0) {
+    BOOST_LOG(lg) << "CTA trader login sccuess.";
+  } else {
+    BOOST_LOG(lg) << "CTA trader login is fail:" << pRspInfo->ErrorID << ":"
+                  << pRspInfo->ErrorMsg;
+  }
+
   send(this, ConnectAtom::value,
        std::make_shared<CThostFtdcRspUserLoginField>(*pRspUserLogin),
        std::make_shared<CThostFtdcRspInfoField>(*pRspInfo));
@@ -185,6 +200,10 @@ void CTASignalTrader::CallOnActor(std::function<void(void)> func) {
 }
 
 caf::behavior CTASignalTrader::make_behavior() {
+  auto& lg = g_logger::get();
+
+  BOOST_LOG(lg) << "Start CTA Signal";
+
   std::string flow_path = ".\\" + user_id_ + "\\";
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
   api_->RegisterSpi(this);
@@ -194,14 +213,12 @@ caf::behavior CTASignalTrader::make_behavior() {
   api_->Init();
 
   set_down_handler([=](const caf::down_msg& msg) {
-    /*
     auto i = std::find_if(
         rtn_order_observers_.begin(), rtn_order_observers_.end(),
         [&](const caf::strong_actor_ptr& a) { return a == msg.source; });
     if (i != rtn_order_observers_.end()) {
       rtn_order_observers_.erase(i);
     }
-    */
   });
 
   set_default_handler(caf::skip());
@@ -218,9 +235,7 @@ caf::behavior CTASignalTrader::make_behavior() {
         }
         return std::list<boost::shared_ptr<OrderField>>();
       },
-      [=](QueryInverstorPositionAtom) {
-        return yesterday_positions_;
-      },
+      [=](QueryInverstorPositionAtom) { return yesterday_positions_; },
   };
 
   return {
@@ -232,6 +247,9 @@ caf::behavior CTASignalTrader::make_behavior() {
           CThostFtdcQryInvestorPositionField field{0};
           strcpy(field.BrokerID, broker_id_.c_str());
           strcpy(field.InvestorID, user_id_.c_str());
+
+          auto& lg = g_logger::get();
+          BOOST_LOG(lg) << "CTA request investor position.";
           if (api_->ReqQryInvestorPosition(&field, request_id_++) != 0) {
             quit();
           }
@@ -242,10 +260,13 @@ caf::behavior CTASignalTrader::make_behavior() {
       [=](CheckHistoryRtnOrderIsDoneAtom, size_t last_check_size) {
         if (last_check_size != sequence_orders_.size()) {
           // maybe still on receive
-          delayed_send(this, std::chrono::milliseconds(100),
+          delayed_send(this, std::chrono::milliseconds(500),
                        CheckHistoryRtnOrderIsDoneAtom::value,
                        sequence_orders_.size());
         } else {
+          auto& lg = g_logger::get();
+          BOOST_LOG(lg) << "CTA RtnOrder:" << sequence_orders_.size();
+
           become(behavior);
         }
       },

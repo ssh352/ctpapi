@@ -150,7 +150,7 @@ namespace pt = boost::property_tree;
 
 void on_open(std::vector<caf::actor> actors, websocketpp::connection_hdl hdl) {
   for (auto actor : actors) {
-    caf::anon_send(actor, StragetyPortfilioAtom::value, hdl);
+    // caf::anon_send(actor, StragetyPortfilioAtom::value, hdl);
   }
 }
 
@@ -202,6 +202,7 @@ void InitLogging() {
   }
 
   boost::log::add_common_attributes();
+//   core->set_logging_enabled(false);
 }
 
 int main2(caf::actor_system& system, const caf::actor_system_config& cfg) {
@@ -300,6 +301,10 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                            slave.second.get<std::string>("password")});
     }
   }
+
+
+
+
 
   auto grp = system.groups().anonymous();
   std::vector<caf::actor> strategy_actors;

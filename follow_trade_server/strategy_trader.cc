@@ -429,7 +429,7 @@ caf::behavior StrategyTrader::make_behavior() {
       [=](ConnectAtom, const std::shared_ptr<CThostFtdcRspUserLoginField>& rsp,
           const std::shared_ptr<CThostFtdcRspInfoField>& rsp_info) {
         if (rsp_info != nullptr && rsp_info->ErrorID == 0) {
-          delayed_send(this, std::chrono::milliseconds(200),
+          delayed_send(this, std::chrono::milliseconds(500),
                        CheckHistoryRtnOrderIsDoneAtom::value, orders_.size());
         }
       },

@@ -64,6 +64,7 @@ void DBStore::CreateStrategyRtnOrderIfNotExists() {
            StrategyID VARCHAR(50) NOT NULL,
            InstrumentID VARCHAR(50) NOT NULL,
            OrderID VARCHAR(50) NOT NULL,
+           Direction INT NULL,
            Status INT NOT NULL,
            Price DOUBLE NULL,
            AvgPrice DOUBLE NULL,
@@ -121,6 +122,7 @@ void DBStore::CreateStrategyPositionIfNotExists() {
        (
            StrategyID VARCHAR(50) NOT NULL,
            InstrumentID VARCHAR(50) NOT NULL,
+           OrderDirection INT NOL NULL,
            Qty INT NOT NULL
        );
 )";
@@ -142,10 +144,11 @@ caf::behavior DBStore::make_behavior() {
         auto rc = sqlite3_exec(
             db_,
             str(boost::format("INSERT INTO StrategyRtnOrder VALUES('%s', '%s', "
-                              "'%s', %d, %lf, "
+                              "'%s', %d, %d, %lf, "
                               "%lf, %d, %d, %d, '%s', '%s', '%s', '%s', %d, "
                               "%d, '%s');") %
                 order->strategy_id % order->instrument_id % order->order_id %
+                static_cast<int>(order->direction) %
                 static_cast<int>(order->status) % order->price %
                 order->avg_price % order->qty % order->leaves_qty %
                 order->traded_qty % order->exchange_id % order->date %
@@ -163,6 +166,7 @@ caf::behavior DBStore::make_behavior() {
         enum class Column {
           kInstrumentID,
           kOrderID,
+          kDirection,
           kStatus,
           kPrice,
           kAvgPrice,
@@ -183,6 +187,7 @@ caf::behavior DBStore::make_behavior() {
                           SELECT
                               InstrumentID,
                               OrderID,
+                              Direction,
                               Status,
                               Price,
                               AvgPrice,
@@ -219,6 +224,8 @@ caf::behavior DBStore::make_behavior() {
                   stmt, static_cast<int>(Column::kInstrumentID)));
           order->order_id = reinterpret_cast<const char*>(
               sqlite3_column_text(stmt, static_cast<int>(Column::kOrderID)));
+          order->direction = static_cast<OrderDirection>(
+              sqlite3_column_int(stmt, static_cast<int>(Column::kDirection)));
           order->status = static_cast<OrderStatus>(
               sqlite3_column_int(stmt, static_cast<int>(Column::kStatus)));
           order->price =
@@ -291,6 +298,47 @@ caf::behavior DBStore::make_behavior() {
           sqlite3_free(error);
         }
       },
+      [=](QueryStrategyPositionsAtom,
+          const std::string& strategy_id) -> std::vector<OrderPosition> {
+        enum class Column {
+          kInstrumentID,
+          kDirection,
+          kQty,
+        };
+        sqlite3_stmt* stmt = NULL;
+        int ret =
+            sqlite3_prepare(db_, str(boost::format(R"(
+                          SELECT
+                              InstrumentID,
+                              Direction,
+                              Qty,
+                          FROM
+                              StrategyRtnOrder
+                          WHERE
+                              StrategyID='%s'
+                )") % strategy_id).c_str(),
+                            -1, &stmt, NULL);
+
+        int seq_no = 0;
+        int rows = 0;
+        std::vector<OrderPosition> positions;
+        while (true) {
+          ret = sqlite3_step(stmt);
+          if (ret != SQLITE_ROW)
+            break;
+          OrderPosition position;
+          position.instrument =
+              reinterpret_cast<const char*>(sqlite3_column_text(
+                  stmt, static_cast<int>(Column::kInstrumentID)));
+          position.order_direction = static_cast<OrderDirection>(
+              sqlite3_column_int(stmt, static_cast<int>(Column::kDirection)));
+          position.quantity =
+              sqlite3_column_double(stmt, static_cast<int>(Column::kQty));
+          positions.push_back(std::move(position));
+        }
+        sqlite3_finalize(stmt);
+        return std::move(positions);
+      }
 
   };
 }
