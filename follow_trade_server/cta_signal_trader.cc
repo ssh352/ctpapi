@@ -4,17 +4,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/make_shared.hpp>
 #include "atom_defines.h"
-
-using CallOnActorAtom = caf::atom_constant<caf::atom("self")>;
-using ConnectAtom = caf::atom_constant<caf::atom("connect")>;
-using CheckHistoryRtnOrderIsDoneAtom = caf::atom_constant<caf::atom("check")>;
-using InitInverstorPosition = caf::atom_constant<caf::atom("initip")>;
-using ConnectTimeOutAtom = caf::atom_constant<caf::atom("timeout")>;
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::function<void(void)>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CThostFtdcRspUserLoginField>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CThostFtdcRspInfoField>)
-
 CTASignalTrader::CTASignalTrader(caf::actor_config& cfg,
                                  std::string server,
                                  std::string broker_id,
@@ -26,8 +15,7 @@ CTASignalTrader::CTASignalTrader(caf::actor_config& cfg,
       user_id_(user_id),
       password_(password) {
   //  db_ = system().registry().get(caf::atom("db"));
-
-  boost::filesystem::path dir(".\\181006");
+  boost::filesystem::path dir(".\\" + user_id);
 
   boost::filesystem::directory_iterator end_iter;
   for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it) {
@@ -35,10 +23,7 @@ CTASignalTrader::CTASignalTrader(caf::actor_config& cfg,
   }
 }
 
-CTASignalTrader::~CTASignalTrader()
-{
-
-}
+CTASignalTrader::~CTASignalTrader() {}
 
 void CTASignalTrader::OnFrontConnected() {
   CThostFtdcReqUserLoginField field{0};
@@ -55,16 +40,31 @@ void CTASignalTrader::OnRspQryInvestorPosition(
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
     bool bIsLast) {
-  if (pRspInfo != NULL && !IsErrorRspInfo(pRspInfo)) {
-    send(this, InitInverstorPosition::value,
-         OrderPosition{pInvestorPosition->InstrumentID,
-                       pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long
-                           ? OrderDirection::kBuy
-                           : OrderDirection::kSell,
-                       pInvestorPosition->YdPosition},
-         bIsLast);
+  if (!IsErrorRspInfo(pRspInfo) && pInvestorPosition) {
+    OrderPosition position{
+        pInvestorPosition->InstrumentID,
+        pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long
+            ? OrderDirection::kBuy
+            : OrderDirection::kSell,
+        pInvestorPosition->YdPosition};
+
+    CallOnActor([ =, position(std::move(position)) ] {
+      yesterday_positions_.push_back(position);
+    });
+  }
+
+  if (bIsLast) {
+    CallOnActor([=]() {
+      delayed_send(this, std::chrono::seconds(1),
+                   CheckHistoryRtnOrderIsDoneAtom::value,
+                   sequence_orders_.size());
+    });
   }
 }
+
+void CTASignalTrader::OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                                 int nRequestID,
+                                 bool bIsLast) {}
 
 void CTASignalTrader::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
                                      CThostFtdcRspInfoField* pRspInfo,
@@ -113,7 +113,7 @@ void CTASignalTrader::OnRtnOrderOnIOThread(
       MakeOrderId(order->FrontID, order->SessionID, order->OrderRef);
 
   for (const auto& o : rtn_order_observers_) {
-    send(caf::actor_cast<caf::actor>(o), RtnOrderAtom::value);
+    send(caf::actor_cast<caf::actor>(o), RtnOrderAtom::value, order_field);
   }
   sequence_orders_.push_back(std::move(order_field));
 }
@@ -180,19 +180,6 @@ TThostFtdcOffsetFlagType CTASignalTrader::PositionEffectToTThostOffsetFlag(
                     : THOST_FTDC_OF_Close);
 }
 
-/*
-void CTASignalTrader::ReqInvestorPosition(
-    std::function<void(InvestorPositionField, bool)> callback) {
-  CThostFtdcQryInvestorPositionField field{0};
-  strcpy(field.BrokerID, broker_id_.c_str());
-  strcpy(field.InvestorID, user_id_.c_str());
-  int request_id = request_id_++;
-  api_->ReqQryInvestorPosition(&field, request_id);
-  CallOnActor([=](void) { response_.insert({request_id, callback}); });
-}
-
-*/
-
 void CTASignalTrader::CallOnActor(std::function<void(void)> func) {
   caf::anon_send(this, CallOnActorAtom::value, func);
 }
@@ -207,18 +194,21 @@ caf::behavior CTASignalTrader::make_behavior() {
   api_->Init();
 
   set_down_handler([=](const caf::down_msg& msg) {
+    /*
     auto i = std::find_if(
         rtn_order_observers_.begin(), rtn_order_observers_.end(),
         [&](const caf::strong_actor_ptr& a) { return a == msg.source; });
     if (i != rtn_order_observers_.end()) {
       rtn_order_observers_.erase(i);
     }
+    */
   });
 
   set_default_handler(caf::skip());
 
   delayed_send(this, std::chrono::seconds(5), ConnectTimeOutAtom::value);
   caf::behavior behavior = {
+
       [](CallOnActorAtom, std::function<void(void)> func) { func(); },
       [=](SubscribeRtnOrderAtom, const caf::strong_actor_ptr& actor)
           -> std::list<boost::shared_ptr<OrderField>> {
@@ -228,19 +218,23 @@ caf::behavior CTASignalTrader::make_behavior() {
         }
         return std::list<boost::shared_ptr<OrderField>>();
       },
-      [=](QueryInverstorPositionAtom) { return yesterday_positions_; },
+      [=](QueryInverstorPositionAtom) {
+        return yesterday_positions_;
+      },
   };
 
   return {
-      [=](ConnectAtom, const std::shared_ptr<CThostFtdcRspUserLoginField> rsp,
-          const std::shared_ptr<CThostFtdcRspInfoField> rsp_info) {
+      [=](ConnectAtom, const std::shared_ptr<CThostFtdcRspUserLoginField>& rsp,
+          const std::shared_ptr<CThostFtdcRspInfoField>& rsp_info) {
         if (!IsErrorRspInfo(rsp_info.get())) {
           front_id_ = rsp->FrontID;
           session_id_ = rsp->SessionID;
           CThostFtdcQryInvestorPositionField field{0};
           strcpy(field.BrokerID, broker_id_.c_str());
           strcpy(field.InvestorID, user_id_.c_str());
-          api_->ReqQryInvestorPosition(&field, request_id_++);
+          if (api_->ReqQryInvestorPosition(&field, request_id_++) != 0) {
+            quit();
+          }
         } else {
           quit();
         }
@@ -253,14 +247,6 @@ caf::behavior CTASignalTrader::make_behavior() {
                        sequence_orders_.size());
         } else {
           become(behavior);
-        }
-      },
-      [=](InitInverstorPosition, OrderPosition position, BOOL is_last) {
-        yesterday_positions_.push_back(position);
-        if (is_last) {
-          delayed_send(this, std::chrono::seconds(1),
-                       CheckHistoryRtnOrderIsDoneAtom::value,
-                       sequence_orders_.size());
         }
       },
       [](CallOnActorAtom, std::function<void(void)> func) { func(); },

@@ -5,16 +5,16 @@
 
 class DBStore : public caf::event_based_actor {
  public:
-   DBStore(caf::actor_config& cfg);
+  DBStore(caf::actor_config& cfg);
 
-   void CreateOrdersTableIfNotExists();
+  virtual caf::behavior make_behavior() override;
 
-   virtual caf::behavior make_behavior() override;
-
-   void CreateStrategyRtnOrderIfNotExists();
-
-private:
+ private:
+  void CreateOrdersTableIfNotExists();
+  void CreateStrategyRtnOrderIfNotExists();
   void CreateStrategyOrderIDTableIfNotExists();
+  void CreateStrategyPositionIfNotExists();
+
   sqlite3* db_;
 };
 

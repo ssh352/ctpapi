@@ -46,6 +46,10 @@ class CTASignalTrader : public caf::event_based_actor,
       int nRequestID,
       bool bIsLast) override;
 
+  virtual void OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                          int nRequestID,
+                          bool bIsLast) override;
+
  protected:
   virtual caf::behavior make_behavior() override;
 

@@ -279,15 +279,6 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   }
 
   // ClearUpCTPFolwDirectory();
-  std::vector<LogonInfo> followers;
-  for (auto slave : pt.get_child("slaves")) {
-    if (slave.second.get<bool>("enable")) {
-      followers.push_back({slave.second.get<std::string>("front_server"),
-                           slave.second.get<std::string>("broker_id"),
-                           slave.second.get<std::string>("user_id"),
-                           slave.second.get<std::string>("password")});
-    }
-  }
   // LogonInfo master_logon_info{"tcp://59.42.241.91:41205", "9080", "38030022",
   //                            "140616"};
 
@@ -299,110 +290,6 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto cta = system.spawn<CTASignalTrader>(
       master_logon_info.front_server, master_logon_info.broker_id,
       master_logon_info.user_id, master_logon_info.password);
-  caf::group grp = system.groups().anonymous();
-  caf::scoped_actor self(system);
-  bool running = true;
-
-  /*
-  self->request(cta, caf::infinite, SubscribeRtnOrderAtom::value,
-                caf::actor_cast<caf::strong_actor_ptr>(self))
-      .receive(
-          [=](const std::list<boost::shared_ptr<OrderField> > orders) {
-            for (const auto& order : orders) {
-              std::cout << order->order_id << ":" << order->input_time << "\n";
-            }
-          },
-          [](const caf::error& err) {});
-  
-  */
-  // caf::anon_send_exit(sqlite, caf::exit_reason::user_shutdown);
-  // caf::anon_send_exit(trader, caf::exit_reason::user_shutdown);
-  std::string input;
-  while (std::cin >> input) {
-    if (input == "exit") {
-      break;
-    }
-  }
-
-  system.registry().erase(caf::atom("db"));
-  /*
-
-  std::vector<caf::actor> actors;
-  std::vector<boost::shared_ptr<ctp_bind::Trader>> traders;
-  for (auto follower : followers) {
-    boost::shared_ptr<ctp_bind::Trader> trader(
-        new ctp_bind::Trader(follower.front_server, follower.broker_id,
-                             follower.user_id, follower.password));
-    trader->InitAsio(&io_service);
-    auto actor = system.spawn<FollowStragetyServiceActor>(
-        sqlite, trader.get(), master_logon_info.user_id);
-    actors.push_back(actor);
-    traders.push_back(std::move(trader));
-  }
-  ctp_bind::Trader cta_trader(
-      master_logon_info.front_server, master_logon_info.broker_id,
-      master_logon_info.user_id, master_logon_info.password);
-  cta_trader.InitAsio(&io_service);
-
-  cta_trader.SubscribeRtnOrder(
-      [sqlite, actors](boost::shared_ptr<OrderField> order) {
-        std::cout << "Order:" << order->order_id << "\n";
-        caf::anon_send(sqlite, SqliteRecordAtom::value, order);
-
-        for (auto actor : actors) {
-          // caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
-          caf::anon_send(actor, CTASignalRtnOrderAtom::value, order);
-        }
-      });
-
-  cta_trader.Connect([actors, &cta_trader](CThostFtdcRspUserLoginField* rsp,
-                                           CThostFtdcRspInfoField* rsp_info) {
-    for (auto actor : actors) {
-      caf::anon_send(actor, CTASignalInitAtom::value);
-    }
-
-    boost::shared_ptr<std::vector<InvestorPositionField>> positions(
-        new std::vector<InvestorPositionField>());
-    cta_trader.ReqInvestorPosition(
-        [actors, positions](InvestorPositionField position, bool is_last) {
-          positions->push_back(position);
-          if (is_last) {
-            for (auto actor : actors) {
-              caf::anon_send(actor, CTASignalInverstorPositionAtom::value,
-                             positions);
-            }
-          }
-        });
-  });
-  */
-
-  /*
-  group.create_thread(boost::bind(&ctp_bind::Trader::Run, &cta_trader));
-
-  for (auto trader : traders) {
-    group.create_thread(boost::bind(&ctp_bind::Trader::Run, trader));
-  }
-  */
-
-  /*
-  auto cta_actor = system.spawn<CtpTrader>(
-      master_logon_info.front_server, master_logon_info.broker_id,
-      master_logon_info.user_id, master_logon_info.password,
-      system.spawn(RtnOrderBinaryToFile, master_logon_info.user_id));
-  // auto cta_actor = system.spawn<CtpTrader>("tcp://59.42.241.91:41205",
-  // "9080", "38030022", "140616");
-  // auto actor = system.spawn(foo);
-  // auto actor = system.spawn<CtaTradeActor>();
-  //   self->request(actor, std::chrono::seconds(10), StartAtom::value)
-  //       .receive([=](bool result) { std::cout << "Logon sccuess!"; },
-  //                [](caf::error& err) {});
-
-  if (!Logon(cta_actor)) {
-    return 1;
-  }
-
-  auto cta_init_positions = BlockRequestInitPositions(cta_actor);
-  auto cta_history_rnt_orders = BlockRequestHistoryOrder(cta_actor);
 
   std::vector<LogonInfo> followers;
   for (auto slave : pt.get_child("slaves")) {
@@ -413,28 +300,27 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
                            slave.second.get<std::string>("password")});
     }
   }
-  std::vector<caf::actor> actors;
+
+  auto grp = system.groups().anonymous();
+  std::vector<caf::actor> strategy_actors;
   for (auto follower : followers) {
-    auto actor = system.spawn<FollowStragetyServiceActor>(
-        &m_server, master_logon_info.user_id, follower.user_id,
-        cta_init_positions, cta_history_rnt_orders, cta_actor,
-        std::unique_ptr<ctp_bind::Trader>(
-            new ctp_bind::Trader(follower.front_server, follower.broker_id,
-                       follower.user_id, follower.password)),
-        system.spawn(FolloweMonitor, follower.user_id));
-    actors.push_back(actor);
+    auto trader = system.spawn<StrategyTrader>(
+        grp, follower.front_server, follower.broker_id, follower.user_id,
+        follower.password);
+
+    strategy_actors.push_back(system.spawn<FollowStragetyServiceActor>(
+        trader, cta, master_logon_info.user_id));
   }
-  m_server.set_open_handler(
-      std::bind(&on_open, std::move(actors), std::placeholders::_1));
-  m_server.listen(8888);
-  // Start the server accept loop
-  m_server.start_accept();
-  try {
-    m_server.run();
-  } catch (const std::exception& e) {
-    std::cout << e.what() << std::endl;
+
+  // caf::anon_send_exit(trader, caf::exit_reason::user_shutdown);
+  std::string input;
+  while (std::cin >> input) {
+    if (input == "exit") {
+      break;
+    }
   }
-  */
+
+  system.registry().erase(caf::atom("db"));
   return 0;
 }
 

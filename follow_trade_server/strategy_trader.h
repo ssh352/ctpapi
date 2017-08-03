@@ -94,23 +94,28 @@ class StrategyTrader : public caf::event_based_actor,
 
   void CancelOrderOnIOThread(std::string sub_accont_id, std::string order_id);
 
-  void OnRtnOrderOnIOThread(boost::shared_ptr<CThostFtdcOrderField> order);
+  void OnRtnOrderOnIOThread(std::shared_ptr<CThostFtdcOrderField> order);
+
 
   std::string MakeOrderId(TThostFtdcFrontIDType front_id,
                           TThostFtdcSessionIDType session_id,
                           const std::string& order_ref) const;
 
   OrderStatus ParseTThostFtdcOrderStatus(
-      boost::shared_ptr<CThostFtdcOrderField> order) const;
+      std::shared_ptr<CThostFtdcOrderField> order) const;
 
   PositionEffect ParseTThostFtdcPositionEffect(TThostFtdcOffsetFlagType flag);
 
+  bool IsErrorRspInfo(CThostFtdcRspInfoField* pRspInfo) const;
+
   CThostFtdcTraderApi* api_;
 
-  std::unordered_map<std::string, boost::shared_ptr<CThostFtdcOrderField>>
+  std::unordered_map<std::string, std::shared_ptr<CThostFtdcOrderField>>
       orders_;
 
-  std::list<boost::shared_ptr<OrderField>> sequence_orders_;
+
+  std::multimap<std::string, OrderPosition> strategy_yesterday_positions_;
+  std::multimap<std::string, boost::shared_ptr<OrderField> > sequence_orders_;
 
   typedef boost::bimap<std::pair<std::string, std::string>, std::string>
       SubOrderIDBiomap;
@@ -122,9 +127,6 @@ class StrategyTrader : public caf::event_based_actor,
 
   std::unordered_map<int, boost::any> response_;
 
-  std::function<void(CThostFtdcRspUserLoginField*, CThostFtdcRspInfoField*)>
-      on_connect_;
-
   caf::strong_actor_ptr db_;
   std::atomic<int> request_id_ = 0;
   std::atomic<int> order_ref_index_ = 0;
@@ -134,7 +136,6 @@ class StrategyTrader : public caf::event_based_actor,
   std::string password_;
   TThostFtdcSessionIDType session_id_ = 0;
   TThostFtdcFrontIDType front_id_ = 0;
-  bool IsErrorRspInfo(CThostFtdcRspInfoField* pRspInfo) const;
   TThostFtdcDirectionType OrderDirectionToTThostOrderDireciton(
       OrderDirection direction);
   TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(

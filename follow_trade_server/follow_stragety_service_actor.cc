@@ -25,7 +25,7 @@ void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
                                            OrderDirection direction,
                                            double price,
                                            int quantity) {
-  send(trader_, strategy_id, order_id, instrument, PositionEffect::kOpen,
+  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument, PositionEffect::kOpen,
        direction, price, quantity);
 }
 
@@ -36,13 +36,13 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
                                             PositionEffect position_effect,
                                             double price,
                                             int quantity) {
-  send(trader_, strategy_id, order_id, instrument, position_effect, direction,
+  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument, position_effect, direction,
        price, quantity);
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
                                              const std::string& order_id) {
-  send(trader_, strategy_id, order_id);
+  send(trader_, CancelOrderAtom::value, strategy_id, order_id);
 }
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {

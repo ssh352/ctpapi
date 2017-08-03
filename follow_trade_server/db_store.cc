@@ -113,6 +113,28 @@ void DBStore::CreateStrategyOrderIDTableIfNotExists() {
   }
 }
 
+void DBStore::CreateStrategyPositionIfNotExists() {
+  const char* sql =
+      R"(
+   CREATE
+       TABLE IF NOT EXISTS StrategyPosition
+       (
+           StrategyID VARCHAR(50) NOT NULL,
+           InstrumentID VARCHAR(50) NOT NULL,
+           Qty INT NOT NULL
+       );
+)";
+
+  char* zErrMsg = 0;
+  /* Execute SQL statement */
+  int rc = sqlite3_exec(db_, sql, 0, 0, &zErrMsg);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(zErrMsg);
+  }
+}
+
 caf::behavior DBStore::make_behavior() {
   return {
       [=](InsertStrategyRtnOrder, const boost::shared_ptr<OrderField> order) {
@@ -173,13 +195,16 @@ caf::behavior DBStore::make_behavior() {
                               UpdateTime,
                               ErrorID,
                               RawErrorID,
-                              RawErrorMessage,
+                              RawErrorMessage
                           FROM
                               StrategyRtnOrder
                           WHERE
                               StrategyID='%s'
                 )") % strategy_id).c_str(),
                             -1, &stmt, NULL);
+
+        if (ret != SQLITE_OK) {
+        }
         int seq_no = 0;
         int rows = 0;
         std::vector<boost::shared_ptr<OrderField>> orders;
@@ -232,7 +257,7 @@ caf::behavior DBStore::make_behavior() {
         int ret = sqlite3_prepare(
             db_,
             str(boost::format(
-                    "SELECT * FROM StrategyOrderID WHERE StrategyID='%s'") %
+                    "SELECT * FROM StrategyOrderID WHERE AccountID='%s'") %
                 account_id)
                 .c_str(),
             -1, &stmt, NULL);
@@ -251,15 +276,20 @@ caf::behavior DBStore::make_behavior() {
         return std::move(tuples);
       },
       [=](InsertStrategyOrderIDAtom, const std::string& strategy_id,
-          const std::string& strategy_order_id, const std::string& order_id) {
+          const std::string& strategy_order_id, const std::string& order_id,
+          const std::string& account_id) {
         char* error = NULL;
         auto rc = sqlite3_exec(
             db_,
-            str(boost::format(
-                    "INSERT INTO StrategyOrderID VALUES('%s', '%s', '%s');") %
-                strategy_id % strategy_order_id % order_id)
+            str(boost::format("INSERT INTO StrategyOrderID VALUES('%s', '%s', "
+                              "'%s', '%s');") %
+                strategy_id % strategy_order_id % order_id % account_id)
                 .c_str(),
             0, 0, &error);
+        if (rc != SQLITE_OK) {
+          fprintf(stderr, "SQL error: %s\n", error);
+          sqlite3_free(error);
+        }
       },
 
   };

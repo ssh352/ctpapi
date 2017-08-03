@@ -2,6 +2,7 @@
 #define FOLLOW_TRADE_SERVER_ATOM_DEFINES_H
 #include "common/api_struct.h"
 #include "websocket_typedef.h"
+#include "ctpapi/ThostFtdcUserApiStruct.h"
 
 using QueryStrategyRntOrderAtom = caf::atom_constant<caf::atom("qrto")>;
 using QueryStrategyOrderIDMapAtom = caf::atom_constant<caf::atom("qid")>;
@@ -36,6 +37,20 @@ using StragetyPortfilioAtom = caf::atom_constant<caf::atom("sp")>;
 
 using InsertStrategyRtnOrder = caf::atom_constant<caf::atom("sqr")>;
 
+
+
+
+using CallOnActorAtom = caf::atom_constant<caf::atom("self")>;
+using ConnectAtom = caf::atom_constant<caf::atom("connect")>;
+using CheckHistoryRtnOrderIsDoneAtom = caf::atom_constant<caf::atom("check")>;
+using ConnectTimeOutAtom = caf::atom_constant<caf::atom("timeout")>;
+
+using ThostFtdcOrderFieldAtom = caf::atom_constant<caf::atom("ftdcro")>;
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::function<void(void)>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CThostFtdcRspUserLoginField>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CThostFtdcRspInfoField>)
+
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(connection_hdl)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderField)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderField>)
@@ -45,6 +60,7 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<boost::shared_ptr<OrderField> >)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::list<boost::shared_ptr<OrderField> >)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderPosition)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderPosition>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CThostFtdcOrderField>)
 
 
 
