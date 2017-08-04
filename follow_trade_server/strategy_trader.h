@@ -89,13 +89,17 @@ class StrategyTrader : public caf::event_based_actor,
       int nRequestID,
       bool bIsLast) override;
 
+  void on_exit() override { sub_account_on_rtn_order_callbacks_.clear(); }
+
+ protected:
+  virtual caf::behavior make_behavior() override;
+
  private:
   void CallOnActor(std::function<void(void)> func);
 
   void CancelOrderOnIOThread(std::string sub_accont_id, std::string order_id);
 
   void OnRtnOrderOnIOThread(std::shared_ptr<CThostFtdcOrderField> order);
-
 
   std::string MakeOrderId(TThostFtdcFrontIDType front_id,
                           TThostFtdcSessionIDType session_id,
@@ -113,9 +117,8 @@ class StrategyTrader : public caf::event_based_actor,
   std::unordered_map<std::string, std::shared_ptr<CThostFtdcOrderField>>
       orders_;
 
-
   std::multimap<std::string, OrderPosition> strategy_yesterday_positions_;
-  std::multimap<std::string, boost::shared_ptr<OrderField> > sequence_orders_;
+  std::multimap<std::string, boost::shared_ptr<OrderField>> sequence_orders_;
 
   typedef boost::bimap<std::pair<std::string, std::string>, std::string>
       SubOrderIDBiomap;
@@ -141,13 +144,8 @@ class StrategyTrader : public caf::event_based_actor,
   TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(
       PositionEffect position_effect);
   caf::group rtn_order_grp_;
-
- protected:
-  virtual caf::behavior make_behavior() override;
+  caf::behavior work_;
+  caf::behavior connect_;
 };
 
-
-#endif // FOLLOW_TRADE_SERVER_STRATEGY_TRADER_H
-
-
-
+#endif  // FOLLOW_TRADE_SERVER_STRATEGY_TRADER_H

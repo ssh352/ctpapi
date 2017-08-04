@@ -25,8 +25,8 @@ void FollowStragetyServiceActor::OpenOrder(const std::string& strategy_id,
                                            OrderDirection direction,
                                            double price,
                                            int quantity) {
-  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument, PositionEffect::kOpen,
-       direction, price, quantity);
+  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument,
+       PositionEffect::kOpen, direction, price, quantity);
 }
 
 void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
@@ -36,8 +36,8 @@ void FollowStragetyServiceActor::CloseOrder(const std::string& strategy_id,
                                             PositionEffect position_effect,
                                             double price,
                                             int quantity) {
-  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument, position_effect, direction,
-       price, quantity);
+  send(trader_, LimitOrderAtom::value, strategy_id, order_id, instrument,
+       position_effect, direction, price, quantity);
 }
 
 void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
@@ -47,57 +47,82 @@ void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   auto block_trader = caf::make_function_view(trader_);
-  auto block_cta_signal = caf::make_function_view(cta_signal_);
 
-  auto r = block_cta_signal(SubscribeRtnOrderAtom::value,
-                            caf::actor_cast<caf::strong_actor_ptr>(this));
-  std::list<boost::shared_ptr<OrderField>> cta_rtn_orders;
-  if (r) {
-    cta_rtn_orders = r->get_as<std::list<boost::shared_ptr<OrderField>>>(0);
-  }
+  std::vector<std::string> stragetys = {"Foo", "Bar"};
+  std::shared_ptr<int> leave_reply =
+      std::make_shared<int>(2 + stragetys.size() * 2);
+  auto cta_rtn_orders =
+      std::make_shared<std::list<boost::shared_ptr<OrderField>>>();
+  auto cta_inverstor_positions = std::make_shared<std::vector<OrderPosition>>();
+  auto strategy_orders = std::make_shared<
+      std::map<std::string, std::list<boost::shared_ptr<OrderField>>>>();
+  auto strategy_positions =
+      std::make_shared<std::map<std::string, std::vector<OrderPosition>>>();
 
-  r = block_cta_signal(QueryInverstorPositionAtom::value);
-  std::vector<OrderPosition> cta_inverstor_positions;
-  if (r) {
-    cta_inverstor_positions = r->get_as<std::vector<OrderPosition>>(0);
-  }
+  auto init_strategy_func = [=]() {
+    for (auto s : stragetys) {
+      auto master_context_ =
+          std::make_shared<OrdersContext>(master_account_id_);
+      for (auto o : *cta_rtn_orders) {
+        master_context_->HandleRtnOrder(o);
+      }
 
-  auto stragetys = {"Foo", "Bar"};
-  for (auto s : stragetys) {
-    auto master_context_ = std::make_shared<OrdersContext>(master_account_id_);
-    for (auto o : cta_rtn_orders) {
-      master_context_->HandleRtnOrder(o);
-    }
+      master_context_->InitPositions(*cta_inverstor_positions);
 
-    master_context_->InitPositions(cta_inverstor_positions);
-
-    auto slave_context = std::make_shared<OrdersContext>(s);
-
-    auto r = block_trader(SubscribeRtnOrderAtom::value, s,
-                          caf::actor_cast<caf::strong_actor_ptr>(this));
-    if (r) {
-      auto orders = r->get_as<std::list<boost::shared_ptr<OrderField>>>(0);
-      for (auto order : orders) {
+      auto slave_context = std::make_shared<OrdersContext>(s);
+      for (auto order : (*strategy_orders)[s]) {
         (void)slave_context->HandleRtnOrder(order);
       }
+      slave_context->InitPositions((*strategy_positions)[s]);
+
+      auto cta_strategy = std::make_shared<CTAGenericStrategy>(s);
+      cta_strategy->Subscribe(&strategy_server_);
+
+      auto signal = std::make_shared<CTASignal>();
+      signal->SetOrdersContext(master_context_, slave_context);
+      auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
+      signal_dispatch->SubscribeEnterOrderObserver(cta_strategy);
+      signal_dispatch->SetOrdersContext(master_context_, slave_context);
+
+      strategy_server_.SubscribeRtnOrderObserver(s, signal_dispatch);
     }
-    r = block_trader(QueryInverstorPositionAtom::value, s);
-    if (r) {
-      slave_context->InitPositions(r->get_as<std::vector<OrderPosition>>(0));
-      
-    }
+  };
 
-    auto cta_strategy = std::make_shared<CTAGenericStrategy>(s);
-    cta_strategy->Subscribe(&strategy_server_);
+  request(cta_signal_, caf::infinite, SubscribeRtnOrderAtom::value,
+          caf::actor_cast<caf::strong_actor_ptr>(this))
+      .then([=](const std::list<boost::shared_ptr<OrderField>>& orders) {
+        std::copy(orders.begin(), orders.end(),
+                  std::back_inserter(*cta_rtn_orders));
+        if (--(*leave_reply) == 0) {
+          init_strategy_func();
+        }
+      });
 
-    auto signal = std::make_shared<CTASignal>();
-    signal->SetOrdersContext(master_context_, slave_context);
-    auto signal_dispatch = std::make_shared<CTASignalDispatch>(signal);
-    signal_dispatch->SubscribeEnterOrderObserver(cta_strategy);
-    signal_dispatch->SetOrdersContext(master_context_, slave_context);
+  request(cta_signal_, caf::infinite, QueryInverstorPositionAtom::value)
+      .then([=](std::vector<OrderPosition> order_positions) {
+        std::copy(order_positions.begin(), order_positions.end(),
+                  std::back_inserter(*cta_inverstor_positions));
+        if (--(*leave_reply) == 0) {
+          init_strategy_func();
+        }
+      });
 
-    strategy_server_.SubscribeRtnOrderObserver(s, signal_dispatch);
-
+  for (const auto& strategy : stragetys) {
+    request(trader_, caf::infinite, SubscribeRtnOrderAtom::value, strategy,
+            caf::actor_cast<caf::strong_actor_ptr>(this))
+        .then([=](std::list<boost::shared_ptr<OrderField>> orders) {
+          strategy_orders->insert({strategy, std::move(orders)});
+          if (--(*leave_reply) == 0) {
+            init_strategy_func();
+          }
+        });
+    request(trader_, caf::infinite, QueryInverstorPositionAtom::value, strategy)
+        .then([=](std::vector<OrderPosition> positions) {
+          strategy_positions->insert({strategy, std::move(positions)});
+          if (--(*leave_reply) == 0) {
+            init_strategy_func();
+          }
+        });
   }
 
   return {[=](RtnOrderAtom, const boost::shared_ptr<OrderField>& order) {

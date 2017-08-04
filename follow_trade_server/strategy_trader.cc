@@ -24,6 +24,67 @@ StrategyTrader::StrategyTrader(caf::actor_config& cfg,
   for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it) {
     boost::filesystem::remove_all(it->path());
   }
+
+  work_.assign(
+      [=](LimitOrderAtom, std::string sub_account_id, std::string sub_order_id,
+          std::string instrument, PositionEffect position_effect,
+          OrderDirection direction, double price, int volume) {
+        LimitOrder(sub_account_id, sub_order_id, instrument, position_effect,
+                   direction, price, volume);
+      },
+      [=](CancelOrderAtom, const std::string& sub_accont_id,
+          const std::string& sub_order_id) {
+        // CancelOrder(sub_accont_id, sub_order_id);
+        CancelOrderOnIOThread(sub_accont_id, sub_order_id);
+      },
+      [](CallOnActorAtom, std::function<void(void)> func) { func(); },
+      [=](ThostFtdcOrderFieldAtom,
+          const std::shared_ptr<CThostFtdcOrderField>& field) {
+        OnRtnOrderOnIOThread(field);
+      },
+      [=](SubscribeRtnOrderAtom, const std::string& strategy_id,
+          const caf::strong_actor_ptr& actor)
+          -> std::list<boost::shared_ptr<OrderField>> {
+        if (sub_account_on_rtn_order_callbacks_[strategy_id]
+                .insert(actor)
+                .second) {
+          monitor(actor);
+          std::list<boost::shared_ptr<OrderField>> orders;
+          auto range = sequence_orders_.equal_range(strategy_id);
+          for (auto it = range.first; it != range.second; ++it) {
+            orders.push_back(it->second);
+          }
+          return orders;
+        }
+        return std::list<boost::shared_ptr<OrderField>>();
+      },
+      [=](QueryInverstorPositionAtom, const std::string& strategy_id) {
+        return std::vector<OrderPosition>();
+      });
+
+  connect_.assign(
+      [=](ConnectAtom, const std::shared_ptr<CThostFtdcRspUserLoginField>& rsp,
+          const std::shared_ptr<CThostFtdcRspInfoField>& rsp_info) {
+        if (rsp_info != nullptr && rsp_info->ErrorID == 0) {
+          delayed_send(this, std::chrono::milliseconds(500),
+                       CheckHistoryRtnOrderIsDoneAtom::value, orders_.size());
+        }
+      },
+      [=](ThostFtdcOrderFieldAtom,
+          const std::shared_ptr<CThostFtdcOrderField>& field) {
+        orders_.insert_or_assign(
+            MakeOrderId(field->FrontID, field->SessionID, field->OrderRef),
+            field);
+      },
+      [=](CheckHistoryRtnOrderIsDoneAtom, size_t previous_check_size) {
+        if (orders_.size() == previous_check_size) {
+          become(work_);
+        } else {
+          // Delayed Check agagin !
+          delayed_send(this, std::chrono::milliseconds(200),
+                       CheckHistoryRtnOrderIsDoneAtom::value, orders_.size());
+        }
+      });
 }
 
 void StrategyTrader::OnRspAuthenticate(
@@ -347,34 +408,42 @@ caf::behavior StrategyTrader::make_behavior() {
   auto db = caf::actor_cast<caf::actor>(db_);
   auto db_delegate = caf::make_function_view(db);
 
-  auto r = db_delegate(QueryStrategyOrderIDMapAtom::value, user_id_);
-  if (r) {
-    auto tupels = r->get_as<
-        std::vector<std::tuple<std::string, std::string, std::string>>>(0);
-    for (const auto& t : tupels) {
-      sub_order_ids_.insert(SubOrderIDBiomap::value_type(
-          {std::get<0>(t), std::get<1>(t)}, std::get<2>(t)));
-    }
-  }
-  for (auto strategy_id : {"Foo", "Bar"}) {
-    {
-      auto r = db_delegate(QueryStrategyRntOrderAtom::value, strategy_id);
-      if (r) {
-        auto orders = r->get_as<std::vector<boost::shared_ptr<OrderField>>>(0);
-        for (auto order : orders) {
-          sequence_orders_.insert({strategy_id, order});
-        }
-      }
-    }
-  }
+  auto after_load_db = [=]() {
+    std::string flow_path = ".\\" + user_id_ + "\\";
+    api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
+    api_->RegisterSpi(this);
+    api_->RegisterFront(const_cast<char*>(server_.c_str()));
+    api_->SubscribePublicTopic(THOST_TERT_RESUME);
+    api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+    api_->Init();
+    become(connect_);
+  };
 
-  std::string flow_path = ".\\" + user_id_ + "\\";
-  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
-  api_->RegisterSpi(this);
-  api_->RegisterFront(const_cast<char*>(server_.c_str()));
-  api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-  api_->Init();
+  std::vector<std::string> strategys = {"Foo", "Bar"};
+  auto leave_reply = std::make_shared<int>(1 + strategys.size());
+  request(db, caf::infinite, QueryStrategyOrderIDMapAtom::value, user_id_)
+      .then([=](std::vector<std::tuple<std::string, std::string, std::string>>
+                    tupels) {
+        for (const auto& t : tupels) {
+          sub_order_ids_.insert(SubOrderIDBiomap::value_type(
+              {std::get<0>(t), std::get<1>(t)}, std::get<2>(t)));
+        }
+        if (--(*leave_reply) == 0) {
+          after_load_db();
+        }
+      });
+
+  for (const auto& strategy_id : strategys) {
+    request(db, caf::infinite, QueryStrategyRntOrderAtom::value, strategy_id)
+        .then([=](std::vector<boost::shared_ptr<OrderField>> orders) {
+          for (const auto& order : orders) {
+            sequence_orders_.insert({strategy_id, order});
+          }
+          if (--(*leave_reply) == 0) {
+            after_load_db();
+          }
+        });
+  }
 
   set_default_handler(caf::skip());
 
@@ -389,63 +458,5 @@ caf::behavior StrategyTrader::make_behavior() {
     }
   });
 
-  caf::behavior behavior = {
-      [=](LimitOrderAtom, std::string sub_account_id, std::string sub_order_id,
-          std::string instrument, PositionEffect position_effect,
-          OrderDirection direction, double price, int volume) {
-        LimitOrder(sub_account_id, sub_order_id, instrument, position_effect,
-                   direction, price, volume);
-      },
-      [=](CancelOrderAtom, const std::string& sub_accont_id,
-          const std::string& sub_order_id) {
-        // CancelOrder(sub_accont_id, sub_order_id);
-        CancelOrderOnIOThread(sub_accont_id, sub_order_id);
-      },
-      [](CallOnActorAtom, std::function<void(void)> func) { func(); },
-      [=](ThostFtdcOrderFieldAtom,
-          const std::shared_ptr<CThostFtdcOrderField>& field) {
-        OnRtnOrderOnIOThread(field);
-      },
-      [=](SubscribeRtnOrderAtom, const std::string& strategy_id,
-          const caf::strong_actor_ptr& actor)
-          -> std::list<boost::shared_ptr<OrderField>> {
-        if (sub_account_on_rtn_order_callbacks_[strategy_id]
-                .insert(actor)
-                .second) {
-          monitor(actor);
-          std::list<boost::shared_ptr<OrderField>> orders;
-          auto range = sequence_orders_.equal_range(strategy_id);
-          for (auto it = range.first; it != range.second; ++it) {
-            orders.push_back(it->second);
-          }
-          return orders;
-        }
-        return std::list<boost::shared_ptr<OrderField>>();
-      },
-      [=](QueryInverstorPositionAtom, const std::string& strategy_id) {
-        return std::vector<OrderPosition>();
-      }};
-  return {
-      [=](ConnectAtom, const std::shared_ptr<CThostFtdcRspUserLoginField>& rsp,
-          const std::shared_ptr<CThostFtdcRspInfoField>& rsp_info) {
-        if (rsp_info != nullptr && rsp_info->ErrorID == 0) {
-          delayed_send(this, std::chrono::milliseconds(500),
-                       CheckHistoryRtnOrderIsDoneAtom::value, orders_.size());
-        }
-      },
-      [=](ThostFtdcOrderFieldAtom,
-          const std::shared_ptr<CThostFtdcOrderField>& field) {
-        orders_.insert_or_assign(
-            MakeOrderId(field->FrontID, field->SessionID, field->OrderRef),
-            field);
-      },
-      [=](CheckHistoryRtnOrderIsDoneAtom, size_t previous_check_size) {
-        if (orders_.size() == previous_check_size) {
-          become(behavior);
-        } else {
-          // Delayed Check agagin !
-          delayed_send(this, std::chrono::milliseconds(200),
-                       CheckHistoryRtnOrderIsDoneAtom::value, orders_.size());
-        }
-      }};
+  return{};
 }

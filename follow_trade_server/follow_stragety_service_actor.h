@@ -18,7 +18,10 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
                              caf::actor cta_signal,
                              std::string master_account_id);
 
-  void on_exit() override {}
+  void on_exit() override {
+    destroy(cta_signal_);
+    destroy(trader_);
+  }
 
   virtual void OpenOrder(const std::string& strategy_id,
                          const std::string& instrument,
@@ -57,11 +60,18 @@ class FollowStragetyServiceActor : public caf::event_based_actor,
     std::string strategy_id_;
   };
 
+  enum class InitState {
+    kCTAOrderLists = 0x1,
+    kCTAPosition = 0x2,
+    
+  };
+
   StrategyOrderDispatch strategy_server_;
   std::string master_account_id_;
   caf::strong_actor_ptr db_;
   caf::actor trader_;
   caf::actor cta_signal_;
+  caf::behavior init_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_FOLLOW_STRAGETY_SERVICE_ACTOR_H

@@ -202,7 +202,7 @@ void InitLogging() {
   }
 
   boost::log::add_common_attributes();
-//   core->set_logging_enabled(false);
+  //   core->set_logging_enabled(false);
 }
 
 int main2(caf::actor_system& system, const caf::actor_system_config& cfg) {
@@ -302,13 +302,10 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
     }
   }
 
-
-
-
-
   auto grp = system.groups().anonymous();
   std::vector<caf::actor> strategy_actors;
   for (auto follower : followers) {
+    
     auto trader = system.spawn<StrategyTrader>(
         grp, follower.front_server, follower.broker_id, follower.user_id,
         follower.password);
@@ -317,13 +314,18 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
         trader, cta, master_logon_info.user_id));
   }
 
-  // caf::anon_send_exit(trader, caf::exit_reason::user_shutdown);
   std::string input;
   while (std::cin >> input) {
     if (input == "exit") {
       break;
     }
   }
+
+  for (auto actor : strategy_actors) {
+  caf::anon_send_exit(actor, caf::exit_reason::user_shutdown);
+  }
+  strategy_actors.clear();
+
 
   system.registry().erase(caf::atom("db"));
   return 0;
