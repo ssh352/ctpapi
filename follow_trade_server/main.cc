@@ -210,6 +210,7 @@ int main2(caf::actor_system& system, const caf::actor_system_config& cfg) {
   system.registry().put(caf::atom("db"),
                         caf::actor_cast<caf::strong_actor_ptr>(sqlite));
 
+  caf::actor_pool
   pt::ptree pt;
   try {
     pt::read_json(GetExecuableFileDirectoryPath() + "\\config.json", pt);
@@ -266,7 +267,6 @@ int main2(caf::actor_system& system, const caf::actor_system_config& cfg) {
 
 int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   InitLogging();
-
   auto sqlite = system.spawn<DBStore>();
   system.registry().put(caf::atom("db"),
                         caf::actor_cast<caf::strong_actor_ptr>(sqlite));
@@ -305,7 +305,7 @@ int caf_main(caf::actor_system& system, const caf::actor_system_config& cfg) {
   auto grp = system.groups().anonymous();
   std::vector<caf::actor> strategy_actors;
   for (auto follower : followers) {
-    
+
     auto trader = system.spawn<StrategyTrader>(
         grp, follower.front_server, follower.broker_id, follower.user_id,
         follower.password);

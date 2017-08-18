@@ -3,7 +3,7 @@ set GYP_MSVS_VERSION=2015
 SET GYP_GENERATORS=msvs
 REM set GYP_DEFINES= component=shared_library enable_protobuf_log=1
 REM set GYP_DEFINES= component=static_library enable_protobuf_log=0
-set GYP_DEFINES= component=static_library target_arch=x64
+set GYP_DEFINES= component=shared_library target_arch=x64 buildtype=Official
 REM set GYP_DEFINES= component=static_library caf_use_asio=1 caf_log_level=1 caf_no_exceptions=1 caf_enable_runtime_checks=1 caf_no_mem_management=1
 REM set GYP_DEFINES= component=shared_library target_arch=x64 
 
@@ -15,5 +15,7 @@ REM python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi fo
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi download_margin_rate\download_margin_rate.gyp
-REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_binary\sqlite_binary.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp

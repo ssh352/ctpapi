@@ -17,6 +17,8 @@ DBStore::DBStore(caf::actor_config& cfg) : caf::event_based_actor(cfg) {
   CreateOrdersTableIfNotExists();
   CreateStrategyRtnOrderIfNotExists();
   CreateStrategyOrderIDTableIfNotExists();
+
+  start_ = std::chrono::high_resolution_clock::now();
 }
 
 void DBStore::CreateOrdersTableIfNotExists() {
@@ -126,6 +128,50 @@ void DBStore::CreateStrategyPositionIfNotExists() {
            Qty INT NOT NULL
        );
 )";
+
+  char* zErrMsg = 0;
+  /* Execute SQL statement */
+  int rc = sqlite3_exec(db_, sql, 0, 0, &zErrMsg);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(zErrMsg);
+  }
+}
+
+void DBStore::CreateThostFtdcOrderFieldTableIfNotExists() {
+  const char* sql =
+      R"(
+   CREATE
+       TABLE IF NOT EXISTS ThostFtdcOrderFields
+       (
+           AccountID VARCHAR(50) NOT NULL,
+           Timestamp INT NOT NULL,
+           FieldBinary BLOB NOT NULL
+       );
+)";
+
+  char* zErrMsg = 0;
+  /* Execute SQL statement */
+  int rc = sqlite3_exec(db_, sql, 0, 0, &zErrMsg);
+
+  if (rc != SQLITE_OK) {
+    fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    sqlite3_free(zErrMsg);
+  }
+}
+
+void DBStore::CreateThostFtdcTradeFieldsIfNotExists() {
+  const char* sql =
+      R"(
+   CREATE
+       TABLE IF NOT EXISTS ThostFtdcTradeFields
+       (
+           AccountID VARCHAR(50) NOT NULL,
+           Timestamp INT NOT NULL,
+           FieldBinary BLOB NOT NULL
+       );
+    )";
 
   char* zErrMsg = 0;
   /* Execute SQL statement */
@@ -338,7 +384,86 @@ caf::behavior DBStore::make_behavior() {
         }
         sqlite3_finalize(stmt);
         return std::move(positions);
-      }
+      },
+      [=](ThostFtdcOrderFieldAtom,
+          const std::shared_ptr<CThostFtdcOrderField>& field,
+          std::chrono::high_resolution_clock::time_point timestamp) {
+        sqlite3_stmt* stmt;
+        int ret = sqlite3_prepare(
+            db_,
+            str(boost::format(
+                    "INSERT INTO ThostFtdcOrderFields values ('%s', %d, ?);") %
+                field->UserID %
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    timestamp - start_)
+                    .count())
+                .c_str(),
+            -1, &stmt, NULL);
 
+        ret = sqlite3_bind_blob(stmt, 1, field.get(),
+                                sizeof(CThostFtdcOrderField), NULL);
+        if (ret != SQLITE_OK) {
+          fprintf(stderr, "INSERT INTO ThostFtdcOrderField Fail:%s",
+                  sqlite3_errmsg(db_));
+        }
+        ret = sqlite3_step(stmt);
+        sqlite3_reset(stmt);
+        sqlite3_finalize(stmt);
+      },
+      [=](ThostFtdcTradeFieldAtom,
+          const std::shared_ptr<CThostFtdcTradeField>& field,
+          std::chrono::high_resolution_clock::time_point timestamp) {
+        sqlite3_stmt* stmt;
+        int ret = sqlite3_prepare(
+            db_,
+            str(boost::format(
+                    "INSERT INTO ThostFtdcTradeFields values ('%s', %d, ?);") %
+                field->UserID %
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    timestamp - start_)
+                    .count())
+                .c_str(),
+            -1, &stmt, NULL);
+
+        ret = sqlite3_bind_blob(stmt, 1, field.get(),
+                                sizeof(CThostFtdcTradeField), NULL);
+        if (ret != SQLITE_OK) {
+          fprintf(stderr, "INSERT INTO ThostFtdcTradeField Fail:%s",
+                  sqlite3_errmsg(db_));
+        }
+        ret = sqlite3_step(stmt);
+        sqlite3_reset(stmt);
+        sqlite3_finalize(stmt);
+      },
+      [=](QueryThostFtdcOrderFeildsAtom, const std::string& account_id)
+          -> std::vector<std::shared_ptr<CThostFtdcOrderField>> {
+        int ret = 0;
+        sqlite3_stmt* stmt;
+        ret = sqlite3_prepare(
+            db_,
+            str(boost::format("SELECT * FROM ThostFtdcOrderFields WHERE "
+                              "AccountID='%s';") %
+                account_id)
+                .c_str(),
+            -1, &stmt, NULL);
+        if (ret != SQLITE_OK) {
+          return std::vector<std::shared_ptr<CThostFtdcOrderField>>();
+        }
+
+        std::vector<std::shared_ptr<CThostFtdcOrderField>> fields;
+        for (;;) {
+          ret = sqlite3_step(stmt);
+          if (ret != SQLITE_ROW) {
+            break;
+          }
+          std::shared_ptr<CThostFtdcOrderField> field =
+              std::make_shared<CThostFtdcOrderField>();
+          int len = sqlite3_column_bytes(stmt, 0);
+          memcpy(field.get(), sqlite3_column_blob(stmt, 0), len);
+          fields.push_back(field);
+        }
+        ret = sqlite3_finalize(stmt);
+        return fields;
+      },
   };
 }

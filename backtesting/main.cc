@@ -1,143 +1,156 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
+#include <fstream>
 #include "caf/all.hpp"
+#include "common/api_struct.h"
+#include "event_factory.h"
+#include "event.h"
+#include "execution_handler.h"
+#include "price_handler.h"
+#include "strategy.h"
 #include "tick_series_data_base.h"
+#include "portfolio_handler.h"
 
-int fib(int x) {
-  if (x == 0)
-    return 0;
+class AbstractExecutionHandler;
 
-  if (x == 1)
-    return 1;
-
-  return fib(x - 1) + fib(x - 2);
-}
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<Tick>);
-
-using DispatchTickAtom = caf::atom_constant<caf::atom("distick")>;
-using SubscribeAtom = caf::atom_constant<caf::atom("sub")>;
-
-class TickDataDispatcher : public caf::event_based_actor {
+class TickEvent : public AbstractEvent {
  public:
-  TickDataDispatcher(caf::actor_config& cfg,
-                     caf::actor strategy,
-                     caf::actor order_book)
-      : caf::event_based_actor(cfg),
-        strategy_(strategy),
-        order_book_(order_book) {
-    TickSeriesDataBase ts_db("d:/ts_futures.h5");
-
-    tick_containter_ = ts_db.ReadRange(
-        "/dc/a_major",
-        boost::posix_time::time_from_string("2016-12-01 09:00:00"),
-        boost::posix_time::time_from_string("2017-07-31 15:00:00"));
-
-    it_ = tick_containter_.begin();
-  }
-
-  virtual caf::behavior make_behavior() {
-    // send(this, DispatchTickAtom::value);
-
-    return {[=](DispatchTickAtom) {
-              if (current_tick_index_ + 1 >= it_->second) {
-                current_tick_index_ = 0;
-                ++it_;
-              }
-
-              if (it_ == tick_containter_.end()) {
-                quit();
-                std::cout << "quit\n";
-              } else {
-                auto null_deleter = [](Tick*) { /*do nothing*/ };
-
-                auto leave_response =
-                    std::make_shared<size_t>(2 + tick_subscribers_.size());
-                std::shared_ptr<Tick> tick(
-                    &it_->first.get()[current_tick_index_], null_deleter);
-                request(strategy_, caf::infinite, tick).then([=] {
-                  if (--(*leave_response) == 0) {
-                    send(this, DispatchTickAtom::value);
-                  }
-                });
-
-                request(order_book_, caf::infinite, tick).then([=] {
-                  if (--(*leave_response) == 0) {
-                    send(this, DispatchTickAtom::value);
-                  }
-                });
-                for (auto& actor : tick_subscribers_) {
-                  request(actor, caf::infinite, tick).then([=] {
-                    if (--(*leave_response) == 0) {
-                      send(this, DispatchTickAtom::value);
-                    }
-                  });
-                }
-                ++current_tick_index_;
-              }
-
-            },
-            [=](SubscribeAtom, caf::actor subscriber) {
-              tick_subscribers_.push_back(subscriber);
-            }};
+  TickEvent(AbstractStrategy* strategy,
+            AbstractExecutionHandler* execution_handler,
+            AbstractPortfolioHandler* portfolio_handler,
+            const std::shared_ptr<Tick>& tick)
+      : strategy_(strategy),
+        execution_handler_(execution_handler),
+        portfolio_handler_(portfolio_handler),
+        tick_(tick) {}
+  virtual void Do() override {
+    strategy_->HandleTick(tick_);
+    execution_handler_->HandleTick(tick_);
+    portfolio_handler_->HandleTick(tick_);
   }
 
  private:
-  caf::actor strategy_;
-  caf::actor order_book_;
-  std::vector<caf::actor> tick_subscribers_;
-  std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> > tick_containter_;
-  std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> >::const_iterator it_;
-  int current_tick_index_ = 0;
+  AbstractStrategy* strategy_;
+  AbstractExecutionHandler* execution_handler_;
+  AbstractPortfolioHandler* portfolio_handler_;
+  std::shared_ptr<Tick> tick_;
 };
 
-caf::behavior DummpyStrategy(caf::event_based_actor* self) {
-  auto count = std::make_shared<int>(0);
-  return {[=](const std::shared_ptr<Tick>& tick) {
-    // std::cout << (*count)++ << "\n";
-  }};
-}
+class FillEvent : public AbstractEvent {
+ public:
+  FillEvent(AbstractStrategy* strategy,
+            AbstractPortfolioHandler* portfolio_handler,
+            const std::shared_ptr<OrderField>& order)
+      : strategy_(strategy),
+        portfolio_handler_(portfolio_handler),
+        order_(order) {}
 
-caf::behavior DummpyOrderBook(caf::event_based_actor* self) {
-  auto count = std::make_shared<int>(0);
-  return {[=](const std::shared_ptr<Tick>& tick) {
-    // std::cout << (*count)++ << "\n";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  }};
-}
+  virtual void Do() override {
+    strategy_->HandleOrder(order_);
+    portfolio_handler_->HandleOrder(order_);
+  }
 
-caf::behavior DummpySignal(caf::event_based_actor* self) {
-  auto count = std::make_shared<int>(0);
-  return {[=](const std::shared_ptr<Tick>& tick) {
-    // std::cout << (*count)++ << "\n";
-    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    (*count) += fib(20);
-    if ((*count) == 10000000) {
-      std::cout << "Oops!\n";
-    }
-  }};
-}
+ private:
+  AbstractStrategy* strategy_;
+  AbstractPortfolioHandler* portfolio_handler_;
+  std::shared_ptr<OrderField> order_;
+};
 
-int caf_main(caf::actor_system& system) {
+class CloseMarketEvent : public AbstractEvent {
+ public:
+  CloseMarketEvent(AbstractPortfolioHandler* portfolio_handler)
+      : portfolio_handler_(portfolio_handler) {}
+
+  virtual void Do() override { portfolio_handler_->HandleCloseMarket(); }
+
+ private:
+  AbstractPortfolioHandler* portfolio_handler_;
+};
+
+class BacktestingEventFactory : public AbstractEventFactory {
+ public:
+  BacktestingEventFactory(
+      std::list<std::shared_ptr<AbstractEvent>>* event_queue)
+      : event_queue_(event_queue) {}
+
+  virtual void EnqueueTickEvent(
+      const std::shared_ptr<Tick>& tick) const override {
+    event_queue_->push_back(std::make_shared<TickEvent>(
+        strategy_, execution_handler_, portfolio_handler_, tick));
+  }
+
+  virtual void EnqueueFillEvent(
+      const std::shared_ptr<OrderField>& order) const override {
+    event_queue_->push_back(
+        std::make_shared<FillEvent>(strategy_, portfolio_handler_, order));
+  }
+
+  virtual void EnqueueInputOrderEvent(PositionEffect position_effect,
+                                      OrderDirection order_direction,
+                                      int qty) const override {
+    event_queue_->push_back(std::make_shared<InputOrderEvent>(
+        execution_handler_, position_effect, order_direction, qty));
+  }
+
+  void SetStrategy(AbstractStrategy* strategy) { strategy_ = strategy; }
+
+  void SetExecutionHandler(AbstractExecutionHandler* execution_handler) {
+    execution_handler_ = execution_handler;
+  }
+
+  void SetPortfolioHandler(AbstractPortfolioHandler* portfolio_handler) {
+    portfolio_handler_ = portfolio_handler;
+  }
+
+  virtual void EnqueueCloseMarketEvent() override {
+    event_queue_->push_back(
+        std::make_shared<CloseMarketEvent>(portfolio_handler_));
+  }
+
+ private:
+  std::list<std::shared_ptr<AbstractEvent>>* event_queue_;
+  AbstractStrategy* strategy_;
+  AbstractExecutionHandler* execution_handler_;
+
+  AbstractPortfolioHandler* portfolio_handler_;
+};
+
+int main(int argc, char* argv[]) {
   using hrc = std::chrono::high_resolution_clock;
-
   auto beg = hrc::now();
-  {
-  auto dispatcher = system.spawn<TickDataDispatcher>(system.spawn(DummpyStrategy),
-                                   system.spawn(DummpyOrderBook));
+  std::list<std::shared_ptr<AbstractEvent>> event_queue;
+  bool running = true;
 
-  for (int i = 0; i < 10;++i) {
-    anon_send(dispatcher, SubscribeAtom::value, system.spawn(DummpySignal));
+  BacktestingEventFactory event_factory(&event_queue);
+
+  MyStrategy strategy(&event_factory);
+
+  SimulatedExecutionHandler execution_handler(&event_factory);
+
+  PriceHandler price_handler(&running, &event_factory);
+
+  BacktestingPortfolioHandler portfolio_handler_;
+
+  event_factory.SetStrategy(&strategy);
+
+  event_factory.SetExecutionHandler(&execution_handler);
+
+  event_factory.SetPortfolioHandler(&portfolio_handler_);
+
+  while (running) {
+    if (!event_queue.empty()) {
+      auto event = event_queue.back();
+      event_queue.pop_back();
+      event->Do();
+    } else {
+      price_handler.StreamNext();
+    }
   }
-  anon_send(dispatcher, DispatchTickAtom::value);
-  }
 
-  system.await_all_actors_done();
-
-  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(
+  std::cout << "espces:"
+            << std::chrono::duration_cast<std::chrono::milliseconds>(
                    hrc::now() - beg)
                    .count()
             << "\n";
   return 0;
 }
-CAF_MAIN()

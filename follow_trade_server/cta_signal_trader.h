@@ -36,6 +36,8 @@ class CTASignalTrader : public caf::event_based_actor,
 
   virtual void OnRtnOrder(CThostFtdcOrderField* pOrder) override;
 
+  virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) override;
+
   virtual void OnFrontConnected() override;
 
   virtual void OnFrontDisconnected(int nReason) override;
@@ -56,14 +58,14 @@ class CTASignalTrader : public caf::event_based_actor,
  private:
   void CallOnActor(std::function<void(void)> func);
 
-  void OnRtnOrderOnIOThread(boost::shared_ptr<CThostFtdcOrderField> order);
+  void OnRtnOrderOnIOThread(const std::shared_ptr<CThostFtdcOrderField>& order);
 
   std::string MakeOrderId(TThostFtdcFrontIDType front_id,
                           TThostFtdcSessionIDType session_id,
                           const std::string& order_ref) const;
 
   OrderStatus ParseTThostFtdcOrderStatus(
-      boost::shared_ptr<CThostFtdcOrderField> order) const;
+      const std::shared_ptr<CThostFtdcOrderField>& order) const;
 
   PositionEffect ParseTThostFtdcPositionEffect(TThostFtdcOffsetFlagType flag);
 

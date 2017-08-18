@@ -47,7 +47,6 @@ void FollowStragetyServiceActor::CancelOrder(const std::string& strategy_id,
 
 caf::behavior FollowStragetyServiceActor::make_behavior() {
   auto block_trader = caf::make_function_view(trader_);
-
   std::vector<std::string> stragetys = {"Foo", "Bar"};
   std::shared_ptr<int> leave_reply =
       std::make_shared<int>(2 + stragetys.size() * 2);

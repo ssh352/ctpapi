@@ -18,12 +18,13 @@ StrategyTrader::StrategyTrader(caf::actor_config& cfg,
       password_(password) {
   db_ = system().registry().get(caf::atom("db"));
 
-  boost::filesystem::path dir(".\\" + user_id);
-
-  boost::filesystem::directory_iterator end_iter;
-  for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it) {
-    boost::filesystem::remove_all(it->path());
-  }
+  //   boost::filesystem::path dir(".\\" + user_id);
+  //
+  //   boost::filesystem::directory_iterator end_iter;
+  //   for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it)
+  //   {
+  //     boost::filesystem::remove_all(it->path());
+  //   }
 
   work_.assign(
       [=](LimitOrderAtom, std::string sub_account_id, std::string sub_order_id,
@@ -137,8 +138,18 @@ void StrategyTrader::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
                                      bool bIsLast) {}
 
 void StrategyTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
-  send(this, ThostFtdcOrderFieldAtom::value,
-       std::make_shared<CThostFtdcOrderField>(*pOrder));
+  using hs = std::chrono::high_resolution_clock;
+  auto field = std::make_shared<CThostFtdcOrderField>(*pOrder);
+  send(caf::actor_cast<caf::actor>(db_), ThostFtdcOrderFieldAtom::value, field,
+       hs::now());
+  send(this, ThostFtdcOrderFieldAtom::value, std::move(field));
+}
+
+void StrategyTrader::OnRtnTrade(CThostFtdcTradeField* pTrade) {
+  using hs = std::chrono::high_resolution_clock;
+  auto field = std::make_shared<CThostFtdcTradeField>(*pTrade);
+  send(caf::actor_cast<caf::actor>(db_), ThostFtdcTradeFieldAtom::value, field,
+       hs::now());
 }
 
 void StrategyTrader::OnRtnOrderOnIOThread(
@@ -416,11 +427,12 @@ caf::behavior StrategyTrader::make_behavior() {
     api_->SubscribePublicTopic(THOST_TERT_RESUME);
     api_->SubscribePrivateTopic(THOST_TERT_RESUME);
     api_->Init();
+    //TODO: may be bug! if ctp in connecting... 
     become(connect_);
   };
 
   std::vector<std::string> strategys = {"Foo", "Bar"};
-  auto leave_reply = std::make_shared<int>(1 + strategys.size());
+  auto leave_reply = std::make_shared<int>(2 + strategys.size());
   request(db, caf::infinite, QueryStrategyOrderIDMapAtom::value, user_id_)
       .then([=](std::vector<std::tuple<std::string, std::string, std::string>>
                     tupels) {
@@ -430,6 +442,19 @@ caf::behavior StrategyTrader::make_behavior() {
         }
         if (--(*leave_reply) == 0) {
           after_load_db();
+        }
+      });
+
+  request(db, caf::infinite, QueryThostFtdcOrderFeildsAtom::value, user_id_)
+      .then([=](const std::vector<std::shared_ptr<CThostFtdcOrderField>>&
+                    fields) {
+        for (const auto& field : fields) {
+          orders_.insert_or_assign(
+              MakeOrderId(field->FrontID, field->SessionID, field->OrderRef),
+              field);
+          if (--(*leave_reply) == 0) {
+            after_load_db();
+          }
         }
       });
 
@@ -458,5 +483,5 @@ caf::behavior StrategyTrader::make_behavior() {
     }
   });
 
-  return{};
+  return {};
 }

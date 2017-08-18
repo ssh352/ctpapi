@@ -79,6 +79,7 @@ class StrategyTrader : public caf::event_based_actor,
 
   virtual void OnRtnOrder(CThostFtdcOrderField* pOrder) override;
 
+  virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) override;
   virtual void OnFrontConnected() override;
 
   virtual void OnFrontDisconnected(int nReason) override;
@@ -116,7 +117,7 @@ class StrategyTrader : public caf::event_based_actor,
 
   std::unordered_map<std::string, std::shared_ptr<CThostFtdcOrderField>>
       orders_;
-
+  
   std::multimap<std::string, OrderPosition> strategy_yesterday_positions_;
   std::multimap<std::string, boost::shared_ptr<OrderField>> sequence_orders_;
 

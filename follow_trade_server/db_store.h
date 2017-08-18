@@ -14,8 +14,12 @@ class DBStore : public caf::event_based_actor {
   void CreateStrategyRtnOrderIfNotExists();
   void CreateStrategyOrderIDTableIfNotExists();
   void CreateStrategyPositionIfNotExists();
-
+  void CreateThostFtdcOrderFieldTableIfNotExists();
+  void CreateThostFtdcTradeFieldsIfNotExists();
   sqlite3* db_;
+
+private:
+  std::chrono::high_resolution_clock::time_point start_;
 };
 
 #endif  // FOLLOW_TRADE_SERVER_DB_STORE_H

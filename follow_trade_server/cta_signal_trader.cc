@@ -17,13 +17,14 @@ CTASignalTrader::CTASignalTrader(caf::actor_config& cfg,
       broker_id_(broker_id),
       user_id_(user_id),
       password_(password) {
-  //  db_ = system().registry().get(caf::atom("db"));
-  boost::filesystem::path dir(".\\" + user_id);
-
-  boost::filesystem::directory_iterator end_iter;
-  for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it) {
-    boost::filesystem::remove_all(it->path());
-  }
+  db_ = system().registry().get(caf::atom("db"));
+  //   boost::filesystem::path dir(".\\" + user_id);
+  //
+  //   boost::filesystem::directory_iterator end_iter;
+  //   for (boost::filesystem::directory_iterator it(dir); it != end_iter; ++it)
+  //   {
+  //     boost::filesystem::remove_all(it->path());
+  //   }
 }
 
 CTASignalTrader::~CTASignalTrader() {}
@@ -96,12 +97,23 @@ void CTASignalTrader::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
                                       bool bIsLast) {}
 
 void CTASignalTrader::OnRtnOrder(CThostFtdcOrderField* pOrder) {
+  using hs = std::chrono::high_resolution_clock;
+  auto field = std::make_shared<CThostFtdcOrderField>(*pOrder);
+  send(caf::actor_cast<caf::actor>(db_), ThostFtdcOrderFieldAtom::value, field,
+       hs::now());
   CallOnActor(boost::bind(&CTASignalTrader::OnRtnOrderOnIOThread, this,
-                          boost::make_shared<CThostFtdcOrderField>(*pOrder)));
+                          std::make_shared<CThostFtdcOrderField>(*pOrder)));
+}
+
+void CTASignalTrader::OnRtnTrade(CThostFtdcTradeField* pTrade) {
+  using hs = std::chrono::high_resolution_clock;
+  auto field = std::make_shared<CThostFtdcTradeField>(*pTrade);
+  send(caf::actor_cast<caf::actor>(db_), ThostFtdcTradeFieldAtom::value, field,
+       hs::now());
 }
 
 void CTASignalTrader::OnRtnOrderOnIOThread(
-    boost::shared_ptr<CThostFtdcOrderField> order) {
+    const std::shared_ptr<CThostFtdcOrderField>& order) {
   auto order_field = boost::make_shared<OrderField>();
   // order_field->instrument_name = order->InstrumentName;
   order_field->instrument_id = order->InstrumentID;
@@ -140,7 +152,7 @@ std::string CTASignalTrader::MakeOrderId(TThostFtdcFrontIDType front_id,
 }
 
 OrderStatus CTASignalTrader::ParseTThostFtdcOrderStatus(
-    boost::shared_ptr<CThostFtdcOrderField> order) const {
+    const std::shared_ptr<CThostFtdcOrderField>& order) const {
   OrderStatus os = OrderStatus::kActive;
   switch (order->OrderStatus) {
     case THOST_FTDC_OST_AllTraded:
@@ -202,15 +214,25 @@ void CTASignalTrader::CallOnActor(std::function<void(void)> func) {
 caf::behavior CTASignalTrader::make_behavior() {
   auto& lg = g_logger::get();
 
+  auto db = caf::actor_cast<caf::actor>(db_);
+
   BOOST_LOG(lg) << "Start CTA Signal";
 
-  std::string flow_path = ".\\" + user_id_ + "\\";
-  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
-  api_->RegisterSpi(this);
-  api_->RegisterFront(const_cast<char*>(server_.c_str()));
-  api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-  api_->Init();
+  request(db, caf::infinite, QueryThostFtdcOrderFeildsAtom::value, user_id_)
+      .then(
+          [=](const std::vector<std::shared_ptr<CThostFtdcOrderField>> fields) {
+            for (const auto& field : fields) {
+              OnRtnOrderOnIOThread(field);
+            }
+            std::string flow_path = ".\\" + user_id_ + "\\";
+            api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(flow_path.c_str());
+            api_->RegisterSpi(this);
+            api_->RegisterFront(const_cast<char*>(server_.c_str()));
+            api_->SubscribePublicTopic(THOST_TERT_RESUME);
+            api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+            api_->Init();
+
+          });
 
   set_down_handler([=](const caf::down_msg& msg) {
     auto i = std::find_if(
