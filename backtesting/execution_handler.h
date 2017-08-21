@@ -7,7 +7,7 @@
 
 class AbstractExecutionHandler {
  public:
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) = 0;
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
 
   virtual void HandlerInputOrder(PositionEffect position_effect,
                                  OrderDirection direction,
@@ -19,19 +19,19 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
   SimulatedExecutionHandler(AbstractEventFactory* event_factory)
       : event_factory_(event_factory) {}
 
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) override {
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
     if (current_tick_ != nullptr) {
       boost::posix_time::ptime previous_pt(
           boost::gregorian::date(1970, 1, 1),
           boost::posix_time::milliseconds(current_tick_->timestamp));
       boost::posix_time::ptime pt(
           boost::gregorian::date(1970, 1, 1),
-          boost::posix_time::milliseconds(tick->timestamp));
+          boost::posix_time::milliseconds(tick->tick->timestamp));
       if (previous_pt.date() != pt.date()) {
         event_factory_->EnqueueCloseMarketEvent();
       }
     }
-    current_tick_ = tick;
+    current_tick_ = tick->tick;
   }
 
   virtual void HandlerInputOrder(PositionEffect position_effect,

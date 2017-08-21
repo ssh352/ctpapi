@@ -1,5 +1,6 @@
-#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/gregorian/gregorian.hpp>
 #include <fstream>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
@@ -10,6 +11,7 @@
 #include "strategy.h"
 #include "tick_series_data_base.h"
 #include "portfolio_handler.h"
+#include "cta_transaction_series_data_base.h"
 
 class AbstractExecutionHandler;
 
@@ -18,7 +20,7 @@ class TickEvent : public AbstractEvent {
   TickEvent(AbstractStrategy* strategy,
             AbstractExecutionHandler* execution_handler,
             AbstractPortfolioHandler* portfolio_handler,
-            const std::shared_ptr<Tick>& tick)
+            const std::shared_ptr<TickData>& tick)
       : strategy_(strategy),
         execution_handler_(execution_handler),
         portfolio_handler_(portfolio_handler),
@@ -33,7 +35,7 @@ class TickEvent : public AbstractEvent {
   AbstractStrategy* strategy_;
   AbstractExecutionHandler* execution_handler_;
   AbstractPortfolioHandler* portfolio_handler_;
-  std::shared_ptr<Tick> tick_;
+  std::shared_ptr<TickData> tick_;
 };
 
 class FillEvent : public AbstractEvent {
@@ -74,7 +76,7 @@ class BacktestingEventFactory : public AbstractEventFactory {
       : event_queue_(event_queue) {}
 
   virtual void EnqueueTickEvent(
-      const std::shared_ptr<Tick>& tick) const override {
+      const std::shared_ptr<TickData>& tick) const override {
     event_queue_->push_back(std::make_shared<TickEvent>(
         strategy_, execution_handler_, portfolio_handler_, tick));
   }
@@ -116,20 +118,27 @@ class BacktestingEventFactory : public AbstractEventFactory {
 };
 
 int main(int argc, char* argv[]) {
+  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
+      "d:/cta_tstable.h5");
+  auto result = cta_trasaction_series_data_base.ReadRange(
+      "/m1705", boost::posix_time::time_from_string("2016-12-01 09:00:00"),
+      boost::posix_time::time_from_string("2017-07-31 15:00:00"));
+
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   std::list<std::shared_ptr<AbstractEvent>> event_queue;
   bool running = true;
 
-  BacktestingEventFactory event_factory(&event_queue);
+  double init_cash = 50 * 10000;
 
+  BacktestingEventFactory event_factory(&event_queue);
   MyStrategy strategy(&event_factory);
 
   SimulatedExecutionHandler execution_handler(&event_factory);
 
-  PriceHandler price_handler(&running, &event_factory);
+  PriceHandler price_handler("zc", "cf_major", &running, &event_factory);
 
-  BacktestingPortfolioHandler portfolio_handler_;
+  BacktestingPortfolioHandler portfolio_handler_(init_cash);
 
   event_factory.SetStrategy(&strategy);
 

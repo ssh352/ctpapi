@@ -8,7 +8,8 @@ class AbstractEvent;
 
 class AbstractEventFactory {
  public:
-  virtual void EnqueueTickEvent(const std::shared_ptr<Tick>& tick) const = 0;
+  virtual void EnqueueTickEvent(
+      const std::shared_ptr<TickData>& tick) const = 0;
 
   virtual void EnqueueFillEvent(
       const std::shared_ptr<OrderField>& order) const = 0;

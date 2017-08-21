@@ -20,6 +20,7 @@ class Position {
     init_price_ = price;
     net_total_ = total_sld_ - total_bot_;
     total_commission_ = commission;
+    cost_basis_ = price * qty + commission;
   }
 
   void TransactShares(PositionEffect position_effect,
@@ -53,9 +54,12 @@ class Position {
 
   void UpdateMarketValue(const std::shared_ptr<Tick>& tick) {
     double midpoint = (tick->bid_price1 + tick->ask_price1) / 2;
+    market_value_ = (buys_ + sells_) * midpoint;
   }
 
   bool IsCloseAllPosition() const { return buys_ == 0 && sells_ == 0; }
+
+  double MarketValue() const { return market_value_; }
 
  private:
   int buys_ = 0;
@@ -65,7 +69,7 @@ class Position {
   double total_bot_ = 0.0;
   double total_sld_ = 0.0;
   double market_value_ = 0.0;
-  double cost_basis = 0.0;
+  double cost_basis_ = 0.0;
   double realised_pnl = 0.0;
   double unrealised_pnl = 0.0;
   double total_commission_ = 0.0;
@@ -73,9 +77,13 @@ class Position {
 
 class Portfolio {
  public:
-  void UpdateMarketPrice(const std::shared_ptr<Tick>& tick) {
+  Portfolio(double init_cash) {
+    init_cash_ = init_cash;
+    current_cash_ = init_cash;
+  }
+  void UpdateMarketPrice(const std::shared_ptr<TickData>& tick) {
     if (position_ != nullptr) {
-      position_->UpdateMarketValue(tick);
+      position_->UpdateMarketValue(tick->tick);
     }
   }
 
@@ -83,37 +91,53 @@ class Portfolio {
     if (position_ == nullptr) {
       position_.reset(new Position(order->direction, order->price, order->qty,
                                    init_commission_));
+      current_cash_ -= order->price * order->qty + init_commission_;
     } else {
       position_->TransactShares(order->position_effect, order->direction,
                                 order->price, order->qty, init_commission_);
+
       if (position_->IsCloseAllPosition()) {
         position_.reset();
+      }
+
+      if (IsOpenPositionEffect(order->position_effect)) {
+        current_cash_ -= (order->price * order->qty + init_commission_);
+      } else {
+        current_cash_ += (order->price * order->qty - init_commission_);
       }
     }
   };
 
-  double Equity() const { return equity_; }
+  double Equity() const {
+    double equity = current_cash_;
+    if (position_ != nullptr) {
+      equity += position_->MarketValue();
+    }
+
+    return equity;
+  }
 
  private:
-  int init_cash = 0;
-  int equity_ = 0;
+  double init_cash_;
+  double current_cash_;
   double init_commission_ = 0.0;
   std::unique_ptr<Position> position_;
 };
 
 class AbstractPortfolioHandler {
  public:
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) = 0;
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
   virtual void HandleCloseMarket() = 0;
 };
 
 class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
  public:
-  BacktestingPortfolioHandler() : csv_("equitys.csv") {}
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) override {
+  BacktestingPortfolioHandler(double init_cash)
+      : csv_("equitys.csv"), portfolio_(init_cash) {}
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
     portfolio_.UpdateMarketPrice(tick);
-    last_tick_ = tick;
+    last_tick_ = tick->tick;
   }
 
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override {

@@ -29,7 +29,7 @@ class InputOrderEvent : public AbstractEvent {
 
 class AbstractStrategy {
  public:
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) = 0;
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
 };
 
@@ -38,10 +38,10 @@ class MyStrategy : public AbstractStrategy {
   MyStrategy(AbstractEventFactory* event_factory)
       : event_factory_(event_factory) {}
 
-  virtual void HandleTick(const std::shared_ptr<Tick>& tick) override {
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
     if (!order_) {
       event_factory_->EnqueueInputOrderEvent(PositionEffect::kOpen,
-                                             OrderDirection::kBuy, 10);
+                                             OrderDirection::kBuy, 100);
       order_ = true;
     }
   }

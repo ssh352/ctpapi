@@ -1,22 +1,9 @@
 #include "tick_series_data_base.h"
-
 #include <boost/format.hpp>
-
-
-typedef int64_t timestamp_t;
-
-timestamp_t ptime_to_timestamp(boost::posix_time::ptime timestamp) {
-  using namespace boost::posix_time;
-  using namespace boost::gregorian;
-  ptime epoch(date(1970, 1, 1));
-  return ((timestamp - epoch).ticks()) /
-         (time_duration::ticks_per_second() / 1000);
-}
-
+#include "time_util.h"
 
 TickSeriesDataBase::TickSeriesDataBase(const char* hdf_file) {
   file_ = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
-
   tick_compound_ = H5Tcreate(H5T_COMPOUND, sizeof(Tick));
 
   H5Tinsert(tick_compound_, "timestamp", HOFFSET(Tick, timestamp),
