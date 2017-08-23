@@ -2,6 +2,7 @@
 #define BACKTESTING_EXECUTION_HANDLER_H
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <fstream>
 #include "tick_series_data_base.h"
 #include "common/api_struct.h"
 
@@ -17,7 +18,7 @@ class AbstractExecutionHandler {
 class SimulatedExecutionHandler : public AbstractExecutionHandler {
  public:
   SimulatedExecutionHandler(AbstractEventFactory* event_factory)
-      : event_factory_(event_factory) {}
+      : event_factory_(event_factory), orders_csv_("orders.csv") {}
 
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
     if (current_tick_ != nullptr) {
@@ -47,6 +48,16 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->qty = qty;
     order->traded_qty = qty;
     event_factory_->EnqueueFillEvent(std::move(order));
+
+    boost::posix_time::ptime pt(
+        boost::gregorian::date(1970, 1, 1),
+        boost::posix_time::milliseconds(current_tick_->timestamp));
+
+    orders_csv_ << current_tick_->timestamp << ","
+                << boost::posix_time::to_simple_string(pt) << ","
+                << static_cast<int>(position_effect) << ","
+                << static_cast<int>(direction) << "," << order->price << ","
+                << qty << "\n";
   }
 
  private:
@@ -55,6 +66,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
   }
   std::shared_ptr<Tick> current_tick_;
   AbstractEventFactory* event_factory_;
+  std::ofstream orders_csv_;
 };
 
 #endif  // BACKTESTING_EXECUTION_HANDLER_H

@@ -118,12 +118,6 @@ class BacktestingEventFactory : public AbstractEventFactory {
 };
 
 int main(int argc, char* argv[]) {
-  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
-      "d:/cta_tstable.h5");
-  auto result = cta_trasaction_series_data_base.ReadRange(
-      "/m1705", boost::posix_time::time_from_string("2016-12-01 09:00:00"),
-      boost::posix_time::time_from_string("2017-07-31 15:00:00"));
-
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   std::list<std::shared_ptr<AbstractEvent>> event_queue;
@@ -132,11 +126,12 @@ int main(int argc, char* argv[]) {
   double init_cash = 50 * 10000;
 
   BacktestingEventFactory event_factory(&event_queue);
-  MyStrategy strategy(&event_factory);
+
+  MyStrategy strategy("m1705", &event_factory);
 
   SimulatedExecutionHandler execution_handler(&event_factory);
 
-  PriceHandler price_handler("zc", "cf_major", &running, &event_factory);
+  PriceHandler price_handler("dc", "m1705", &running, &event_factory);
 
   BacktestingPortfolioHandler portfolio_handler_(init_cash);
 

@@ -10,18 +10,9 @@ enum class OrderEventType {
   kCanceled,
 };
 
-enum class OrderDirection {
-  kUndefine,
-  kBuy,
-  kSell
-};
+enum class OrderDirection { kUndefine, kBuy, kSell };
 
-enum class PositionEffect {
-  kUndefine,
-  kOpen,
-  kClose,
-  kCloseToday
-};
+enum class PositionEffect { kUndefine, kOpen, kClose, kCloseToday };
 
 enum class OrderStatus {
   kActive,
@@ -31,4 +22,8 @@ enum class OrderStatus {
   kCancelRejected,
 };
 
-#endif // COMMON_API_DATA_TYPE_H
+typedef int64_t timestamp_t;
+
+typedef char InstrumentIDType[31];
+
+#endif  // COMMON_API_DATA_TYPE_H

@@ -1,6 +1,13 @@
 #ifndef COMMON_API_STRUCT_H
 #define COMMON_API_STRUCT_H
+#include <string>
+#include <memory>
 #include "common/api_data_type.h"
+
+struct InstrumentField {
+  InstrumentIDType instrument;
+  double margin_rate;
+};
 
 struct OrderField {
   OrderDirection direction;
@@ -62,6 +69,29 @@ struct AccountPosition {
   std::string instrument;
   OrderDirection direction;
   int closeable;
+};
+
+struct Tick {
+  int64_t timestamp;
+  double last_price;
+  int64_t qty;
+  double bid_price1;
+  int64_t bid_qty1;
+  double ask_price1;
+  int64_t ask_qty1;
+};
+
+struct TickData {
+  std::shared_ptr<std::string> instrument;
+  std::shared_ptr<Tick> tick;
+};
+
+struct CTATransaction {
+  int64_t timestamp;
+  int32_t position_effect;
+  int32_t direction;
+  double price;
+  int32_t qty;
 };
 
 #endif  // COMMON_API_STRUCT_H
