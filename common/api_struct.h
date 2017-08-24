@@ -94,4 +94,12 @@ struct CTATransaction {
   int32_t qty;
 };
 
+struct OpenOrder {
+  std::string instrument;
+  TimeStamp open_timestamp;
+  OrderDirection direction;
+  double opne_price;
+  int qty;
+};
+
 #endif  // COMMON_API_STRUCT_H

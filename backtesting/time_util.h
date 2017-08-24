@@ -4,6 +4,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "common/api_data_type.h"
 
-timestamp_t ptime_to_timestamp(boost::posix_time::ptime timestamp);
+TimeStamp ptime_to_timestamp(boost::posix_time::ptime timestamp);
 
 #endif  // BACKTESTING_TIME_UTIL_H

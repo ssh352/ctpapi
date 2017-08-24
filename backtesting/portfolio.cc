@@ -10,8 +10,21 @@ Portfolio::Portfolio(double init_cash) {
   cash_ = init_cash;
 }
 
+void Portfolio::AddMargin(const std::string& instrument,
+                          double margin_rate,
+                          int constract_multiple) {
+  instrument_info_container_.insert(
+      {instrument, {margin_rate, constract_multiple}});
+}
+
 void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
-  UpdateUnrealisedPNL(*tick->instrument, tick->tick->last_price);
+  if (position_container_.find(*tick->instrument) !=
+      position_container_.end()) {
+    Position& position = position_container_.at(*tick->instrument);
+    double update_pnl_ = 0.0;
+    position.UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
+    unrealised_pnl_ += update_pnl_;
+  }
 }
 
 void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
@@ -19,8 +32,18 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     // New Order
     if (IsOpenPositionEffect(order->position_effect)) {
       BOOST_ASSERT(order->traded_qty == 0);
-      frozen_cash_ += order->price * order->qty;
-      cash_ -= order->price * order->qty;
+      BOOST_ASSERT(position_container_.find(order->instrument_id) ==
+                   position_container_.end());
+      BOOST_ASSERT_MSG(instrument_info_container_.find(order->instrument_id) !=
+                           instrument_info_container_.end(),
+                       "The Instrument info must be found!");
+      auto ins_info = instrument_info_container_.at(order->instrument_id);
+      Position position(ins_info.first, ins_info.second);
+      position_container_.insert({order->instrument_id, std::move(position)});
+      double frozen_cash =
+          order->price * order->qty * ins_info.first * ins_info.second;
+      frozen_cash_ += frozen_cash;
+      cash_ -= frozen_cash;
     }
     order_container_.insert({order->order_id, order});
   } else {
@@ -30,74 +53,29 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
         if (IsOpenPositionEffect(order->position_effect)) {
-          double unfrozen_cash = order->price * last_traded_qty;
-          frozen_cash_ -= unfrozen_cash;
-          if (position_container_.find(order->instrument_id) ==
-              position_container_.end()) {
-            Position position{0};
-            position_container_.insert(
-                {order->instrument_id, std::move(position)});
-          }
           Position& position = position_container_.at(order->instrument_id);
-          total_long_and_short_ -= (position.total_long + position.total_short);
-          if (order->direction == OrderDirection::kBuy) {
-            position.total_long += order->price * last_traded_qty;
-            position.long_qty += last_traded_qty;
-            position.long_avg_price = position.total_long / position.long_qty;
-          } else {
-            position.total_short += order->price * last_traded_qty;
-            position.short_qty += last_traded_qty;
-            position.short_avg_price =
-                position.total_short / position.short_qty;
-          }
-          total_long_and_short_ += position.total_long + position.total_short;
+          double add_margin = 0.0;
+          position.TradedOpen(order->direction, order->price, last_traded_qty,
+                              &add_margin);
+          frozen_cash_ -= add_margin;
+          margin_ += add_margin;
         } else {
           BOOST_ASSERT(position_container_.find(order->instrument_id) !=
                        position_container_.end());
           Position& position = position_container_.at(order->instrument_id);
-          total_long_and_short_ -= (position.total_long + position.total_short);
-
-          double pnl = order->direction == OrderDirection::kBuy
-                           ? position.short_avg_price * last_traded_qty -
-                                 order->price * last_traded_qty
-                           : order->price * last_traded_qty -
-                                 position.long_avg_price * last_traded_qty;
-
-          cash_ += (order->direction == OrderDirection::kBuy
-                        ? position.short_avg_price
-                        : position.long_avg_price) *
-                       last_traded_qty +
-                   pnl;
-          // Close
+          double pnl = 0.0;
+          double add_cash = 0.0;
+          double release_margin = 0.0;
+          double update_unrealised_pnl = 0.0;
+          position.TradedClose(order->direction, order->price, last_traded_qty,
+                               &pnl, &add_cash, &release_margin,
+                               &update_unrealised_pnl);
+          margin_ -= release_margin;
+          cash_ += add_cash + pnl;
           realised_pnl_ += pnl;
-          unrealised_pnl_ -= pnl;
-          position.unrealised_pnl -= pnl;
-          if (order->direction == OrderDirection::kBuy) {
-            BOOST_ASSERT(position.short_qty >= last_traded_qty);
-            position.short_qty -= last_traded_qty;
-            if (position.short_qty == 0) {
-              position.short_avg_price = 0.0;
-              position.total_short = 0.0;
-            } else {
-              position.total_short -=
-                  position.short_avg_price * last_traded_qty;
-            }
-          } else {
-            BOOST_ASSERT(position.long_qty >= last_traded_qty);
-            position.long_qty -= last_traded_qty;
-            if (position.long_qty == 0) {
-              position.long_avg_price = 0.0;
-              position.total_long = 0.0;
-            } else {
-              position.total_long -= position.long_avg_price * last_traded_qty;
-            }
-          }
-          total_long_and_short_ += position.total_long + position.total_short;
-          if (position.long_qty == 0 && position.short_qty == 0) {
-            unrealised_pnl_ -= position.unrealised_pnl;
+          unrealised_pnl_ += update_unrealised_pnl;
+          if (position.IsEmptyQty()) {
             position_container_.erase(order->instrument_id);
-          } else {
-            UpdateUnrealisedPNL(order->instrument_id, order->price);
           }
         }
       } break;
@@ -111,19 +89,5 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
         break;
     }
     order_container_[order->order_id] = order;
-  }
-}
-
-void Portfolio::UpdateUnrealisedPNL(const std::string& instrument,
-                                    double price) {
-  if (position_container_.find(instrument) != position_container_.end()) {
-    Position& position = position_container_.at(instrument);
-    unrealised_pnl_ -= position.unrealised_pnl;
-    position.unrealised_pnl = (price * position.long_qty -
-                               position.long_avg_price * position.long_qty) +
-                              (position.short_avg_price * position.short_qty -
-                               price * position.short_qty);
-
-    unrealised_pnl_ += position.unrealised_pnl;
   }
 }

@@ -2,8 +2,6 @@
 #include <boost/assert.hpp>
 #include "gtest/gtest.h"
 #include "portfolio.h"
-#include "cost_basis_mode.h"
-#include "margin_rate_mode.h"
 
 std::unordered_map<std::string, std::shared_ptr<OrderField> >
     g_order_containter;
@@ -93,6 +91,7 @@ TEST(TestPortflioTest, BuyOrder) {
   double init_cash = 100000;
   Portfolio portflio(init_cash);
 
+  portflio.AddMargin("S1", 1.0, 1);
   portflio.HandleOrder(
       MakeNewOpenOrder("A001", "S1", OrderDirection::kBuy, 180.0, 20));
   EXPECT_EQ(3600.0, portflio.frozen_cash());
@@ -133,6 +132,7 @@ TEST(TestPortflioTest, SellOrder) {
   g_order_containter.clear();
   double init_cash = 100000;
   Portfolio portflio(init_cash);
+  portflio.AddMargin("S1", 1.0, 1);
 
   portflio.HandleOrder(
       MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
@@ -168,4 +168,50 @@ TEST(TestPortflioTest, SellOrder) {
   EXPECT_EQ(-400, portflio.realised_pnl());
   EXPECT_EQ(0, portflio.unrealised_pnl());
   EXPECT_EQ(init_cash - 400, portflio.total_value());
+}
+
+TEST(TestPortflioTest, Margin) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  Portfolio portflio(init_cash);
+  portflio.AddMargin("S1", 0.5, 20);
+  portflio.AddMargin("S2", 0.1, 10);
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
+  EXPECT_EQ(0, portflio.margin());
+
+  portflio.HandleOrder(MakeTradedOrder("A001", 20));
+  EXPECT_EQ(36000, portflio.margin());
+  EXPECT_EQ(init_cash - 36000, portflio.cash());
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A002", "S2", OrderDirection::kBuy, 50.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A002", 10));
+  EXPECT_EQ(36500, portflio.margin());
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A003", "S2", OrderDirection::kSell, 60.0, 10));
+  EXPECT_EQ(36500, portflio.margin());
+  portflio.HandleOrder(MakeTradedOrder("A003", 10));
+  EXPECT_EQ(36000, portflio.margin());
+  EXPECT_EQ(1000, portflio.realised_pnl());
+  EXPECT_EQ(65000 /*init_cash - 36000 + 1000*/, portflio.cash());
+  EXPECT_EQ(101000, portflio.total_value());
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A004", "S1", OrderDirection::kBuy, 310.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A004", 10));
+  EXPECT_EQ(18000, portflio.margin());
+  EXPECT_EQ(-26000, portflio.unrealised_pnl());
+  EXPECT_EQ(-25000, portflio.realised_pnl());
+  EXPECT_EQ(49000, portflio.total_value());
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A005", "S1", OrderDirection::kBuy, 200.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A005", 10));
+  EXPECT_EQ(0, portflio.margin());
+  EXPECT_EQ(0, portflio.unrealised_pnl());
+  EXPECT_EQ(-29000, portflio.realised_pnl());
+  EXPECT_EQ(71000, portflio.cash());
 }

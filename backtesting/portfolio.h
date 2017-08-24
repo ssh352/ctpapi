@@ -3,29 +3,22 @@
 #include <memory>
 #include <unordered_map>
 #include "common/api_struct.h"
-#include "margin_rate_mode.h"
-#include "cost_basis_mode.h"
-
-struct Position {
-  double long_avg_price;
-  double short_avg_price;
-  int long_qty;
-  int short_qty;
-  double total_long;
-  double total_short;
-  double unrealised_pnl;
-};
+#include "position.h"
 
 class Portfolio {
  public:
   Portfolio(double init_cash);
+
+  void AddMargin(const std::string& instrument,
+                 double margin_rate,
+                 int constract_multiple);
 
   void UpdateTick(const std::shared_ptr<TickData>& tick);
 
   void HandleOrder(const std::shared_ptr<OrderField>& order);
 
   double total_value() const {
-    return cash_ + frozen_cash_ + total_long_and_short_ + unrealised_pnl_;
+    return cash_ + frozen_cash_ + margin_ + unrealised_pnl_;
   }
 
   double realised_pnl() const { return realised_pnl_; }
@@ -36,6 +29,8 @@ class Portfolio {
 
   double cash() const { return cash_; }
 
+  double margin() const { return margin_; }
+
  private:
   double init_cash_ = 0.0;
   double cash_ = 0.0;
@@ -43,11 +38,12 @@ class Portfolio {
   double market_value_ = 0.0;
   double realised_pnl_ = 0.0;
   double unrealised_pnl_ = 0.0;
-  double total_long_and_short_ = 0.0;
+  double margin_ = 0.0;
   std::unordered_map<std::string, std::shared_ptr<OrderField> >
       order_container_;
   std::unordered_map<std::string, Position> position_container_;
-  void UpdateUnrealisedPNL(const std::string& instrument, double last_price);
+  std::unordered_map<std::string, std::pair<double, int> >
+      instrument_info_container_;
 };
 
 #endif  // BACKTESTING_PROTFOLIO_H

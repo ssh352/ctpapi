@@ -1,5 +1,6 @@
 ﻿#ifndef COMMON_API_DATA_TYPE_H
 #define COMMON_API_DATA_TYPE_H
+#include <stdint.h>
 
 enum class OrderEventType {
   kIgnore,
@@ -22,7 +23,7 @@ enum class OrderStatus {
   kCancelRejected,
 };
 
-typedef int64_t timestamp_t;
+typedef int64_t TimeStamp;
 
 typedef char InstrumentIDType[31];
 
