@@ -9,21 +9,24 @@
 class InputOrderEvent : public AbstractEvent {
  public:
   InputOrderEvent(AbstractExecutionHandler* execution_handler,
+                  std::string instrument,
                   PositionEffect position_effect,
                   OrderDirection order_direction,
                   int qty)
       : execution_handler_(execution_handler),
+        instrument_(std::move(instrument)),
         position_effect_(position_effect),
         order_direction_(order_direction),
         qty_(qty) {}
 
   virtual void Do() override {
-    execution_handler_->HandlerInputOrder(position_effect_, order_direction_,
-                                          qty_);
+    execution_handler_->HandlerInputOrder(instrument_, position_effect_,
+                                          order_direction_, qty_);
   }
 
  private:
   AbstractExecutionHandler* execution_handler_;
+  std::string instrument_;
   PositionEffect position_effect_;
   OrderDirection order_direction_;
   int qty_;
@@ -71,6 +74,7 @@ class MyStrategy : public AbstractStrategy {
 
     for (auto i = range_beg_it_; i != end_it; ++i) {
       event_factory_->EnqueueInputOrderEvent(
+          *tick->instrument,
           (*i)->position_effect == 0 ? PositionEffect::kOpen
                                      : PositionEffect::kClose,
           (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,

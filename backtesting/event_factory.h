@@ -14,7 +14,8 @@ class AbstractEventFactory {
   virtual void EnqueueFillEvent(
       const std::shared_ptr<OrderField>& order) const = 0;
 
-  virtual void EnqueueInputOrderEvent(PositionEffect position_effect,
+  virtual void EnqueueInputOrderEvent(const std::string& instrument,
+                                      PositionEffect position_effect,
                                       OrderDirection order_direction,
                                       int qty) const = 0;
 

@@ -87,11 +87,12 @@ class BacktestingEventFactory : public AbstractEventFactory {
         std::make_shared<FillEvent>(strategy_, portfolio_handler_, order));
   }
 
-  virtual void EnqueueInputOrderEvent(PositionEffect position_effect,
+  virtual void EnqueueInputOrderEvent(const std::string& instrument,
+                                      PositionEffect position_effect,
                                       OrderDirection order_direction,
                                       int qty) const override {
     event_queue_->push_back(std::make_shared<InputOrderEvent>(
-        execution_handler_, position_effect, order_direction, qty));
+        execution_handler_, instrument, position_effect, order_direction, qty));
   }
 
   void SetStrategy(AbstractStrategy* strategy) { strategy_ = strategy; }
@@ -143,8 +144,8 @@ int main(int argc, char* argv[]) {
 
   while (running) {
     if (!event_queue.empty()) {
-      auto event = event_queue.back();
-      event_queue.pop_back();
+      auto event = event_queue.front();
+      event_queue.pop_front();
       event->Do();
     } else {
       price_handler.StreamNext();

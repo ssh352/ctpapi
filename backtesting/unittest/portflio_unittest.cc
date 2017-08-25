@@ -294,4 +294,14 @@ TEST(TestPortflioTest, RateCommission) {
   portflio.HandleOrder(MakeCanceledOrder("A002"));
   EXPECT_EQ(46, portflio.daily_commission());
   EXPECT_EQ(0, portflio.frozen_cash());
+  EXPECT_EQ(46000, portflio.margin());
+  EXPECT_EQ(53954, portflio.cash());
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kBuy, 200.0, 25));
+  portflio.HandleOrder(MakeTradedOrder("A003", 25));
+  EXPECT_EQ(0, portflio.unrealised_pnl());
+  EXPECT_EQ(-8000.0, portflio.realised_pnl());
+  EXPECT_EQ(96, portflio.daily_commission());
+  EXPECT_EQ(100000 - 8000 - 96, portflio.total_value());
 }

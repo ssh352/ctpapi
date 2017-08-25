@@ -98,9 +98,14 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
             CostBasis cost_basis;
             std::tie(margin_rate, constract_mutiple, cost_basis) =
                 instrument_info_container_.at(order->instrument_id);
-            frozen_cash_ -=
+            double commission =
                 UpdateCostBasis(order->position_effect, order->price,
                                 order->qty, constract_mutiple, cost_basis);
+            if (IsOpenPositionEffect(order->position_effect)) {
+              frozen_cash_ -= commission;
+            } else {
+              cash_ -= commission;
+            }
           }
         }
       } break;
@@ -117,11 +122,19 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
           (void)UpdateCostBasis(order->position_effect, order->price,
                                 order->qty - order->leaves_qty,
                                 constract_mutiple, cost_basis);
-          frozen_cash_ -=
-              (order->leaves_qty * order->price * margin_rate *
-                   constract_mutiple +
-               CalcCommission(order->position_effect, order->price, order->qty,
-                              constract_mutiple, cost_basis));
+          if (IsOpenPositionEffect(order->position_effect)) {
+            double unfrozen_margin = order->leaves_qty * order->price *
+                                     margin_rate * constract_mutiple;
+            double unfrozen_cash =
+                unfrozen_margin + CalcCommission(order->position_effect,
+                                                 order->price, order->qty,
+                                                 constract_mutiple, cost_basis);
+            frozen_cash_ -= unfrozen_cash;
+            cash_ += unfrozen_margin +
+                     CalcCommission(order->position_effect, order->price,
+                                    order->leaves_qty, constract_mutiple,
+                                    cost_basis);
+          }
         }
       } break;
       case OrderStatus::kInputRejected:
