@@ -90,9 +90,11 @@ class BacktestingEventFactory : public AbstractEventFactory {
   virtual void EnqueueInputOrderEvent(const std::string& instrument,
                                       PositionEffect position_effect,
                                       OrderDirection order_direction,
+                                      double price,
                                       int qty) const override {
     event_queue_->push_back(std::make_shared<InputOrderEvent>(
-        execution_handler_, instrument, position_effect, order_direction, qty));
+        execution_handler_, instrument, position_effect, order_direction, price,
+        qty));
   }
 
   void SetStrategy(AbstractStrategy* strategy) { strategy_ = strategy; }

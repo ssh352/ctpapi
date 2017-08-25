@@ -16,7 +16,8 @@ class PriceHandler {
     TickSeriesDataBase ts_db("d:/ts_futures.h5");
     tick_containter_ = ts_db.ReadRange(
         str(boost::format("/%s/%s") % market % instrument),
-        boost::posix_time::time_from_string("2016-12-01 09:00:00"),
+        // boost::posix_time::time_from_string("2016-12-01 09:00:00"),
+        boost::posix_time::time_from_string("2016-12-05 09:00:00"),
         boost::posix_time::time_from_string("2017-07-31 15:00:00"));
 
     it_ = tick_containter_.begin();

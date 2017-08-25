@@ -17,6 +17,7 @@ class AbstractEventFactory {
   virtual void EnqueueInputOrderEvent(const std::string& instrument,
                                       PositionEffect position_effect,
                                       OrderDirection order_direction,
+                                      double price,
                                       int qty) const = 0;
 
   virtual void EnqueueCloseMarketEvent() = 0;

@@ -12,16 +12,18 @@ class InputOrderEvent : public AbstractEvent {
                   std::string instrument,
                   PositionEffect position_effect,
                   OrderDirection order_direction,
+                  double price,
                   int qty)
       : execution_handler_(execution_handler),
         instrument_(std::move(instrument)),
         position_effect_(position_effect),
         order_direction_(order_direction),
+        price_(price),
         qty_(qty) {}
 
   virtual void Do() override {
     execution_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                          order_direction_, qty_);
+                                          order_direction_, price_, qty_);
   }
 
  private:
@@ -29,6 +31,7 @@ class InputOrderEvent : public AbstractEvent {
   std::string instrument_;
   PositionEffect position_effect_;
   OrderDirection order_direction_;
+  double price_;
   int qty_;
 };
 
@@ -78,7 +81,7 @@ class MyStrategy : public AbstractStrategy {
           (*i)->position_effect == 0 ? PositionEffect::kOpen
                                      : PositionEffect::kClose,
           (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
-          (*i)->qty);
+          (*i)->price, (*i)->qty);
     }
 
     range_beg_it_ = end_it;

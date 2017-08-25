@@ -13,6 +13,7 @@ class AbstractExecutionHandler {
   virtual void HandlerInputOrder(const std::string& instrument,
                                  PositionEffect position_effect,
                                  OrderDirection direction,
+                                 double price,
                                  int qty) = 0;
 };
 
@@ -39,6 +40,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
   virtual void HandlerInputOrder(const std::string& instrument,
                                  PositionEffect position_effect,
                                  OrderDirection direction,
+                                 double price,
                                  int qty) override {
     std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
     {
@@ -81,9 +83,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
   }
 
  private:
-  double GetFillPrice() const {
-    return (current_tick_->ask_price1 + current_tick_->bid_price1) / 2;
-  }
+  double GetFillPrice() const { return current_tick_->last_price; }
   std::shared_ptr<Tick> current_tick_;
   AbstractEventFactory* event_factory_;
   std::ofstream orders_csv_;
