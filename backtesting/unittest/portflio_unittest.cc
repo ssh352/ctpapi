@@ -63,6 +63,7 @@ auto MakeTradedOrder(const std::string& order_id, double traded_qty) {
       traded_qty == order->qty ? OrderStatus::kAllFilled : OrderStatus::kActive;
   order->traded_qty = traded_qty;
   order->leaves_qty = order->qty - traded_qty;
+  g_order_containter[order_id] = order;
   return std::move(order);
 }
 
@@ -86,12 +87,23 @@ auto MakeNewCloseOrder(
                       qty);
 }
 
+auto MakeCanceledOrder(const std::string& order_id) {
+  BOOST_ASSERT(g_order_containter.find(order_id) != g_order_containter.end());
+  auto order = std::make_shared<OrderField>(*g_order_containter.at(order_id));
+  order->status = OrderStatus::kCanceled;
+  return std::move(order);
+}
+
 TEST(TestPortflioTest, BuyOrder) {
   g_order_containter.clear();
   double init_cash = 100000;
   Portfolio portflio(init_cash);
-
-  portflio.AddMargin("S1", 1.0, 1);
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
+  portflio.InitInstrumentDetail("S1", 1.0, 1, cost_basis);
   portflio.HandleOrder(
       MakeNewOpenOrder("A001", "S1", OrderDirection::kBuy, 180.0, 20));
   EXPECT_EQ(3600.0, portflio.frozen_cash());
@@ -132,7 +144,12 @@ TEST(TestPortflioTest, SellOrder) {
   g_order_containter.clear();
   double init_cash = 100000;
   Portfolio portflio(init_cash);
-  portflio.AddMargin("S1", 1.0, 1);
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
+  portflio.InitInstrumentDetail("S1", 1.0, 1, std::move(cost_basis));
 
   portflio.HandleOrder(
       MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
@@ -173,9 +190,14 @@ TEST(TestPortflioTest, SellOrder) {
 TEST(TestPortflioTest, Margin) {
   g_order_containter.clear();
   double init_cash = 100000;
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
   Portfolio portflio(init_cash);
-  portflio.AddMargin("S1", 0.5, 20);
-  portflio.AddMargin("S2", 0.1, 10);
+  portflio.InitInstrumentDetail("S1", 0.5, 20, cost_basis);
+  portflio.InitInstrumentDetail("S2", 0.1, 10, cost_basis);
 
   portflio.HandleOrder(
       MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
@@ -214,4 +236,62 @@ TEST(TestPortflioTest, Margin) {
   EXPECT_EQ(0, portflio.unrealised_pnl());
   EXPECT_EQ(-29000, portflio.realised_pnl());
   EXPECT_EQ(71000, portflio.cash());
+}
+
+TEST(TestPortflioTest, FixedCommission) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 120;
+  cost_basis.close_commission = 120;
+  cost_basis.close_today_commission = 0;
+  Portfolio portflio(init_cash);
+  portflio.InitInstrumentDetail("S1", 0.5, 20, cost_basis);
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
+  EXPECT_EQ(0, portflio.margin());
+  portflio.HandleOrder(MakeTradedOrder("A001", 20));
+  EXPECT_EQ(36000, portflio.margin());
+  EXPECT_EQ(init_cash - 36000 - 24, portflio.cash());
+  EXPECT_EQ(24, portflio.daily_commission());
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A002", "S1", OrderDirection::kSell, 200.0, 10));
+
+  portflio.HandleOrder(MakeTradedOrder("A002", 5));
+  EXPECT_EQ(10012, portflio.frozen_cash());
+  portflio.HandleOrder(MakeCanceledOrder("A002"));
+  EXPECT_EQ(30, portflio.daily_commission());
+  EXPECT_EQ(0, portflio.frozen_cash());
+}
+
+TEST(TestPortflioTest, RateCommission) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kRate;
+  cost_basis.open_commission = 5;
+  cost_basis.close_commission = 5;
+  cost_basis.close_today_commission = 0;
+  Portfolio portflio(init_cash);
+  portflio.InitInstrumentDetail("S1", 0.5, 20, cost_basis);
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kSell, 180.0, 20));
+  EXPECT_EQ(0, portflio.margin());
+  portflio.HandleOrder(MakeTradedOrder("A001", 20));
+  EXPECT_EQ(36000, portflio.margin());
+  EXPECT_EQ(init_cash - 36000 - 36, portflio.cash());
+  EXPECT_EQ(36, portflio.daily_commission());
+
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A002", "S1", OrderDirection::kSell, 200.0, 10));
+
+  portflio.HandleOrder(MakeTradedOrder("A002", 5));
+  EXPECT_EQ(10020, portflio.frozen_cash());
+  portflio.HandleOrder(MakeCanceledOrder("A002"));
+  EXPECT_EQ(46, portflio.daily_commission());
+  EXPECT_EQ(0, portflio.frozen_cash());
 }

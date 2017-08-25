@@ -1,8 +1,12 @@
 #include "position.h"
 #include <boost/assert.hpp>
 
-Position::Position(double margin_rate, int constract_multiple)
-    : margin_rate_(margin_rate), constract_multiple_(constract_multiple) {}
+Position::Position(double margin_rate,
+                   int constract_multiple,
+                   CostBasis cost_basis)
+    : margin_rate_(margin_rate),
+      constract_multiple_(constract_multiple),
+      cost_basis_(std::move(cost_basis)) {}
 
 void Position::TradedOpen(OrderDirection direction,
                           double price,

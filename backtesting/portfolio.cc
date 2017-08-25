@@ -10,11 +10,12 @@ Portfolio::Portfolio(double init_cash) {
   cash_ = init_cash;
 }
 
-void Portfolio::AddMargin(const std::string& instrument,
-                          double margin_rate,
-                          int constract_multiple) {
+void Portfolio::InitInstrumentDetail(const std::string& instrument,
+                                     double margin_rate,
+                                     int constract_multiple,
+                                     CostBasis cost_basis) {
   instrument_info_container_.insert(
-      {instrument, {margin_rate, constract_multiple}});
+      {instrument, {margin_rate, constract_multiple, cost_basis}});
 }
 
 void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
@@ -32,16 +33,24 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     // New Order
     if (IsOpenPositionEffect(order->position_effect)) {
       BOOST_ASSERT(order->traded_qty == 0);
-      BOOST_ASSERT(position_container_.find(order->instrument_id) ==
-                   position_container_.end());
       BOOST_ASSERT_MSG(instrument_info_container_.find(order->instrument_id) !=
                            instrument_info_container_.end(),
                        "The Instrument info must be found!");
-      auto ins_info = instrument_info_container_.at(order->instrument_id);
-      Position position(ins_info.first, ins_info.second);
-      position_container_.insert({order->instrument_id, std::move(position)});
+      double margin_rate = 0.0;
+      int constract_multiple = 0;
+      CostBasis cost_basis;
+      memset(&cost_basis, 0, sizeof(CostBasis));
+      std::tie(margin_rate, constract_multiple, cost_basis) =
+          instrument_info_container_.at(order->instrument_id);
+      if (position_container_.find(order->instrument_id) ==
+          position_container_.end()) {
+        Position position(margin_rate, constract_multiple, cost_basis);
+        position_container_.insert({order->instrument_id, std::move(position)});
+      }
       double frozen_cash =
-          order->price * order->qty * ins_info.first * ins_info.second;
+          order->price * order->qty * margin_rate * constract_multiple +
+          CalcCommission(PositionEffect::kOpen, order->price, order->qty,
+                         constract_multiple, cost_basis);
       frozen_cash_ += frozen_cash;
       cash_ -= frozen_cash;
     }
@@ -52,14 +61,14 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     switch (order->status) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
-        if (IsOpenPositionEffect(order->position_effect)) {
+        if (IsOpenPositionEffect(order->position_effect)) {  // Open
           Position& position = position_container_.at(order->instrument_id);
           double add_margin = 0.0;
           position.TradedOpen(order->direction, order->price, last_traded_qty,
                               &add_margin);
           frozen_cash_ -= add_margin;
           margin_ += add_margin;
-        } else {
+        } else {  // Close
           BOOST_ASSERT(position_container_.find(order->instrument_id) !=
                        position_container_.end());
           Position& position = position_container_.at(order->instrument_id);
@@ -78,9 +87,43 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
             position_container_.erase(order->instrument_id);
           }
         }
+
+        if (order->status == OrderStatus::kAllFilled) {
+          BOOST_ASSERT(instrument_info_container_.find(order->instrument_id) !=
+                       instrument_info_container_.end());
+          if (instrument_info_container_.find(order->instrument_id) !=
+              instrument_info_container_.end()) {
+            double margin_rate = 0;
+            int constract_mutiple = 0;
+            CostBasis cost_basis;
+            std::tie(margin_rate, constract_mutiple, cost_basis) =
+                instrument_info_container_.at(order->instrument_id);
+            frozen_cash_ -=
+                UpdateCostBasis(order->position_effect, order->price,
+                                order->qty, constract_mutiple, cost_basis);
+          }
+        }
       } break;
-      case OrderStatus::kCanceled:
-        break;
+      case OrderStatus::kCanceled: {
+        BOOST_ASSERT(instrument_info_container_.find(order->instrument_id) !=
+                     instrument_info_container_.end());
+        if (instrument_info_container_.find(order->instrument_id) !=
+            instrument_info_container_.end()) {
+          double margin_rate = 0;
+          int constract_mutiple = 0;
+          CostBasis cost_basis;
+          std::tie(margin_rate, constract_mutiple, cost_basis) =
+              instrument_info_container_.at(order->instrument_id);
+          (void)UpdateCostBasis(order->position_effect, order->price,
+                                order->qty - order->leaves_qty,
+                                constract_mutiple, cost_basis);
+          frozen_cash_ -=
+              (order->leaves_qty * order->price * margin_rate *
+                   constract_mutiple +
+               CalcCommission(order->position_effect, order->price, order->qty,
+                              constract_mutiple, cost_basis));
+        }
+      } break;
       case OrderStatus::kInputRejected:
         break;
       case OrderStatus::kCancelRejected:
@@ -90,4 +133,41 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     }
     order_container_[order->order_id] = order;
   }
+}
+
+double Portfolio::UpdateCostBasis(PositionEffect position_effect,
+                                  double price,
+                                  int qty,
+                                  int constract_multiple,
+                                  const CostBasis& const_basis) {
+  double commission = CalcCommission(position_effect, price, qty,
+                                     constract_multiple, const_basis);
+  daily_commission_ += commission;
+  return commission;
+}
+
+double Portfolio::CalcCommission(PositionEffect position_effect,
+                                 double price,
+                                 int qty,
+                                 int constract_multiple,
+                                 const CostBasis& cost_basis) {
+  double commission_param = 0.0;
+  switch (position_effect) {
+    case PositionEffect::kOpen:
+      commission_param = cost_basis.open_commission;
+      break;
+    case PositionEffect::kClose:
+      commission_param = cost_basis.close_commission;
+      break;
+    case PositionEffect::kCloseToday:
+      commission_param = cost_basis.close_today_commission;
+      break;
+    default:
+      BOOST_ASSERT(false);
+      break;
+  }
+
+  return cost_basis.type == CommissionType::kFixed
+             ? qty * commission_param / 100.0
+             : price * qty * constract_multiple * commission_param / 10000.0;
 }

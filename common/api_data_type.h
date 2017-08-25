@@ -27,4 +27,6 @@ typedef int64_t TimeStamp;
 
 typedef char InstrumentIDType[31];
 
+enum class CommissionType { kFixed, kRate };
+
 #endif  // COMMON_API_DATA_TYPE_H

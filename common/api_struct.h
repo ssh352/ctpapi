@@ -102,4 +102,11 @@ struct OpenOrder {
   int qty;
 };
 
+struct CostBasis {
+  CommissionType type;
+  int open_commission;
+  int close_commission;
+  int close_today_commission;
+};
+
 #endif  // COMMON_API_STRUCT_H

@@ -1,9 +1,9 @@
 #ifndef BACKTESTING_POSITION_H
 #define BACKTESTING_POSITION_H
-#include "common/api_data_type.h"
+#include "common/api_struct.h"
 class Position {
  public:
-  Position(double margin_rate, int constract_multiple);
+  Position(double margin_rate, int constract_multiple, CostBasis cost_basis);
   void TradedOpen(OrderDirection direction,
                   double price,
                   int last_traded_qty,
@@ -33,6 +33,7 @@ class Position {
   double unrealised_pnl_ = 0.0;
   int constract_multiple_ = 0;
   double margin_rate_ = 0.0;
+  CostBasis cost_basis_;
 };
 
 #endif  // BACKTESTING_POSITION_H
