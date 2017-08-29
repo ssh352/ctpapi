@@ -72,21 +72,23 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
 
     if (!long_limit_orders_.empty()) {
       auto end_it = long_limit_orders_.upper_bound(tick->tick->last_price);
-      std::for_each(
-          long_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
-            EnqueueFillEvent(lo.instrument, lo.order_id, lo.direction,
-                             lo.position_effect, lo.price, lo.price, lo.qty);
-          });
+      std::for_each(long_limit_orders_.begin(), end_it,
+                    [=](const LimitOrder& lo) {
+                      EnqueueRtnOrderEvent(lo.instrument, lo.order_id,
+                                           lo.direction, lo.position_effect,
+                                           lo.price, lo.price, lo.qty);
+                    });
       long_limit_orders_.erase(long_limit_orders_.begin(), end_it);
     }
 
     if (!short_limit_orders_.empty()) {
       auto end_it = short_limit_orders_.upper_bound(tick->tick->last_price);
-      std::for_each(
-          short_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
-            EnqueueFillEvent(lo.instrument, lo.order_id, lo.direction,
-                             lo.position_effect, lo.price, lo.price, lo.qty);
-          });
+      std::for_each(short_limit_orders_.begin(), end_it,
+                    [=](const LimitOrder& lo) {
+                      EnqueueRtnOrderEvent(lo.instrument, lo.order_id,
+                                           lo.direction, lo.position_effect,
+                                           lo.price, lo.price, lo.qty);
+                    });
       short_limit_orders_.erase(short_limit_orders_.begin(), end_it);
     }
   }
@@ -118,7 +120,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->traded_qty = 0;
     order->input_timestamp = timestamp;
     order->update_timestamp = timestamp;
-    event_factory_->EnqueueFillEvent(std::move(order));
+    event_factory_->EnqueueRtnOrderEvent(std::move(order));
   }
 
   virtual void HandleCancelOrder(const std::string& order_id) override {
@@ -150,13 +152,13 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     return;
   }
 
-  void EnqueueFillEvent(const std::string& instrument,
-                        const std::string& order_id,
-                        OrderDirection direction,
-                        PositionEffect position_effect,
-                        double input_price,
-                        double price,
-                        int qty) {
+  void EnqueueRtnOrderEvent(const std::string& instrument,
+                            const std::string& order_id,
+                            OrderDirection direction,
+                            PositionEffect position_effect,
+                            double input_price,
+                            double price,
+                            int qty) {
     if (order_id == "845") {
       int i = 0;
     }
@@ -173,7 +175,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
       order->qty = qty;
       order->traded_qty = qty;
       order->update_timestamp = current_tick_->timestamp;
-      event_factory_->EnqueueFillEvent(std::move(order));
+      event_factory_->EnqueueRtnOrderEvent(std::move(order));
     }
   }
 
@@ -190,7 +192,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->qty = limit_order.qty;
     order->traded_qty = 0;
     order->update_timestamp = current_tick_->timestamp;
-    event_factory_->EnqueueFillEvent(std::move(order));
+    event_factory_->EnqueueRtnOrderEvent(std::move(order));
   }
 
  private:

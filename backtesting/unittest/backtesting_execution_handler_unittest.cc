@@ -11,7 +11,7 @@ class TestEventFactory : public AbstractEventFactory {
   virtual void EnqueueTickEvent(
       const std::shared_ptr<TickData>& tick) const override {}
 
-  virtual void EnqueueFillEvent(
+  virtual void EnqueueRtnOrderEvent(
       const std::shared_ptr<OrderField>& order) const override {
     orders_.push_back(order);
   }

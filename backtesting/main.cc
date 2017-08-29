@@ -136,7 +136,7 @@ class BacktestingEventFactory : public AbstractEventFactory {
         strategy_, execution_handler_, portfolio_handler_, tick));
   }
 
-  virtual void EnqueueFillEvent(
+  virtual void EnqueueRtnOrderEvent(
       const std::shared_ptr<OrderField>& order) const override {
     event_queue_->push_back(
         std::make_shared<FillEvent>(strategy_, portfolio_handler_, order));
