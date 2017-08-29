@@ -59,7 +59,6 @@ class MyStrategy : public AbstractStrategy {
             &item.first.get()[i], null_deleter));
       }
     }
-
     range_beg_it_ = transactions_.begin();
   }
 
@@ -95,6 +94,7 @@ class MyStrategy : public AbstractStrategy {
   std::list<std::shared_ptr<CTATransaction>>::iterator range_beg_it_;
   std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
       keep_memory_;
+  
 };
 
 #endif  // BACKTESTING_STRATEGY_H

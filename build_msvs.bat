@@ -1,5 +1,5 @@
 @ECHO OFF
-set GYP_MSVS_VERSION=2015
+set GYP_MSVS_VERSION=2017
 SET GYP_GENERATORS=msvs
 REM set GYP_DEFINES= component=shared_library enable_protobuf_log=1
 REM set GYP_DEFINES= component=static_library enable_protobuf_log=0
