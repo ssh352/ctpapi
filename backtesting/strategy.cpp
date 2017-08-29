@@ -1,15 +1,12 @@
 #include "strategy.h"
 
-MyStrategy::MyStrategy(const std::string& instrument,
-                       AbstractEventFactory* event_factory)
-    : event_factory_(event_factory) {
-  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
-      "d:/cta_tstable.h5");
-  keep_memory_ = cta_trasaction_series_data_base.ReadRange(
-      str(boost::format("/%s") % instrument),
-      boost::posix_time::time_from_string("2016-12-01 09:00:00"),
-      boost::posix_time::time_from_string("2017-07-31 15:00:00"));
-
+#include "cta_transaction_series_data_base.h"
+MyStrategy::MyStrategy(
+    AbstractEventFactory* event_factory,
+    std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
+        cta_signal_container)
+    : event_factory_(event_factory),
+      keep_memory_(std::move(cta_signal_container)) {
   auto null_deleter = [](CTATransaction*) {};
   for (auto& item : keep_memory_) {
     for (int i = 0; i < item.second; ++i) {

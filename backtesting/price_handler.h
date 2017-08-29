@@ -6,20 +6,15 @@
 
 class PriceHandler {
  public:
-  PriceHandler(const std::string& market,
-               const std::string& instrument,
-               bool* running,
-               AbstractEventFactory* tick_event_factory)
+  PriceHandler(
+      const std::string& instrument,
+      bool* running,
+      AbstractEventFactory* tick_event_factory,
+      std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> > tick_containter)
       : instrument_(std::make_shared<std::string>(instrument)),
         running_(running),
-        tick_event_factory_(tick_event_factory) {
-    TickSeriesDataBase ts_db("d:/ts_futures.h5");
-    tick_containter_ = ts_db.ReadRange(
-        str(boost::format("/%s/%s") % market % instrument),
-        // boost::posix_time::time_from_string("2016-12-01 09:00:00"),
-        boost::posix_time::time_from_string("2016-12-05 09:00:00"),
-        boost::posix_time::time_from_string("2017-07-31 15:00:00"));
-
+        tick_event_factory_(tick_event_factory),
+        tick_containter_(std::move(tick_containter)) {
     it_ = tick_containter_.begin();
   }
 

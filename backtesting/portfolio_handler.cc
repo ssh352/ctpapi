@@ -3,12 +3,16 @@
 
 BacktestingPortfolioHandler::BacktestingPortfolioHandler(
     double init_cash,
-    AbstractEventFactory* event_factory)
+    AbstractEventFactory* event_factory,
+    std::string instrument,
+    double margin_rate,
+    int constract_multiple,
+    CostBasis cost_basis)
     : portfolio_(init_cash),
       event_factory_(event_factory),
       csv_("equitys.csv") {
-  portfolio_.InitInstrumentDetail(
-      "m1705", 0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165});
+  portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
+                                  constract_multiple, std::move(cost_basis));
 }
 
 void BacktestingPortfolioHandler::HandleTick(

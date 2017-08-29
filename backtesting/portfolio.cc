@@ -10,12 +10,13 @@ Portfolio::Portfolio(double init_cash) {
   cash_ = init_cash;
 }
 
-void Portfolio::InitInstrumentDetail(const std::string& instrument,
+void Portfolio::InitInstrumentDetail(std::string instrument,
                                      double margin_rate,
                                      int constract_multiple,
                                      CostBasis cost_basis) {
   instrument_info_container_.insert(
-      {instrument, {margin_rate, constract_multiple, cost_basis}});
+      {std::move(instrument),
+       {margin_rate, constract_multiple, std::move(cost_basis)}});
 }
 
 void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {

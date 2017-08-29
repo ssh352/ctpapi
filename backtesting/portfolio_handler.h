@@ -21,7 +21,11 @@ class AbstractPortfolioHandler {
 class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
  public:
   BacktestingPortfolioHandler(double init_cash,
-                              AbstractEventFactory* event_factory);
+                              AbstractEventFactory* event_factory,
+                              std::string instrument,
+                              double margin_rate,
+                              int constract_multiple,
+                              CostBasis cost_basis);
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
 
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override;

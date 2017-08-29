@@ -206,15 +206,42 @@ int main(int argc, char* argv[]) {
 
   double init_cash = 50 * 10000;
 
+  std::string market = "dc";
+
+  std::string instrument = "m1705";
+
+  std::string ts_tick_path = "d:/ts_futures.h5";
+
+  std::string datetime_from = "2016-12-05 09:00:00";
+
+  std::string datetime_to = "2017-07-31 15:00:00";
+
+  std::string ts_cta_signal_path = "d:/cta_tstable.h5";
+
   BacktestingEventFactory event_factory(&event_queue);
 
-  MyStrategy strategy("m1705", &event_factory);
+  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
+      ts_cta_signal_path.c_str());
+
+  MyStrategy strategy(&event_factory,
+                      cta_trasaction_series_data_base.ReadRange(
+                          str(boost::format("/%s") % instrument),
+                          boost::posix_time::time_from_string(datetime_from),
+                          boost::posix_time::time_from_string(datetime_to)));
 
   SimulatedExecutionHandler execution_handler(&event_factory);
 
-  PriceHandler price_handler("dc", "m1705", &running, &event_factory);
+  TickSeriesDataBase ts_db(ts_tick_path.c_str());
 
-  BacktestingPortfolioHandler portfolio_handler_(init_cash, &event_factory);
+  PriceHandler price_handler(
+      instrument, &running, &event_factory,
+      ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
+                      boost::posix_time::time_from_string(datetime_from),
+                      boost::posix_time::time_from_string(datetime_to)));
+
+  BacktestingPortfolioHandler portfolio_handler_(
+      init_cash, &event_factory, std::move(instrument), 0.1, 10,
+      CostBasis{CommissionType::kFixed, 165, 165, 165});
 
   event_factory.SetStrategy(&strategy);
 

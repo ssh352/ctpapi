@@ -9,7 +9,7 @@ class Portfolio {
  public:
   Portfolio(double init_cash);
 
-  void InitInstrumentDetail(const std::string& instrument,
+  void InitInstrumentDetail(std::string instrument,
                             double margin_rate,
                             int constract_multiple,
                             CostBasis cost_basis);

@@ -6,7 +6,6 @@
 #include "common/api_struct.h"
 #include "event.h"
 #include "execution_handler.h"
-#include "cta_transaction_series_data_base.h"
 #include "event_factory.h"
 
 class AbstractExecutionHandler;
@@ -52,8 +51,9 @@ class AbstractStrategy {
 
 class MyStrategy : public AbstractStrategy {
  public:
-  MyStrategy(const std::string& instrument,
-             AbstractEventFactory* event_factory);
+  MyStrategy(AbstractEventFactory* event_factory,
+             std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
+                 cta_signal_container);
 
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
 
