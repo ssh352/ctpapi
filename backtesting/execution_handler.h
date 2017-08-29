@@ -198,7 +198,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->price = limit_order.price;
     order->avg_price = limit_order.price;
     order->leaves_qty = limit_order.qty;
-    order->qty = limit_order.price;
+    order->qty = limit_order.qty;
     order->traded_qty = 0;
     event_factory_->EnqueueFillEvent(std::move(order));
 

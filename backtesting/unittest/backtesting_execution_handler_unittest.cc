@@ -187,5 +187,8 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(OrderStatus::kCanceled, order->status);
+    EXPECT_EQ(10, order->qty);
+    EXPECT_EQ(10, order->leaves_qty);
+    EXPECT_EQ(0, order->traded_qty);
   }
 }
