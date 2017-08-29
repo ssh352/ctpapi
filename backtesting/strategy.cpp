@@ -4,9 +4,13 @@
 MyStrategy::MyStrategy(
     AbstractEventFactory* event_factory,
     std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
-        cta_signal_container)
+        cta_signal_container,
+    int delayed_input_order_minute,
+    int cancel_order_after_minute)
     : event_factory_(event_factory),
-      keep_memory_(std::move(cta_signal_container)) {
+      keep_memory_(std::move(cta_signal_container)),
+      delayed_input_order_minute_(delayed_input_order_minute),
+      cancel_order_after_minute_(cancel_order_after_minute) {
   auto null_deleter = [](CTATransaction*) {};
   for (auto& item : keep_memory_) {
     for (int i = 0; i < item.second; ++i) {
@@ -25,7 +29,7 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
   {
     auto end_it = std::upper_bound(
         delay_input_order_.begin(), delay_input_order_.end(),
-        tick->tick->timestamp - 1 * 60 * 1000,
+        tick->tick->timestamp - delayed_input_order_minute_ * 60 * 1000,
         [](TimeStamp timestamp, const std::shared_ptr<CTATransaction>& tran) {
           return timestamp < tran->timestamp;
         });
@@ -68,8 +72,8 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
   range_beg_it_ = end_it;
 
   if (!unfill_orders_.empty()) {
-    auto end_it =
-        unfill_orders_.upper_bound(tick->tick->timestamp - 10 * 60 * 1000);
+    auto end_it = unfill_orders_.upper_bound(
+        tick->tick->timestamp - cancel_order_after_minute_ * 60 * 1000);
     std::for_each(unfill_orders_.begin(), end_it,
                   [=](const std::shared_ptr<OrderField>& order) {
                     event_factory_->EnqueueCancelOrderEvent(order->order_id);

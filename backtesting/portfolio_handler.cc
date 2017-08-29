@@ -10,7 +10,7 @@ BacktestingPortfolioHandler::BacktestingPortfolioHandler(
     CostBasis cost_basis)
     : portfolio_(init_cash),
       event_factory_(event_factory),
-      csv_("equitys.csv") {
+      csv_(instrument + "_equitys.csv") {
   portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
                                   constract_multiple, std::move(cost_basis));
 }

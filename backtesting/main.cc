@@ -127,8 +127,9 @@ class CancelOrderEvent : public AbstractEvent {
 class BacktestingEventFactory : public AbstractEventFactory {
  public:
   BacktestingEventFactory(
-      std::list<std::shared_ptr<AbstractEvent>>* event_queue)
-      : event_queue_(event_queue), orders_csv_("orders.csv") {}
+      std::list<std::shared_ptr<AbstractEvent>>* event_queue,
+      const std::string& prefix_)
+      : event_queue_(event_queue), orders_csv_(prefix_ + "_orders.csv") {}
 
   virtual void EnqueueTickEvent(
       const std::shared_ptr<TickData>& tick) const override {
@@ -208,7 +209,7 @@ int main(int argc, char* argv[]) {
 
   std::string market = "dc";
 
-  std::string instrument = "m1705";
+  std::string instrument = "a1709";
 
   std::string ts_tick_path = "d:/ts_futures.h5";
 
@@ -218,7 +219,7 @@ int main(int argc, char* argv[]) {
 
   std::string ts_cta_signal_path = "d:/cta_tstable.h5";
 
-  BacktestingEventFactory event_factory(&event_queue);
+  BacktestingEventFactory event_factory(&event_queue, instrument);
 
   CTATransactionSeriesDataBase cta_trasaction_series_data_base(
       ts_cta_signal_path.c_str());
@@ -227,7 +228,8 @@ int main(int argc, char* argv[]) {
                       cta_trasaction_series_data_base.ReadRange(
                           str(boost::format("/%s") % instrument),
                           boost::posix_time::time_from_string(datetime_from),
-                          boost::posix_time::time_from_string(datetime_to)));
+                          boost::posix_time::time_from_string(datetime_to)),
+                      1, 10);
 
   SimulatedExecutionHandler execution_handler(&event_factory);
 

@@ -53,7 +53,9 @@ class MyStrategy : public AbstractStrategy {
  public:
   MyStrategy(AbstractEventFactory* event_factory,
              std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
-                 cta_signal_container);
+                 cta_signal_container,
+             int delayed_input_order_minute,
+             int cancel_order_after_minute);
 
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
 
@@ -98,6 +100,9 @@ class MyStrategy : public AbstractStrategy {
   std::list<std::shared_ptr<CTATransaction>> delay_input_order_;
 
   std::set<std::shared_ptr<OrderField>, CompareOrderId> unfill_orders_;
+
+  int delayed_input_order_minute_ = 0;
+  int cancel_order_after_minute_ = 0;
 };
 
 #endif  // BACKTESTING_STRATEGY_H
