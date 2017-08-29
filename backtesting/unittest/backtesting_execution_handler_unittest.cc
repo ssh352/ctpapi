@@ -43,6 +43,9 @@ class TestEventFactory : public AbstractEventFactory {
                                        double price,
                                        int qty,
                                        TimeStamp timestamp) const override {}
+
+  // Inherited via AbstractEventFactory
+  virtual void EnqueueCancelOrderEvent(const std::string& order_id) override {}
 };
 
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {

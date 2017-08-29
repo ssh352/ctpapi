@@ -48,6 +48,8 @@ class AbstractExecutionHandler {
                                  double price,
                                  int qty,
                                  TimeStamp timestamp) = 0;
+
+  virtual void HandleCancelOrder(const std::string& order_id) = 0;
 };
 
 class SimulatedExecutionHandler : public AbstractExecutionHandler {
@@ -115,6 +117,8 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->leaves_qty = qty;
     order->qty = qty;
     order->traded_qty = 0;
+    order->input_timestamp = timestamp;
+    order->update_timestamp = timestamp;
     event_factory_->EnqueueFillEvent(std::move(order));
     orders_csv_ << timestamp << ","
                 << (position_effect == PositionEffect::kOpen ? "O" : "C") << ","
@@ -123,7 +127,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
                 << "," << qty << "\n";
   }
 
-  void HandleCancelOrder(const std::string& order_id) {
+  virtual void HandleCancelOrder(const std::string& order_id) override {
     auto find_it =
         std::find_if(long_limit_orders_.begin(), long_limit_orders_.end(),
                      [=](const LimitOrder& limit_order) {
@@ -131,8 +135,8 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
                      });
 
     if (find_it != long_limit_orders_.end()) {
-      long_limit_orders_.erase(find_it);
       EnqueueCancelOrderEvent(*find_it);
+      long_limit_orders_.erase(find_it);
       return;
     }
 
@@ -147,7 +151,8 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
       return;
     }
 
-    BOOST_ASSERT(false);
+    // TODO: tag warning!
+    // BOOST_ASSERT(false);
     return;
   }
 
@@ -158,6 +163,9 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
                         double input_price,
                         double price,
                         int qty) {
+    if (order_id == "845") {
+      int i = 0;
+    }
     {
       auto order = std::make_shared<OrderField>();
       order->order_id = order_id;
@@ -170,6 +178,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
       order->leaves_qty = 0;
       order->qty = qty;
       order->traded_qty = qty;
+      order->update_timestamp = current_tick_->timestamp;
       event_factory_->EnqueueFillEvent(std::move(order));
       orders_csv_ << current_tick_->timestamp << ","
                   << (position_effect == PositionEffect::kOpen ? "O" : "C")

@@ -161,8 +161,9 @@ void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
 
 int Portfolio::GetPositionCloseableQty(const std::string& instrument,
                                        OrderDirection direction) const {
-  BOOST_ASSERT(position_container_.find(instrument) !=
-               position_container_.end());
+  // TODO: Should be tag warrning!
+  //   BOOST_ASSERT(position_container_.find(instrument) !=
+  //                position_container_.end());
 
   if (position_container_.find(instrument) != position_container_.end()) {
     const auto& position = position_container_.at(instrument);

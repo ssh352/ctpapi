@@ -1,11 +1,15 @@
 #ifndef BACKTESTING_STRATEGY_H
 #define BACKTESTING_STRATEGY_H
 #include <boost/format.hpp>
+#include <list>
+#include <set>
 #include "common/api_struct.h"
 #include "event.h"
 #include "execution_handler.h"
 #include "cta_transaction_series_data_base.h"
+#include "event_factory.h"
 
+class AbstractExecutionHandler;
 class InputOrderEvent : public AbstractEvent {
  public:
   InputOrderEvent(AbstractExecutionHandler* execution_handler,
@@ -41,63 +45,59 @@ class InputOrderEvent : public AbstractEvent {
 
 class AbstractStrategy {
  public:
+  virtual void HandleCloseMarket() = 0;
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
 };
 
 class MyStrategy : public AbstractStrategy {
  public:
-  MyStrategy(const std::string& instrument, AbstractEventFactory* event_factory)
-      : event_factory_(event_factory) {
-    CTATransactionSeriesDataBase cta_trasaction_series_data_base(
-        "d:/cta_tstable.h5");
-    keep_memory_ = cta_trasaction_series_data_base.ReadRange(
-        str(boost::format("/%s") % instrument),
-        boost::posix_time::time_from_string("2016-12-01 09:00:00"),
-        boost::posix_time::time_from_string("2017-07-31 15:00:00"));
+  MyStrategy(const std::string& instrument,
+             AbstractEventFactory* event_factory);
 
-    auto null_deleter = [](CTATransaction*) {};
-    for (auto& item : keep_memory_) {
-      for (int i = 0; i < item.second; ++i) {
-        transactions_.push_back(std::shared_ptr<CTATransaction>(
-            &item.first.get()[i], null_deleter));
-      }
-    }
-    range_beg_it_ = transactions_.begin();
-  }
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
 
-  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
-    if (range_beg_it_ == transactions_.end()) {
-      return;
-    }
+  virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override;
 
-    auto end_it =
-        std::upper_bound(range_beg_it_, transactions_.end(), tick,
-                         [](const std::shared_ptr<TickData>& tick,
-                            const std::shared_ptr<CTATransaction>& tran) {
-                           return tick->tick->timestamp < tran->timestamp;
-                         });
-
-    for (auto i = range_beg_it_; i != end_it; ++i) {
-      event_factory_->EnqueueInputOrderSignal(
-          *tick->instrument,
-          (*i)->position_effect == 0 ? PositionEffect::kOpen
-                                     : PositionEffect::kClose,
-          (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
-          (*i)->price, (*i)->qty, tick->tick->timestamp);
-    }
-
-    range_beg_it_ = end_it;
-  }
-
-  virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override {}
+  // Inherited via AbstractStrategy
+  virtual void HandleCloseMarket();
 
  private:
+  class CompareOrderId {
+   public:
+    using is_transparent = void;
+    bool operator()(const std::shared_ptr<OrderField>& l,
+                    const std::shared_ptr<OrderField>& r) const {
+      return l->order_id < r->order_id;
+    }
+
+    bool operator()(const std::string& order_id,
+                    const std::shared_ptr<OrderField>& r) const {
+      return order_id < r->order_id;
+    }
+
+    bool operator()(const std::shared_ptr<OrderField>& l,
+                    const std::string& order_id) const {
+      return l->order_id < order_id;
+    }
+    bool operator()(const std::shared_ptr<OrderField>& l,
+                    TimeStamp timestamp) const {
+      return l->input_timestamp < timestamp;
+    }
+    bool operator()(TimeStamp timestamp,
+                    const std::shared_ptr<OrderField>& l) const {
+      return timestamp < l->input_timestamp;
+    }
+  };
   AbstractEventFactory* event_factory_;
   std::list<std::shared_ptr<CTATransaction>> transactions_;
   std::list<std::shared_ptr<CTATransaction>>::iterator range_beg_it_;
   std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
       keep_memory_;
+
+  std::list<std::shared_ptr<CTATransaction>> delay_input_order_;
+
+  std::set<std::shared_ptr<OrderField>, CompareOrderId> unfill_orders_;
 };
 
 #endif  // BACKTESTING_STRATEGY_H

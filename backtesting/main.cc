@@ -26,9 +26,10 @@ class TickEvent : public AbstractEvent {
         portfolio_handler_(portfolio_handler),
         tick_(tick) {}
   virtual void Do() override {
-    strategy_->HandleTick(tick_);
+    // The order is import!
     execution_handler_->HandleTick(tick_);
     portfolio_handler_->HandleTick(tick_);
+    strategy_->HandleTick(tick_);
   }
 
  private:
@@ -60,13 +61,18 @@ class FillEvent : public AbstractEvent {
 
 class CloseMarketEvent : public AbstractEvent {
  public:
-  CloseMarketEvent(AbstractPortfolioHandler* portfolio_handler)
-      : portfolio_handler_(portfolio_handler) {}
+  CloseMarketEvent(AbstractPortfolioHandler* portfolio_handler,
+                   AbstractStrategy* strategy)
+      : portfolio_handler_(portfolio_handler), strategy_(strategy) {}
 
-  virtual void Do() override { portfolio_handler_->HandleCloseMarket(); }
+  virtual void Do() override {
+    portfolio_handler_->HandleCloseMarket();
+    strategy_->HandleCloseMarket();
+  }
 
  private:
   AbstractPortfolioHandler* portfolio_handler_;
+  AbstractStrategy* strategy_;
 };
 
 class InputOrderSignal : public AbstractEvent {
@@ -100,6 +106,22 @@ class InputOrderSignal : public AbstractEvent {
   double price_;
   int qty_;
   TimeStamp timestamp_;
+};
+
+class CancelOrderEvent : public AbstractEvent {
+ public:
+  CancelOrderEvent(AbstractExecutionHandler* exectuion_handler,
+                   std::string order_id)
+      : exectuion_handler_(exectuion_handler), order_id_(std::move(order_id)) {}
+
+  // Inherited via AbstractEvent
+  virtual void Do() override {
+    exectuion_handler_->HandleCancelOrder(order_id_);
+  }
+
+ private:
+  AbstractExecutionHandler* exectuion_handler_;
+  std::string order_id_;
 };
 
 class BacktestingEventFactory : public AbstractEventFactory {
@@ -154,7 +176,13 @@ class BacktestingEventFactory : public AbstractEventFactory {
 
   virtual void EnqueueCloseMarketEvent() override {
     event_queue_->push_back(
-        std::make_shared<CloseMarketEvent>(portfolio_handler_));
+        std::make_shared<CloseMarketEvent>(portfolio_handler_, strategy_));
+  }
+
+  // Inherited via AbstractEventFactory
+  virtual void EnqueueCancelOrderEvent(const std::string& order_id) override {
+    event_queue_->push_back(
+        std::make_shared<CancelOrderEvent>(execution_handler_, order_id));
   }
 
  private:

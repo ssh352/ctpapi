@@ -3,9 +3,6 @@
 #include <memory>
 #include "common/api_struct.h"
 
-struct Tick;
-class AbstractEvent;
-
 class AbstractEventFactory {
  public:
   virtual void EnqueueTickEvent(
@@ -27,6 +24,8 @@ class AbstractEventFactory {
                                        double price,
                                        int qty,
                                        TimeStamp timestamp) const = 0;
+
+  virtual void EnqueueCancelOrderEvent(const std::string& order_id) = 0;
 
   virtual void EnqueueCloseMarketEvent() = 0;
 };

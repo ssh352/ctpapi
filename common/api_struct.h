@@ -20,12 +20,12 @@ struct OrderField {
   int raw_error_id;
   double price;
   double avg_price;
+  TimeStamp input_timestamp;
+  TimeStamp update_timestamp;
   std::string strategy_id;
   std::string instrument_id;
   std::string exchange_id;
   std::string date;
-  std::string input_time;
-  std::string update_time;
   std::string order_id;
   std::string raw_error_message;
 };
