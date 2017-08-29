@@ -34,7 +34,8 @@ inline void BacktestingPortfolioHandler::HandlerInputOrder(
     PositionEffect position_effect,
     OrderDirection direction,
     double price,
-    int qty) {
+    int qty,
+    TimeStamp timestamp) {
   if (position_effect == PositionEffect::kClose ||
       position_effect == PositionEffect::kCloseToday) {
     int position_qty = portfolio_.GetPositionCloseableQty(
@@ -47,5 +48,5 @@ inline void BacktestingPortfolioHandler::HandlerInputOrder(
   }
 
   event_factory_->EnqueueInputOrderEvent(instrument, position_effect, direction,
-                                         price, qty);
+                                         price, qty, timestamp);
 }

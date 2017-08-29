@@ -46,7 +46,8 @@ class AbstractExecutionHandler {
                                  PositionEffect position_effect,
                                  OrderDirection direction,
                                  double price,
-                                 int qty) = 0;
+                                 int qty,
+                                 TimeStamp timestamp) = 0;
 };
 
 class SimulatedExecutionHandler : public AbstractExecutionHandler {
@@ -93,7 +94,8 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
                                  PositionEffect position_effect,
                                  OrderDirection direction,
                                  double price,
-                                 int qty) override {
+                                 int qty,
+                                 TimeStamp timestamp) override {
     std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
     if (direction == OrderDirection::kBuy) {
       long_limit_orders_.insert(
@@ -114,22 +116,11 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->qty = qty;
     order->traded_qty = 0;
     event_factory_->EnqueueFillEvent(std::move(order));
-    /*
-    boost::posix_time::ptime pt(
-        boost::gregorian::date(1970, 1, 1),
-        boost::posix_time::milliseconds(current_tick_->timestamp));
-
-    orders_csv_ << current_tick_->timestamp << ","
-                << boost::posix_time::to_simple_string(pt) << ","
+    orders_csv_ << timestamp << ","
                 << (position_effect == PositionEffect::kOpen ? "O" : "C") << ","
                 << (direction == OrderDirection::kBuy ? "B" : "S") << ","
                 << static_cast<int>(OrderStatus::kActive) << "," << order->price
                 << "," << qty << "\n";
-    
-
-
-
-    */
   }
 
   void HandleCancelOrder(const std::string& order_id) {
@@ -180,12 +171,7 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
       order->qty = qty;
       order->traded_qty = qty;
       event_factory_->EnqueueFillEvent(std::move(order));
-      boost::posix_time::ptime pt(
-          boost::gregorian::date(1970, 1, 1),
-          boost::posix_time::milliseconds(current_tick_->timestamp));
-
       orders_csv_ << current_tick_->timestamp << ","
-                  << boost::posix_time::to_simple_string(pt) << ","
                   << (position_effect == PositionEffect::kOpen ? "O" : "C")
                   << "," << (direction == OrderDirection::kBuy ? "B" : "S")
                   << "," << static_cast<int>(OrderStatus::kAllFilled) << ","
@@ -206,12 +192,8 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->qty = limit_order.price;
     order->traded_qty = 0;
     event_factory_->EnqueueFillEvent(std::move(order));
-    boost::posix_time::ptime pt(
-        boost::gregorian::date(1970, 1, 1),
-        boost::posix_time::milliseconds(current_tick_->timestamp));
 
     orders_csv_ << current_tick_->timestamp << ","
-                << boost::posix_time::to_simple_string(pt) << ","
                 << (limit_order.position_effect == PositionEffect::kOpen ? "O"
                                                                          : "C")
                 << ","

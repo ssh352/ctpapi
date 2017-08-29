@@ -20,7 +20,8 @@ class TestEventFactory : public AbstractEventFactory {
                                       PositionEffect position_effect,
                                       OrderDirection order_direction,
                                       double price,
-                                      int qty) const override {}
+                                      int qty,
+                                      TimeStamp timestamp) const override {}
 
   virtual void EnqueueCloseMarketEvent() override {}
 
@@ -40,7 +41,8 @@ class TestEventFactory : public AbstractEventFactory {
                                        PositionEffect position_effect,
                                        OrderDirection order_direction,
                                        double price,
-                                       int qty) const override {}
+                                       int qty,
+                                       TimeStamp timestamp) const override {}
 };
 
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {
@@ -48,7 +50,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   SimulatedExecutionHandler execution_handler(&event_factory);
 
   execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kBuy, 1.1, 10);
+                                      OrderDirection::kBuy, 1.1, 10, 0);
   {
     auto order = event_factory.PopupRntOrder();
 
@@ -59,7 +61,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   }
 
   execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kBuy, 0.9, 10);
+                                      OrderDirection::kBuy, 0.9, 10, 0);
 
   {
     auto order = event_factory.PopupRntOrder();
@@ -107,7 +109,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
   SimulatedExecutionHandler execution_handler(&event_factory);
 
   execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 1.1, 10);
+                                      OrderDirection::kSell, 1.1, 10, 0);
   {
     auto order = event_factory.PopupRntOrder();
 
@@ -118,7 +120,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
   }
 
   execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 0.9, 10);
+                                      OrderDirection::kSell, 0.9, 10, 0);
 
   {
     auto order = event_factory.PopupRntOrder();
@@ -166,7 +168,7 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
   SimulatedExecutionHandler execution_handler(&event_factory);
 
   execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 1.1, 10);
+                                      OrderDirection::kSell, 1.1, 10, 0);
 
   auto order = event_factory.PopupRntOrder();
   EXPECT_EQ(PositionEffect::kOpen, order->position_effect);

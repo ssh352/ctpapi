@@ -76,17 +76,20 @@ class InputOrderSignal : public AbstractEvent {
                    PositionEffect position_effect,
                    OrderDirection order_direction,
                    double price,
-                   int qty)
+                   int qty,
+                   TimeStamp timestamp)
       : portfolio_handler_(portfolio_handler),
         instrument_(std::move(instrument)),
         position_effect_(position_effect),
         order_direction_(order_direction),
         price_(price),
-        qty_(qty) {}
+        qty_(qty),
+        timestamp_(timestamp) {}
 
   virtual void Do() override {
     portfolio_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                          order_direction_, price_, qty_);
+                                          order_direction_, price_, qty_,
+                                          timestamp_);
   }
 
  private:
@@ -96,6 +99,7 @@ class InputOrderSignal : public AbstractEvent {
   OrderDirection order_direction_;
   double price_;
   int qty_;
+  TimeStamp timestamp_;
 };
 
 class BacktestingEventFactory : public AbstractEventFactory {
@@ -120,20 +124,22 @@ class BacktestingEventFactory : public AbstractEventFactory {
                                       PositionEffect position_effect,
                                       OrderDirection order_direction,
                                       double price,
-                                      int qty) const override {
+                                      int qty,
+                                      TimeStamp timestamp) const override {
     event_queue_->push_back(std::make_shared<InputOrderEvent>(
         execution_handler_, instrument, position_effect, order_direction, price,
-        qty));
+        qty, timestamp));
   }
 
   virtual void EnqueueInputOrderSignal(const std::string& instrument,
                                        PositionEffect position_effect,
                                        OrderDirection order_direction,
                                        double price,
-                                       int qty) const override {
+                                       int qty,
+                                       TimeStamp timestamp) const override {
     event_queue_->push_back(std::make_shared<InputOrderSignal>(
         portfolio_handler_, instrument, position_effect, order_direction, price,
-        qty));
+        qty, timestamp));
   }
 
   void SetStrategy(AbstractStrategy* strategy) { strategy_ = strategy; }

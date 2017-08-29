@@ -14,7 +14,8 @@ class AbstractPortfolioHandler {
                                  PositionEffect position_effect,
                                  OrderDirection direction,
                                  double price,
-                                 int qty) = 0;
+                                 int qty,
+                                 TimeStamp timestamp) = 0;
 };
 
 class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
@@ -31,7 +32,8 @@ class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
                                  PositionEffect position_effect,
                                  OrderDirection direction,
                                  double price,
-                                 int qty) override;
+                                 int qty,
+                                 TimeStamp timestamp) override;
 
  private:
   Portfolio portfolio_;
