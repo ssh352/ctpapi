@@ -69,6 +69,35 @@ class CloseMarketEvent : public AbstractEvent {
   AbstractPortfolioHandler* portfolio_handler_;
 };
 
+class InputOrderSignal : public AbstractEvent {
+ public:
+  InputOrderSignal(AbstractPortfolioHandler* portfolio_handler,
+                   std::string instrument,
+                   PositionEffect position_effect,
+                   OrderDirection order_direction,
+                   double price,
+                   int qty)
+      : portfolio_handler_(portfolio_handler),
+        instrument_(std::move(instrument)),
+        position_effect_(position_effect),
+        order_direction_(order_direction),
+        price_(price),
+        qty_(qty) {}
+
+  virtual void Do() override {
+    portfolio_handler_->HandlerInputOrder(instrument_, position_effect_,
+                                          order_direction_, price_, qty_);
+  }
+
+ private:
+  AbstractPortfolioHandler* portfolio_handler_;
+  std::string instrument_;
+  PositionEffect position_effect_;
+  OrderDirection order_direction_;
+  double price_;
+  int qty_;
+};
+
 class BacktestingEventFactory : public AbstractEventFactory {
  public:
   BacktestingEventFactory(
@@ -97,6 +126,16 @@ class BacktestingEventFactory : public AbstractEventFactory {
         qty));
   }
 
+  virtual void EnqueueInputOrderSignal(const std::string& instrument,
+                                       PositionEffect position_effect,
+                                       OrderDirection order_direction,
+                                       double price,
+                                       int qty) const override {
+    event_queue_->push_back(std::make_shared<InputOrderSignal>(
+        portfolio_handler_, instrument, position_effect, order_direction, price,
+        qty));
+  }
+
   void SetStrategy(AbstractStrategy* strategy) { strategy_ = strategy; }
 
   void SetExecutionHandler(AbstractExecutionHandler* execution_handler) {
@@ -116,7 +155,6 @@ class BacktestingEventFactory : public AbstractEventFactory {
   std::list<std::shared_ptr<AbstractEvent>>* event_queue_;
   AbstractStrategy* strategy_;
   AbstractExecutionHandler* execution_handler_;
-
   AbstractPortfolioHandler* portfolio_handler_;
 };
 
@@ -136,7 +174,7 @@ int main(int argc, char* argv[]) {
 
   PriceHandler price_handler("dc", "m1705", &running, &event_factory);
 
-  BacktestingPortfolioHandler portfolio_handler_(init_cash);
+  BacktestingPortfolioHandler portfolio_handler_(init_cash, &event_factory);
 
   event_factory.SetStrategy(&strategy);
 

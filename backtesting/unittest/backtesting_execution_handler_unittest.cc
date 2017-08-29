@@ -4,7 +4,6 @@
 #include "execution_handler.h"
 #include "event_factory.h"
 #include "unittest_helper.h"
-#include "backtesting_execution_handler.h"
 
 class TestEventFactory : public AbstractEventFactory {
  public:
@@ -35,6 +34,13 @@ class TestEventFactory : public AbstractEventFactory {
   }
 
   mutable std::list<std::shared_ptr<OrderField> > orders_;
+
+  // Inherited via AbstractEventFactory
+  virtual void EnqueueInputOrderSignal(const std::string& instrument,
+                                       PositionEffect position_effect,
+                                       OrderDirection order_direction,
+                                       double price,
+                                       int qty) const override {}
 };
 
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {

@@ -18,6 +18,13 @@ class Portfolio {
 
   void HandleOrder(const std::shared_ptr<OrderField>& order);
 
+  void HandleNewInputCloseOrder(const std::string& instrument,
+                                OrderDirection direction,
+                                int qty);
+
+  int GetPositionCloseableQty(const std::string& instrument,
+                              OrderDirection direction) const;
+
   double total_value() const {
     return cash_ + frozen_cash_ + margin_ + unrealised_pnl_;
   }

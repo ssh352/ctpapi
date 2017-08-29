@@ -24,6 +24,14 @@ void Position::TradedOpen(OrderDirection direction,
   }
 }
 
+void Position::InputClose(OrderDirection direction, int qty) {
+  if (direction == OrderDirection::kBuy) {
+    frozen_short_qty_ += qty;
+  } else {
+    frozen_long_qty_ += qty;
+  }
+}
+
 void Position::TradedClose(OrderDirection direction,
                            double traded_price,
                            int last_traded_qty,
@@ -47,6 +55,7 @@ void Position::TradedClose(OrderDirection direction,
   if (direction == OrderDirection::kBuy) {
     BOOST_ASSERT(short_qty_ >= last_traded_qty);
     short_qty_ -= last_traded_qty;
+    frozen_short_qty_ -= last_traded_qty;
     if (short_qty_ == 0) {
       short_avg_price_ = 0.0;
       total_short_ = 0.0;
@@ -56,6 +65,7 @@ void Position::TradedClose(OrderDirection direction,
   } else {
     BOOST_ASSERT(long_qty_ >= last_traded_qty);
     long_qty_ -= last_traded_qty;
+    frozen_long_qty_ -= last_traded_qty;
     if (long_qty_ == 0) {
       long_avg_price_ = 0.0;
       total_long_ = 0.0;

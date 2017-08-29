@@ -9,6 +9,8 @@ class Position {
                   int last_traded_qty,
                   double* adjust_margin);
 
+  void InputClose(OrderDirection direction, int qty);
+
   void TradedClose(OrderDirection direction,
                    double traded_price,
                    int last_traded_qty,
@@ -21,11 +23,20 @@ class Position {
 
   bool IsEmptyQty() const;
 
+  int long_closeable_qty() const { return long_qty_ - frozen_long_qty_; }
+  int short_closeable_qty() const { return short_qty_ - frozen_short_qty_; }
+
+  int long_qty() const { return long_qty_; }
+
+  int short_qty() const { return short_qty_; }
+
  private:
   double long_avg_price_ = 0.0;
   double short_avg_price_ = 0.0;
   int long_qty_ = 0;
   int short_qty_ = 0;
+  int frozen_long_qty_ = 0;
+  int frozen_short_qty_ = 0;
   double total_long_ = 0.0;
   double total_short_ = 0.0;
   double long_margin_ = 0.0;

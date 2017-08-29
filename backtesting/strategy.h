@@ -75,7 +75,7 @@ class MyStrategy : public AbstractStrategy {
                          });
 
     for (auto i = range_beg_it_; i != end_it; ++i) {
-      event_factory_->EnqueueInputOrderEvent(
+      event_factory_->EnqueueInputOrderSignal(
           *tick->instrument,
           (*i)->position_effect == 0 ? PositionEffect::kOpen
                                      : PositionEffect::kClose,
@@ -94,7 +94,6 @@ class MyStrategy : public AbstractStrategy {
   std::list<std::shared_ptr<CTATransaction>>::iterator range_beg_it_;
   std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
       keep_memory_;
-  
 };
 
 #endif  // BACKTESTING_STRATEGY_H

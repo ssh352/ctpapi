@@ -125,7 +125,10 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
                 << (direction == OrderDirection::kBuy ? "B" : "S") << ","
                 << static_cast<int>(OrderStatus::kActive) << "," << order->price
                 << "," << qty << "\n";
-    
+    
+
+
+
     */
   }
 

@@ -148,6 +148,31 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
   }
 }
 
+void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
+                                         OrderDirection direction,
+                                         int qty) {
+  BOOST_ASSERT(position_container_.find(instrument) !=
+               position_container_.end());
+  if (position_container_.find(instrument) != position_container_.end()) {
+    auto& position = position_container_.at(instrument);
+    position.InputClose(direction, qty);
+  }
+}
+
+int Portfolio::GetPositionCloseableQty(const std::string& instrument,
+                                       OrderDirection direction) const {
+  BOOST_ASSERT(position_container_.find(instrument) !=
+               position_container_.end());
+
+  if (position_container_.find(instrument) != position_container_.end()) {
+    const auto& position = position_container_.at(instrument);
+    return direction == OrderDirection::kBuy ? position.long_closeable_qty()
+                                             : position.short_closeable_qty();
+  }
+
+  return 0;
+}
+
 double Portfolio::UpdateCostBasis(PositionEffect position_effect,
                                   double price,
                                   int qty,
