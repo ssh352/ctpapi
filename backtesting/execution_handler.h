@@ -2,7 +2,6 @@
 #define BACKTESTING_EXECUTION_HANDLER_H
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include <fstream>
 #include <boost/assert.hpp>
 #include "tick_series_data_base.h"
 #include "common/api_struct.h"
@@ -55,7 +54,7 @@ class AbstractExecutionHandler {
 class SimulatedExecutionHandler : public AbstractExecutionHandler {
  public:
   SimulatedExecutionHandler(AbstractEventFactory* event_factory)
-      : event_factory_(event_factory), orders_csv_("orders.csv") {}
+      : event_factory_(event_factory) {}
 
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override {
     if (current_tick_ != nullptr) {
@@ -120,11 +119,6 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->input_timestamp = timestamp;
     order->update_timestamp = timestamp;
     event_factory_->EnqueueFillEvent(std::move(order));
-    orders_csv_ << timestamp << ","
-                << (position_effect == PositionEffect::kOpen ? "O" : "C") << ","
-                << (direction == OrderDirection::kBuy ? "B" : "S") << ","
-                << static_cast<int>(OrderStatus::kActive) << "," << order->price
-                << "," << qty << "\n";
   }
 
   virtual void HandleCancelOrder(const std::string& order_id) override {
@@ -180,11 +174,6 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
       order->traded_qty = qty;
       order->update_timestamp = current_tick_->timestamp;
       event_factory_->EnqueueFillEvent(std::move(order));
-      orders_csv_ << current_tick_->timestamp << ","
-                  << (position_effect == PositionEffect::kOpen ? "O" : "C")
-                  << "," << (direction == OrderDirection::kBuy ? "B" : "S")
-                  << "," << static_cast<int>(OrderStatus::kAllFilled) << ","
-                  << order->price << "," << qty << "\n";
     }
   }
 
@@ -200,22 +189,14 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     order->leaves_qty = limit_order.qty;
     order->qty = limit_order.qty;
     order->traded_qty = 0;
+    order->update_timestamp = current_tick_->timestamp;
     event_factory_->EnqueueFillEvent(std::move(order));
-
-    orders_csv_ << current_tick_->timestamp << ","
-                << (limit_order.position_effect == PositionEffect::kOpen ? "O"
-                                                                         : "C")
-                << ","
-                << (limit_order.direction == OrderDirection::kBuy ? "B" : "S")
-                << "," << static_cast<int>(OrderStatus::kCanceled) << ","
-                << order->price << "," << limit_order.qty << "\n";
   }
 
  private:
   double GetFillPrice() const { return current_tick_->last_price; }
   std::shared_ptr<Tick> current_tick_;
   AbstractEventFactory* event_factory_;
-  std::ofstream orders_csv_;
   uint64_t order_id_seq_ = 0.0;
   std::multiset<LimitOrder, ComparePrice<std::greater<double>>>
       long_limit_orders_;

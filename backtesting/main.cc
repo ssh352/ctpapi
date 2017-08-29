@@ -128,7 +128,7 @@ class BacktestingEventFactory : public AbstractEventFactory {
  public:
   BacktestingEventFactory(
       std::list<std::shared_ptr<AbstractEvent>>* event_queue)
-      : event_queue_(event_queue) {}
+      : event_queue_(event_queue), orders_csv_("orders.csv") {}
 
   virtual void EnqueueTickEvent(
       const std::shared_ptr<TickData>& tick) const override {
@@ -140,6 +140,11 @@ class BacktestingEventFactory : public AbstractEventFactory {
       const std::shared_ptr<OrderField>& order) const override {
     event_queue_->push_back(
         std::make_shared<FillEvent>(strategy_, portfolio_handler_, order));
+    orders_csv_ << order->update_timestamp << ","
+                << (order->position_effect == PositionEffect::kOpen ? "O" : "C")
+                << "," << (order->direction == OrderDirection::kBuy ? "B" : "S")
+                << "," << static_cast<int>(order->status) << "," << order->price
+                << "," << order->qty << "\n";
   }
 
   virtual void EnqueueInputOrderEvent(const std::string& instrument,
@@ -190,6 +195,7 @@ class BacktestingEventFactory : public AbstractEventFactory {
   AbstractStrategy* strategy_;
   AbstractExecutionHandler* execution_handler_;
   AbstractPortfolioHandler* portfolio_handler_;
+  mutable std::ofstream orders_csv_;
 };
 
 int main(int argc, char* argv[]) {
