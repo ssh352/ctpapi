@@ -23,11 +23,11 @@ CTATransactionSeriesDataBase::~CTATransactionSeriesDataBase() {
   herr_t ret = H5Fclose(file_);
 }
 
-std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t> >
+std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t> >
 CTATransactionSeriesDataBase::ReadRange(const std::string& instrument_path,
                                         boost::posix_time::ptime start_dt,
                                         boost::posix_time::ptime end_dt) {
-  std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t> > result;
+  std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t> > result;
 
   // std::vector<boost::gregorian::date> keys;
   for (boost::gregorian::day_iterator it(start_dt.date()); it <= end_dt.date();
@@ -43,7 +43,7 @@ CTATransactionSeriesDataBase::ReadRange(const std::string& instrument_path,
   return result;
 }
 
-std::pair<std::unique_ptr<CTATransaction[]>, int64_t>
+std::pair<std::shared_ptr<CTATransaction>, int64_t>
 CTATransactionSeriesDataBase::FetchRowsFromPartition(
     const std::string& instrument_path,
     boost::gregorian::date date,
@@ -57,7 +57,7 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
   herr_t err = H5Lget_info(file_, path.c_str(), NULL, H5P_DEFAULT);
   H5Eset_auto(H5E_DEFAULT, (H5E_auto2_t)H5Eprint, stderr);
   if (err != 0) {
-    return {std::unique_ptr<CTATransaction[]>(), 0};
+    return {std::shared_ptr<CTATransaction>(), 0};
   }
 
   hid_t dataset = H5Dopen2(file_, path.c_str(), H5P_DEFAULT);
@@ -66,7 +66,8 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<CTATransaction[]> pre_ticks(new CTATransaction[rows]);
+    std::shared_ptr<CTATransaction> pre_ticks(
+        new CTATransaction[rows], std::default_delete<CTATransaction[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -87,14 +88,17 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
                          });
 
     auto request_row = end_it - start_it;
-    std::unique_ptr<CTATransaction[]> ticks(new CTATransaction[request_row]);
+    std::shared_ptr<CTATransaction> ticks(
+        new CTATransaction[request_row],
+        std::default_delete<CTATransaction[]>());
     memcpy(ticks.get(), start_it, sizeof(CTATransaction) * (request_row));
     return {std::move(ticks), request_row};
   } else if (date == start_dt.date()) {
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<CTATransaction[]> pre_ticks(new CTATransaction[rows]);
+    std::shared_ptr<CTATransaction> pre_ticks(
+        new CTATransaction[rows], std::default_delete<CTATransaction[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -107,7 +111,9 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
                          });
 
     auto request_row = pre_ticks.get() + rows - start_it;
-    std::unique_ptr<CTATransaction[]> ticks(new CTATransaction[request_row]);
+    std::shared_ptr<CTATransaction> ticks(
+        new CTATransaction[request_row],
+        std::default_delete<CTATransaction[]>());
     memcpy(ticks.get(), start_it, sizeof(CTATransaction) * (request_row));
     return {std::move(ticks), request_row};
 
@@ -115,7 +121,8 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<CTATransaction[]> pre_ticks(new CTATransaction[rows]);
+    std::shared_ptr<CTATransaction> pre_ticks(
+        new CTATransaction[rows], std::default_delete<CTATransaction[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -128,7 +135,9 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
                          });
 
     auto request_row = end_it - pre_ticks.get();
-    std::unique_ptr<CTATransaction[]> ticks(new CTATransaction[request_row]);
+    std::shared_ptr<CTATransaction> ticks(
+        new CTATransaction[request_row],
+        std::default_delete<CTATransaction[]>());
     memcpy(ticks.get(), pre_ticks.get(),
            sizeof(CTATransaction) * (request_row));
     return {std::move(ticks), request_row};
@@ -136,12 +145,13 @@ CTATransactionSeriesDataBase::FetchRowsFromPartition(
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<CTATransaction[]> ticks(new CTATransaction[rows]);
+    std::shared_ptr<CTATransaction> ticks(
+        new CTATransaction[rows], std::default_delete<CTATransaction[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   ticks.get());
     return {std::move(ticks), rows};
   }
 
   herr_t ret = H5Dclose(dataset);
-  return {std::unique_ptr<CTATransaction[]>(), 0};
+  return {std::shared_ptr<CTATransaction>(), 0};
 }

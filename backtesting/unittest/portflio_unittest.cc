@@ -289,3 +289,26 @@ TEST(TestPortflioTest, RateCommission) {
   EXPECT_EQ(96, portflio.daily_commission());
   EXPECT_EQ(100000 - 8000 - 96, portflio.total_value());
 }
+
+TEST(TestPortflioTest, ErasePositionItem) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  Portfolio portflio(init_cash);
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
+  portflio.InitInstrumentDetail("S1", 1.0, 1, cost_basis);
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kBuy, 180.0, 20));
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A002", "S1", OrderDirection::kBuy, 190.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A002", 10));
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 190.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A003", 10));
+
+  EXPECT_NO_THROW(portflio.HandleOrder(MakeTradedOrder("A001", 20)));
+}

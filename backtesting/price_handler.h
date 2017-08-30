@@ -10,7 +10,7 @@ class PriceHandler {
       const std::string& instrument,
       bool* running,
       AbstractEventFactory* tick_event_factory,
-      std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> > tick_containter)
+      std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter)
       : instrument_(std::make_shared<std::string>(instrument)),
         running_(running),
         tick_event_factory_(tick_event_factory),
@@ -42,8 +42,8 @@ class PriceHandler {
     ++current_tick_index_;
   }
 
-  std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> > tick_containter_;
-  std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> >::const_iterator it_;
+  std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter_;
+  std::vector<std::pair<std::shared_ptr<Tick>, int64_t> >::const_iterator it_;
   std::shared_ptr<std::string> instrument_;
   int current_tick_index_ = 0;
   bool* running_;

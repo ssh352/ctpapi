@@ -3,7 +3,7 @@
 #include "cta_transaction_series_data_base.h"
 MyStrategy::MyStrategy(
     AbstractEventFactory* event_factory,
-    std::vector<std::pair<std::unique_ptr<CTATransaction[]>, int64_t>>
+    std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
         cta_signal_container,
     int delayed_input_order_minute,
     int cancel_order_after_minute)

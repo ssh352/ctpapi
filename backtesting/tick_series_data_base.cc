@@ -25,11 +25,11 @@ TickSeriesDataBase::~TickSeriesDataBase() {
   herr_t ret = H5Fclose(file_);
 }
 
-std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> >
+std::vector<std::pair<std::shared_ptr<Tick>, int64_t> >
 TickSeriesDataBase::ReadRange(const std::string& instrument_path,
                               boost::posix_time::ptime start_dt,
                               boost::posix_time::ptime end_dt) {
-  std::vector<std::pair<std::unique_ptr<Tick[]>, int64_t> > result;
+  std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > result;
 
   // std::vector<boost::gregorian::date> keys;
   for (boost::gregorian::day_iterator it(start_dt.date()); it <= end_dt.date();
@@ -45,7 +45,7 @@ TickSeriesDataBase::ReadRange(const std::string& instrument_path,
   return result;
 }
 
-std::pair<std::unique_ptr<Tick[]>, int64_t>
+std::pair<std::shared_ptr<Tick>, int64_t>
 TickSeriesDataBase::FetchRowsFromPartition(
     const std::string& instrument_path,
     boost::gregorian::date date,
@@ -59,7 +59,7 @@ TickSeriesDataBase::FetchRowsFromPartition(
   herr_t err = H5Lget_info(file_, path.c_str(), NULL, H5P_DEFAULT);
   H5Eset_auto(H5E_DEFAULT, (H5E_auto2_t)H5Eprint, stderr);
   if (err != 0) {
-    return {std::unique_ptr<Tick[]>(), 0};
+    return {std::shared_ptr<Tick>(), 0};
   }
 
   hid_t dataset = H5Dopen2(file_, path.c_str(), H5P_DEFAULT);
@@ -68,7 +68,8 @@ TickSeriesDataBase::FetchRowsFromPartition(
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<Tick[]> pre_ticks(new Tick[rows]);
+    std::shared_ptr<Tick> pre_ticks(new Tick[rows],
+                                    std::default_delete<Tick[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -85,14 +86,16 @@ TickSeriesDataBase::FetchRowsFromPartition(
         [](const Tick& l, const Tick& r) { return l.timestamp < r.timestamp; });
 
     auto request_row = end_it - start_it;
-    std::unique_ptr<Tick[]> ticks(new Tick[request_row]);
+    std::shared_ptr<Tick> ticks(new Tick[request_row],
+                                std::default_delete<Tick[]>());
     memcpy(ticks.get(), start_it, sizeof(Tick) * (request_row));
     return {std::move(ticks), request_row};
   } else if (date == start_dt.date()) {
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<Tick[]> pre_ticks(new Tick[rows]);
+    std::shared_ptr<Tick> pre_ticks(new Tick[rows],
+                                    std::default_delete<Tick[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -103,7 +106,8 @@ TickSeriesDataBase::FetchRowsFromPartition(
         [](const Tick& l, const Tick& r) { return l.timestamp < r.timestamp; });
 
     auto request_row = pre_ticks.get() + rows - start_it;
-    std::unique_ptr<Tick[]> ticks(new Tick[request_row]);
+    std::shared_ptr<Tick> ticks(new Tick[request_row],
+                                std::default_delete<Tick[]>());
     memcpy(ticks.get(), start_it, sizeof(Tick) * (request_row));
     return {std::move(ticks), request_row};
 
@@ -111,7 +115,8 @@ TickSeriesDataBase::FetchRowsFromPartition(
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<Tick[]> pre_ticks(new Tick[rows]);
+    std::shared_ptr<Tick> pre_ticks(new Tick[rows],
+                                    std::default_delete<Tick[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   pre_ticks.get());
 
@@ -122,19 +127,20 @@ TickSeriesDataBase::FetchRowsFromPartition(
         [](const Tick& l, const Tick& r) { return l.timestamp < r.timestamp; });
 
     auto request_row = end_it - pre_ticks.get();
-    std::unique_ptr<Tick[]> ticks(new Tick[request_row]);
+    std::shared_ptr<Tick> ticks(new Tick[request_row],
+                                std::default_delete<Tick[]>());
     memcpy(ticks.get(), pre_ticks.get(), sizeof(Tick) * (request_row));
     return {std::move(ticks), request_row};
   } else {
     hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
     int64_t rows = 0;
     herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
-    std::unique_ptr<Tick[]> ticks(new Tick[rows]);
+    std::shared_ptr<Tick> ticks(new Tick[rows], std::default_delete<Tick[]>());
     ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
                   ticks.get());
     return {std::move(ticks), rows};
   }
 
   herr_t ret = H5Dclose(dataset);
-  return {std::unique_ptr<Tick[]>(), 0};
+  return {std::shared_ptr<Tick>(), 0};
 }
