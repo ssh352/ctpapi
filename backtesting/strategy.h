@@ -55,7 +55,8 @@ class MyStrategy : public AbstractStrategy {
              std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
                  cta_signal_container,
              int delayed_input_order_minute,
-             int cancel_order_after_minute);
+             int cancel_order_after_minute,
+             int backtesting_position_effect);
 
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
 
@@ -102,6 +103,7 @@ class MyStrategy : public AbstractStrategy {
 
   int delayed_input_order_minute_ = 0;
   int cancel_order_after_minute_ = 0;
+  int backtesting_position_effect_ = 0;
 };
 
 #endif  // BACKTESTING_STRATEGY_H

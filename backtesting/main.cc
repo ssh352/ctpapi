@@ -243,7 +243,9 @@ caf::behavior coordinator(
   }};
 }
 
-caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
+caf::behavior worker(caf::event_based_actor* self,
+                     caf::actor coor,
+                     int backtesting_position_effect) {
   return {[=](const std::string& market, const std::string& instrument,
               int delayed_input_order_by_minute, int cancel_order_after_minute,
               TickContainer tick_container,
@@ -263,7 +265,7 @@ caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
 
     MyStrategy strategy(&event_factory, std::move(cta_signal_container),
                         delayed_input_order_by_minute,
-                        cancel_order_after_minute);
+                        cancel_order_after_minute, backtesting_position_effect);
 
     SimulatedExecutionHandler execution_handler(&event_factory);
 
@@ -299,11 +301,13 @@ class config : public caf::actor_system_config {
  public:
   int delayed_close_minutes = 0;
   int cancel_after_minutes = 0;
+  int position_effect = 0;
 
   config() {
     opt_group{custom_options_, "global"}
         .add(delayed_close_minutes, "delayed,d", "set delayed close minutes")
-        .add(cancel_after_minutes, "cancel,c", "set cancel after minutes");
+        .add(cancel_after_minutes, "cancel,c", "set cancel after minutes")
+        .add(position_effect, "open_close", "backtesting open(0) close(1)");
   }
 };
 
@@ -395,7 +399,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto coor = system.spawn(coordinator, instruments, cfg.delayed_close_minutes,
                            cfg.cancel_after_minutes);
   for (size_t i = 0; i < instruments->size(); ++i) {
-    auto actor = system.spawn(worker, coor);
+    auto actor = system.spawn(worker, coor, cfg.position_effect);
 
     caf::anon_send(coor, IdleAtom::value, actor);
   }

@@ -6,11 +6,13 @@ MyStrategy::MyStrategy(
     std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
         cta_signal_container,
     int delayed_input_order_minute,
-    int cancel_order_after_minute)
+    int cancel_order_after_minute,
+    int backtesting_position_effect)
     : event_factory_(event_factory),
       keep_memory_(std::move(cta_signal_container)),
       delayed_input_order_minute_(delayed_input_order_minute),
-      cancel_order_after_minute_(cancel_order_after_minute) {
+      cancel_order_after_minute_(cancel_order_after_minute),
+      backtesting_position_effect_(backtesting_position_effect) {
   auto null_deleter = [](CTATransaction*) {};
   for (auto& item : keep_memory_) {
     for (int i = 0; i < item.second; ++i) {
@@ -56,8 +58,7 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
                        });
 
   for (auto i = range_beg_it_; i != end_it; ++i) {
-    if ((*i)->position_effect == 0) {
-      // Open
+    if ((*i)->position_effect == backtesting_position_effect_) {
       delay_input_order_.push_back((*i));
     } else {
       event_factory_->EnqueueInputOrderSignal(
