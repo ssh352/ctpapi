@@ -23,6 +23,7 @@ class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
   BacktestingPortfolioHandler(double init_cash,
                               AbstractEventFactory* event_factory,
                               std::string instrument,
+                              const std::string& csv_file_prefix,
                               double margin_rate,
                               int constract_multiple,
                               CostBasis cost_basis);

@@ -306,6 +306,7 @@ TEST(TestPortflioTest, ErasePositionItem) {
       MakeNewOpenOrder("A002", "S1", OrderDirection::kBuy, 190.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A002", 10));
 
+  portflio.HandleNewInputCloseOrder("S1", OrderDirection::kSell, 10);
   portflio.HandleOrder(
       MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 190.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A003", 10));

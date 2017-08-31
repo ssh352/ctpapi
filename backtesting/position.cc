@@ -17,10 +17,20 @@ void Position::TradedOpen(OrderDirection direction,
     total_long_ += price * last_traded_qty;
     long_qty_ += last_traded_qty;
     long_avg_price_ = total_long_ / long_qty_;
+    frozen_open_long_qty_ -= last_traded_qty;
   } else {
     total_short_ += price * last_traded_qty;
     short_qty_ += last_traded_qty;
     short_avg_price_ = total_short_ / short_qty_;
+    frozen_open_short_qty_ -= last_traded_qty;
+  }
+}
+
+void Position::OpenOrder(OrderDirection direciton, int qty) {
+  if (direciton == OrderDirection::kBuy) {
+    frozen_open_long_qty_ += qty;
+  } else {
+    frozen_open_short_qty_ += qty;
   }
 }
 
@@ -29,6 +39,14 @@ void Position::InputClose(OrderDirection direction, int qty) {
     frozen_short_qty_ += qty;
   } else {
     frozen_long_qty_ += qty;
+  }
+}
+
+void Position::CancelOpenOrder(OrderDirection direction, int leave_qty) {
+  if (direction == OrderDirection::kBuy) {
+    frozen_open_long_qty_ -= leave_qty;
+  } else {
+    frozen_open_short_qty_ -= leave_qty;
   }
 }
 
@@ -91,5 +109,6 @@ void Position::UpdateMarketPrice(double price, double* update_pnl) {
 }
 
 bool Position::IsEmptyQty() const {
-  return long_qty_ == 0 && short_qty_ == 0;
+  return long_qty_ == 0 && short_qty_ == 0 && frozen_open_long_qty_ == 0 &&
+         frozen_open_short_qty_ == 0;
 }

@@ -9,7 +9,11 @@ class Position {
                   int last_traded_qty,
                   double* adjust_margin);
 
+  void OpenOrder(OrderDirection direciton, int qty);
+
   void InputClose(OrderDirection direction, int qty);
+
+  void CancelOpenOrder(OrderDirection direction, int leave_qty);
 
   void TradedClose(OrderDirection direction,
                    double traded_price,
@@ -35,6 +39,8 @@ class Position {
   double short_avg_price_ = 0.0;
   int long_qty_ = 0;
   int short_qty_ = 0;
+  int frozen_open_long_qty_ = 0;
+  int frozen_open_short_qty_ = 0;
   int frozen_long_qty_ = 0;
   int frozen_short_qty_ = 0;
   double total_long_ = 0.0;

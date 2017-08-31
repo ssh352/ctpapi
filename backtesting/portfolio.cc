@@ -48,6 +48,8 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
         Position position(margin_rate, constract_multiple, cost_basis);
         position_container_.insert({order->instrument_id, std::move(position)});
       }
+      Position& position = position_container_.at(order->instrument_id);
+      position.OpenOrder(order->direction, order->qty);
       double frozen_cash =
           order->price * order->qty * margin_rate * constract_multiple +
           CalcCommission(PositionEffect::kOpen, order->price, order->qty,
@@ -135,6 +137,11 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
                      CalcCommission(order->position_effect, order->price,
                                     order->leaves_qty, constract_mutiple,
                                     cost_basis);
+            Position& position = position_container_.at(order->instrument_id);
+            position.CancelOpenOrder(order->direction, order->leaves_qty);
+            if (position.IsEmptyQty()) {
+              position_container_.erase(order->instrument_id);
+            }
           }
         }
       } break;

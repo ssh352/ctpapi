@@ -12,10 +12,11 @@ REM python gyp_hello.py --depth=.. -Icommon.gypi -Dclang=0 -Dasan=0 %~dp0..\ispr
 REM python %~dp0gyp_hello.py --depth=.. -I%~dp0common.gypi -D"clang=0 asan=0" %~dp0..\ispread\lhsnet_demo.gyp
 REM %~dp0\tools\python276_bin\python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi build\some.gyp
 REM python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_strategy_mode\follow_strategy_mode.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi follow_trade_server\follow_trade_server.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi folw_bin_reproduce\folw_bin_reproduce.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi download_margin_rate\download_margin_rate.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_practice\caf_practice.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_bench\caf_bench.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_binary\sqlite_binary.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
