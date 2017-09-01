@@ -3,9 +3,9 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/assert.hpp>
-#include "tick_series_data_base.h"
 #include "common/api_struct.h"
-#include "event_factory.h"
+#include "backtesting/tick_series_data_base.h"
+#include "backtesting/event_factory.h"
 
 struct LimitOrder {
   std::string instrument;

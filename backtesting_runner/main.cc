@@ -5,125 +5,17 @@
 #include <boost/format.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
-#include "event_factory.h"
-#include "event.h"
-#include "execution_handler.h"
-#include "price_handler.h"
-#include "strategy.h"
-#include "tick_series_data_base.h"
-#include "portfolio_handler.h"
-#include "cta_transaction_series_data_base.h"
+#include "backtesting/event_factory.h"
+#include "backtesting/event.h"
+#include "backtesting/execution_handler.h"
+#include "backtesting/price_handler.h"
+#include "backtesting/strategy.h"
+#include "backtesting/tick_series_data_base.h"
+#include "backtesting/portfolio_handler.h"
+#include "backtesting/cta_transaction_series_data_base.h"
+#include "backtesting/concrete_event.h"
 
 class AbstractExecutionHandler;
-
-class TickEvent : public AbstractEvent {
- public:
-  TickEvent(AbstractStrategy* strategy,
-            AbstractExecutionHandler* execution_handler,
-            AbstractPortfolioHandler* portfolio_handler,
-            const std::shared_ptr<TickData>& tick)
-      : strategy_(strategy),
-        execution_handler_(execution_handler),
-        portfolio_handler_(portfolio_handler),
-        tick_(tick) {}
-  virtual void Do() override {
-    // The order is import!
-    execution_handler_->HandleTick(tick_);
-    portfolio_handler_->HandleTick(tick_);
-    strategy_->HandleTick(tick_);
-  }
-
- private:
-  AbstractStrategy* strategy_;
-  AbstractExecutionHandler* execution_handler_;
-  AbstractPortfolioHandler* portfolio_handler_;
-  std::shared_ptr<TickData> tick_;
-};
-
-class FillEvent : public AbstractEvent {
- public:
-  FillEvent(AbstractStrategy* strategy,
-            AbstractPortfolioHandler* portfolio_handler,
-            const std::shared_ptr<OrderField>& order)
-      : strategy_(strategy),
-        portfolio_handler_(portfolio_handler),
-        order_(order) {}
-
-  virtual void Do() override {
-    strategy_->HandleOrder(order_);
-    portfolio_handler_->HandleOrder(order_);
-  }
-
- private:
-  AbstractStrategy* strategy_;
-  AbstractPortfolioHandler* portfolio_handler_;
-  std::shared_ptr<OrderField> order_;
-};
-
-class CloseMarketEvent : public AbstractEvent {
- public:
-  CloseMarketEvent(AbstractPortfolioHandler* portfolio_handler,
-                   AbstractStrategy* strategy)
-      : portfolio_handler_(portfolio_handler), strategy_(strategy) {}
-
-  virtual void Do() override {
-    portfolio_handler_->HandleCloseMarket();
-    strategy_->HandleCloseMarket();
-  }
-
- private:
-  AbstractPortfolioHandler* portfolio_handler_;
-  AbstractStrategy* strategy_;
-};
-
-class InputOrderSignal : public AbstractEvent {
- public:
-  InputOrderSignal(AbstractPortfolioHandler* portfolio_handler,
-                   std::string instrument,
-                   PositionEffect position_effect,
-                   OrderDirection order_direction,
-                   double price,
-                   int qty,
-                   TimeStamp timestamp)
-      : portfolio_handler_(portfolio_handler),
-        instrument_(std::move(instrument)),
-        position_effect_(position_effect),
-        order_direction_(order_direction),
-        price_(price),
-        qty_(qty),
-        timestamp_(timestamp) {}
-
-  virtual void Do() override {
-    portfolio_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                          order_direction_, price_, qty_,
-                                          timestamp_);
-  }
-
- private:
-  AbstractPortfolioHandler* portfolio_handler_;
-  std::string instrument_;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
-};
-
-class CancelOrderEvent : public AbstractEvent {
- public:
-  CancelOrderEvent(AbstractExecutionHandler* exectuion_handler,
-                   std::string order_id)
-      : exectuion_handler_(exectuion_handler), order_id_(std::move(order_id)) {}
-
-  // Inherited via AbstractEvent
-  virtual void Do() override {
-    exectuion_handler_->HandleCancelOrder(order_id_);
-  }
-
- private:
-  AbstractExecutionHandler* exectuion_handler_;
-  std::string order_id_;
-};
 
 class BacktestingEventFactory : public AbstractEventFactory {
  public:
@@ -259,8 +151,9 @@ caf::behavior worker(caf::event_based_actor* self,
     // std::string instrument = "a1709";
 
     std::string csv_file_prefix =
-        str(boost::format("%s_%d_%d") % instrument %
-            delayed_input_order_by_minute % cancel_order_after_minute);
+        str(boost::format("%s_%d_%d_%s") % instrument %
+            delayed_input_order_by_minute % cancel_order_after_minute %
+            (backtesting_position_effect == 0 ? "O" : "C"));
     BacktestingEventFactory event_factory(&event_queue, csv_file_prefix);
 
     MyStrategy strategy(&event_factory, std::move(cta_signal_container),

@@ -24,6 +24,7 @@ MyStrategy::MyStrategy(
 }
 
 void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
+  // TODO:Do
   if (range_beg_it_ == transactions_.end()) {
     return;
   }
@@ -31,7 +32,7 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
   {
     auto end_it = std::upper_bound(
         delay_input_order_.begin(), delay_input_order_.end(),
-        tick->tick->timestamp - delayed_input_order_minute_ * 60 * 1000,
+        tick->tick->timestamp - delayed_input_order_minute_ * 1000,
         [](TimeStamp timestamp, const std::shared_ptr<CTATransaction>& tran) {
           return timestamp < tran->timestamp;
         });
@@ -73,8 +74,8 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
   range_beg_it_ = end_it;
 
   if (!unfill_orders_.empty()) {
-    auto end_it = unfill_orders_.upper_bound(
-        tick->tick->timestamp - cancel_order_after_minute_ * 60 * 1000);
+    auto end_it = unfill_orders_.upper_bound(tick->tick->timestamp -
+                                             cancel_order_after_minute_ * 1000);
     std::for_each(unfill_orders_.begin(), end_it,
                   [=](const std::shared_ptr<OrderField>& order) {
                     event_factory_->EnqueueCancelOrderEvent(order->order_id);
@@ -83,7 +84,8 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
 }
 
 void MyStrategy::HandleOrder(const std::shared_ptr<OrderField>& order) {
-  if (order->status == OrderStatus::kActive) {
+  OrderStatus staus = OrderStatus::kActive;
+  if (order->status == staus) {
     unfill_orders_.insert(order);
   } else if (order->status == OrderStatus::kAllFilled ||
              order->status == OrderStatus::kCanceled) {

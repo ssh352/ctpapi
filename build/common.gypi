@@ -3367,24 +3367,16 @@
             'MinimumRequiredVersion': '5.02',  # Server 2003.
             'TargetMachine': '17', # x86 - 64
             'AdditionalLibraryDirectories!': [
-              '<(windows_sdk_path)/Lib/win8/um/x86',
-              '<(boost_library_path)/stage/x86/lib',
             ],
             'AdditionalLibraryDirectories': [
-              '<(windows_sdk_path)/Lib/win8/um/x64',
-              '<(boost_library_path)/stage/x64/lib',
             ],
             # Doesn't exist x64 SDK. Should use oleaut32 in any case.
             'IgnoreDefaultLibraryNames': [ 'olepro32.lib' ],
           },
           'VCLibrarianTool': {
             'AdditionalLibraryDirectories!': [
-              '<(windows_sdk_path)/Lib/win8/um/x86',
-              '<(boost_library_path)/stage/x86/lib',
             ],
             'AdditionalLibraryDirectories': [
-              '<(windows_sdk_path)/Lib/win8/um/x64',
-              '<(boost_library_path)/stage/x64/lib',
             ],
             'TargetMachine': '17', # x64
           },
@@ -5667,11 +5659,8 @@
           }],
         ],
         'msvs_system_include_dirs': [
-          '<(windows_sdk_path)/Include/shared',
-          '<(windows_sdk_path)/Include/um',
-          '<(windows_sdk_path)/Include/winrt',
           '$(VSInstallDir)/VC/atlmfc/include',
-          '<(boost_library_path)',
+          # '<(boost_library_path)',
         ],
         'msvs_cygwin_shell': 0,
         'msvs_disabled_warnings': [
@@ -5764,8 +5753,6 @@
           'VCLibrarianTool': {
             'AdditionalOptions': ['/ignore:4221'],
             'AdditionalLibraryDirectories': [
-              '<(windows_sdk_path)/Lib/win8/um/x86',
-              '<(boost_library_path)/stage/x86/lib',
             ],
           },
           'VCLinkerTool': {
@@ -5782,8 +5769,6 @@
               'shlwapi.lib',
             ],
             'AdditionalLibraryDirectories': [
-              '<(windows_sdk_path)/Lib/win8/um/x86',
-              '<(boost_library_path)/stage/x86/lib',
             ],
             'GenerateDebugInformation': 'true',
             'MapFileName': '$(OutDir)\\$(TargetName).map',

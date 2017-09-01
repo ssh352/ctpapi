@@ -28,28 +28,6 @@
       ],
     },
     {
-      'target_name' : 'backtesting_runner',
-      'type' : 'executable',
-      'variables' : {
-      },
-      'sources' : [
-        'main.cc',
-      ],
-      'dependencies' : [
-        'backtesting',
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
-      ],
-      'defines' : [
-        'H5_BUILT_AS_DYNAMIC_LIB',
-      ],
-      'includes' : [
-      ],
-      'include_dirs' : [
-        '..',
-      ],
-
-      },
-    {
       'target_name' : 'backtesting_unittest',
       'type' : 'executable',
       'variables' : {
