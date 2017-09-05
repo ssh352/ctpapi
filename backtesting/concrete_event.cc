@@ -65,3 +65,24 @@ CancelOrderEvent::CancelOrderEvent(AbstractExecutionHandler* exectuion_handler,
 void CancelOrderEvent::Do() {
   exectuion_handler_->HandleCancelOrder(order_id_);
 }
+
+InputOrderEvent::InputOrderEvent(AbstractExecutionHandler* execution_handler,
+                                 std::string instrument,
+                                 PositionEffect position_effect,
+                                 OrderDirection order_direction,
+                                 double price,
+                                 int qty,
+                                 TimeStamp timestamp)
+    : execution_handler_(execution_handler),
+      instrument_(std::move(instrument)),
+      position_effect_(position_effect),
+      order_direction_(order_direction),
+      price_(price),
+      qty_(qty),
+      timestamp_(timestamp) {}
+
+void InputOrderEvent::Do() {
+  execution_handler_->HandlerInputOrder(instrument_, position_effect_,
+                                        order_direction_, price_, qty_,
+                                        timestamp_);
+}

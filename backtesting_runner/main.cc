@@ -3,6 +3,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <fstream>
 #include <boost/format.hpp>
+#include <boost/assign.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
 #include "backtesting/event_factory.h"
@@ -149,7 +150,6 @@ caf::behavior worker(caf::event_based_actor* self,
 
     // std::string market = "dc";
     // std::string instrument = "a1709";
-
     std::string csv_file_prefix =
         str(boost::format("%s_%d_%d_%s") % instrument %
             delayed_input_order_by_minute % cancel_order_after_minute %

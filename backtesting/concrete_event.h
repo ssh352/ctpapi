@@ -81,4 +81,26 @@ class CancelOrderEvent : public AbstractEvent {
   std::string order_id_;
 };
 
+class InputOrderEvent : public AbstractEvent {
+ public:
+  InputOrderEvent(AbstractExecutionHandler* execution_handler,
+                  std::string instrument,
+                  PositionEffect position_effect,
+                  OrderDirection order_direction,
+                  double price,
+                  int qty,
+                  TimeStamp timestamp);
+
+  virtual void Do() override;
+
+ private:
+  AbstractExecutionHandler* execution_handler_;
+  std::string instrument_;
+  PositionEffect position_effect_;
+  OrderDirection order_direction_;
+  double price_;
+  int qty_;
+  TimeStamp timestamp_;
+};
+
 #endif  // BACKTESTING_CONCRETE_EVENT_H

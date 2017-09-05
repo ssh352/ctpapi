@@ -9,38 +9,6 @@
 #include "event_factory.h"
 
 class AbstractExecutionHandler;
-class InputOrderEvent : public AbstractEvent {
- public:
-  InputOrderEvent(AbstractExecutionHandler* execution_handler,
-                  std::string instrument,
-                  PositionEffect position_effect,
-                  OrderDirection order_direction,
-                  double price,
-                  int qty,
-                  TimeStamp timestamp)
-      : execution_handler_(execution_handler),
-        instrument_(std::move(instrument)),
-        position_effect_(position_effect),
-        order_direction_(order_direction),
-        price_(price),
-        qty_(qty),
-        timestamp_(timestamp) {}
-
-  virtual void Do() override {
-    execution_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                          order_direction_, price_, qty_,
-                                          timestamp_);
-  }
-
- private:
-  AbstractExecutionHandler* execution_handler_;
-  std::string instrument_;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
-};
 
 class AbstractStrategy {
  public:
@@ -63,7 +31,7 @@ class MyStrategy : public AbstractStrategy {
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override;
 
   // Inherited via AbstractStrategy
-  virtual void HandleCloseMarket();
+  virtual void HandleCloseMarket() override;
 
  private:
   class CompareOrderId {
