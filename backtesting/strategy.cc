@@ -40,12 +40,12 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
       std::for_each(delay_input_order_.begin(), end_it,
                     [=](const std::shared_ptr<CTATransaction>& tran) {
                       event_factory_->EnqueueInputOrderSignal(
-                          *tick->instrument,
-                          tran->position_effect == 0 ? PositionEffect::kOpen
-                                                     : PositionEffect::kClose,
-                          tran->direction == 0 ? OrderDirection::kBuy
-                                               : OrderDirection::kSell,
-                          tran->price, tran->qty, tick->tick->timestamp);
+                          {*tick->instrument,
+                           tran->position_effect == 0 ? PositionEffect::kOpen
+                                                      : PositionEffect::kClose,
+                           tran->direction == 0 ? OrderDirection::kBuy
+                                                : OrderDirection::kSell,
+                           tran->price, tran->qty, tick->tick->timestamp});
                     });
       delay_input_order_.erase(delay_input_order_.begin(), end_it);
     }
@@ -63,11 +63,11 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
       delay_input_order_.push_back((*i));
     } else {
       event_factory_->EnqueueInputOrderSignal(
-          *tick->instrument,
-          (*i)->position_effect == 0 ? PositionEffect::kOpen
-                                     : PositionEffect::kClose,
-          (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
-          (*i)->price, (*i)->qty, tick->tick->timestamp);
+          {*tick->instrument,
+           (*i)->position_effect == 0 ? PositionEffect::kOpen
+                                      : PositionEffect::kClose,
+           (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
+           (*i)->price, (*i)->qty, tick->tick->timestamp});
     }
   }
 

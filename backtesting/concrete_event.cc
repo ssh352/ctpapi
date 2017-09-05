@@ -38,24 +38,12 @@ void CloseMarketEvent::Do() {
 }
 
 InputOrderSignal::InputOrderSignal(AbstractPortfolioHandler* portfolio_handler,
-                                   std::string instrument,
-                                   PositionEffect position_effect,
-                                   OrderDirection order_direction,
-                                   double price,
-                                   int qty,
-                                   TimeStamp timestamp)
+                                   InputOrder input_order)
     : portfolio_handler_(portfolio_handler),
-      instrument_(std::move(instrument)),
-      position_effect_(position_effect),
-      order_direction_(order_direction),
-      price_(price),
-      qty_(qty),
-      timestamp_(timestamp) {}
+      input_order_(std::move(input_order)) {}
 
 void InputOrderSignal::Do() {
-  portfolio_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                        order_direction_, price_, qty_,
-                                        timestamp_);
+  portfolio_handler_->HandlerInputOrder(input_order_);
 }
 
 CancelOrderEvent::CancelOrderEvent(AbstractExecutionHandler* exectuion_handler,
@@ -67,22 +55,10 @@ void CancelOrderEvent::Do() {
 }
 
 InputOrderEvent::InputOrderEvent(AbstractExecutionHandler* execution_handler,
-                                 std::string instrument,
-                                 PositionEffect position_effect,
-                                 OrderDirection order_direction,
-                                 double price,
-                                 int qty,
-                                 TimeStamp timestamp)
+                                 InputOrder input_order)
     : execution_handler_(execution_handler),
-      instrument_(std::move(instrument)),
-      position_effect_(position_effect),
-      order_direction_(order_direction),
-      price_(price),
-      qty_(qty),
-      timestamp_(timestamp) {}
+      input_order_(std::move(input_order)) {}
 
 void InputOrderEvent::Do() {
-  execution_handler_->HandlerInputOrder(instrument_, position_effect_,
-                                        order_direction_, price_, qty_,
-                                        timestamp_);
+  execution_handler_->HandlerInputOrder(input_order_);
 }

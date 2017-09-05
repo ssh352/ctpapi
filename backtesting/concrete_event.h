@@ -49,23 +49,13 @@ class CloseMarketEvent : public AbstractEvent {
 class InputOrderSignal : public AbstractEvent {
  public:
   InputOrderSignal(AbstractPortfolioHandler* portfolio_handler,
-                   std::string instrument,
-                   PositionEffect position_effect,
-                   OrderDirection order_direction,
-                   double price,
-                   int qty,
-                   TimeStamp timestamp);
+                   InputOrder input_order);
 
   virtual void Do() override;
 
  private:
   AbstractPortfolioHandler* portfolio_handler_;
-  std::string instrument_;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
+  InputOrder input_order_;
 };
 
 class CancelOrderEvent : public AbstractEvent {
@@ -84,23 +74,13 @@ class CancelOrderEvent : public AbstractEvent {
 class InputOrderEvent : public AbstractEvent {
  public:
   InputOrderEvent(AbstractExecutionHandler* execution_handler,
-                  std::string instrument,
-                  PositionEffect position_effect,
-                  OrderDirection order_direction,
-                  double price,
-                  int qty,
-                  TimeStamp timestamp);
+                  InputOrder input_order);
 
   virtual void Do() override;
 
  private:
   AbstractExecutionHandler* execution_handler_;
-  std::string instrument_;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
+  InputOrder input_order_;
 };
 
 #endif  // BACKTESTING_CONCRETE_EVENT_H

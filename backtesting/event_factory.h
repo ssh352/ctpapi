@@ -11,19 +11,9 @@ class AbstractEventFactory {
   virtual void EnqueueRtnOrderEvent(
       const std::shared_ptr<OrderField>& order) const = 0;
 
-  virtual void EnqueueInputOrderEvent(const std::string& instrument,
-                                      PositionEffect position_effect,
-                                      OrderDirection order_direction,
-                                      double price,
-                                      int qty,
-                                      TimeStamp timestamp) const = 0;
+  virtual void EnqueueInputOrderEvent(const InputOrder& input_order) const = 0;
 
-  virtual void EnqueueInputOrderSignal(const std::string& instrument,
-                                       PositionEffect position_effect,
-                                       OrderDirection order_direction,
-                                       double price,
-                                       int qty,
-                                       TimeStamp timestamp) const = 0;
+  virtual void EnqueueInputOrderSignal(const InputOrder& input_order) const = 0;
 
   virtual void EnqueueCancelOrderEvent(const std::string& order_id) = 0;
 

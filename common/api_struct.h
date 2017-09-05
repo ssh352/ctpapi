@@ -109,4 +109,13 @@ struct CostBasis {
   int close_today_commission;
 };
 
+struct InputOrder {
+  std::string instrument_;
+  PositionEffect position_effect_;
+  OrderDirection order_direction_;
+  double price_;
+  int qty_;
+  TimeStamp timestamp_;
+};
+
 #endif  // COMMON_API_STRUCT_H

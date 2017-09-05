@@ -10,12 +10,7 @@ class AbstractPortfolioHandler {
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
   virtual void HandleCloseMarket() = 0;
-  virtual void HandlerInputOrder(const std::string& instrument,
-                                 PositionEffect position_effect,
-                                 OrderDirection direction,
-                                 double price,
-                                 int qty,
-                                 TimeStamp timestamp) = 0;
+  virtual void HandlerInputOrder(const InputOrder& input_order) = 0;
 };
 
 class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
@@ -33,12 +28,7 @@ class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
 
   virtual void HandleCloseMarket() override;
 
-  virtual void HandlerInputOrder(const std::string& instrument,
-                                 PositionEffect position_effect,
-                                 OrderDirection direction,
-                                 double price,
-                                 int qty,
-                                 TimeStamp timestamp) override;
+  virtual void HandlerInputOrder(const InputOrder& input_order) override;
 
  private:
   Portfolio portfolio_;

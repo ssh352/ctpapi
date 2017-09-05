@@ -41,12 +41,7 @@ class AbstractExecutionHandler {
  public:
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
 
-  virtual void HandlerInputOrder(const std::string& instrument,
-                                 PositionEffect position_effect,
-                                 OrderDirection direction,
-                                 double price,
-                                 int qty,
-                                 TimeStamp timestamp) = 0;
+  virtual void HandlerInputOrder(const InputOrder& input_order) = 0;
 
   virtual void HandleCancelOrder(const std::string& order_id) = 0;
 };
@@ -93,33 +88,30 @@ class SimulatedExecutionHandler : public AbstractExecutionHandler {
     }
   }
 
-  virtual void HandlerInputOrder(const std::string& instrument,
-                                 PositionEffect position_effect,
-                                 OrderDirection direction,
-                                 double price,
-                                 int qty,
-                                 TimeStamp timestamp) override {
+  virtual void HandlerInputOrder(const InputOrder& input_order) override {
     std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
-    if (direction == OrderDirection::kBuy) {
+    if (input_order.order_direction_ == OrderDirection::kBuy) {
       long_limit_orders_.insert(
-          {instrument, order_id, direction, position_effect, price, qty});
+          {input_order.instrument_, order_id, input_order.order_direction_,
+           input_order.position_effect_, input_order.price_, input_order.qty_});
     } else {
       short_limit_orders_.insert(
-          {instrument, order_id, direction, position_effect, price, qty});
+          {input_order.instrument_, order_id, input_order.order_direction_,
+           input_order.position_effect_, input_order.price_, input_order.qty_});
     }
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
-    order->instrument_id = instrument;
-    order->position_effect = position_effect;
-    order->direction = direction;
+    order->instrument_id = input_order.instrument_;
+    order->position_effect = input_order.position_effect_;
+    order->direction = input_order.order_direction_;
     order->status = OrderStatus::kActive;
-    order->price = price;
-    order->avg_price = price;
-    order->leaves_qty = qty;
-    order->qty = qty;
+    order->price = input_order.price_;
+    order->avg_price = input_order.price_;
+    order->leaves_qty = input_order.qty_;
+    order->qty = input_order.qty_;
     order->traded_qty = 0;
-    order->input_timestamp = timestamp;
-    order->update_timestamp = timestamp;
+    order->input_timestamp = input_order.timestamp_;
+    order->update_timestamp = input_order.timestamp_;
     event_factory_->EnqueueRtnOrderEvent(std::move(order));
   }
 

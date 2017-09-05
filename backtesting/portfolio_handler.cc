@@ -35,23 +35,21 @@ void BacktestingPortfolioHandler::HandleCloseMarket() {
 }
 
 inline void BacktestingPortfolioHandler::HandlerInputOrder(
-    const std::string& instrument,
-    PositionEffect position_effect,
-    OrderDirection direction,
-    double price,
-    int qty,
-    TimeStamp timestamp) {
-  if (position_effect == PositionEffect::kClose ||
-      position_effect == PositionEffect::kCloseToday) {
+    const InputOrder& input_order) {
+  if (input_order.position_effect_ == PositionEffect::kClose ||
+      input_order.position_effect_ == PositionEffect::kCloseToday) {
     int position_qty = portfolio_.GetPositionCloseableQty(
-        instrument, direction == OrderDirection::kBuy ? OrderDirection::kSell
-                                                      : OrderDirection::kBuy);
-    if (position_qty < qty) {
+        input_order.instrument_,
+        input_order.order_direction_ == OrderDirection::kBuy
+            ? OrderDirection::kSell
+            : OrderDirection::kBuy);
+    if (position_qty < input_order.qty_) {
       return;
     }
-    portfolio_.HandleNewInputCloseOrder(instrument, direction, qty);
+    portfolio_.HandleNewInputCloseOrder(input_order.instrument_,
+                                        input_order.order_direction_,
+                                        input_order.qty_);
   }
 
-  event_factory_->EnqueueInputOrderEvent(instrument, position_effect, direction,
-                                         price, qty, timestamp);
+  event_factory_->EnqueueInputOrderEvent(input_order);
 }
