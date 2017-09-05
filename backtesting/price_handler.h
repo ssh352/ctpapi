@@ -1,6 +1,7 @@
 #ifndef BACKTESTING_PRICE_HANDLER_H
 #define BACKTESTING_PRICE_HANDLER_H
 #include <boost/format.hpp>
+#include "mail_box.h"
 #include "event.h"
 #include "tick_series_data_base.h"
 
@@ -9,11 +10,11 @@ class PriceHandler {
   PriceHandler(
       const std::string& instrument,
       bool* running,
-      AbstractEventFactory* tick_event_factory,
+      MailBox* mail_box,
       std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter)
       : instrument_(std::make_shared<std::string>(instrument)),
         running_(running),
-        tick_event_factory_(tick_event_factory),
+        mail_box_(mail_box),
         tick_containter_(std::move(tick_containter)) {
     it_ = tick_containter_.begin();
   }
@@ -38,7 +39,7 @@ class PriceHandler {
     tick_data->tick = std::shared_ptr<Tick>(
         &it_->first.get()[current_tick_index_], null_deleter);
 
-    tick_event_factory_->EnqueueTickEvent(std::move(tick_data));
+    mail_box_->Send(std::move(tick_data));
     ++current_tick_index_;
   }
 
@@ -47,7 +48,7 @@ class PriceHandler {
   std::shared_ptr<std::string> instrument_;
   int current_tick_index_ = 0;
   bool* running_;
-  AbstractEventFactory* tick_event_factory_;
+  MailBox* mail_box_;
 };
 
 #endif  // BACKTESTING_PRICE_HANDLER_H

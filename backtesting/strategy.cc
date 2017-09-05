@@ -2,13 +2,13 @@
 
 #include "cta_transaction_series_data_base.h"
 MyStrategy::MyStrategy(
-    AbstractEventFactory* event_factory,
+    MailBox* mail_box,
     std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
         cta_signal_container,
     int delayed_input_order_minute,
     int cancel_order_after_minute,
     int backtesting_position_effect)
-    : event_factory_(event_factory),
+    : mail_box_(mail_box),
       keep_memory_(std::move(cta_signal_container)),
       delayed_input_order_minute_(delayed_input_order_minute),
       cancel_order_after_minute_(cancel_order_after_minute),
@@ -21,6 +21,10 @@ MyStrategy::MyStrategy(
     }
   }
   range_beg_it_ = transactions_.begin();
+
+  mail_box_->Subscribe(&MyStrategy::HandleTick, this);
+  mail_box_->Subscribe(&MyStrategy::HandleOrder, this);
+  mail_box_->Subscribe(&MyStrategy::HandleCloseMarket, this);
 }
 
 void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
@@ -39,13 +43,13 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
     if (end_it != delay_input_order_.begin()) {
       std::for_each(delay_input_order_.begin(), end_it,
                     [=](const std::shared_ptr<CTATransaction>& tran) {
-                      event_factory_->EnqueueInputOrderSignal(
-                          {*tick->instrument,
-                           tran->position_effect == 0 ? PositionEffect::kOpen
-                                                      : PositionEffect::kClose,
-                           tran->direction == 0 ? OrderDirection::kBuy
-                                                : OrderDirection::kSell,
-                           tran->price, tran->qty, tick->tick->timestamp});
+                      mail_box_->Send(InputOrderSignal{
+                          *tick->instrument,
+                          tran->position_effect == 0 ? PositionEffect::kOpen
+                                                     : PositionEffect::kClose,
+                          tran->direction == 0 ? OrderDirection::kBuy
+                                               : OrderDirection::kSell,
+                          tran->price, tran->qty, tick->tick->timestamp});
                     });
       delay_input_order_.erase(delay_input_order_.begin(), end_it);
     }
@@ -62,12 +66,12 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
     if ((*i)->position_effect == backtesting_position_effect_) {
       delay_input_order_.push_back((*i));
     } else {
-      event_factory_->EnqueueInputOrderSignal(
-          {*tick->instrument,
-           (*i)->position_effect == 0 ? PositionEffect::kOpen
-                                      : PositionEffect::kClose,
-           (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
-           (*i)->price, (*i)->qty, tick->tick->timestamp});
+      mail_box_->Send(InputOrderSignal{
+          *tick->instrument,
+          (*i)->position_effect == 0 ? PositionEffect::kOpen
+                                     : PositionEffect::kClose,
+          (*i)->direction == 0 ? OrderDirection::kBuy : OrderDirection::kSell,
+          (*i)->price, (*i)->qty, tick->tick->timestamp});
     }
   }
 
@@ -78,7 +82,7 @@ void MyStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
                                              cancel_order_after_minute_ * 1000);
     std::for_each(unfill_orders_.begin(), end_it,
                   [=](const std::shared_ptr<OrderField>& order) {
-                    event_factory_->EnqueueCancelOrderEvent(order->order_id);
+                    mail_box_->Send(CancelOrder{order->order_id});
                   });
   }
 }
@@ -98,4 +102,4 @@ void MyStrategy::HandleOrder(const std::shared_ptr<OrderField>& order) {
 
 // Inherited via AbstractStrategy
 
-void MyStrategy::HandleCloseMarket() {}
+void MyStrategy::HandleCloseMarket(const CloseMarket&) {}

@@ -6,20 +6,20 @@
 #include "common/api_struct.h"
 #include "event.h"
 #include "execution_handler.h"
-#include "event_factory.h"
+#include "mail_box.h"
 
 class AbstractExecutionHandler;
 
 class AbstractStrategy {
  public:
-  virtual void HandleCloseMarket() = 0;
+  virtual void HandleCloseMarket(const CloseMarket&) = 0;
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
 };
 
 class MyStrategy : public AbstractStrategy {
  public:
-  MyStrategy(AbstractEventFactory* event_factory,
+  MyStrategy(MailBox* event_factory,
              std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
                  cta_signal_container,
              int delayed_input_order_minute,
@@ -31,7 +31,7 @@ class MyStrategy : public AbstractStrategy {
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override;
 
   // Inherited via AbstractStrategy
-  virtual void HandleCloseMarket() override;
+  virtual void HandleCloseMarket(const CloseMarket&) override;
 
  private:
   class CompareOrderId {
@@ -60,7 +60,7 @@ class MyStrategy : public AbstractStrategy {
       return timestamp < l->input_timestamp;
     }
   };
-  AbstractEventFactory* event_factory_;
+  MailBox* mail_box_;
   std::list<std::shared_ptr<CTATransaction>> transactions_;
   std::list<std::shared_ptr<CTATransaction>>::iterator range_beg_it_;
   std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>> keep_memory_;

@@ -3,17 +3,21 @@
 
 BacktestingPortfolioHandler::BacktestingPortfolioHandler(
     double init_cash,
-    AbstractEventFactory* event_factory,
+    MailBox* mail_box,
     std::string instrument,
     const std::string& csv_file_prefix,
     double margin_rate,
     int constract_multiple,
     CostBasis cost_basis)
     : portfolio_(init_cash),
-      event_factory_(event_factory),
+      mail_box_(mail_box),
       csv_(csv_file_prefix + "_equitys.csv") {
   portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
                                   constract_multiple, std::move(cost_basis));
+  mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleTick, this);
+  mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleOrder, this);
+  mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleCloseMarket, this);
+  mail_box_->Subscribe(&BacktestingPortfolioHandler::HandlerInputOrder, this);
 }
 
 void BacktestingPortfolioHandler::HandleTick(
@@ -27,7 +31,7 @@ void BacktestingPortfolioHandler::HandleOrder(
   portfolio_.HandleOrder(order);
 }
 
-void BacktestingPortfolioHandler::HandleCloseMarket() {
+void BacktestingPortfolioHandler::HandleCloseMarket(const CloseMarket&) {
   csv_ << last_tick_->timestamp << ","
        << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
        << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","
@@ -35,7 +39,7 @@ void BacktestingPortfolioHandler::HandleCloseMarket() {
 }
 
 inline void BacktestingPortfolioHandler::HandlerInputOrder(
-    const InputOrder& input_order) {
+    const InputOrderSignal& input_order) {
   if (input_order.position_effect_ == PositionEffect::kClose ||
       input_order.position_effect_ == PositionEffect::kCloseToday) {
     int position_qty = portfolio_.GetPositionCloseableQty(
@@ -51,5 +55,8 @@ inline void BacktestingPortfolioHandler::HandlerInputOrder(
                                         input_order.qty_);
   }
 
-  event_factory_->EnqueueInputOrderEvent(input_order);
+  mail_box_->Send(InputOrder{input_order.instrument_,
+                             input_order.position_effect_,
+                             input_order.order_direction_, input_order.price_,
+                             input_order.qty_, input_order.timestamp_});
 }

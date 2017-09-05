@@ -3,20 +3,20 @@
 #include <fstream>
 #include "common/api_struct.h"
 #include "portfolio.h"
-#include "event_factory.h"
+#include "mail_box.h"
 
 class AbstractPortfolioHandler {
  public:
   virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) = 0;
-  virtual void HandleCloseMarket() = 0;
-  virtual void HandlerInputOrder(const InputOrder& input_order) = 0;
+  virtual void HandleCloseMarket(const CloseMarket&) = 0;
+  virtual void HandlerInputOrder(const InputOrderSignal& input_order) = 0;
 };
 
 class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
  public:
   BacktestingPortfolioHandler(double init_cash,
-                              AbstractEventFactory* event_factory,
+                              MailBox* event_factory,
                               std::string instrument,
                               const std::string& csv_file_prefix,
                               double margin_rate,
@@ -26,14 +26,14 @@ class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
 
   virtual void HandleOrder(const std::shared_ptr<OrderField>& order) override;
 
-  virtual void HandleCloseMarket() override;
+  virtual void HandleCloseMarket(const CloseMarket&) override;
 
-  virtual void HandlerInputOrder(const InputOrder& input_order) override;
+  virtual void HandlerInputOrder(const InputOrderSignal& input_order) override;
 
  private:
   Portfolio portfolio_;
   std::shared_ptr<Tick> last_tick_;
   std::ofstream csv_;
-  AbstractEventFactory* event_factory_;
+  MailBox* mail_box_;
 };
 #endif  // BACKTESTING_PORTFOLIO_HANDLER_H
