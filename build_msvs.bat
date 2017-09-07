@@ -19,5 +19,5 @@ REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi c
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi caf_bench\caf_bench.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_binary\sqlite_binary.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi hpt_core\hpt_core.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi hp_trade\hp_trade.gyp

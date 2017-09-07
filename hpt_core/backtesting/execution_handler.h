@@ -5,7 +5,7 @@
 #include <boost/assert.hpp>
 #include <set>
 #include "common/api_struct.h"
-#include "backtesting/tick_series_data_base.h"
+#include "hpt_core/tick_series_data_base.h"
 
 struct LimitOrder {
   std::string instrument;

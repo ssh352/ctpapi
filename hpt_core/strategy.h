@@ -4,8 +4,6 @@
 #include <list>
 #include <set>
 #include "common/api_struct.h"
-#include "event.h"
-#include "execution_handler.h"
 
 template <class MailBox>
 class MyStrategy {
