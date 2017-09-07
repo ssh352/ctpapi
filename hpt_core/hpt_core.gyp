@@ -4,7 +4,7 @@
   ],
   'targets' : [
     {
-      'target_name' : 'backtesting',
+      'target_name' : 'hpt_core',
       'type' : 'static_library',
       'variables' : {
       },
@@ -28,7 +28,7 @@
       ],
     },
     {
-      'target_name' : 'backtesting_unittest',
+      'target_name' : 'hp_trade_unittest',
       'type' : 'executable',
       'variables' : {
       },
@@ -36,7 +36,7 @@
         '<!@(python ../build/glob_files.py unittest *.h *.cc)',
       ],
       'dependencies' : [
-        'backtesting',
+        'hpt_core',
         '<(DEPTH)/testing/gtest.gyp:gtest',
         '<(DEPTH)/testing/gtest.gyp:gtest_main',
       ],

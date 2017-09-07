@@ -1,29 +1,39 @@
 
 #include "gtest/gtest.h"
 #include <list>
-#include "execution_handler.h"
-#include "event_factory.h"
+#include "backtesting/execution_handler.h"
+#include "backtesting/backtesting_mail_box.h"
 #include "unittest_helper.h"
 
-class TestEventFactory : public AbstractEventFactory {
+class UnittestMailBox {
  public:
-  // Inherited via AbstractEventFactory
-  virtual void EnqueueTickEvent(
-      const std::shared_ptr<TickData>& tick) const override {}
-
-  virtual void EnqueueRtnOrderEvent(
-      const std::shared_ptr<OrderField>& order) const override {
-    orders_.push_back(order);
+  template <typename CLASS, typename ARG>
+  void Subscribe(void (CLASS::*pfn)(ARG), CLASS* c) {
+    std::function<void(ARG)> fn = std::bind(pfn, c, std::placeholders::_1);
+    subscribers_.insert({typeid(ARG), std::move(fn)});
   }
 
-  virtual void EnqueueInputOrderEvent(const std::string& instrument,
-                                      PositionEffect position_effect,
-                                      OrderDirection order_direction,
-                                      double price,
-                                      int qty,
-                                      TimeStamp timestamp) const override {}
+  template <typename ARG>
+  void Send(const ARG& arg) {
+    auto range = subscribers_.equal_range(typeid(arg));
+    for (auto it = range.first; it != range.second; ++it) {
+      boost::any_cast<std::function<void(const ARG&)>>(it->second)(arg);
+    }
+  }
 
-  virtual void EnqueueCloseMarketEvent() override {}
+ private:
+  std::unordered_multimap<std::type_index, boost::any> subscribers_;
+};
+
+class TestEventFactory {
+ public:
+  TestEventFactory(UnittestMailBox* mail_box) : mail_box_(mail_box) {
+    mail_box_->Subscribe(&TestEventFactory::EnqueueRtnOrderEvent, this);
+  }
+
+  void EnqueueRtnOrderEvent(const std::shared_ptr<OrderField>& order) {
+    orders_.push_back(order);
+  }
 
   std::shared_ptr<OrderField> PopupRntOrder() {
     if (orders_.empty()) {
@@ -34,26 +44,19 @@ class TestEventFactory : public AbstractEventFactory {
     return std::move(order);
   }
 
-  mutable std::list<std::shared_ptr<OrderField> > orders_;
+  mutable std::list<std::shared_ptr<OrderField>> orders_;
 
-  // Inherited via AbstractEventFactory
-  virtual void EnqueueInputOrderSignal(const std::string& instrument,
-                                       PositionEffect position_effect,
-                                       OrderDirection order_direction,
-                                       double price,
-                                       int qty,
-                                       TimeStamp timestamp) const override {}
-
-  // Inherited via AbstractEventFactory
-  virtual void EnqueueCancelOrderEvent(const std::string& order_id) override {}
+ private:
+  UnittestMailBox* mail_box_;
 };
 
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {
-  TestEventFactory event_factory;
-  SimulatedExecutionHandler execution_handler(&event_factory);
+  UnittestMailBox mail_box;
+  TestEventFactory event_factory(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
 
-  execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kBuy, 1.1, 10, 0);
+  mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kBuy,
+                           1.1, 10, 0});
   {
     auto order = event_factory.PopupRntOrder();
 
@@ -63,8 +66,8 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     EXPECT_EQ(0, order->traded_qty);
   }
 
-  execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kBuy, 0.9, 10, 0);
+  mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kBuy,
+                           0.9, 10, 0});
 
   {
     auto order = event_factory.PopupRntOrder();
@@ -108,11 +111,12 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
 }
 
 TEST(BacktestingExecutionHandler, OpenSellOrder) {
-  TestEventFactory event_factory;
-  SimulatedExecutionHandler execution_handler(&event_factory);
+  UnittestMailBox mail_box;
+  TestEventFactory event_factory(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
 
-  execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 1.1, 10, 0);
+  mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kSell,
+                           1.1, 10, 0});
   {
     auto order = event_factory.PopupRntOrder();
 
@@ -122,8 +126,8 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(0, order->traded_qty);
   }
 
-  execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 0.9, 10, 0);
+  mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kSell,
+                           0.9, 10, 0});
 
   {
     auto order = event_factory.PopupRntOrder();
@@ -167,11 +171,12 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
 }
 
 TEST(BacktestingExecutionHandler, CancelOrder) {
-  TestEventFactory event_factory;
-  SimulatedExecutionHandler execution_handler(&event_factory);
+  UnittestMailBox mail_box;
+  TestEventFactory event_factory(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
 
-  execution_handler.HandlerInputOrder("S1", PositionEffect::kOpen,
-                                      OrderDirection::kSell, 1.1, 10, 0);
+  mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kSell,
+                           1.1, 10, 0});
 
   auto order = event_factory.PopupRntOrder();
   EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
@@ -182,7 +187,7 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
 
-  execution_handler.HandleCancelOrder(order->order_id);
+  mail_box.Send(CancelOrder{order->order_id});
   {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
