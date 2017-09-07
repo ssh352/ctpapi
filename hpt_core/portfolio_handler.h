@@ -5,7 +5,7 @@
 #include "portfolio.h"
 
 template <class MailBox>
-class BacktestingPortfolioHandler {
+class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
  public:
   BacktestingPortfolioHandler(double init_cash,
                               MailBox* mail_box,

@@ -16,7 +16,6 @@
         ['exclude', 'unittest/.*'],
       ],
       'dependencies' : [
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
       ],
       'defines' : [
         'H5_BUILT_AS_DYNAMIC_LIB',

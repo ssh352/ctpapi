@@ -5,6 +5,7 @@
 #include <set>
 #include "common/api_struct.h"
 
+class AbstractExecutionHandler;
 template <class MailBox>
 class MyStrategy {
  public:
@@ -62,11 +63,10 @@ class MyStrategy {
     }
 
     auto end_it =
-        std::upper_bound(range_beg_it_, transactions_.end(), tick,
-                         [](const std::shared_ptr<TickData>& tick,
-                            const std::shared_ptr<CTATransaction>& tran) {
-                           return tick->tick->timestamp < tran->timestamp;
-                         });
+        std::find_if(range_beg_it_, transactions_.end(),
+                     [=](const std::shared_ptr<CTATransaction>& tran) {
+                       return tick->tick->timestamp < tran->timestamp;
+                     });
 
     for (auto i = range_beg_it_; i != end_it; ++i) {
       if ((*i)->position_effect == backtesting_position_effect_) {
