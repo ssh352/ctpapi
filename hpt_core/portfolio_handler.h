@@ -5,24 +5,24 @@
 #include "portfolio.h"
 
 template <class MailBox>
-class BacktestingPortfolioHandler : public AbstractPortfolioHandler {
+class PortfolioHandler {
  public:
-  BacktestingPortfolioHandler(double init_cash,
-                              MailBox* mail_box,
-                              std::string instrument,
-                              const std::string& csv_file_prefix,
-                              double margin_rate,
-                              int constract_multiple,
-                              CostBasis cost_basis)
+  PortfolioHandler(double init_cash,
+                   MailBox* mail_box,
+                   std::string instrument,
+                   const std::string& csv_file_prefix,
+                   double margin_rate,
+                   int constract_multiple,
+                   CostBasis cost_basis)
       : portfolio_(init_cash),
         mail_box_(mail_box),
         csv_(csv_file_prefix + "_equitys.csv") {
     portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
                                     constract_multiple, std::move(cost_basis));
-    mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleTick, this);
-    mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleOrder, this);
-    mail_box_->Subscribe(&BacktestingPortfolioHandler::HandleCloseMarket, this);
-    mail_box_->Subscribe(&BacktestingPortfolioHandler::HandlerInputOrder, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandleTick, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandleOrder, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandleCloseMarket, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandlerInputOrder, this);
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {

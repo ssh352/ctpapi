@@ -5,7 +5,6 @@
 #include <set>
 #include "common/api_struct.h"
 
-class AbstractExecutionHandler;
 template <class MailBox>
 class MyStrategy {
  public:

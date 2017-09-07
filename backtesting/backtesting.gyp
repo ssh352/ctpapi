@@ -14,7 +14,7 @@
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
-        '../strategys/strategys.gyp:strategys',
+        '../strategies/strategies.gyp:strategies',
       ],
       'defines' : [
       ],
