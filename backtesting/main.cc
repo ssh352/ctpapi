@@ -9,11 +9,11 @@
 #include "common/api_struct.h"
 #include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/backtesting/price_handler.h"
-#include "hpt_core/strategy.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "hpt_core/tick_series_data_base.h"
 #include "hpt_core/portfolio_handler.h"
 #include "hpt_core/cta_transaction_series_data_base.h"
+#include "strategys/strategy.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
