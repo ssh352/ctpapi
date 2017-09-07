@@ -1,10 +1,10 @@
 #ifndef BACKTESTING_PRICE_HANDLER_H
 #define BACKTESTING_PRICE_HANDLER_H
 #include <boost/format.hpp>
-#include "mail_box.h"
 #include "event.h"
 #include "tick_series_data_base.h"
 
+template <class MailBox>
 class PriceHandler {
  public:
   PriceHandler(

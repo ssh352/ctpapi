@@ -101,17 +101,20 @@ caf::behavior worker(caf::event_based_actor* self,
             delayed_input_order_by_minute % cancel_order_after_minute %
             (backtesting_position_effect == 0 ? "O" : "C"));
     MailBox mail_box(&callable_queue);
+
     RtnOrderToCSV order_to_csv(&mail_box, csv_file_prefix);
-    MyStrategy strategy(&mail_box, std::move(cta_signal_container),
-                        delayed_input_order_by_minute,
-                        cancel_order_after_minute, backtesting_position_effect);
 
-    SimulatedExecutionHandler execution_handler(&mail_box);
+    MyStrategy<MailBox> strategy(&mail_box, std::move(cta_signal_container),
+                                 delayed_input_order_by_minute,
+                                 cancel_order_after_minute,
+                                 backtesting_position_effect);
 
-    PriceHandler price_handler(instrument, &running, &mail_box,
-                               std::move(tick_container));
+    SimulatedExecutionHandler<MailBox> execution_handler(&mail_box);
 
-    BacktestingPortfolioHandler portfolio_handler_(
+    PriceHandler<MailBox> price_handler(instrument, &running, &mail_box,
+                                        std::move(tick_container));
+
+    BacktestingPortfolioHandler<MailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
         CostBasis{CommissionType::kFixed, 165, 165, 165});
 
@@ -149,85 +152,85 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   auto instruments =
       std::make_shared<std::list<std::pair<std::string, std::string>>>();
-  instruments->emplace_back(std::make_pair("dc", "a1705"));
-  instruments->emplace_back(std::make_pair("dc", "a1709"));
-  instruments->emplace_back(std::make_pair("dc", "a1801"));
-  instruments->emplace_back(std::make_pair("sc", "al1705"));
-  instruments->emplace_back(std::make_pair("sc", "bu1705"));
-  instruments->emplace_back(std::make_pair("sc", "bu1706"));
-  instruments->emplace_back(std::make_pair("sc", "bu1709"));
-  instruments->emplace_back(std::make_pair("dc", "c1705"));
-  instruments->emplace_back(std::make_pair("dc", "c1709"));
-  instruments->emplace_back(std::make_pair("dc", "c1801"));
-  instruments->emplace_back(std::make_pair("zc", "cf705"));
-  instruments->emplace_back(std::make_pair("zc", "cf709"));
-  instruments->emplace_back(std::make_pair("dc", "cs1705"));
-  instruments->emplace_back(std::make_pair("dc", "cs1709"));
-  instruments->emplace_back(std::make_pair("dc", "cs1801"));
-  instruments->emplace_back(std::make_pair("sc", "cu1702"));
-  instruments->emplace_back(std::make_pair("sc", "cu1703"));
-  instruments->emplace_back(std::make_pair("sc", "cu1704"));
-  instruments->emplace_back(std::make_pair("sc", "cu1705"));
-  instruments->emplace_back(std::make_pair("sc", "cu1706"));
-  instruments->emplace_back(std::make_pair("sc", "cu1707"));
-  instruments->emplace_back(std::make_pair("sc", "cu1708"));
-  instruments->emplace_back(std::make_pair("sc", "cu1709"));
-  instruments->emplace_back(std::make_pair("zc", "fg705"));
-  instruments->emplace_back(std::make_pair("zc", "fg709"));
-  instruments->emplace_back(std::make_pair("dc", "i1705"));
-  instruments->emplace_back(std::make_pair("dc", "i1709"));
-  instruments->emplace_back(std::make_pair("dc", "j1705"));
-  instruments->emplace_back(std::make_pair("dc", "j1709"));
-  instruments->emplace_back(std::make_pair("dc", "jd1705"));
-  instruments->emplace_back(std::make_pair("dc", "jd1708"));
-  instruments->emplace_back(std::make_pair("dc", "jd1709"));
-  instruments->emplace_back(std::make_pair("dc", "jd1801"));
-  instruments->emplace_back(std::make_pair("dc", "jm1705"));
-  instruments->emplace_back(std::make_pair("dc", "jm1709"));
-  instruments->emplace_back(std::make_pair("dc", "l1705"));
-  instruments->emplace_back(std::make_pair("dc", "l1709"));
-  instruments->emplace_back(std::make_pair("dc", "l1801"));
+  // instruments->emplace_back(std::make_pair("dc", "a1705"));
+  // instruments->emplace_back(std::make_pair("dc", "a1709"));
+  // instruments->emplace_back(std::make_pair("dc", "a1801"));
+  // instruments->emplace_back(std::make_pair("sc", "al1705"));
+  // instruments->emplace_back(std::make_pair("sc", "bu1705"));
+  // instruments->emplace_back(std::make_pair("sc", "bu1706"));
+  // instruments->emplace_back(std::make_pair("sc", "bu1709"));
+  // instruments->emplace_back(std::make_pair("dc", "c1705"));
+  // instruments->emplace_back(std::make_pair("dc", "c1709"));
+  // instruments->emplace_back(std::make_pair("dc", "c1801"));
+  // instruments->emplace_back(std::make_pair("zc", "cf705"));
+  // instruments->emplace_back(std::make_pair("zc", "cf709"));
+  // instruments->emplace_back(std::make_pair("dc", "cs1705"));
+  // instruments->emplace_back(std::make_pair("dc", "cs1709"));
+  // instruments->emplace_back(std::make_pair("dc", "cs1801"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1702"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1703"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1704"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1705"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1706"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1707"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1708"));
+  // instruments->emplace_back(std::make_pair("sc", "cu1709"));
+  // instruments->emplace_back(std::make_pair("zc", "fg705"));
+  // instruments->emplace_back(std::make_pair("zc", "fg709"));
+  // instruments->emplace_back(std::make_pair("dc", "i1705"));
+  // instruments->emplace_back(std::make_pair("dc", "i1709"));
+  // instruments->emplace_back(std::make_pair("dc", "j1705"));
+  // instruments->emplace_back(std::make_pair("dc", "j1709"));
+  // instruments->emplace_back(std::make_pair("dc", "jd1705"));
+  // instruments->emplace_back(std::make_pair("dc", "jd1708"));
+  // instruments->emplace_back(std::make_pair("dc", "jd1709"));
+  // instruments->emplace_back(std::make_pair("dc", "jd1801"));
+  // instruments->emplace_back(std::make_pair("dc", "jm1705"));
+  // instruments->emplace_back(std::make_pair("dc", "jm1709"));
+  // instruments->emplace_back(std::make_pair("dc", "l1705"));
+  // instruments->emplace_back(std::make_pair("dc", "l1709"));
+  // instruments->emplace_back(std::make_pair("dc", "l1801"));
   instruments->emplace_back(std::make_pair("dc", "m1705"));
-  instruments->emplace_back(std::make_pair("dc", "m1709"));
-  instruments->emplace_back(std::make_pair("dc", "m1801"));
-  instruments->emplace_back(std::make_pair("zc", "ma705"));
-  instruments->emplace_back(std::make_pair("zc", "ma709"));
-  instruments->emplace_back(std::make_pair("zc", "ma801"));
-  instruments->emplace_back(std::make_pair("sc", "ni1705"));
-  instruments->emplace_back(std::make_pair("sc", "ni1709"));
-  instruments->emplace_back(std::make_pair("dc", "p1705"));
-  instruments->emplace_back(std::make_pair("dc", "p1709"));
-  instruments->emplace_back(std::make_pair("dc", "p1801"));
-  instruments->emplace_back(std::make_pair("dc", "pp1705"));
-  instruments->emplace_back(std::make_pair("dc", "pp1709"));
-  instruments->emplace_back(std::make_pair("dc", "pp1801"));
-  instruments->emplace_back(std::make_pair("sc", "rb1705"));
-  instruments->emplace_back(std::make_pair("sc", "rb1710"));
-  instruments->emplace_back(std::make_pair("sc", "rb1801"));
-  instruments->emplace_back(std::make_pair("zc", "rm705"));
-  instruments->emplace_back(std::make_pair("zc", "rm709"));
-  instruments->emplace_back(std::make_pair("zc", "rm801"));
-  instruments->emplace_back(std::make_pair("sc", "ru1705"));
-  instruments->emplace_back(std::make_pair("sc", "ru1709"));
-  instruments->emplace_back(std::make_pair("sc", "ru1801"));
-  instruments->emplace_back(std::make_pair("zc", "sm709"));
-  instruments->emplace_back(std::make_pair("zc", "sr705"));
-  instruments->emplace_back(std::make_pair("zc", "sr709"));
-  instruments->emplace_back(std::make_pair("zc", "ta705"));
-  instruments->emplace_back(std::make_pair("zc", "ta709"));
-  instruments->emplace_back(std::make_pair("dc", "v1709"));
-  instruments->emplace_back(std::make_pair("dc", "y1705"));
-  instruments->emplace_back(std::make_pair("dc", "y1709"));
-  instruments->emplace_back(std::make_pair("dc", "y1801"));
-  instruments->emplace_back(std::make_pair("zc", "zc705"));
-  instruments->emplace_back(std::make_pair("sc", "zn1702"));
-  instruments->emplace_back(std::make_pair("sc", "zn1703"));
-  instruments->emplace_back(std::make_pair("sc", "zn1704"));
-  instruments->emplace_back(std::make_pair("sc", "zn1705"));
-  instruments->emplace_back(std::make_pair("sc", "zn1706"));
-  instruments->emplace_back(std::make_pair("sc", "zn1707"));
-  instruments->emplace_back(std::make_pair("sc", "zn1708"));
-  instruments->emplace_back(std::make_pair("sc", "zn1709"));
+  // instruments->emplace_back(std::make_pair("dc", "m1709"));
+  // instruments->emplace_back(std::make_pair("dc", "m1801"));
+  // instruments->emplace_back(std::make_pair("zc", "ma705"));
+  // instruments->emplace_back(std::make_pair("zc", "ma709"));
+  // instruments->emplace_back(std::make_pair("zc", "ma801"));
+  // instruments->emplace_back(std::make_pair("sc", "ni1705"));
+  // instruments->emplace_back(std::make_pair("sc", "ni1709"));
+  // instruments->emplace_back(std::make_pair("dc", "p1705"));
+  // instruments->emplace_back(std::make_pair("dc", "p1709"));
+  // instruments->emplace_back(std::make_pair("dc", "p1801"));
+  // instruments->emplace_back(std::make_pair("dc", "pp1705"));
+  // instruments->emplace_back(std::make_pair("dc", "pp1709"));
+  // instruments->emplace_back(std::make_pair("dc", "pp1801"));
+  // instruments->emplace_back(std::make_pair("sc", "rb1705"));
+  // instruments->emplace_back(std::make_pair("sc", "rb1710"));
+  // instruments->emplace_back(std::make_pair("sc", "rb1801"));
+  // instruments->emplace_back(std::make_pair("zc", "rm705"));
+  // instruments->emplace_back(std::make_pair("zc", "rm709"));
+  // instruments->emplace_back(std::make_pair("zc", "rm801"));
+  // instruments->emplace_back(std::make_pair("sc", "ru1705"));
+  // instruments->emplace_back(std::make_pair("sc", "ru1709"));
+  // instruments->emplace_back(std::make_pair("sc", "ru1801"));
+  // instruments->emplace_back(std::make_pair("zc", "sm709"));
+  // instruments->emplace_back(std::make_pair("zc", "sr705"));
+  // instruments->emplace_back(std::make_pair("zc", "sr709"));
+  // instruments->emplace_back(std::make_pair("zc", "ta705"));
+  // instruments->emplace_back(std::make_pair("zc", "ta709"));
+  // instruments->emplace_back(std::make_pair("dc", "v1709"));
+  // instruments->emplace_back(std::make_pair("dc", "y1705"));
+  // instruments->emplace_back(std::make_pair("dc", "y1709"));
+  // instruments->emplace_back(std::make_pair("dc", "y1801"));
+  // instruments->emplace_back(std::make_pair("zc", "zc705"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1702"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1703"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1704"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1705"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1706"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1707"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1708"));
+  // instruments->emplace_back(std::make_pair("sc", "zn1709"));
 
   auto coor = system.spawn(coordinator, instruments, cfg.delayed_close_minutes,
                            cfg.cancel_after_minutes);
@@ -245,75 +248,5 @@ int caf_main(caf::actor_system& system, const config& cfg) {
             << "\n";
   return 0;
 }
-
-/*
-int main(int argc, char** argv) {
-  using hrc = std::chrono::high_resolution_clock;
-  auto beg = hrc::now();
-  std::string market = "dc";
-  std::string instrument = "m1705";
-
-  std::list<std::function<void(void)>> callable_queue;
-  bool running = true;
-  double init_cash = 50 * 10000;
-
-  TickContainer tick_container;
-  CTASignalContainer cta_signal_container;
-
-  std::string ts_tick_path = "d:/ts_futures.h5";
-  std::string ts_cta_signal_path = "d:/cta_tstable.h5";
-  std::string datetime_from = "2016-12-05 09:00:00";
-  std::string datetime_to = "2017-07-31 15:00:00";
-  TickSeriesDataBase ts_db(ts_tick_path.c_str());
-  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
-      ts_cta_signal_path.c_str());
-  // std::string market = "dc";
-  // std::string instrument = "a1709";
-  int delayed_input_order_by_minute = 10;
-  int cancel_order_after_minute = 10;
-  int backtesting_position_effect = 0;
-
-  std::string csv_file_prefix =
-      str(boost::format("%s_%d_%d_%s") % instrument %
-          delayed_input_order_by_minute % cancel_order_after_minute %
-          (backtesting_position_effect == 0 ? "O" : "C"));
-  MailBox mail_box(&callable_queue);
-  MyStrategy strategy(&mail_box,
-                      cta_trasaction_series_data_base.ReadRange(
-                          str(boost::format("/%s") % instrument),
-                          boost::posix_time::time_from_string(datetime_from),
-                          boost::posix_time::time_from_string(datetime_to)),
-                      delayed_input_order_by_minute, cancel_order_after_minute,
-                      backtesting_position_effect);
-
-  SimulatedExecutionHandler execution_handler(&mail_box);
-
-  PriceHandler price_handler(
-      instrument, &running, &mail_box,
-      ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
-                      boost::posix_time::time_from_string(datetime_from),
-                      boost::posix_time::time_from_string(datetime_to)));
-
-  BacktestingPortfolioHandler portfolio_handler_(
-      init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
-      CostBasis{CommissionType::kFixed, 165, 165, 165});
-
-  while (running) {
-    if (!callable_queue.empty()) {
-      auto callable = callable_queue.front();
-      callable();
-      callable_queue.pop_front();
-    } else {
-      price_handler.StreamNext();
-    }
-  }
-  std::cout << "espces:"
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   hrc::now() - beg)
-                   .count()
-            << "\n";
-  return 0;
-}
-*/
 
 CAF_MAIN()
