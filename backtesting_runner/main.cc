@@ -27,10 +27,15 @@ using CTASignalContainer =
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrder)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(InputOrderSignal)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(InputOrder)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<TickData>)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<OrderField>)
 
 class RtnOrderToCSV {
  public:
-  RtnOrderToCSV(MailBox* mail_box, const std::string& prefix_)
+  RtnOrderToCSV(BacktestingMailBox* mail_box, const std::string& prefix_)
       : mail_box_(mail_box), orders_csv_(prefix_ + "_orders.csv") {
     mail_box_->Subscribe(&RtnOrderToCSV::HandleOrder, this);
   }
@@ -44,7 +49,7 @@ class RtnOrderToCSV {
   }
 
  private:
-  MailBox* mail_box_;
+  BacktestingMailBox* mail_box_;
   mutable std::ofstream orders_csv_;
 };
 
@@ -100,21 +105,21 @@ caf::behavior worker(caf::event_based_actor* self,
         str(boost::format("%s_%d_%d_%s") % instrument %
             delayed_input_order_by_minute % cancel_order_after_minute %
             (backtesting_position_effect == 0 ? "O" : "C"));
-    MailBox mail_box(&callable_queue);
+    BacktestingMailBox mail_box(&callable_queue);
 
     RtnOrderToCSV order_to_csv(&mail_box, csv_file_prefix);
 
-    MyStrategy<MailBox> strategy(&mail_box, std::move(cta_signal_container),
-                                 delayed_input_order_by_minute,
-                                 cancel_order_after_minute,
-                                 backtesting_position_effect);
+    MyStrategy<BacktestingMailBox> strategy(
+        &mail_box, std::move(cta_signal_container),
+        delayed_input_order_by_minute, cancel_order_after_minute,
+        backtesting_position_effect);
 
-    SimulatedExecutionHandler<MailBox> execution_handler(&mail_box);
+    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
-    PriceHandler<MailBox> price_handler(instrument, &running, &mail_box,
-                                        std::move(tick_container));
+    PriceHandler<BacktestingMailBox> price_handler(
+        instrument, &running, &mail_box, std::move(tick_container));
 
-    BacktestingPortfolioHandler<MailBox> portfolio_handler_(
+    BacktestingPortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
         CostBasis{CommissionType::kFixed, 165, 165, 165});
 
@@ -133,6 +138,18 @@ caf::behavior worker(caf::event_based_actor* self,
   }};
 }
 
+caf::behavior worker2(caf::event_based_actor* self,
+                      caf::actor coor,
+                      int backtesting_position_effect,
+                      CAFMailBox* mail_box) {
+  return {[=](const std::string& market, const std::string& instrument,
+              int delayed_input_order_by_minute, int cancel_order_after_minute,
+              TickContainer tick_container,
+              CTASignalContainer cta_signal_container) {
+
+  }};
+}
+
 class config : public caf::actor_system_config {
  public:
   int delayed_close_minutes = 10;
@@ -143,7 +160,9 @@ class config : public caf::actor_system_config {
     opt_group{custom_options_, "global"}
         .add(delayed_close_minutes, "delayed,d", "set delayed close minutes")
         .add(cancel_after_minutes, "cancel,c", "set cancel after minutes")
-        .add(position_effect, "open_close", "backtesting open(0) close(1)");
+        .add(position_effect, "open_close", "backtesting open(0) close(1)")
+        .add(scheduler_max_threads, "max-threads",
+             "sets a fixed number of worker threads for the scheduler");
   }
 };
 
@@ -232,13 +251,69 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("sc", "zn1708"));
   // instruments->emplace_back(std::make_pair("sc", "zn1709"));
 
-  auto coor = system.spawn(coordinator, instruments, cfg.delayed_close_minutes,
-                           cfg.cancel_after_minutes);
-  for (size_t i = 0; i < instruments->size(); ++i) {
-    auto actor = system.spawn(worker, coor, cfg.position_effect);
+  std::string ts_tick_path = "d:/ts_futures.h5";
+  std::string ts_cta_signal_path = "d:/cta_tstable.h5";
+  std::string datetime_from = "2016-12-05 09:00:00";
+  std::string datetime_to = "2017-07-31 15:00:00";
+  TickSeriesDataBase ts_db(ts_tick_path.c_str());
+  CTATransactionSeriesDataBase cta_trasaction_series_data_base(
+      ts_cta_signal_path.c_str());
+  auto instrument_with_market = instruments->front();
+  instruments->pop_front();
+  std::string market = instrument_with_market.first;
+  std::string instrument = instrument_with_market.second;
 
-    caf::anon_send(coor, IdleAtom::value, actor);
+  CAFMailBox mail_box(system);
+  bool running = true;
+  double init_cash = 50 * 10000;
+  int delayed_input_order_by_minute = 10;
+  int cancel_order_after_minute = 10;
+  int backtesting_position_effect = 0;
+
+  // std::string market = "dc";
+  // std::string instrument = "a1709";
+  std::string csv_file_prefix =
+      str(boost::format("%s_%d_%d_%s") % instrument %
+          delayed_input_order_by_minute % cancel_order_after_minute %
+          (backtesting_position_effect == 0 ? "O" : "C"));
+
+  // RtnOrderToCSV order_to_csv(&mail_box, csv_file_prefix);
+
+  MyStrategy<CAFMailBox> strategy(
+      &mail_box,
+      cta_trasaction_series_data_base.ReadRange(
+          str(boost::format("/%s") % instrument),
+          boost::posix_time::time_from_string(datetime_from),
+          boost::posix_time::time_from_string(datetime_to)),
+      delayed_input_order_by_minute, cancel_order_after_minute,
+      backtesting_position_effect);
+
+  SimulatedExecutionHandler<CAFMailBox> execution_handler(&mail_box);
+
+  PriceHandler<CAFMailBox> price_handler(
+      instrument, &running, &mail_box,
+      ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
+                      boost::posix_time::time_from_string(datetime_from),
+                      boost::posix_time::time_from_string(datetime_to)));
+
+  BacktestingPortfolioHandler<CAFMailBox> portfolio_handler_(
+      init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
+      CostBasis{CommissionType::kFixed, 165, 165, 165});
+
+  mail_box.FinishInitital();
+
+  while (running) {
+    price_handler.StreamNext();
   }
+  // auto coor = system.spawn(coordinator, instruments,
+  // cfg.delayed_close_minutes,
+  //                         cfg.cancel_after_minutes);
+  // for (size_t i = 0; i < instruments->size(); ++i) {
+  //  auto actor = system.spawn(worker2, coor, cfg.position_effect, &mail_box);
+
+  //  caf::anon_send(coor, IdleAtom::value, actor);
+  //}
+
   system.await_all_actors_done();
 
   std::cout << "espces:"

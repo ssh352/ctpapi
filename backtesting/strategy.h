@@ -7,7 +7,6 @@
 #include "event.h"
 #include "execution_handler.h"
 
-class AbstractExecutionHandler;
 template <class MailBox>
 class MyStrategy {
  public:
