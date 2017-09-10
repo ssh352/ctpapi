@@ -18,6 +18,9 @@
 #include "caf_mail_box.h"
 #include "live_trade_data_feed_handler.h"
 #include "strategies/key_input_strategy.h"
+using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
+
+#include "strategies/delayed_open_strategy.h"
 #include "live_trade_broker_handler.h"
 
 class AbstractExecutionHandler;
@@ -91,23 +94,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
           delayed_input_order_by_minute % cancel_order_after_minute %
           (backtesting_position_effect == 0 ? "O" : "C"));
 
-  KeyInputStrategy<CAFMailBox> strategy(&mail_box, instrument);
-
-  // RtnOrderToCSV order_to_csv(&mail_box, csv_file_prefix);
-  // MyStrategy<CAFMailBox> strategy(
-  //    &mail_box,
-  //    cta_trasaction_series_data_base.ReadRange(
-  //        str(boost::format("/%s") % instrument),
-  //        boost::posix_time::time_from_string(datetime_from),
-  //        boost::posix_time::time_from_string(datetime_to)),
-  //    delayed_input_order_by_minute, cancel_order_after_minute,
-  //    backtesting_position_effect);
-  // SimulatedExecutionHandler<CAFMailBox> execution_handler(&mail_box);
-  // PriceHandler<CAFMailBox> price_handler(
-  //    instrument, &running, &mail_box,
-  //    ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
-  //                    boost::posix_time::time_from_string(datetime_from),
-  //                    boost::posix_time::time_from_string(datetime_to)));
+  // KeyInputStrategy<CAFMailBox> strategy(&mail_box, instrument);
+  DelayedOpenStrategy<CAFMailBox> strategy(&mail_box, 10 * 60);
 
   LiveTradeBrokerHandler<CAFMailBox> live_trade_borker_handler(&mail_box);
 

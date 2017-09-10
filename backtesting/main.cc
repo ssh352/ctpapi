@@ -13,7 +13,11 @@
 #include "hpt_core/tick_series_data_base.h"
 #include "hpt_core/portfolio_handler.h"
 #include "hpt_core/cta_transaction_series_data_base.h"
-#include "strategys/strategy.h"
+#include "strategies/strategy.h"
+
+using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
+
+#include "strategies/delayed_open_strategy.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
@@ -100,17 +104,18 @@ caf::behavior worker(caf::event_based_actor* self,
 
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
 
-    MyStrategy<BacktestingMailBox> strategy(
-        &mail_box, std::move(cta_signal_container),
-        delayed_input_order_by_minute, cancel_order_after_minute,
-        backtesting_position_effect);
+    DelayedOpenStrategy<BacktestingMailBox> strategy(&mail_box, 30 * 60);
+    // MyStrategy<BacktestingMailBox> strategy(
+    //    &mail_box, std::move(cta_signal_container),
+    //    delayed_input_order_by_minute, cancel_order_after_minute,
+    //    backtesting_position_effect);
 
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
     PriceHandler<BacktestingMailBox> price_handler(
         instrument, &running, &mail_box, std::move(tick_container));
 
-    BacktestingPortfolioHandler<BacktestingMailBox> portfolio_handler_(
+    PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
         CostBasis{CommissionType::kFixed, 165, 165, 165});
 
@@ -228,6 +233,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   instruments->emplace_back(std::make_pair("sc", "zn1708"));
   instruments->emplace_back(std::make_pair("sc", "zn1709"));
 
+  std::cout << "start\n";
   auto coor = system.spawn(coordinator, instruments, cfg.delayed_close_minutes,
                            cfg.cancel_after_minutes);
   for (size_t i = 0; i < instruments->size(); ++i) {

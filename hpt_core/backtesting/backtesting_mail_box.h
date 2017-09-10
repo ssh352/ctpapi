@@ -10,18 +10,19 @@ class BacktestingMailBox {
  public:
   BacktestingMailBox(std::list<std::function<void(void)>>* callable_queue)
       : callable_queue_(callable_queue) {}
-  template <typename CLASS, typename ARG>
-  void Subscribe(void (CLASS::*pfn)(ARG), CLASS* c) {
-    std::function<void(ARG)> fn = std::bind(pfn, c, std::placeholders::_1);
-    subscribers_.insert({typeid(ARG), std::move(fn)});
+  template <typename CLASS, typename... ARG>
+  void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
+    std::function<void(ARG...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
+    subscribers_.insert({typeid(std::tuple<ARG...>), std::move(fn)});
   }
 
-  template <typename ARG>
-  void Send(const ARG& arg) {
-    auto range = subscribers_.equal_range(typeid(arg));
+  template <typename... ARG>
+  void Send(const ARG&... arg) {
+    auto range = subscribers_.equal_range(typeid(std::tuple<const ARG&...>));
     for (auto it = range.first; it != range.second; ++it) {
       callable_queue_->push_back(std::bind(
-          boost::any_cast<std::function<void(const ARG&)>>(it->second), arg));
+          boost::any_cast<std::function<void(const ARG&...)>>(it->second),
+          arg...));
     }
   }
 

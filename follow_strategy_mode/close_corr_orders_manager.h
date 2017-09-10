@@ -2,6 +2,8 @@
 #define FOLLOW_TRADE_CLOSE_CORR_ORDERS_MANAGER_H
 #include "common/api_struct.h"
 #include <boost/shared_ptr.hpp>
+#include <vector>
+#include <map>
 
 class CloseCorrOrdersManager {
  public:

@@ -45,8 +45,9 @@ struct OrderInsertForTest {
   int quantity;
 };
 
-class FollowStragetyServiceFixture : public testing::Test,
-                                     public EnterOrderObserver {
+class FollowStragetyServiceFixture
+    : public testing::Test,
+      public StrategyEnterOrderObservable::Observer {
  public:
   typedef std::tuple<OrderInsertForTest, std::vector<std::string> > TestRetType;
   FollowStragetyServiceFixture();
@@ -78,20 +79,23 @@ class FollowStragetyServiceFixture : public testing::Test,
     core->add_sink(sink);
   }
 
-  virtual void CloseOrder(const std::string& instrument,
+  virtual void OpenOrder(const std::string& strategy_id,
+                         const std::string& instrument,
+                         const std::string& order_id,
+                         OrderDirection direction,
+                         double price,
+                         int quantity) override;
+
+  virtual void CloseOrder(const std::string& strategy_id,
+                          const std::string& instrument,
                           const std::string& order_id,
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override;
 
-  virtual void OpenOrder(const std::string& instrument,
-                         const std::string& order_id,
-                         OrderDirection direction,
-                         double price,
-                         int quantity) override;
-
-  virtual void CancelOrder(const std::string& order_id) override;
+  virtual void CancelOrder(const std::string& strategy_id,
+                           const std::string& order_id) override;
 
  protected:
   void InitDefaultOrderExchangeId(std::string exchange_id);
@@ -109,14 +113,15 @@ class FollowStragetyServiceFixture : public testing::Test,
       const std::string& instrument = "abc",
       const std::string& user_product_info = "Q7");
 
-  boost::shared_ptr<const OrderField> MakeSlaveOrderData(const std::string& order_id,
-                                OrderDirection order_direction,
-                                PositionEffect position_effect,
-                                OrderStatus status,
-                                int filled_quantity = 0,
-                                int quantity = 10,
-                                double order_price = 1234.1,
-                                const std::string& instrument = "abc");
+  boost::shared_ptr<const OrderField> MakeSlaveOrderData(
+      const std::string& order_id,
+      OrderDirection order_direction,
+      PositionEffect position_effect,
+      OrderStatus status,
+      int filled_quantity = 0,
+      int quantity = 10,
+      double order_price = 1234.1,
+      const std::string& instrument = "abc");
 
   TestRetType PushOpenOrderForMaster(
       const std::string& order_id,

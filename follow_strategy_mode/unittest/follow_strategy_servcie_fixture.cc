@@ -17,7 +17,8 @@ FollowStragetyServiceFixture::FollowStragetyServiceFixture() {
   strategy_dispatch_.SubscribeRtnOrderObserver("0", signal_dispatch_);
 }
 
-void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
+void FollowStragetyServiceFixture::CloseOrder(const std::string& strategy_id,
+                                              const std::string& instrument,
                                               const std::string& order_id,
                                               OrderDirection direction,
                                               PositionEffect position_effect,
@@ -27,7 +28,8 @@ void FollowStragetyServiceFixture::CloseOrder(const std::string& instrument,
                                              position_effect, price, quantity});
 }
 
-void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
+void FollowStragetyServiceFixture::OpenOrder(const std::string& strategy_id,
+                                             const std::string& instrument,
                                              const std::string& order_id,
                                              OrderDirection direction,
                                              double price,
@@ -36,7 +38,8 @@ void FollowStragetyServiceFixture::OpenOrder(const std::string& instrument,
       instrument, order_id, direction, PositionEffect::kOpen, price, quantity});
 }
 
-void FollowStragetyServiceFixture::CancelOrder(const std::string& order_id) {
+void FollowStragetyServiceFixture::CancelOrder(const std::string& strategy_id,
+                                               const std::string& order_id) {
   cancel_orders.push_back(order_id);
 }
 
@@ -58,7 +61,7 @@ FollowStragetyServiceFixture::MakeMasterOrderData(
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= "Q7"*/) {
   boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
-  field->account_id = kMasterAccountID;
+  field->strategy_id = kMasterAccountID;
   field->instrument_id = instrument;
   field->exchange_id = default_order_exchange_id_;
   field->direction = order_direction;
@@ -82,7 +85,7 @@ FollowStragetyServiceFixture::MakeSlaveOrderData(
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/) {
   boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
-  field->account_id = kSlaveAccountID;
+  field->strategy_id = kSlaveAccountID;
   field->instrument_id = instrument;
   field->exchange_id = default_order_exchange_id_;
   field->direction = order_direction;

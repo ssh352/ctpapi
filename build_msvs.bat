@@ -3,7 +3,8 @@ set GYP_MSVS_VERSION=2017
 SET GYP_GENERATORS=msvs
 REM set GYP_DEFINES= component=shared_library enable_protobuf_log=1
 REM set GYP_DEFINES= component=static_library enable_protobuf_log=0
-set GYP_DEFINES= component=shared_library target_arch=x64 buildtype=Official
+REM  set GYP_DEFINES= component=shared_library target_arch=x64 buildtype=Official
+set GYP_DEFINES= component=static_library target_arch=x64
 REM set GYP_DEFINES= component=static_library caf_use_asio=1 caf_log_level=1 caf_no_exceptions=1 caf_enable_runtime_checks=1 caf_no_mem_management=1
 REM set GYP_DEFINES= component=shared_library target_arch=x64 
 

@@ -15,6 +15,7 @@
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
         '../strategies/strategies.gyp:strategies',
+        '../follow_strategy_mode/follow_strategy_mode.gyp:follow_strategy_mode',
       ],
       'defines' : [
       ],
