@@ -41,6 +41,10 @@ class Portfolio {
 
   double daily_commission() const { return daily_commission_; }
 
+  const std::unordered_map<std::string, Position>& positions() const {
+    return position_container_;
+  }
+
  private:
   double UpdateCostBasis(PositionEffect position_effect,
                          double price,

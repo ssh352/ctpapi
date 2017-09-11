@@ -43,6 +43,7 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
   }
 
   void HandleHistoryOrder(
+      const CTASignalAtom&,
       const std::vector<std::shared_ptr<const OrderField> >& orders) {
     for (const auto& order : orders) {
       slave_context_->HandleRtnOrder(order);
@@ -55,19 +56,20 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
 
   // CTASignal
   void HandleCTASignalInitPosition(
+      const CTASignalAtom&,
       const std::vector<OrderPosition>& quantitys) {
     master_context_->InitPositions(quantitys);
   }
 
   void HandleCTASignalHistoryOrder(
-      CTASignalAtom cta_signal_atom,
+      const CTASignalAtom&,
       const std::vector<std::shared_ptr<const OrderField> >& orders) {
     for (const auto& order : orders) {
       master_context_->HandleRtnOrder(order);
     }
   }
 
-  void HandleCTASignalOrder(CTASignalAtom cta_signal_atom,
+  void HandleCTASignalOrder(const CTASignalAtom& cta_signal_atom,
                             std::shared_ptr<const OrderField>& order) {
     strategy_dispatch_.RtnOrder(order);
   }

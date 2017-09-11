@@ -90,8 +90,10 @@ struct CTATransaction {
   int64_t timestamp;
   int32_t position_effect;
   int32_t direction;
+  int32_t status;
   double price;
   int32_t qty;
+  int32_t traded_qty;
 };
 
 struct OpenOrder {
