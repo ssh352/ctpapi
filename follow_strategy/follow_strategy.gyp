@@ -4,7 +4,7 @@
   ],
   'targets' : [
   {
-    'target_name' : 'follow_strategy_mode',
+    'target_name' : 'follow_strategy',
     'type' : '<(component)',
     'variables' : {
     },
@@ -26,7 +26,7 @@
     ],
   },
   {
-    'target_name' : 'follow_strategy_mode_unittest',
+    'target_name' : 'follow_strategy_unittest',
     'type' : 'executable',
     'variables' : {
     },
@@ -34,7 +34,7 @@
       '<!@(python ../build/glob_files.py unittest *.h *.cc)',
     ],
     'dependencies' : [
-      'follow_strategy_mode',
+      'follow_strategy',
       '<(DEPTH)/testing/gtest.gyp:gtest',
       '<(DEPTH)/testing/gtest.gyp:gtest_main',
     ],

@@ -14,9 +14,8 @@
 #include "hpt_core/portfolio_handler.h"
 #include "hpt_core/cta_transaction_series_data_base.h"
 #include "strategies/strategy.h"
-
 using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
-
+#include "follow_strategy/follow_strategy.h"
 #include "strategies/delayed_open_strategy.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
@@ -104,7 +103,12 @@ caf::behavior worker(caf::event_based_actor* self,
 
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
 
-    DelayedOpenStrategy<BacktestingMailBox> strategy(&mail_box, 30 * 60);
+    FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower");
+
+    BacktestingCTASignalBroker<BacktestingMailBox>
+        backtesting_cta_signal_broker_(&mail_box);
+
+    // DelayedOpenStrategy<BacktestingMailBox> strategy(&mail_box, 30 * 60);
     // MyStrategy<BacktestingMailBox> strategy(
     //    &mail_box, std::move(cta_signal_container),
     //    delayed_input_order_by_minute, cancel_order_after_minute,
