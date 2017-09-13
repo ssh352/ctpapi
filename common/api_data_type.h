@@ -27,6 +27,10 @@ typedef int64_t TimeStamp;
 
 typedef char InstrumentIDType[31];
 
+typedef char OrderIDType[21];
+
 enum class CommissionType { kFixed, kRate };
+
+enum class TradingTime { kDay, kNight };
 
 #endif  // COMMON_API_DATA_TYPE_H

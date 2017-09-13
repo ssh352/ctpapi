@@ -83,7 +83,8 @@ class SimulatedExecutionHandler {
   }
 
   void HandlerInputOrder(const InputOrder& input_order) {
-    std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
+    // std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
+    std::string order_id = input_order.order_id;
     if (input_order.order_direction_ == OrderDirection::kBuy) {
       long_limit_orders_.insert(
           {input_order.instrument_, order_id, input_order.order_direction_,
@@ -95,6 +96,8 @@ class SimulatedExecutionHandler {
     }
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
+    order->strategy_id = input_order.strategy_id;
+
     order->instrument_id = input_order.instrument_;
     order->position_effect = input_order.position_effect_;
     order->direction = input_order.order_direction_;
@@ -109,7 +112,7 @@ class SimulatedExecutionHandler {
     mail_box_->Send(std::move(order));
   }
 
-  void HandleCancelOrder(const CancelOrder& cancel_order) {
+  void HandleCancelOrder(const CancelOrderSignal& cancel_order) {
     const std::string& order_id = cancel_order.order_id;
     auto find_it =
         std::find_if(long_limit_orders_.begin(), long_limit_orders_.end(),

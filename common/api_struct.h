@@ -88,6 +88,7 @@ struct TickData {
 
 struct CTATransaction {
   int64_t timestamp;
+  OrderIDType order_id;
   int32_t position_effect;
   int32_t direction;
   int32_t status;
@@ -113,6 +114,8 @@ struct CostBasis {
 
 struct InputOrderSignal {
   std::string instrument_;
+  std::string order_id;
+  std::string strategy_id;
   PositionEffect position_effect_;
   OrderDirection order_direction_;
   double price_;
@@ -122,6 +125,8 @@ struct InputOrderSignal {
 
 struct InputOrder {
   std::string instrument_;
+  std::string order_id;
+  std::string strategy_id;
   PositionEffect position_effect_;
   OrderDirection order_direction_;
   double price_;
@@ -129,7 +134,7 @@ struct InputOrder {
   TimeStamp timestamp_;
 };
 
-struct CancelOrder {
+struct CancelOrderSignal {
   std::string order_id;
 };
 struct CloseMarket {};

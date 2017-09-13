@@ -10,6 +10,11 @@ Portfolio::Portfolio(double init_cash) {
   cash_ = init_cash;
 }
 
+void Portfolio::ResetByNewTradingDate() {
+  daily_commission_ = 0;
+  order_container_.clear();
+}
+
 void Portfolio::InitInstrumentDetail(std::string instrument,
                                      double margin_rate,
                                      int constract_multiple,
@@ -57,9 +62,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       frozen_cash_ += frozen_cash;
       cash_ -= frozen_cash;
     }
-    if (order->order_id == "994") {
-      int i = 0;
-    }
+
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);

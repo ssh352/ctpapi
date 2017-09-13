@@ -11,14 +11,15 @@
 #include "hpt_core/backtesting/price_handler.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "hpt_core/tick_series_data_base.h"
-#include "hpt_core/portfolio_handler.h"
 #include "hpt_core/cta_transaction_series_data_base.h"
 #include "strategies/strategy.h"
 using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
+#include "hpt_core/portfolio_handler.h"
 #include "follow_strategy/follow_strategy.h"
 #include "strategies/delayed_open_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
+#include "hpt_core/time_series_reader.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
@@ -49,6 +50,84 @@ class RtnOrderToCSV {
   mutable std::ofstream orders_csv_;
 };
 
+auto ReadTickTimeSeries(const char* hdf_file,
+                        const std::string& market,
+                        const std::string& instrument,
+                        const std::string& datetime_from,
+                        const std::string& datetime_to) {
+  hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(Tick));
+  TimeSeriesReader<Tick> ts_db(file, tick_compound);
+
+  H5Tinsert(tick_compound, "timestamp", HOFFSET(Tick, timestamp),
+            H5T_NATIVE_INT64);
+  H5Tinsert(tick_compound, "last_price", HOFFSET(Tick, last_price),
+            H5T_NATIVE_DOUBLE);
+  H5Tinsert(tick_compound, "qty", HOFFSET(Tick, qty), H5T_NATIVE_INT64);
+  H5Tinsert(tick_compound, "bid_price1", HOFFSET(Tick, bid_price1),
+            H5T_NATIVE_DOUBLE);
+  H5Tinsert(tick_compound, "bid_qty1", HOFFSET(Tick, bid_qty1),
+            H5T_NATIVE_INT64);
+  H5Tinsert(tick_compound, "ask_price1", HOFFSET(Tick, ask_price1),
+            H5T_NATIVE_DOUBLE);
+  H5Tinsert(tick_compound, "ask_qty1", HOFFSET(Tick, ask_qty1),
+            H5T_NATIVE_INT64);
+
+  auto ts_ret =
+      ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
+                      boost::posix_time::time_from_string(datetime_from),
+                      boost::posix_time::time_from_string(datetime_to));
+  herr_t ret = H5Fclose(file);
+  return std::move(ts_ret);
+}
+
+auto ReadCTAOrderSignalTimeSeries(const char* hdf_file,
+                                  const std::string& instrument,
+                                  const std::string& datetime_from,
+                                  const std::string& datetime_to) {
+  hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
+  hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(CTATransaction));
+
+  // int64_t timestamp;
+  // OrderIDType order_id;
+  // int32_t position_effect;
+  // int32_t direction;
+  // int32_t status;
+  // double price;
+  // int32_t qty;
+  // int32_t traded_qty;
+
+  H5Tinsert(tick_compound, "timestamp", HOFFSET(CTATransaction, timestamp),
+            H5T_NATIVE_INT64);
+  hid_t order_no_str = H5Tcopy(H5T_C_S1);
+  int len = sizeof(OrderIDType) / sizeof(char);
+  H5Tset_size(order_no_str, len);
+
+  H5Tinsert(tick_compound, "order_no", HOFFSET(CTATransaction, order_id),
+            order_no_str);
+
+  H5Tinsert(tick_compound, "position_effect",
+            HOFFSET(CTATransaction, position_effect), H5T_NATIVE_INT32);
+  H5Tinsert(tick_compound, "direction", HOFFSET(CTATransaction, direction),
+            H5T_NATIVE_INT32);
+  H5Tinsert(tick_compound, "status", HOFFSET(CTATransaction, status),
+            H5T_NATIVE_INT32);
+  H5Tinsert(tick_compound, "price", HOFFSET(CTATransaction, price),
+            H5T_NATIVE_DOUBLE);
+  H5Tinsert(tick_compound, "qty", HOFFSET(CTATransaction, qty),
+            H5T_NATIVE_INT32);
+  H5Tinsert(tick_compound, "traded_qty", HOFFSET(CTATransaction, traded_qty),
+            H5T_NATIVE_INT32);
+
+  TimeSeriesReader<CTATransaction> ts_db(file, tick_compound);
+  auto ts_ret =
+      ts_db.ReadRange(str(boost::format("/%s") % instrument),
+                      boost::posix_time::time_from_string(datetime_from),
+                      boost::posix_time::time_from_string(datetime_to));
+  herr_t ret = H5Fclose(file);
+  return std::move(ts_ret);
+}
+
 caf::behavior coordinator(
     caf::event_based_actor* self,
     const std::shared_ptr<std::list<std::pair<std::string, std::string>>>
@@ -57,12 +136,13 @@ caf::behavior coordinator(
     int cancel_order_after_minute) {
   return {[=](IdleAtom, caf::actor work) {
     std::string ts_tick_path = "d:/ts_futures.h5";
-    std::string ts_cta_signal_path = "d:/cta_tstable.h5";
+    // std::string ts_cta_signal_path = "d:/cta_tstable.h5";
+    std::string ts_cta_signal_path =
+        "d:/WorkSpace/backtesing_cta/cta_tstable.h5";
+
     std::string datetime_from = "2016-12-05 09:00:00";
     std::string datetime_to = "2017-07-31 15:00:00";
-    TickSeriesDataBase ts_db(ts_tick_path.c_str());
-    CTATransactionSeriesDataBase cta_trasaction_series_data_base(
-        ts_cta_signal_path.c_str());
+
     auto instrument_with_market = instruments->front();
     instruments->pop_front();
     std::string market = instrument_with_market.first;
@@ -70,13 +150,11 @@ caf::behavior coordinator(
     self->send(
         work, market, instrument, delayed_input_order_by_minute,
         cancel_order_after_minute,
-        ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
-                        boost::posix_time::time_from_string(datetime_from),
-                        boost::posix_time::time_from_string(datetime_to)),
-        cta_trasaction_series_data_base.ReadRange(
-            str(boost::format("/%s") % instrument),
-            boost::posix_time::time_from_string(datetime_from),
-            boost::posix_time::time_from_string(datetime_to)));
+        ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
+                           datetime_from, datetime_to),
+        ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
+                                     datetime_from, datetime_to));
+
     if (instruments->empty()) {
       self->quit();
     }
@@ -107,9 +185,9 @@ caf::behavior worker(caf::event_based_actor* self,
 
     FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower");
 
-    std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>> cta_orders;
     BacktestingCTASignalBroker<BacktestingMailBox>
-        backtesting_cta_signal_broker_(&mail_box, cta_orders);
+        backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
+                                       instrument);
 
     // DelayedOpenStrategy<BacktestingMailBox> strategy(&mail_box, 30 * 60);
     // MyStrategy<BacktestingMailBox> strategy(

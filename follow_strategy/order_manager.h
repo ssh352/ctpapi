@@ -28,6 +28,8 @@ class OrderManager {
   int GetUnfillQuantity(const std::string& instrument,
                         OrderDirection direction,
                         bool is_open) const;
+
+  // order id => Order Field
   std::map<std::string, Order> orders_;
   std::string dummpy_empty_;
 };

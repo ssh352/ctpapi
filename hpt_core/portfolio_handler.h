@@ -16,13 +16,45 @@ class PortfolioHandler {
                    CostBasis cost_basis)
       : portfolio_(init_cash),
         mail_box_(mail_box),
-        csv_(csv_file_prefix + "_equitys.csv") {
+        csv_(csv_file_prefix + "_equitys.csv"),
+        instrument_(instrument) {
     portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
                                     constract_multiple, std::move(cost_basis));
     mail_box_->Subscribe(&PortfolioHandler::HandleTick, this);
     mail_box_->Subscribe(&PortfolioHandler::HandleOrder, this);
     mail_box_->Subscribe(&PortfolioHandler::HandleCloseMarket, this);
     mail_box_->Subscribe(&PortfolioHandler::HandlerInputOrder, this);
+    mail_box_->Subscribe(&PortfolioHandler::BeforeTrading, this);
+  }
+
+  void BeforeTrading(const BeforeTradingAtom&,
+                     const TradingTime& trading_time) {
+    if (trading_time == TradingTime::kDay) {
+      mail_box_->Send(quantitys_);
+      mail_box_->Send(histor_orders_);
+    } else if (trading_time == TradingTime::kNight) {
+      // new trade day for cta
+      histor_orders_.clear();
+      quantitys_.clear();
+
+      for (const auto& key_and_value : portfolio_.positions()) {
+        if (key_and_value.second.long_qty() > 0) {
+          quantitys_.push_back(OrderPosition{instrument_, OrderDirection::kBuy,
+                                             key_and_value.second.long_qty()});
+        }
+
+        if (key_and_value.second.short_qty() > 0) {
+          quantitys_.push_back(OrderPosition{instrument_, OrderDirection::kSell,
+                                             key_and_value.second.long_qty()});
+        }
+      }
+
+      portfolio_.ResetByNewTradingDate();
+      mail_box_->Send(quantitys_);
+      mail_box_->Send(histor_orders_);
+    } else {
+      BOOST_ASSERT(false);
+    }
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
@@ -31,6 +63,7 @@ class PortfolioHandler {
   }
 
   void HandleOrder(const std::shared_ptr<OrderField>& order) {
+    histor_orders_.push_back(order);
     portfolio_.HandleOrder(order);
   }
 
@@ -57,14 +90,17 @@ class PortfolioHandler {
                                           input_order.qty_);
     }
 
-    mail_box_->Send(InputOrder{input_order.instrument_,
-                               input_order.position_effect_,
-                               input_order.order_direction_, input_order.price_,
-                               input_order.qty_, input_order.timestamp_});
+    mail_box_->Send(InputOrder{
+        input_order.instrument_, input_order.order_id, input_order.strategy_id,
+        input_order.position_effect_, input_order.order_direction_,
+        input_order.price_, input_order.qty_, input_order.timestamp_});
   }
 
  private:
   Portfolio portfolio_;
+  std::string instrument_;
+  std::vector<OrderPosition> quantitys_;
+  std::vector<std::shared_ptr<const OrderField>> histor_orders_;
   std::shared_ptr<Tick> last_tick_;
   std::ofstream csv_;
   MailBox* mail_box_;

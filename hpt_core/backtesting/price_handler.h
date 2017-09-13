@@ -4,6 +4,7 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "hpt_core/tick_series_data_base.h"
+#include "common/api_data_type.h"
 
 template <class MailBox>
 class PriceHandler {
@@ -35,7 +36,7 @@ class PriceHandler {
 
     if (IsNextMarketOpen(tick)) {
       mail_box_->Send(BeforeTradingAtom::value,
-                      static_cast<TimeStamp>(tick->timestamp));
+                      GetTradingTime(tick->timestamp));
     } else {
       auto null_deleter = [](Tick* tick) {};
       // event_queue_->push_back(std::make_shared<TickEvent>(std::shared_ptr<Tick>(
@@ -56,6 +57,24 @@ class PriceHandler {
       return true;
     }
     return (tick->timestamp - current_time_stamp_) / 1000.0 > 3 * 3600;
+  }
+
+  TradingTime GetTradingTime(TimeStamp time_stamp) {
+    boost::posix_time::ptime now(boost::gregorian::date(1970, 1, 1),
+                                 boost::posix_time::milliseconds(time_stamp));
+    boost::posix_time::ptime day(now.date(),
+                                 boost::posix_time::time_duration(9, 0, 0));
+    boost::posix_time::ptime night(now.date(),
+                                   boost::posix_time::time_duration(21, 0, 0));
+
+    TradingTime trading_time = TradingTime::kDay;
+    if (std::abs((now - day).total_seconds()) < 600) {
+    } else if (std::abs((now - night).total_seconds()) < 600) {
+      trading_time = TradingTime::kNight;
+    } else {
+      BOOST_ASSERT(false);
+    }
+    return trading_time;
   }
 
   std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter_;

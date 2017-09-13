@@ -1,3 +1,4 @@
+#include "..\follow_strategy\order_util.h"
 #ifndef BACKTESTING_BACKTESTING_CTA_SIGNAL_BROKER_H
 #define BACKTESTING_BACKTESTING_CTA_SIGNAL_BROKER_H
 
@@ -7,10 +8,13 @@ class BacktestingCTASignalBroker {
   BacktestingCTASignalBroker(
       MailBox* mail_box,
       std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>
-          cta_signal_container)
+          cta_signal_container,
+      std::string instrument)
       : mail_box_(mail_box),
         keep_memory_(std::move(cta_signal_container)),
-        portfolio_(100 * 10000) {
+        portfolio_(100 * 10000),
+        instrument_(std::move(instrument)),
+        csv_("debug_log.txt") {
     auto null_deleter = [](CTATransaction*) {};
     for (auto& item : keep_memory_) {
       for (int i = 0; i < item.second; ++i) {
@@ -19,6 +23,9 @@ class BacktestingCTASignalBroker {
       }
     }
     range_beg_it_ = transactions_.begin();
+
+    portfolio_.InitInstrumentDetail(instrument_, 0.1, 10,
+                                    {CommissionType::kFixed, 0, 0, 0});
     mail_box_->Subscribe(&BacktestingCTASignalBroker::HandleTick, this);
     mail_box_->Subscribe(&BacktestingCTASignalBroker::BeforeTrading, this);
   }
@@ -29,18 +36,16 @@ class BacktestingCTASignalBroker {
   //   int quantity;
   // };
 
-  void BeforeTrading(const BeforeTradingAtom&, const TimeStamp& time_stamp) {
-    boost::posix_time::ptime now(boost::gregorian::date(1970, 1, 1),
-                                 boost::posix_time::milliseconds(time_stamp));
-    boost::posix_time::ptime day(now.date(),
-                                 boost::posix_time::time_duration(9, 0, 0));
-    boost::posix_time::ptime night(now.date(),
-                                   boost::posix_time::time_duration(21, 0, 0));
-
-    if (std::abs((now - day).total_seconds()) < 600) {
+  void BeforeTrading(const BeforeTradingAtom&,
+                     const TradingTime& trading_time) {
+    csv_ << "==================================================\n";
+    if (trading_time == TradingTime::kDay) {
       mail_box_->Send(CTASignalAtom::value, quantitys_);
       mail_box_->Send(CTASignalAtom::value, histor_orders_);
-    } else if (std::abs((now - night).total_seconds()) < 600) {
+      csv_ << "Day open:"
+           << "positions:" << quantitys_.size()
+           << "history order:" << histor_orders_.size() << "\n";
+    } else if (trading_time == TradingTime::kNight) {
       // new trade day for cta
       histor_orders_.clear();
       quantitys_.clear();
@@ -57,8 +62,13 @@ class BacktestingCTASignalBroker {
         }
       }
 
+      portfolio_.ResetByNewTradingDate();
       mail_box_->Send(CTASignalAtom::value, quantitys_);
       mail_box_->Send(CTASignalAtom::value, histor_orders_);
+
+      csv_ << "Night open:"
+           << "positions:" << quantitys_.size()
+           << "history order:" << histor_orders_.size() << "\n";
     } else {
       BOOST_ASSERT(false);
     }
@@ -85,9 +95,8 @@ class BacktestingCTASignalBroker {
         auto order = std::make_shared<OrderField>();
         order->order_id = order_id;
         order->instrument_id = instrument_;
-        order->position_effect =
-            static_cast<PositionEffect>((*i)->position_effect);
-        order->direction = static_cast<OrderDirection>((*i)->direction);
+        order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kActive;
         order->price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -103,9 +112,8 @@ class BacktestingCTASignalBroker {
         auto order = std::make_shared<OrderField>();
         order->order_id = order_id;
         order->instrument_id = instrument_;
-        order->position_effect =
-            static_cast<PositionEffect>((*i)->position_effect);
-        order->direction = static_cast<OrderDirection>((*i)->direction);
+        order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kAllFilled;
         order->price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -121,9 +129,10 @@ class BacktestingCTASignalBroker {
           auto order = std::make_shared<OrderField>();
           order->order_id = order_id;
           order->instrument_id = instrument_;
+
           order->position_effect =
-              static_cast<PositionEffect>((*i)->position_effect);
-          order->direction = static_cast<OrderDirection>((*i)->direction);
+              ParseThostFtdcPosition((*i)->position_effect);
+          order->direction = ParseThostFtdcOrderDirection((*i)->direction);
           order->status = OrderStatus::kActive;
           order->price = (*i)->price;
           order->avg_price = (*i)->price;
@@ -137,9 +146,8 @@ class BacktestingCTASignalBroker {
         auto order = std::make_shared<OrderField>();
         order->order_id = order_id;
         order->instrument_id = instrument_;
-        order->position_effect =
-            static_cast<PositionEffect>((*i)->position_effect);
-        order->direction = static_cast<OrderDirection>((*i)->direction);
+        order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kCanceled;
         order->price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -184,10 +192,72 @@ class BacktestingCTASignalBroker {
     }
   };
 
+  PositionEffect ParseThostFtdcPosition(int position_effect) const {
+    PositionEffect ret = PositionEffect::kUndefine;
+    switch (position_effect) {
+      case 0:
+        ret = PositionEffect::kOpen;
+        break;
+      case 1:
+        ret = PositionEffect::kClose;
+        break;
+      case 2:
+        ret = PositionEffect::kCloseToday;
+        break;
+      default:
+        break;
+    }
+    return ret;
+  }
+
+  OrderDirection ParseThostFtdcOrderDirection(int order_direction) const {
+    OrderDirection ret = OrderDirection::kUndefine;
+    switch (order_direction) {
+      case 0:
+        ret = OrderDirection::kBuy;
+        break;
+      case 1:
+        ret = OrderDirection::kSell;
+        break;
+      default:
+        break;
+    }
+    return ret;
+  }
+
   void SendOrder(std::shared_ptr<OrderField> order) {
-    // portfolio_.HandleOrder(order);
+    order->strategy_id = "cta";
+    if (order->status == OrderStatus::kActive &&
+        IsCloseOrder(order->position_effect)) {
+      portfolio_.HandleNewInputCloseOrder(order->instrument_id,
+                                          order->direction, order->qty);
+    }
+    csv_ << "BeforeHandleOrder:"
+         << "(" << order->order_id << ")"
+         << (order->position_effect == PositionEffect::kOpen ? "O," : "C,")
+         << (order->direction == OrderDirection::kBuy ? "B," : "S,")
+         << (order->status == OrderStatus::kActive ? "N" : "F") << ","
+         << order->price << "," << order->qty << "," << order->traded_qty
+         << "\n";
+    portfolio_.HandleOrder(order);
+
+    int long_qty = 0;
+    int short_qty = 0;
+    for (const auto& pos : portfolio_.positions()) {
+      long_qty += pos.second.long_qty();
+      short_qty += pos.second.short_qty();
+    }
+
+    csv_ << "ShowPortfolio:"
+         << "cash:" << portfolio_.cash()
+         << " frozent_cash:" << portfolio_.frozen_cash()
+         << " margin:" << portfolio_.margin()
+         << " realised_pnl:" << portfolio_.realised_pnl()
+         << " daily_commission:" << portfolio_.daily_commission()
+         << " long qty:" << long_qty << " short qty:" << short_qty << "\n";
+
     histor_orders_.push_back(order);
-    mail_box_->Send(std::move(order));
+    mail_box_->Send(CTASignalAtom::value, std::move(order));
   }
 
   MailBox* mail_box_;
@@ -204,6 +274,7 @@ class BacktestingCTASignalBroker {
   int cancel_order_after_minute_ = 0;
   int backtesting_position_effect_ = 0;
   int current_order_id_ = 0;
+  std::ofstream csv_;
   std::string instrument_;
 };
 

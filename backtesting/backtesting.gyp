@@ -18,6 +18,7 @@
         '../follow_strategy/follow_strategy.gyp:follow_strategy',
       ],
       'defines' : [
+        'H5_BUILT_AS_DYNAMIC_LIB',
       ],
       'includes' : [
       ],

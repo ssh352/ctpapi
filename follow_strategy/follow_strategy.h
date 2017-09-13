@@ -36,7 +36,11 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
     mail_box_->Subscribe(&FollowStrategy::HandleCTASignalInitPosition, this);
     mail_box_->Subscribe(&FollowStrategy::HandleCTASignalHistoryOrder, this);
     mail_box_->Subscribe(&FollowStrategy::HandleCTASignalOrder, this);
+    mail_box_->Subscribe(&FollowStrategy::BeforeTrading, this);
   }
+
+  void BeforeTrading(const BeforeTradingAtom&,
+                     const TradingTime& trading_time) {}
 
   void HandleInitPosition(const std::vector<OrderPosition>& quantitys) {
     slave_context_->InitPositions(quantitys);
@@ -50,7 +54,7 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
     }
   }
 
-  void HandleOrder(const std::shared_ptr<const OrderField>& order) {
+  void HandleOrder(const std::shared_ptr<OrderField>& order) {
     strategy_dispatch_.RtnOrder(order);
   }
 
@@ -70,7 +74,7 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
   }
 
   void HandleCTASignalOrder(const CTASignalAtom& cta_signal_atom,
-                            std::shared_ptr<const OrderField>& order) {
+                            const std::shared_ptr<OrderField>& order) {
     strategy_dispatch_.RtnOrder(order);
   }
 
@@ -79,7 +83,11 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
                          const std::string& order_id,
                          OrderDirection direction,
                          double price,
-                         int quantity) override {}
+                         int quantity) override {
+    mail_box_->Send(InputOrderSignal{instrument, order_id, strategy_id,
+                                     PositionEffect::kOpen, direction, price,
+                                     quantity, 0});
+  }
 
   virtual void CloseOrder(const std::string& strategy_id,
                           const std::string& instrument,
@@ -87,10 +95,16 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
                           OrderDirection direction,
                           PositionEffect position_effect,
                           double price,
-                          int quantity) override {}
+                          int quantity) override {
+    mail_box_->Send(InputOrderSignal{instrument, order_id, strategy_id,
+                                     position_effect, direction, price,
+                                     quantity, 0});
+  }
 
   virtual void CancelOrder(const std::string& strategy_id,
-                           const std::string& order_id) override {}
+                           const std::string& order_id) override {
+    mail_box_->Send(CancelOrderSignal{order_id});
+  }
 
  private:
   std::string default_order_exchange_id_;

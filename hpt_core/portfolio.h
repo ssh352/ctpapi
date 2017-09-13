@@ -9,6 +9,8 @@ class Portfolio {
  public:
   Portfolio(double init_cash);
 
+  void ResetByNewTradingDate();
+
   void InitInstrumentDetail(std::string instrument,
                             double margin_rate,
                             int constract_multiple,
