@@ -83,3 +83,7 @@ void PositionManager::HandleRtnOrder(
   instrument_positions_[rtn_order->instrument_id].HandleRtnOrder(
       rtn_order, close_corr_orders_mgr);
 }
+
+void PositionManager::Reset() {
+  instrument_positions_.clear();
+}

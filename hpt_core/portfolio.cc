@@ -13,6 +13,9 @@ Portfolio::Portfolio(double init_cash) {
 void Portfolio::ResetByNewTradingDate() {
   daily_commission_ = 0;
   order_container_.clear();
+  for (auto& key_value : position_container_) {
+    key_value.second.Reset();
+  }
 }
 
 void Portfolio::InitInstrumentDetail(std::string instrument,

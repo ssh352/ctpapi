@@ -19,6 +19,8 @@ class CloseCorrOrdersManager {
       const std::string& order_id,
       std::vector<std::pair<std::string, int> > corr_orders);
 
+  void Reset();
+
  private:
   std::map<std::string, std::vector<std::pair<std::string, int> > >
       close_corr_orders_;

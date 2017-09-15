@@ -13,14 +13,15 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
  public:
   FollowStrategy(MailBox* mail_box,
                  std::string master_account_id,
-                 std::string slave_account_id)
+                 std::string slave_account_id,
+                 int delayed_open_order)
       : mail_box_(mail_box),
         master_account_id_(master_account_id),
         slave_account_id_(slave_account_id) {
     master_context_ = std::make_shared<OrdersContext>(master_account_id_);
     slave_context_ = std::make_shared<OrdersContext>(slave_account_id_);
     cta_strategy_ = std::make_shared<CTAGenericStrategy>(slave_account_id);
-    signal_ = std::make_shared<CTASignal>();
+    signal_ = std::make_shared<CTASignal>(delayed_open_order);
     signal_->SetOrdersContext(master_context_, slave_context_);
     signal_dispatch_ = std::make_shared<CTASignalDispatch>(signal_);
     signal_dispatch_->SetOrdersContext(master_context_, slave_context_);
@@ -37,27 +38,38 @@ class FollowStrategy : public StrategyEnterOrderObservable::Observer {
     mail_box_->Subscribe(&FollowStrategy::HandleCTASignalHistoryOrder, this);
     mail_box_->Subscribe(&FollowStrategy::HandleCTASignalOrder, this);
     mail_box_->Subscribe(&FollowStrategy::BeforeTrading, this);
+    mail_box_->Subscribe(&FollowStrategy::BeforeCloseMarket, this);
+    mail_box_->Subscribe(&FollowStrategy::HandleTick, this);
   }
 
   void BeforeTrading(const BeforeTradingAtom&,
-                     const TradingTime& trading_time) {}
+                     const TradingTime& trading_time) {
+    master_context_->Reset();
+    slave_context_->Reset();
+  }
+
+  void BeforeCloseMarket(const BeforeCloseMarketAtom&) {
+    signal_->BeforeCloseMarket();
+  }
+
+  void HandleTick(const std::shared_ptr<TickData>& tick) {
+    signal_->HandleTick(tick);
+  }
 
   void HandleInitPosition(const std::vector<OrderPosition>& quantitys) {
     slave_context_->InitPositions(quantitys);
-  }
-
-  void HandleHistoryOrder(
-      const CTASignalAtom&,
-      const std::vector<std::shared_ptr<const OrderField> >& orders) {
-    for (const auto& order : orders) {
-      slave_context_->HandleRtnOrder(order);
-    }
   }
 
   void HandleOrder(const std::shared_ptr<OrderField>& order) {
     strategy_dispatch_.RtnOrder(order);
   }
 
+  void HandleHistoryOrder(
+      const std::vector<std::shared_ptr<const OrderField> >& orders) {
+    for (const auto& order : orders) {
+      slave_context_->HandleRtnOrder(order);
+    }
+  }
   // CTASignal
   void HandleCTASignalInitPosition(
       const CTASignalAtom&,

@@ -2,22 +2,41 @@
 #include "order_util.h"
 #include "string_util.h"
 
+CTASignal::CTASignal(int delayed_open_order)
+    : delayed_open_order_(delayed_open_order) {}
+
 void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                                  std::shared_ptr<OrdersContext> slave_context) {
   master_context_ = master_context;
   slave_context_ = slave_context;
 }
 
-// CTASignal::CTASignal(const std::string& master_account_id,
-//                      const std::string& slave_account_id,
-//                      Delegate* delegate,
-//                      std::shared_ptr<OrdersContext> master_context,
-//                      std::shared_ptr<OrdersContext> slave_context)
-//     : delegate_(delegate),
-//       master_context_->account_id()(master_account_id),
-//       slave_account_id_(slave_account_id),
-//       master_context_(master_context),
-//       slave_context_(slave_context) {}
+void CTASignal::BeforeCloseMarket() {
+  auto order_tuples = slave_context_->GetUnfillOrders();
+  for (const auto& t : order_tuples) {
+    if (auto order = slave_context_->GetOrderData(std::get<0>(t))) {
+      if (IsCloseOrder(order->position_effect)) {
+        observer_->CancelOrder(order->order_id);
+      }
+    }
+  }
+}
+
+void CTASignal::HandleTick(const std::shared_ptr<TickData>& tick) {
+  auto it_up_bound = std::find_if(
+      pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
+      [=, &tick](const auto& item) {
+        return item.timestamp_ + delayed_open_order_ * 1000 >=
+               tick->tick->timestamp;
+      });
+  std::for_each(
+      pending_delayed_open_order_.begin(), it_up_bound, [=](const auto& item) {
+        observer_->OpenOrder(item.instrument_, item.order_id,
+                             item.order_direction_, item.price_, item.qty_);
+      });
+  pending_delayed_open_order_.erase(pending_delayed_open_order_.begin(),
+                                    it_up_bound);
+}
 
 void CTASignal::HandleOpening(
     const std::shared_ptr<const OrderField>& order_data) {
@@ -55,15 +74,23 @@ void CTASignal::HandleOpening(
           observer_->CancelOrder(order_id);
         }
       }
+    } else if (slave_quantity > 0) {
+      observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
+                           order_data->direction, order_data->price,
+                           order_data->qty);
+    } else {
+    }
+  } else {
+    if (delayed_open_order_ > 0) {
+      pending_delayed_open_order_.insert(InputOrderSignal{
+          order_data->instrument_id, order_data->order_id, "",
+          PositionEffect::kOpen, order_data->direction, order_data->price,
+          order_data->qty, order_data->update_timestamp});
     } else {
       observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
                            order_data->direction, order_data->price,
                            order_data->qty);
     }
-  } else {
-    observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
-                         order_data->direction, order_data->price,
-                         order_data->qty);
   }
 }
 
@@ -78,6 +105,11 @@ void CTASignal::HandleCloseing(
 
   int close_quantity = 0;
   for (auto master_corr_quantity : master_corr_order_quantitys) {
+    auto it = pending_delayed_open_order_.find(master_corr_quantity.first);
+    if (it != pending_delayed_open_order_.end()) {
+      pending_delayed_open_order_.erase(it);
+    }
+
     int master_closeable_quantity =
         master_context_->GetCloseableQuantity(master_corr_quantity.first);
     if (master_closeable_quantity == 0) {
@@ -109,6 +141,11 @@ void CTASignal::HandleCanceled(
     const std::shared_ptr<const OrderField>& order_data) {
   if (order_data->strategy_id != master_context_->account_id()) {
     return;
+  }
+
+  auto it = pending_delayed_open_order_.find(order_data->order_id);
+  if (it != pending_delayed_open_order_.end()) {
+    pending_delayed_open_order_.erase(it);
   }
 
   if (slave_context_->IsActiveOrder(order_data->order_id)) {
@@ -163,9 +200,13 @@ void CTASignal::HandleClosed(
                                        return val + quantity.closeable_quantity;
                                      });
 
+      // observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
+      //                      order_data->direction,
+      //                      PositionEffect::kCloseToday, 0, quantity);
+
       observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
                             order_data->direction, PositionEffect::kCloseToday,
-                            0, quantity);
+                            order_data->price, quantity);
     }
   }
   //  delegate_->CloseOrder(order_data->Instrument())

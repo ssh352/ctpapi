@@ -42,5 +42,4 @@ class StrategyOrderDispatch : public StrategyEnterOrderObservable::Observer,
       rtn_order_observers_;
   boost::log::sources::logger log_;
 };
-
 #endif  // follow_strategy_STRATEGY_ORDER_DISPATCH_H

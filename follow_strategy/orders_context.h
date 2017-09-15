@@ -49,13 +49,15 @@ class OrdersContext {
 
   std::vector<AccountPortfolio> GetAccountPortfolios() const;
 
+  std::vector<std::tuple<std::string, OrderDirection, bool, int> >
+  GetUnfillOrders() const;
+
   const std::string& account_id() const;
+
+  void Reset();
 
  private:
   std::vector<AccountPosition> GetAccountPositions() const;
-
-  std::vector<std::tuple<std::string, OrderDirection, bool, int> >
-  GetUnfillOrders() const;
 
   OrderManager account_order_mgr_;
   PositionManager account_position_mgr_;

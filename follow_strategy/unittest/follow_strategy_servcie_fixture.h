@@ -102,7 +102,7 @@ class FollowStragetyServiceFixture
 
   OrderInsertForTest PopOrderInsert();
 
-  boost::shared_ptr<const OrderField> MakeMasterOrderData(
+  std::shared_ptr<const OrderField> MakeMasterOrderData(
       const std::string& order_id,
       OrderDirection order_direction,
       PositionEffect position_effect,
@@ -113,7 +113,7 @@ class FollowStragetyServiceFixture
       const std::string& instrument = "abc",
       const std::string& user_product_info = "Q7");
 
-  boost::shared_ptr<const OrderField> MakeSlaveOrderData(
+  std::shared_ptr<const OrderField> MakeSlaveOrderData(
       const std::string& order_id,
       OrderDirection order_direction,
       PositionEffect position_effect,

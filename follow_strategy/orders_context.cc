@@ -149,3 +149,9 @@ std::vector<std::tuple<std::string, OrderDirection, bool, int>>
 OrdersContext::GetUnfillOrders() const {
   return account_order_mgr_.GetUnfillOrders();
 }
+
+void OrdersContext::Reset() {
+  account_order_mgr_.Reset();
+  account_position_mgr_.Reset();
+  account_close_corr_orders_mgr_.Reset();
+}

@@ -69,6 +69,9 @@ void CTASignalDispatch::DoHandleRtnOrder(
 }
 
 void CTASignalDispatch::Trade(const std::string& order_id, OrderStatus status) {
+  if (order_id == "30") {
+    int i = 0;
+  }
   waiting_reply_order_.emplace_back(order_id, status);
 }
 
@@ -124,11 +127,15 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() &&
       order->strategy_id == slave_context_->account_id()) {
+    status = StragetyStatus::kReady;
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
                      [&](auto i) { return i.first == order->order_id; });
+
     if (it != waiting_reply_order_.end()) {
       if (it->second == order->status ||
+          (it->second == OrderStatus::kCanceled &&
+           order->status == OrderStatus::kCancelRejected) ||
           order->status == OrderStatus::kAllFilled) {
         waiting_reply_order_.erase(it);
         DoHandleRtnOrder(order);
@@ -139,11 +146,7 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
             outstanding_orders_.pop_front();
           }
         }
-      } else {
-        status = StragetyStatus::kReady;
       }
-    } else {
-      status = StragetyStatus::kWaitReply;
     }
   }
   return status;

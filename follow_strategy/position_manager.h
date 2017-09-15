@@ -37,6 +37,8 @@ class PositionManager {
   void HandleRtnOrder(const std::shared_ptr<const OrderField>& rtn_order,
                       CloseCorrOrdersManager* close_corr_orders_mgr);
 
+  void Reset();
+
  private:
   std::map<std::string, InstrumentPosition> instrument_positions_;
 };

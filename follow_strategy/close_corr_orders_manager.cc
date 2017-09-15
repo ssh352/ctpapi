@@ -37,3 +37,7 @@ void CloseCorrOrdersManager::AddCloseCorrOrders(
     std::vector<std::pair<std::string, int> > corr_orders) {
   close_corr_orders_.insert_or_assign(order_id, std::move(corr_orders));
 }
+
+void CloseCorrOrdersManager::Reset() {
+  close_corr_orders_.clear();
+}

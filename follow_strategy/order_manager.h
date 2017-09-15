@@ -24,6 +24,8 @@ class OrderManager {
 
   boost::optional<OrderField> order_data(const std::string& order_id) const;
 
+  void Reset();
+
  private:
   int GetUnfillQuantity(const std::string& instrument,
                         OrderDirection direction,

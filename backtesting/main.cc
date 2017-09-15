@@ -7,7 +7,6 @@
 #include <boost/any.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
-#include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/backtesting/price_handler.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "hpt_core/tick_series_data_base.h"
@@ -15,11 +14,13 @@
 #include "strategies/strategy.h"
 using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
+using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
+#include "hpt_core/time_series_reader.h"
+#include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
 #include "follow_strategy/follow_strategy.h"
 #include "strategies/delayed_open_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
-#include "hpt_core/time_series_reader.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
@@ -35,10 +36,16 @@ class RtnOrderToCSV {
   RtnOrderToCSV(MailBox* mail_box, const std::string& prefix_)
       : mail_box_(mail_box), orders_csv_(prefix_ + "_orders.csv") {
     mail_box_->Subscribe(&RtnOrderToCSV::HandleOrder, this);
+    boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
+    facet->format("%Y-%m-%d %H:%M:%S");
+    orders_csv_.imbue(std::locale(std::locale::classic(), facet));
   }
 
   void HandleOrder(const std::shared_ptr<OrderField>& order) {
-    orders_csv_ << order->update_timestamp << "," << order->order_id << ","
+    boost::posix_time::ptime pt(
+        boost::gregorian::date(1970, 1, 1),
+        boost::posix_time::milliseconds(order->update_timestamp));
+    orders_csv_ << pt << "," << order->order_id << ","
                 << (order->position_effect == PositionEffect::kOpen ? "O" : "C")
                 << "," << (order->direction == OrderDirection::kBuy ? "B" : "S")
                 << "," << static_cast<int>(order->status) << "," << order->price
@@ -183,7 +190,8 @@ caf::behavior worker(caf::event_based_actor* self,
 
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
 
-    FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower");
+    FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
+                                                10 * 60);
 
     BacktestingCTASignalBroker<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
@@ -198,7 +206,7 @@ caf::behavior worker(caf::event_based_actor* self,
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
     PriceHandler<BacktestingMailBox> price_handler(
-        instrument, &running, &mail_box, std::move(tick_container));
+        instrument, &running, &mail_box, std::move(tick_container), 5 * 60);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
@@ -233,7 +241,59 @@ class config : public caf::actor_system_config {
   }
 };
 
+void InitLogging() {
+  namespace logging = boost::log;
+  namespace attrs = boost::log::attributes;
+  namespace src = boost::log::sources;
+  namespace sinks = boost::log::sinks;
+  namespace expr = boost::log::expressions;
+  namespace keywords = boost::log::keywords;
+  boost::shared_ptr<logging::core> core = logging::core::get();
+
+  {
+    boost::shared_ptr<sinks::text_multifile_backend> backend =
+        boost::make_shared<sinks::text_multifile_backend>();
+    // Set up the file naming pattern
+    backend->set_file_name_composer(sinks::file::as_file_name_composer(
+        expr::stream << "logs/"
+                     << "order_" << expr::attr<std::string>("strategy_id")
+                     << ".log"));
+
+    // Wrap it into the frontend and register in the core.
+    // The backend requires synchronization in the frontend.
+    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    sink->set_formatter(expr::stream
+                        << expr::attr<boost::posix_time::ptime>("TimeStamp")
+                        << "[" << expr::attr<std::string>("strategy_id")
+                        << "]: " << expr::smessage);
+
+    core->add_sink(sink);
+  }
+  {
+    boost::shared_ptr<sinks::text_multifile_backend> backend =
+        boost::make_shared<sinks::text_multifile_backend>();
+    // Set up the file naming pattern
+    backend->set_file_name_composer(sinks::file::as_file_name_composer(
+        expr::stream << "logs/" << expr::attr<std::string>("account_id")
+                     << ".log"));
+
+    // Wrap it into the frontend and register in the core.
+    // The backend requires synchronization in the frontend.
+    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+    boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    sink->set_formatter(expr::format("[%1%] %2%") %
+                        expr::attr<boost::posix_time::ptime>("TimeStamp") %
+                        expr::smessage);
+    core->add_sink(sink);
+  }
+
+  boost::log::add_common_attributes();
+  core->set_logging_enabled(false);
+}
+
 int caf_main(caf::actor_system& system, const config& cfg) {
+  InitLogging();
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   auto instruments =
@@ -249,7 +309,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("dc", "c1709"));
   // instruments->emplace_back(std::make_pair("dc", "c1801"));
   // instruments->emplace_back(std::make_pair("zc", "cf705"));
-  // instruments->emplace_back(std::make_pair("zc", "cf709"));
+  instruments->emplace_back(std::make_pair("zc", "cf709"));
   // instruments->emplace_back(std::make_pair("dc", "cs1705"));
   // instruments->emplace_back(std::make_pair("dc", "cs1709"));
   // instruments->emplace_back(std::make_pair("dc", "cs1801"));
@@ -276,7 +336,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("dc", "l1705"));
   // instruments->emplace_back(std::make_pair("dc", "l1709"));
   // instruments->emplace_back(std::make_pair("dc", "l1801"));
-  instruments->emplace_back(std::make_pair("dc", "m1705"));
+  // instruments->emplace_back(std::make_pair("dc", "m1705"));
   // instruments->emplace_back(std::make_pair("dc", "m1709"));
   // instruments->emplace_back(std::make_pair("dc", "m1801"));
   // instruments->emplace_back(std::make_pair("zc", "ma705"));

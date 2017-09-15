@@ -29,6 +29,7 @@ class PortfolioHandler {
 
   void BeforeTrading(const BeforeTradingAtom&,
                      const TradingTime& trading_time) {
+    std::cout << "BeforeTrading\n";
     if (trading_time == TradingTime::kDay) {
       mail_box_->Send(quantitys_);
       mail_box_->Send(histor_orders_);
@@ -45,7 +46,7 @@ class PortfolioHandler {
 
         if (key_and_value.second.short_qty() > 0) {
           quantitys_.push_back(OrderPosition{instrument_, OrderDirection::kSell,
-                                             key_and_value.second.long_qty()});
+                                             key_and_value.second.short_qty()});
         }
       }
 
@@ -75,6 +76,9 @@ class PortfolioHandler {
   }
 
   void HandlerInputOrder(const InputOrderSignal& input_order) {
+    BOOST_ASSERT(unique_order_ids_.find(input_order.order_id) ==
+                 unique_order_ids_.end());
+    unique_order_ids_.insert(input_order.order_id);
     if (input_order.position_effect_ == PositionEffect::kClose ||
         input_order.position_effect_ == PositionEffect::kCloseToday) {
       int position_qty = portfolio_.GetPositionCloseableQty(
@@ -85,6 +89,7 @@ class PortfolioHandler {
       if (position_qty < input_order.qty_) {
         return;
       }
+      std::cout << input_order.order_id << "\n";
       portfolio_.HandleNewInputCloseOrder(input_order.instrument_,
                                           input_order.order_direction_,
                                           input_order.qty_);
@@ -101,6 +106,7 @@ class PortfolioHandler {
   std::string instrument_;
   std::vector<OrderPosition> quantitys_;
   std::vector<std::shared_ptr<const OrderField>> histor_orders_;
+  std::unordered_set<std::string> unique_order_ids_;
   std::shared_ptr<Tick> last_tick_;
   std::ofstream csv_;
   MailBox* mail_box_;

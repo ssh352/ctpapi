@@ -7,7 +7,7 @@ FollowStragetyServiceFixture::FollowStragetyServiceFixture() {
   master_context_ = std::make_shared<OrdersContext>(kMasterAccountID);
   slave_context_ = std::make_shared<OrdersContext>(kSlaveAccountID);
   cta_strategy_ = std::make_shared<CTAGenericStrategy>("0");
-  signal_ = std::make_shared<CTASignal>();
+  signal_ = std::make_shared<CTASignal>(0);
   signal_->SetOrdersContext(master_context_, slave_context_);
   signal_dispatch_ = std::make_shared<CTASignalDispatch>(signal_);
   signal_dispatch_->SetOrdersContext(master_context_, slave_context_);
@@ -49,7 +49,7 @@ OrderInsertForTest FollowStragetyServiceFixture::PopOrderInsert() {
   return order_insert;
 }
 
-boost::shared_ptr<const OrderField>
+std::shared_ptr<const OrderField>
 FollowStragetyServiceFixture::MakeMasterOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
@@ -60,7 +60,7 @@ FollowStragetyServiceFixture::MakeMasterOrderData(
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/,
     const std::string& user_product_info /*= "Q7"*/) {
-  boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
+  std::shared_ptr<OrderField> field = std::make_shared<OrderField>();
   field->strategy_id = kMasterAccountID;
   field->instrument_id = instrument;
   field->exchange_id = default_order_exchange_id_;
@@ -74,7 +74,7 @@ FollowStragetyServiceFixture::MakeMasterOrderData(
   return field;
 }
 
-boost::shared_ptr<const OrderField>
+std::shared_ptr<const OrderField>
 FollowStragetyServiceFixture::MakeSlaveOrderData(
     const std::string& order_id,
     OrderDirection order_direction,
@@ -84,7 +84,7 @@ FollowStragetyServiceFixture::MakeSlaveOrderData(
     int quantity /*= 10*/,
     double order_price /*= 1234.1*/,
     const std::string& instrument /*= "abc"*/) {
-  boost::shared_ptr<OrderField> field = boost::make_shared<OrderField>();
+  std::shared_ptr<OrderField> field = std::make_shared<OrderField>();
   field->strategy_id = kSlaveAccountID;
   field->instrument_id = instrument;
   field->exchange_id = default_order_exchange_id_;

@@ -4,6 +4,7 @@
 class Position {
  public:
   Position(double margin_rate, int constract_multiple, CostBasis cost_basis);
+
   void TradedOpen(OrderDirection direction,
                   double price,
                   int last_traded_qty,
@@ -24,6 +25,8 @@ class Position {
                    double* unrealised_pnl);
 
   void UpdateMarketPrice(double price, double* update_pnl);
+
+  void Reset();
 
   bool IsEmptyQty() const;
 

@@ -103,3 +103,7 @@ int OrderManager::GetUnfillQuantity(const std::string& instrument,
                            return val;
                          });
 }
+
+void OrderManager::Reset() {
+  orders_.clear();
+}

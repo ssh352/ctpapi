@@ -108,6 +108,13 @@ void Position::UpdateMarketPrice(double price, double* update_pnl) {
   unrealised_pnl_ = lastst_unrealised_pnl_;
 }
 
+void Position::Reset() {
+  frozen_open_long_qty_ = 0;
+  frozen_open_short_qty_ = 0;
+  frozen_long_qty_ = 0;
+  frozen_short_qty_ = 0;
+}
+
 bool Position::IsEmptyQty() const {
   return long_qty_ == 0 && short_qty_ == 0 && frozen_open_long_qty_ == 0 &&
          frozen_open_short_qty_ == 0;
