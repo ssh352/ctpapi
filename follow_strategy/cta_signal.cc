@@ -1,9 +1,10 @@
 #include "cta_signal.h"
+#include <boost/format.hpp>
 #include "order_util.h"
 #include "string_util.h"
 
 CTASignal::CTASignal(int delayed_open_order)
-    : delayed_open_order_(delayed_open_order) {}
+    : delayed_open_order_(delayed_open_order), order_id_prefix_("S") {}
 
 void CTASignal::SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                                  std::shared_ptr<OrdersContext> slave_context) {
@@ -184,13 +185,13 @@ void CTASignal::HandleClosed(
                        : val;
           });
       if (yesterday_quantity > 0) {
-        observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
+        observer_->CloseOrder(order_data->instrument_id, GenerateOrderId(),
                               order_data->direction, PositionEffect::kClose, 0,
                               yesterday_quantity);
       }
 
       if (today_quantity > 0) {
-        observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
+        observer_->CloseOrder(order_data->instrument_id, GenerateOrderId(),
                               order_data->direction,
                               PositionEffect::kCloseToday, 0, today_quantity);
       }
@@ -204,7 +205,7 @@ void CTASignal::HandleClosed(
       //                      order_data->direction,
       //                      PositionEffect::kCloseToday, 0, quantity);
 
-      observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
+      observer_->CloseOrder(order_data->instrument_id, GenerateOrderId(),
                             order_data->direction, PositionEffect::kCloseToday,
                             order_data->price, quantity);
     }
@@ -217,4 +218,8 @@ void CTASignal::HandleOpened(
 
 void CTASignal::Subscribe(CTASignalObserver::Observable* observer) {
   observer_ = observer;
+}
+
+std::string CTASignal::GenerateOrderId() {
+  return str(boost::format("%s%d") % order_id_prefix_ % order_id_seq_++);
 }

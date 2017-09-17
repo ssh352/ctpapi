@@ -19,8 +19,8 @@ TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase1) {
   slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1");
 
-  auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10,
-                                        8888.9, PositionEffect::kCloseToday);
+  auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10, 8888.9,
+                                        PositionEffect::kCloseToday);
   auto order_insert = std::get<0>(ret);
   EXPECT_EQ(order_insert.direction, OrderDirection::kSell);
   EXPECT_EQ(order_insert.position_effect, PositionEffect::kCloseToday);
@@ -34,8 +34,8 @@ TEST_F(FollowStragetyServiceFixture, ClosePositionForSHFECase2) {
   slave_context_->InitPositions({{"abc", OrderDirection::kBuy, 10}});
   OpenAndFilledOrder("1");
 
-  auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10,
-                                        8888.9, PositionEffect::kClose);
+  auto ret = PushNewCloseOrderForMaster("2", OrderDirection::kSell, 10, 8888.9,
+                                        PositionEffect::kClose);
   auto order_insert = std::get<0>(ret);
   EXPECT_EQ(order_insert.direction, OrderDirection::kSell);
   EXPECT_EQ(order_insert.position_effect, PositionEffect::kClose);
@@ -62,7 +62,7 @@ TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase1) {
     auto ret = PushCloseOrderForMaster("2", OrderDirection::kSell);
     auto order_insert = std::get<0>(ret);
     EXPECT_EQ(8, order_insert.quantity);
-    EXPECT_EQ("3", order_insert.order_id);
+    EXPECT_EQ("S0", order_insert.order_id);
   }
 }
 
@@ -88,7 +88,7 @@ TEST_F(FollowStragetyServiceFixture, CloseAllPositionCase2) {
     auto ret = PushCloseOrderForMaster("2", OrderDirection::kSell);
     auto order_insert = std::get<0>(ret);
     EXPECT_EQ(8, order_insert.quantity);
-    EXPECT_EQ("3", order_insert.order_id);
+    EXPECT_EQ("S0", order_insert.order_id);
     EXPECT_EQ(PositionEffect::kClose, order_insert.position_effect);
   }
 }
@@ -114,7 +114,7 @@ TEST_F(FollowStragetyServiceFixture, SyncCancelPartyFillClose) {
     auto ret = PushNewCloseOrderForMaster("3", OrderDirection::kSell, 4);
 
     auto order_insert = std::get<0>(ret);
-    EXPECT_EQ("2", order_insert.order_id);
+    EXPECT_EQ("3", order_insert.order_id);
     EXPECT_EQ(1, order_insert.quantity);
     EXPECT_EQ(0, std::get<1>(ret).size());
   }

@@ -69,9 +69,6 @@ void CTASignalDispatch::DoHandleRtnOrder(
 }
 
 void CTASignalDispatch::Trade(const std::string& order_id, OrderStatus status) {
-  if (order_id == "30") {
-    int i = 0;
-  }
   waiting_reply_order_.emplace_back(order_id, status);
 }
 

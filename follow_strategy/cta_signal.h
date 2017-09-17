@@ -59,11 +59,14 @@ class CTASignal : public CTASignalObserver {
       return timestamp < l.timestamp_;
     }
   };
+  std::string GenerateOrderId();
   std::shared_ptr<OrdersContext> master_context_;
   std::shared_ptr<OrdersContext> slave_context_;
   CTASignalObserver::Observable* observer_;
   std::multiset<InputOrderSignal, CompareOrderId> pending_delayed_open_order_;
   int delayed_open_order_ = 0;
+  std::string order_id_prefix_;
+  int order_id_seq_ = 0;
 };
 
 #endif  // follow_strategy_CTA_SIGNAL_H
