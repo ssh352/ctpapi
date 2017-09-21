@@ -118,11 +118,11 @@ class SimulatedExecutionHandler {
     order->position_effect = input_order.position_effect_;
     order->direction = input_order.order_direction_;
     order->status = OrderStatus::kActive;
-    order->price = input_order.price_;
+    order->input_price = input_order.price_;
     order->avg_price = input_order.price_;
     order->leaves_qty = input_order.qty_;
     order->qty = input_order.qty_;
-    order->traded_qty = 0;
+    order->trading_qty = 0;
     // TODO:
     // order->input_timestamp = input_order.timestamp_;
     // order->update_timestamp = input_order.timestamp_;
@@ -175,7 +175,8 @@ class SimulatedExecutionHandler {
 
     EnqueueRtnOrderEvent(
         {(*it)->instrument_id, (*it)->order_id, (*it)->strategy_id,
-         (*it)->direction, (*it)->position_effect, (*it)->price, (*it)->qty},
+         (*it)->direction, (*it)->position_effect, (*it)->input_price,
+         (*it)->qty},
         OrderStatus::kCancelRejected, (*it)->qty, 0);
 
     return;
@@ -192,11 +193,11 @@ class SimulatedExecutionHandler {
     order->position_effect = limit_order.position_effect;
     order->direction = limit_order.direction;
     order->status = order_status;
-    order->price = limit_order.price;
+    order->input_price = limit_order.price;
     order->avg_price = limit_order.price;
     order->leaves_qty = leaves_qty;
     order->qty = limit_order.qty;
-    order->traded_qty = traded_qty;
+    order->trading_qty = traded_qty;
     order->update_timestamp = current_tick_->timestamp;
 
     orders_.insert(order);

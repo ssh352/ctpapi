@@ -67,8 +67,9 @@ FollowStragetyServiceFixture::MakeMasterOrderData(
   field->direction = order_direction;
   field->order_id = order_id;
   field->qty = quantity;
-  field->traded_qty = filled_quantity;
-  field->price = order_price;
+  // field->trading_qty = filled_quantity;
+  field->leaves_qty = quantity - filled_quantity;
+  field->input_price = order_price;
   field->status = status;
   field->position_effect = position_effect;
   return field;
@@ -91,8 +92,9 @@ FollowStragetyServiceFixture::MakeSlaveOrderData(
   field->direction = order_direction;
   field->order_id = order_id;
   field->qty = quantity;
-  field->traded_qty = filled_quantity;
-  field->price = order_price;
+  // field->trading_qty = filled_quantity;
+  field->leaves_qty = quantity - filled_quantity;
+  field->input_price = order_price;
   field->status = status;
   field->position_effect = position_effect;
   return field;

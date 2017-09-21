@@ -9,7 +9,7 @@ OrderEventType OrderManager::HandleRtnOrder(
                                                     : OrderEventType::kNewOpen;
   } else if (order->status == OrderStatus::kCanceled) {
     ret_type = OrderEventType::kCanceled;
-  } else if (orders_[order->order_id].IsQuantityChange(order->traded_qty)) {
+  } else if (orders_[order->order_id].IsQuantityChange(order->leaves_qty)) {
     ret_type = IsCloseOrder(order->position_effect)
                    ? OrderEventType::kCloseTraded
                    : OrderEventType::kOpenTraded;

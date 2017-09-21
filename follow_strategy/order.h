@@ -11,7 +11,7 @@ class Order {
 
   OrderDirection direction() const { return data_->direction; }
 
-  bool IsQuantityChange(int traded_qty) const;
+  bool IsQuantityChange(int leave_qty) const;
 
   bool IsActiveOrder() const;
 

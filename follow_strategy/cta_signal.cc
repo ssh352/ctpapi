@@ -59,7 +59,7 @@ void CTASignal::HandleOpening(
       if (slave_quantity > 0) {
         // Fully lock
         observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
-                             order_data->direction, order_data->price,
+                             order_data->direction, order_data->input_price,
                              slave_quantity);
       }
 
@@ -77,7 +77,7 @@ void CTASignal::HandleOpening(
       }
     } else if (slave_quantity > 0) {
       observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
-                           order_data->direction, order_data->price,
+                           order_data->direction, order_data->input_price,
                            order_data->qty);
     } else {
     }
@@ -85,11 +85,11 @@ void CTASignal::HandleOpening(
     if (delayed_open_order_ > 0) {
       pending_delayed_open_order_.insert(InputOrderSignal{
           order_data->instrument_id, order_data->order_id, "",
-          PositionEffect::kOpen, order_data->direction, order_data->price,
+          PositionEffect::kOpen, order_data->direction, order_data->input_price,
           order_data->qty, order_data->update_timestamp});
     } else {
       observer_->OpenOrder(order_data->instrument_id, order_data->order_id,
-                           order_data->direction, order_data->price,
+                           order_data->direction, order_data->input_price,
                            order_data->qty);
     }
   }
@@ -134,7 +134,7 @@ void CTASignal::HandleCloseing(
   if (close_quantity > 0) {
     observer_->CloseOrder(order_data->instrument_id, order_data->order_id,
                           order_data->direction, order_data->position_effect,
-                          order_data->price, close_quantity);
+                          order_data->input_price, close_quantity);
   }
 }
 
@@ -207,7 +207,7 @@ void CTASignal::HandleClosed(
 
       observer_->CloseOrder(order_data->instrument_id, GenerateOrderId(),
                             order_data->direction, PositionEffect::kCloseToday,
-                            order_data->price, quantity);
+                            order_data->input_price, quantity);
     }
   }
   //  delegate_->CloseOrder(order_data->Instrument())

@@ -48,7 +48,7 @@ void StrategyOrderDispatch::RtnOrder(
                   << "RtnOrder:" << order->instrument_id << ","
                   << order->order_id << ","
                   << (order->direction == OrderDirection::kBuy ? "B" : "S")
-                  << "," << order->price;
+                  << "," << order->input_price;
   auto it = rtn_order_observers_.find(order->strategy_id);
   if (it != rtn_order_observers_.end()) {
     it->second->RtnOrder(order);

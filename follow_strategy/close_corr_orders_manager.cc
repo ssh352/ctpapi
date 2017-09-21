@@ -27,7 +27,7 @@ std::vector<std::string> CloseCorrOrdersManager::GetCloseCorrOrderIds(
 bool CloseCorrOrdersManager::IsNewCloseOrder(
     const std::shared_ptr<const OrderField>& rtn_order) const {
   return IsCloseOrder(rtn_order->position_effect) &&
-         rtn_order->traded_qty == 0 &&
+         rtn_order->leaves_qty == rtn_order->qty &&
          close_corr_orders_.find(rtn_order->order_id) ==
              close_corr_orders_.end();
 }

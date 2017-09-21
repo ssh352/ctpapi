@@ -63,7 +63,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(0, order->traded_qty);
+    EXPECT_EQ(0, order->trading_qty);
   }
 
   mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kBuy,
@@ -75,7 +75,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(0, order->traded_qty);
+    EXPECT_EQ(0, order->trading_qty);
   }
 
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
@@ -90,8 +90,8 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderDirection::kBuy, order->direction);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-    EXPECT_EQ(1.1, order->price);
-    EXPECT_EQ(10, order->traded_qty);
+    EXPECT_EQ(1.1, order->input_price);
+    EXPECT_EQ(10, order->trading_qty);
   }
 
   execution_handler.HandleTick(MakeTick("S1", 1.0, 200));
@@ -102,8 +102,8 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
-    EXPECT_EQ(0.9, order->price);
-    EXPECT_EQ(10, order->traded_qty);
+    EXPECT_EQ(0.9, order->input_price);
+    EXPECT_EQ(10, order->trading_qty);
   }
 
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
@@ -123,7 +123,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(0, order->traded_qty);
+    EXPECT_EQ(0, order->trading_qty);
   }
 
   mail_box.Send(InputOrder{"S1", PositionEffect::kOpen, OrderDirection::kSell,
@@ -135,7 +135,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(0, order->traded_qty);
+    EXPECT_EQ(0, order->trading_qty);
   }
 
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
@@ -150,8 +150,8 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderDirection::kSell, order->direction);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-    EXPECT_EQ(0.9, order->price);
-    EXPECT_EQ(10, order->traded_qty);
+    EXPECT_EQ(0.9, order->input_price);
+    EXPECT_EQ(10, order->trading_qty);
   }
 
   execution_handler.HandleTick(MakeTick("S1", 1.0, 200));
@@ -162,8 +162,8 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
   {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
-    EXPECT_EQ(1.1, order->price);
-    EXPECT_EQ(10, order->traded_qty);
+    EXPECT_EQ(1.1, order->input_price);
+    EXPECT_EQ(10, order->trading_qty);
   }
 
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
@@ -182,7 +182,7 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
   EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
   EXPECT_EQ(OrderDirection::kSell, order->direction);
   EXPECT_EQ(OrderStatus::kActive, order->status);
-  EXPECT_EQ(1.1, order->price);
+  EXPECT_EQ(1.1, order->input_price);
   EXPECT_EQ(10, order->qty);
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
@@ -194,6 +194,6 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
     EXPECT_EQ(OrderStatus::kCanceled, order->status);
     EXPECT_EQ(10, order->qty);
     EXPECT_EQ(10, order->leaves_qty);
-    EXPECT_EQ(0, order->traded_qty);
+    EXPECT_EQ(0, order->trading_qty);
   }
 }

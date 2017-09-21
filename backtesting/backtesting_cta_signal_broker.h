@@ -98,11 +98,12 @@ class BacktestingCTASignalBroker {
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kActive;
-        order->price = (*i)->price;
+        order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
+        order->trading_price = 0.0;
         order->leaves_qty = (*i)->qty;
         order->qty = (*i)->qty;
-        order->traded_qty = 0;
+        order->trading_qty = 0;
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
         SendOrder(std::move(order));
@@ -115,11 +116,12 @@ class BacktestingCTASignalBroker {
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kAllFilled;
-        order->price = (*i)->price;
+        order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
+        order->trading_price = (*i)->price;
         order->leaves_qty = 0;
         order->qty = (*i)->qty;
-        order->traded_qty = (*i)->qty;
+        order->trading_qty = (*i)->qty;
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
         SendOrder(std::move(order));
@@ -134,11 +136,12 @@ class BacktestingCTASignalBroker {
               ParseThostFtdcPosition((*i)->position_effect);
           order->direction = ParseThostFtdcOrderDirection((*i)->direction);
           order->status = OrderStatus::kActive;
-          order->price = (*i)->price;
+          order->input_price = (*i)->price;
           order->avg_price = (*i)->price;
+          order->trading_price = 0;
           order->leaves_qty = (*i)->qty - (*i)->traded_qty;
           order->qty = (*i)->qty;
-          order->traded_qty = (*i)->traded_qty;
+          order->trading_price = 0;
           order->input_timestamp = tick->tick->timestamp;
           order->update_timestamp = tick->tick->timestamp;
           SendOrder(std::move(order));
@@ -149,11 +152,12 @@ class BacktestingCTASignalBroker {
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
         order->status = OrderStatus::kCanceled;
-        order->price = (*i)->price;
+        order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
+        order->trading_price = 0.0;
         order->leaves_qty = (*i)->qty - (*i)->traded_qty;
         order->qty = (*i)->qty;
-        order->traded_qty = (*i)->traded_qty;
+        order->trading_qty = 0;
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
         SendOrder(std::move(order));
@@ -237,8 +241,8 @@ class BacktestingCTASignalBroker {
          << (order->position_effect == PositionEffect::kOpen ? "O," : "C,")
          << (order->direction == OrderDirection::kBuy ? "B," : "S,")
          << (order->status == OrderStatus::kActive ? "N" : "F") << ","
-         << order->price << "," << order->qty << "," << order->traded_qty
-         << "\n";
+         << order->trading_price << "," << order->qty << ","
+         << order->trading_qty << "\n";
     portfolio_.HandleOrder(order);
 
     int long_qty = 0;

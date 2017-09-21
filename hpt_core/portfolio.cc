@@ -41,7 +41,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
   if (order_container_.find(order->order_id) == order_container_.end()) {
     // New Order
     if (IsOpenPositionEffect(order->position_effect)) {
-      BOOST_ASSERT(order->traded_qty == 0);
+      BOOST_ASSERT(order->trading_qty == 0);
       BOOST_ASSERT_MSG(instrument_info_container_.find(order->instrument_id) !=
                            instrument_info_container_.end(),
                        "The Instrument info must be found!");
@@ -59,8 +59,8 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       Position& position = position_container_.at(order->instrument_id);
       position.OpenOrder(order->direction, order->qty);
       double frozen_cash =
-          order->price * order->qty * margin_rate * constract_multiple +
-          CalcCommission(PositionEffect::kOpen, order->price, order->qty,
+          order->input_price * order->qty * margin_rate * constract_multiple +
+          CalcCommission(PositionEffect::kOpen, order->input_price, order->qty,
                          constract_multiple, cost_basis);
       frozen_cash_ += frozen_cash;
       cash_ -= frozen_cash;
@@ -69,15 +69,15 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);
-    int last_traded_qty = order->traded_qty - previous_order->traded_qty;
+    int last_traded_qty = order->trading_qty - previous_order->trading_qty;
     switch (order->status) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
         if (IsOpenPositionEffect(order->position_effect)) {  // Open
           Position& position = position_container_.at(order->instrument_id);
           double add_margin = 0.0;
-          position.TradedOpen(order->direction, order->price, last_traded_qty,
-                              &add_margin);
+          position.TradedOpen(order->direction, order->input_price,
+                              last_traded_qty, &add_margin);
           frozen_cash_ -= add_margin;
           margin_ += add_margin;
         } else {  // Close
@@ -88,9 +88,9 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
           double add_cash = 0.0;
           double release_margin = 0.0;
           double update_unrealised_pnl = 0.0;
-          position.TradedClose(order->direction, order->price, last_traded_qty,
-                               &pnl, &add_cash, &release_margin,
-                               &update_unrealised_pnl);
+          position.TradedClose(order->direction, order->input_price,
+                               last_traded_qty, &pnl, &add_cash,
+                               &release_margin, &update_unrealised_pnl);
           margin_ -= release_margin;
           cash_ += add_cash + pnl;
           realised_pnl_ += pnl;
@@ -111,7 +111,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
             std::tie(margin_rate, constract_mutiple, cost_basis) =
                 instrument_info_container_.at(order->instrument_id);
             double commission =
-                UpdateCostBasis(order->position_effect, order->price,
+                UpdateCostBasis(order->position_effect, order->input_price,
                                 order->qty, constract_mutiple, cost_basis);
             if (IsOpenPositionEffect(order->position_effect)) {
               frozen_cash_ -= commission;
@@ -131,19 +131,19 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
           CostBasis cost_basis;
           std::tie(margin_rate, constract_mutiple, cost_basis) =
               instrument_info_container_.at(order->instrument_id);
-          (void)UpdateCostBasis(order->position_effect, order->price,
+          (void)UpdateCostBasis(order->position_effect, order->input_price,
                                 order->qty - order->leaves_qty,
                                 constract_mutiple, cost_basis);
           if (IsOpenPositionEffect(order->position_effect)) {
-            double unfrozen_margin = order->leaves_qty * order->price *
+            double unfrozen_margin = order->leaves_qty * order->input_price *
                                      margin_rate * constract_mutiple;
             double unfrozen_cash =
                 unfrozen_margin + CalcCommission(order->position_effect,
-                                                 order->price, order->qty,
+                                                 order->input_price, order->qty,
                                                  constract_mutiple, cost_basis);
             frozen_cash_ -= unfrozen_cash;
             cash_ += unfrozen_margin +
-                     CalcCommission(order->position_effect, order->price,
+                     CalcCommission(order->position_effect, order->input_price,
                                     order->leaves_qty, constract_mutiple,
                                     cost_basis);
             Position& position = position_container_.at(order->instrument_id);

@@ -55,20 +55,21 @@ boost::optional<int> InstrumentPosition::GetCloseableQuantityWithOrderId(
 void InstrumentPosition::HandleRtnOrder(
     const std::shared_ptr<const OrderField>& rtn_order,
     CloseCorrOrdersManager* close_corr_orders_mgr) {
+  int traded_qty = rtn_order->qty - rtn_order->leaves_qty;
   if (rtn_order->status != OrderStatus::kCanceled &&
-      IsOpenOrder(rtn_order->position_effect) && rtn_order->traded_qty != 0) {
+      IsOpenOrder(rtn_order->position_effect) && traded_qty != 0) {
     auto it = std::find_if(positions_.begin(), positions_.end(), [&](auto pos) {
       return pos.second.order_id == rtn_order->order_id;
     });
 
     if (it != positions_.end()) {
-      int new_quantity = rtn_order->traded_qty - it->second.quantity;
+      int new_quantity = traded_qty - it->second.quantity;
       it->second.quantity += new_quantity;
       it->second.closeable_quantity += new_quantity;
     } else {
-      positions_[rtn_order->order_id] = {
-          rtn_order->order_id, rtn_order->direction, true,
-          rtn_order->traded_qty, rtn_order->traded_qty};
+      positions_[rtn_order->order_id] = {rtn_order->order_id,
+                                         rtn_order->direction, true, traded_qty,
+                                         traded_qty};
     }
   } else if (close_corr_orders_mgr->IsNewCloseOrder(rtn_order)) {
     std::vector<std::pair<std::string, int> > close_corr_orders;
@@ -99,7 +100,7 @@ void InstrumentPosition::HandleRtnOrder(
         if (positions_[order_quantity.first].closeable_quantity !=
             positions_[order_quantity.first].quantity) {
           positions_[order_quantity.first].closeable_quantity +=
-              order_quantity.second - rtn_order->traded_qty;
+              order_quantity.second - traded_qty;
         }
       }
     }

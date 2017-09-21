@@ -48,8 +48,8 @@ class RtnOrderToCSV {
     orders_csv_ << pt << "," << order->order_id << ","
                 << (order->position_effect == PositionEffect::kOpen ? "O" : "C")
                 << "," << (order->direction == OrderDirection::kBuy ? "B" : "S")
-                << "," << static_cast<int>(order->status) << "," << order->price
-                << "," << order->qty << "\n";
+                << "," << static_cast<int>(order->status) << ","
+                << order->input_price << "," << order->qty << "\n";
   }
 
  private:

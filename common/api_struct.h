@@ -15,10 +15,11 @@ struct OrderField {
   OrderStatus status;
   int qty;
   int leaves_qty;
-  int traded_qty;
+  // int trading_qty;
   int error_id;
   int raw_error_id;
-  double price;
+  double input_price;
+  // double trading_price;
   double avg_price;
   TimeStamp input_timestamp;
   TimeStamp update_timestamp;

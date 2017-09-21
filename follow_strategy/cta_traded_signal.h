@@ -32,7 +32,7 @@ class CTATradedSignal : public CTASignalObserver {
   virtual void HandleOpened(
       const std::shared_ptr<const OrderField>& order_data) override;
 
-  virtual void Subscribe(CTASignalObserver::Observable* observer) override;
+  // virtual void Subscribe(CTASignalObserver::Observable* observer) override;
 
  private:
   class CompareOrderId {

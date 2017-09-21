@@ -3,8 +3,8 @@
 
 Order::Order(const std::shared_ptr<const OrderField>& data) : data_(data) {}
 
-bool Order::IsQuantityChange(int traded_qty) const {
-  return data_->traded_qty != traded_qty;
+bool Order::IsQuantityChange(int leaves_qty) const {
+  return data_->leaves_qty != leaves_qty;
 }
 
 bool Order::IsActiveOrder() const {
@@ -16,7 +16,7 @@ bool Order::IsOpen() const {
 }
 
 int Order::unfill_quantity() const {
-  return data_->qty - data_->traded_qty;
+  return data_->leaves_qty;
 }
 
 OrderField Order::order_data() const {

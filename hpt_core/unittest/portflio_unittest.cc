@@ -21,9 +21,9 @@ std::shared_ptr<OrderField> MakeOrderField(const std::string& order_id,
   order->direction = direction;
   order->status = status;
   order->instrument_id = instrument;
-  order->price = price;
+  order->input_price = price;
   order->leaves_qty = leaves_qty;
-  order->traded_qty = traded_qty;
+  order->trading_qty = traded_qty;
   order->qty = qty;
   return std::move(order);
 }
@@ -45,7 +45,7 @@ auto MakeTradedOrder(const std::string& order_id, double traded_qty) {
   auto order = std::make_shared<OrderField>(*g_order_containter.at(order_id));
   order->status =
       traded_qty == order->qty ? OrderStatus::kAllFilled : OrderStatus::kActive;
-  order->traded_qty = traded_qty;
+  order->trading_qty = traded_qty;
   order->leaves_qty = order->qty - traded_qty;
   g_order_containter[order_id] = order;
   return std::move(order);
