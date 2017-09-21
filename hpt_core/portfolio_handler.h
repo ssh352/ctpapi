@@ -29,7 +29,6 @@ class PortfolioHandler {
 
   void BeforeTrading(const BeforeTradingAtom&,
                      const TradingTime& trading_time) {
-    std::cout << "BeforeTrading\n";
     if (trading_time == TradingTime::kDay) {
       mail_box_->Send(quantitys_);
       mail_box_->Send(histor_orders_);
@@ -89,7 +88,6 @@ class PortfolioHandler {
       if (position_qty < input_order.qty_) {
         return;
       }
-      std::cout << input_order.order_id << "\n";
       portfolio_.HandleNewInputCloseOrder(input_order.instrument_,
                                           input_order.order_direction_,
                                           input_order.qty_);

@@ -309,7 +309,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("dc", "c1709"));
   // instruments->emplace_back(std::make_pair("dc", "c1801"));
   // instruments->emplace_back(std::make_pair("zc", "cf705"));
-  instruments->emplace_back(std::make_pair("zc", "cf709"));
+  // instruments->emplace_back(std::make_pair("zc", "cf709"));
   // instruments->emplace_back(std::make_pair("dc", "cs1705"));
   // instruments->emplace_back(std::make_pair("dc", "cs1709"));
   // instruments->emplace_back(std::make_pair("dc", "cs1801"));
@@ -342,7 +342,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("zc", "ma705"));
   // instruments->emplace_back(std::make_pair("zc", "ma709"));
   // instruments->emplace_back(std::make_pair("zc", "ma801"));
-  // instruments->emplace_back(std::make_pair("sc", "ni1705"));
+  instruments->emplace_back(std::make_pair("sc", "ni1705"));
   // instruments->emplace_back(std::make_pair("sc", "ni1709"));
   // instruments->emplace_back(std::make_pair("dc", "p1705"));
   // instruments->emplace_back(std::make_pair("dc", "p1709"));
