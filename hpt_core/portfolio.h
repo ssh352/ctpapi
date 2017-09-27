@@ -2,6 +2,7 @@
 #define BACKTESTING_PROTFOLIO_H
 #include <memory>
 #include <unordered_map>
+#include <boost/optional.hpp>
 #include "common/api_struct.h"
 #include "position.h"
 
@@ -43,9 +44,26 @@ class Portfolio {
 
   double daily_commission() const { return daily_commission_; }
 
+  boost::optional<Position> position(const std::string& instrument) const {
+    if (position_container_.find(instrument) == position_container_.end()) {
+      return boost::optional<Position>();
+    }
+
+    return position_container_.at(instrument);
+  }
+
+  int UnfillQty(const std::string& instrument, OrderDirection direction) const;
+
   const std::unordered_map<std::string, Position>& positions() const {
     return position_container_;
   }
+
+  int PositionQty(const std::string& instrument,
+                  OrderDirection direction) const;
+
+  std::vector<std::shared_ptr<OrderField> > UnfillOrders(
+      const std::string& instrument,
+      OrderDirection direction) const;
 
  private:
   double UpdateCostBasis(PositionEffect position_effect,

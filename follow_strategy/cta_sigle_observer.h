@@ -23,10 +23,6 @@ class CTASignalObserver {
     virtual void CancelOrder(const std::string& order_id) = 0;
   };
 
-  virtual void BeforeCloseMarket() = 0;
-
-  virtual void HandleTick(const std::shared_ptr<TickData>& tick) = 0;
-
   virtual void HandleOpening(
       const std::shared_ptr<const OrderField>& order_data) = 0;
   virtual void HandleCloseing(
@@ -37,7 +33,5 @@ class CTASignalObserver {
       const std::shared_ptr<const OrderField>& order_data) = 0;
   virtual void HandleOpened(
       const std::shared_ptr<const OrderField>& order_data) = 0;
-
-  virtual void Subscribe(Observable* observer) = 0;
 };
 #endif  // follow_strategy_CTA_SIGLE_OBSERVER_H

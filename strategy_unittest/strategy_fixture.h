@@ -1,0 +1,147 @@
+#ifndef STRATEGY_UNITTEST_STRATEGY_FIXTURE_H
+#define STRATEGY_UNITTEST_STRATEGY_FIXTURE_H
+#include <memory>
+#include <unordered_map>
+#include <typeindex>
+#include <boost/any.hpp>
+#include <boost/optional.hpp>
+#include "caf/all.hpp"
+#include "gtest/gtest.h"
+#include "common/api_struct.h"
+
+using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
+using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
+using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
+
+class UnittestMailBox {
+ public:
+  UnittestMailBox() {}
+  template <typename CLASS, typename... ARG>
+  void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
+    std::function<void(ARG...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
+    subscribers_.insert({typeid(std::tuple<ARG...>), std::move(fn)});
+  }
+
+  template <typename... ARG>
+  void Send(const ARG&... arg) {
+    auto range = subscribers_.equal_range(typeid(std::tuple<const ARG&...>));
+    for (auto it = range.first; it != range.second; ++it) {
+      boost::any_cast<std::function<void(const ARG&...)>>(it->second)(arg...);
+    }
+  }
+
+ private:
+  std::unordered_multimap<std::type_index, boost::any> subscribers_;
+  // std::list<std::function<void(void)>>* callable_queue_;
+};
+
+class StrategyFixture : public testing::Test {
+ public:
+  StrategyFixture() {
+    mail_box_.Subscribe(&StrategyFixture::HandleInputOrder, this);
+    mail_box_.Subscribe(&StrategyFixture::HandleCancelOrder, this);
+  }
+
+  template <typename T, typename... Args>
+  void CreateStrategy(Args... args) {
+    // strategy_ = std::make_shared<T>(&mail_box_,
+    // std::forward<Args...>(args...));
+    strategy_ = std::make_shared<T>(&mail_box_, args...);
+  }
+
+  template <typename... Args>
+  void Send(const Args&... args) {
+    mail_box_.Send(args...);
+  }
+
+  void Clear() { event_queues_.clear(); }
+
+  template <typename T>
+  boost::optional<T> PopupRntOrder() {
+    if (event_queues_.empty()) {
+      return boost::optional<T>();
+    }
+    auto order = event_queues_.front();
+    event_queues_.pop_front();
+    return boost::any_cast<T>(order);
+  }
+
+  void HandleInputOrder(const InputOrder& input_order) {
+    event_queues_.push_back(input_order);
+  }
+
+  void HandleCancelOrder(const CancelOrderSignal& signal) {
+    event_queues_.push_back(signal);
+  }
+
+  std::shared_ptr<OrderField> MakeOrderField(const std::string& account_id,
+                                             const std::string& order_id,
+                                             const std::string& instrument,
+                                             PositionEffect position_effect,
+                                             OrderDirection direction,
+                                             OrderStatus status,
+                                             double price,
+                                             double leaves_qty,
+                                             double traded_qty,
+                                             double qty,
+                                             TimeStamp input_timestamp,
+                                             TimeStamp update_timestamp);
+
+  std::shared_ptr<OrderField> MakeNewOrder(const std::string& account_id,
+                                           const std::string& order_id,
+                                           const std::string& instrument,
+                                           PositionEffect position_effect,
+                                           OrderDirection direction,
+                                           double price,
+                                           double qty,
+                                           TimeStamp timestamp);
+
+  std::shared_ptr<OrderField> MakeTradedOrder(const std::string& account_id,
+                                              const std::string& order_id,
+                                              double traded_qty,
+                                              TimeStamp timestamp);
+
+  std::shared_ptr<OrderField> MakeTradedOrder(const std::string& account_id,
+                                              const std::string& order_id,
+                                              double traded_qty,
+                                              double trading_price,
+                                              TimeStamp timestamp);
+
+  std::shared_ptr<OrderField> MakeNewOpenOrder(const std::string& account_id,
+                                               const std::string& order_id,
+                                               const std::string& instrument,
+                                               OrderDirection direction,
+                                               double price,
+                                               double qty,
+                                               TimeStamp timestamp);
+
+  std::shared_ptr<OrderField> MakeNewCloseOrder(
+      const std::string& account_id,
+      const std::string& order_id,
+      const std::string& instrument,
+      OrderDirection direction,
+      double price,
+      double qty,
+      TimeStamp timestamp,
+      PositionEffect position_effect = PositionEffect::kClose);
+
+  std::shared_ptr<OrderField> MakeCanceledOrder(const std::string& account_id,
+                                                const std::string& order_id);
+
+  void OpenAndFillOrder(const std::string& master_account_id,
+                        const std::string& slave_account_id,
+                        OrderDirection order_direction,
+                        int qty,
+                        int trading_qty,
+                        int slave_trading_qty,
+                        int delayed_open_order_after_seconds);
+
+ private:
+  std::unordered_map<std::string, std::shared_ptr<OrderField>>
+      order_containter_;
+  UnittestMailBox mail_box_;
+  boost::any strategy_;
+  mutable std::list<boost::any> event_queues_;
+};
+
+#endif  // STRATEGY_UNITTEST_STRATEGY_FIXTURE_H

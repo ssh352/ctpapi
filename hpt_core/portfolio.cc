@@ -1,4 +1,5 @@
 #include "portfolio.h"
+#include <algorithm>
 #include <boost/assert.hpp>
 
 bool IsOpenPositionEffect(PositionEffect position_effect) {
@@ -69,7 +70,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);
-    int last_traded_qty = order->trading_qty - previous_order->trading_qty;
+    int last_traded_qty = previous_order->leaves_qty - order->leaves_qty;
     switch (order->status) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
@@ -226,4 +227,45 @@ double Portfolio::CalcCommission(PositionEffect position_effect,
   return cost_basis.type == CommissionType::kFixed
              ? qty * commission_param / 100.0
              : price * qty * constract_multiple * commission_param / 10000.0;
+}
+
+int Portfolio::UnfillQty(const std::string& instrument,
+                         OrderDirection direction) const {
+  return std::accumulate(
+      order_container_.begin(), order_container_.end(), 0,
+      [&instrument, direction](int val, const auto& key_value) {
+        const std::shared_ptr<OrderField>& order = key_value.second;
+        if (order->instrument_id != instrument ||
+            order->direction != direction) {
+          return val;
+        }
+        return val +
+               (order->status == OrderStatus::kActive ? order->leaves_qty : 0);
+      });
+}
+
+std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillOrders(
+    const std::string& instrument,
+    OrderDirection direction) const {
+  std::vector<std::shared_ptr<OrderField> > ret_orders;
+  std::for_each(order_container_.begin(), order_container_.end(),
+                [&ret_orders, &instrument, direction](const auto& key_value) {
+                  const std::shared_ptr<OrderField>& order = key_value.second;
+                  if (order->instrument_id != instrument ||
+                      order->direction != direction) {
+                    return;
+                  }
+                  ret_orders.push_back(order);
+                });
+  return std::move(ret_orders);
+}
+
+int Portfolio::PositionQty(const std::string& instrument,
+                           OrderDirection direction) const {
+  if (position_container_.find(instrument) == position_container_.end()) {
+    return 0;
+  }
+  return direction == OrderDirection::kBuy
+             ? position_container_.at(instrument).long_qty()
+             : position_container_.at(instrument).short_qty();
 }

@@ -35,6 +35,7 @@
     ],
     'dependencies' : [
       'follow_strategy',
+      '../hpt_core/hpt_core.gyp:hpt_core',
       '<(DEPTH)/testing/gtest.gyp:gtest',
       '<(DEPTH)/testing/gtest.gyp:gtest_main',
     ],

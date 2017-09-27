@@ -216,11 +216,11 @@ void CTATradedSignal::HandleClosed(
 
 void CTATradedSignal::HandleOpened(
     const std::shared_ptr<const OrderField>& order_data) {
-  if (master_context_->IsOppositeOpen(order_data->instrument_id,
-                                      order_data->direction)) {
-    // observer_->OpenOrder(order_data->instrument_id, GenerateOrderId(),
-    //                     order_data->direction, order_data->trading_price,
-    //                     order_data->trading_qty);
+  if (!master_context_->IsOppositeOpen(order_data->instrument_id,
+                                       order_data->direction)) {
+    observer_->OpenOrder(order_data->instrument_id, GenerateOrderId(),
+                         order_data->direction, order_data->trading_price,
+                         order_data->trading_qty);
   }
 }
 

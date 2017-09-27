@@ -1,29 +1,15 @@
 #include "cta_signal_dispatch.h"
+#include "order_util.h"
 
-CTASignalDispatch::CTASignalDispatch(
-    std::shared_ptr<CTASignalObserver> signal_observer)
-    : signal_observer_(signal_observer) {
-  signal_observer_->Subscribe(this);
-}
+CTASignalDispatch::CTASignalDispatch(CTASignalObserver* signal_observer,
+                                     std::string slave_account_id)
+    : signal_observer_(signal_observer),
+      slave_account_id_(std::move(slave_account_id)) {}
 
 void CTASignalDispatch::SubscribeEnterOrderObserver(
-    std::shared_ptr<EnterOrderObserver> observer) {
+    EnterOrderObserver* observer) {
   enter_order_observer_ = observer;
 }
-
-// CTASignalDispatch::CTASignalDispatch(
-//     const std::string& master_account,
-//     const std::string& slave_account,
-//     std::shared_ptr<BaseFollowStragety> stragety,
-//     std::shared_ptr<Delegate> delegate,
-//     std::shared_ptr<OrdersContext> master_context,
-//     std::shared_ptr<OrdersContext> slave_context)
-//     : master_account_(master_account),
-//       slave_account_(slave_account),
-//       stragety_(stragety),
-//       enter_order_observer_(delegate),
-//       master_context_(master_context),
-//       slave_context_(slave_context) {}
 
 void CTASignalDispatch::RtnOrder(
     const std::shared_ptr<const OrderField>& rtn_order) {
@@ -41,7 +27,7 @@ void CTASignalDispatch::RtnOrder(
   }
 
   if (portfolio_observer_ != NULL) {
-    portfolio_observer_->Notify(slave_context_->GetAccountPortfolios());
+    // portfolio_observer_->Notify(slave_context_->GetAccountPortfolios());
   }
 }
 
@@ -105,13 +91,6 @@ void CTASignalDispatch::CancelOrder(const std::string& order_id) {
   }
 }
 
-void CTASignalDispatch::SetOrdersContext(
-    std::shared_ptr<OrdersContext> master_context,
-    std::shared_ptr<OrdersContext> slave_context) {
-  master_context_ = master_context;
-  slave_context_ = slave_context;
-}
-
 void CTASignalDispatch::SubscribePortfolioObserver(
     std::shared_ptr<PortfolioObserver> observer) {
   portfolio_observer_ = observer;
@@ -123,7 +102,7 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
                               ? StragetyStatus::kReady
                               : StragetyStatus::kWaitReply;
   if (!waiting_reply_order_.empty() &&
-      order->strategy_id == slave_context_->account_id()) {
+      order->strategy_id == slave_account_id_) {
     status = StragetyStatus::kReady;
     auto it =
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
@@ -151,7 +130,19 @@ CTASignalDispatch::StragetyStatus CTASignalDispatch::BeforeHandleOrder(
 
 OrderEventType CTASignalDispatch::OrdersContextHandleRtnOrder(
     const std::shared_ptr<const OrderField>& order) {
-  return order->strategy_id == master_context_->account_id()
-             ? master_context_->HandleRtnOrder(order)
-             : slave_context_->HandleRtnOrder(order);
+  std::unordered_set<std::shared_ptr<OrderField>> slave_orders_;
+  OrderEventType ret_type = OrderEventType::kIgnore;
+  auto it = orders_.find(order);
+  if (it == orders_.end()) {
+    ret_type = IsCloseOrder(order->position_effect) ? OrderEventType::kNewClose
+                                                    : OrderEventType::kNewOpen;
+  } else if (order->status == OrderStatus::kCanceled) {
+    ret_type = OrderEventType::kCanceled;
+  } else if (order->trading_qty != 0) {
+    ret_type = IsCloseOrder(order->position_effect)
+                   ? OrderEventType::kCloseTraded
+                   : OrderEventType::kOpenTraded;
+  }
+  orders_.insert(order);
+  return ret_type;
 }

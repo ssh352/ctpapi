@@ -21,6 +21,7 @@ using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
 #include "follow_strategy/follow_strategy.h"
 #include "strategies/delayed_open_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
+#include "follow_strategy/cta_traded_strategy.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
@@ -190,8 +191,10 @@ caf::behavior worker(caf::event_based_actor* self,
 
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
 
-    FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
-                                                10 * 60);
+    // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
+    //                                            10 * 60);
+
+    CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
 
     BacktestingCTASignalBroker<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,

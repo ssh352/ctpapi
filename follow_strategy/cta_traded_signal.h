@@ -13,9 +13,9 @@ class CTATradedSignal : public CTASignalObserver {
   void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
                         std::shared_ptr<OrdersContext> slave_context);
 
-  virtual void BeforeCloseMarket() override;
+  virtual void BeforeCloseMarket();
 
-  virtual void HandleTick(const std::shared_ptr<TickData>& tick) override;
+  virtual void HandleTick(const std::shared_ptr<TickData>& tick);
 
   virtual void HandleOpening(
       const std::shared_ptr<const OrderField>& order_data) override;

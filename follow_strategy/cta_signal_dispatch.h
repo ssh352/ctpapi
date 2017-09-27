@@ -1,5 +1,6 @@
 #ifndef follow_strategy_CTA_SIGNAL_DISPATCH_H
 #define follow_strategy_CTA_SIGNAL_DISPATCH_H
+#include <unordered_set>
 #include "cta_sigle_observer.h"
 #include "enter_order_observer.h"
 #include "orders_context.h"
@@ -9,10 +10,10 @@
 class CTASignalDispatch : public CTASignalObserver::Observable,
                           public RtnOrderObserver {
  public:
-  CTASignalDispatch(std::shared_ptr<CTASignalObserver> signal_observer);
+  CTASignalDispatch(CTASignalObserver* signal_observer,
+                    std::string slave_account_id);
 
-  virtual void SubscribeEnterOrderObserver(
-      std::shared_ptr<EnterOrderObserver> observer);
+  virtual void SubscribeEnterOrderObserver(EnterOrderObserver* observer);
 
   // RtnOrderObservable::Observer
   virtual void RtnOrder(
@@ -34,9 +35,6 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
 
   virtual void CancelOrder(const std::string& order_id) override;
 
-  void SetOrdersContext(std::shared_ptr<OrdersContext> master_context,
-                        std::shared_ptr<OrdersContext> slave_context);
-
   void SubscribePortfolioObserver(std::shared_ptr<PortfolioObserver> observer);
 
  private:
@@ -44,6 +42,19 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
     kWaitReply,
     kReady,
     kSkip,
+  };
+
+  struct OrderFieldHask {
+    size_t operator()(const std::shared_ptr<const OrderField>& order) const {
+      return std::hash<std::string>()(order->strategy_id + order->order_id);
+    }
+  };
+
+  struct OrderFieldCompare {
+    bool operator()(const std::shared_ptr<const OrderField>& l,
+                    const std::shared_ptr<const OrderField>& r) const {
+      return l->strategy_id == r->strategy_id && l->order_id == r->order_id;
+    }
   };
 
   void Trade(const std::string& order_id, OrderStatus status);
@@ -59,10 +70,13 @@ class CTASignalDispatch : public CTASignalObserver::Observable,
   std::vector<std::pair<std::string, OrderStatus>> waiting_reply_order_;
 
   std::deque<std::shared_ptr<const OrderField>> outstanding_orders_;
-  std::shared_ptr<CTASignalObserver> signal_observer_;
-  std::shared_ptr<EnterOrderObserver> enter_order_observer_;
-  std::shared_ptr<OrdersContext> master_context_;
-  std::shared_ptr<OrdersContext> slave_context_;
+  CTASignalObserver* signal_observer_;
+  EnterOrderObserver* enter_order_observer_;
+  std::string slave_account_id_;
   std::shared_ptr<PortfolioObserver> portfolio_observer_;
+  std::unordered_set<std::shared_ptr<const OrderField>,
+                     OrderFieldHask,
+                     OrderFieldCompare>
+      orders_;
 };
 #endif  // follow_strategy_CTA_SIGNAL_DISPATCH_H

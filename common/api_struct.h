@@ -15,11 +15,11 @@ struct OrderField {
   OrderStatus status;
   int qty;
   int leaves_qty;
-  // int trading_qty;
+  int trading_qty;
   int error_id;
   int raw_error_id;
   double input_price;
-  // double trading_price;
+  double trading_price;
   double avg_price;
   TimeStamp input_timestamp;
   TimeStamp update_timestamp;
@@ -29,6 +29,26 @@ struct OrderField {
   std::string date;
   std::string order_id;
   std::string raw_error_message;
+};
+
+struct CTAOrderSignalField {
+  int long_qty;
+  int short_qty;
+  int opening_long_qty;
+  int opening_short_qty;
+  int closeing_long_qty;
+  int closeing_short_qty;
+  std::string instrument;
+  PositionEffect position_effect;
+  OrderDirection direction;
+  OrderStatus order_status;
+  int qty;
+  int leaves_qty;
+  int trading_qty;
+  double input_price;
+  double avg_price;
+  double trading_price;
+  TimeStamp timestamp;
 };
 
 struct InvestorPositionField {
