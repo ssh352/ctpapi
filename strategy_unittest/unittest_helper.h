@@ -4,5 +4,12 @@
 
 std::shared_ptr<TickData> MakeTick(std::string instrument,
                                    double last_price,
+                                   double bid_price,
+                                   double ask_price,
+                                   int qty,
+                                   TimeStamp timestamp);
+
+std::shared_ptr<TickData> MakeTick(std::string instrument,
+                                   double last_price,
                                    int qty,
                                    TimeStamp timestamp);

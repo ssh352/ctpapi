@@ -5,13 +5,22 @@
 #include <typeindex>
 #include <boost/any.hpp>
 #include <boost/optional.hpp>
-#include "caf/all.hpp"
 #include "gtest/gtest.h"
 #include "common/api_struct.h"
 
-using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
-using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
-using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
+struct CTASignalAtom {
+  static const CTASignalAtom value;
+};
+struct BeforeTradingAtom {
+  static const BeforeTradingAtom value;
+};
+struct BeforeCloseMarketAtom {
+  static const BeforeCloseMarketAtom value;
+};
+
+struct CloseMarketNearAtom {
+  static const CloseMarketNearAtom value;
+};
 
 class UnittestMailBox {
  public:
@@ -66,13 +75,12 @@ class StrategyFixture : public testing::Test {
     return boost::any_cast<T>(order);
   }
 
-  void HandleInputOrder(const InputOrder& input_order) {
-    event_queues_.push_back(input_order);
-  }
+  void ElapseSeconds(int seconds) { now_timestamp_ += seconds * 1000; }
+  void ElapseMillisecond(int millsec) { now_timestamp_ += millsec; }
 
-  void HandleCancelOrder(const CancelOrderSignal& signal) {
-    event_queues_.push_back(signal);
-  }
+  void HandleInputOrder(const InputOrder& input_order);
+
+  void HandleCancelOrder(const CancelOrderSignal& signal);
 
   std::shared_ptr<OrderField> MakeOrderField(const std::string& account_id,
                                              const std::string& order_id,
@@ -93,27 +101,23 @@ class StrategyFixture : public testing::Test {
                                            PositionEffect position_effect,
                                            OrderDirection direction,
                                            double price,
-                                           double qty,
-                                           TimeStamp timestamp);
+                                           double qty);
 
   std::shared_ptr<OrderField> MakeTradedOrder(const std::string& account_id,
                                               const std::string& order_id,
-                                              double traded_qty,
-                                              TimeStamp timestamp);
+                                              double traded_qty);
 
   std::shared_ptr<OrderField> MakeTradedOrder(const std::string& account_id,
                                               const std::string& order_id,
-                                              double traded_qty,
                                               double trading_price,
-                                              TimeStamp timestamp);
+                                              double traded_qty);
 
   std::shared_ptr<OrderField> MakeNewOpenOrder(const std::string& account_id,
                                                const std::string& order_id,
                                                const std::string& instrument,
                                                OrderDirection direction,
                                                double price,
-                                               double qty,
-                                               TimeStamp timestamp);
+                                               double qty);
 
   std::shared_ptr<OrderField> MakeNewCloseOrder(
       const std::string& account_id,
@@ -122,26 +126,18 @@ class StrategyFixture : public testing::Test {
       OrderDirection direction,
       double price,
       double qty,
-      TimeStamp timestamp,
       PositionEffect position_effect = PositionEffect::kClose);
 
   std::shared_ptr<OrderField> MakeCanceledOrder(const std::string& account_id,
                                                 const std::string& order_id);
 
-  void OpenAndFillOrder(const std::string& master_account_id,
-                        const std::string& slave_account_id,
-                        OrderDirection order_direction,
-                        int qty,
-                        int trading_qty,
-                        int slave_trading_qty,
-                        int delayed_open_order_after_seconds);
-
- private:
+ protected:
   std::unordered_map<std::string, std::shared_ptr<OrderField>>
       order_containter_;
   UnittestMailBox mail_box_;
   boost::any strategy_;
   mutable std::list<boost::any> event_queues_;
+  int now_timestamp_ = 0;
 };
 
 #endif  // STRATEGY_UNITTEST_STRATEGY_FIXTURE_H

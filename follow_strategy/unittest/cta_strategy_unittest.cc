@@ -22,5 +22,3 @@ class TestDispatchEnterOrder : public EnterOrderObserver {
 
   virtual void CancelOrder(const std::string& order_id) override {}
 };
-
-TEST(CTAStrategyTest, FirstTest) {}

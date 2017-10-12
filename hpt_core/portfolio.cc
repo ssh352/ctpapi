@@ -1,6 +1,7 @@
 #include "portfolio.h"
 #include <algorithm>
 #include <boost/assert.hpp>
+#include "follow_strategy/order_util.h"
 
 bool IsOpenPositionEffect(PositionEffect position_effect) {
   return position_effect == PositionEffect::kOpen;
@@ -229,13 +230,14 @@ double Portfolio::CalcCommission(PositionEffect position_effect,
              : price * qty * constract_multiple * commission_param / 10000.0;
 }
 
-int Portfolio::UnfillQty(const std::string& instrument,
-                         OrderDirection direction) const {
+int Portfolio::UnfillOpenQty(const std::string& instrument,
+                             OrderDirection direction) const {
   return std::accumulate(
       order_container_.begin(), order_container_.end(), 0,
       [&instrument, direction](int val, const auto& key_value) {
         const std::shared_ptr<OrderField>& order = key_value.second;
-        if (order->instrument_id != instrument ||
+        if (IsCloseOrder(order->position_effect) ||
+            order->instrument_id != instrument ||
             order->direction != direction) {
           return val;
         }
@@ -244,15 +246,17 @@ int Portfolio::UnfillQty(const std::string& instrument,
       });
 }
 
-std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillOrders(
+std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillOpenOrders(
     const std::string& instrument,
     OrderDirection direction) const {
   std::vector<std::shared_ptr<OrderField> > ret_orders;
   std::for_each(order_container_.begin(), order_container_.end(),
                 [&ret_orders, &instrument, direction](const auto& key_value) {
                   const std::shared_ptr<OrderField>& order = key_value.second;
-                  if (order->instrument_id != instrument ||
-                      order->direction != direction) {
+                  if (IsCloseOrder(order->position_effect) ||
+                      order->instrument_id != instrument ||
+                      order->direction != direction ||
+                      order->status != OrderStatus::kActive) {
                     return;
                   }
                   ret_orders.push_back(order);
@@ -268,4 +272,50 @@ int Portfolio::PositionQty(const std::string& instrument,
   return direction == OrderDirection::kBuy
              ? position_container_.at(instrument).long_qty()
              : position_container_.at(instrument).short_qty();
+}
+
+std::vector<std::string> Portfolio::InstrumentList() const {
+  std::vector<std::string> instruments;
+  std::for_each(order_container_.begin(), order_container_.end(),
+                [&instruments](const auto& key_value) {
+                  instruments.push_back(key_value.second->instrument_id);
+                });
+
+  auto beg = std::unique(instruments.begin(), instruments.end());
+  instruments.erase(beg, instruments.end());
+  return std::move(instruments);
+}
+
+int Portfolio::UnfillCloseQty(const std::string& instrument,
+                              OrderDirection direction) const {
+  return std::accumulate(
+      order_container_.begin(), order_container_.end(), 0,
+      [&instrument, direction](int val, const auto& key_value) {
+        const std::shared_ptr<OrderField>& order = key_value.second;
+        if (IsOpenOrder(order->position_effect) ||
+            order->instrument_id != instrument ||
+            order->direction != direction) {
+          return val;
+        }
+        return val +
+               (order->status == OrderStatus::kActive ? order->leaves_qty : 0);
+      });
+}
+
+std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillCloseOrders(
+    const std::string& instrument,
+    OrderDirection direction) const {
+  std::vector<std::shared_ptr<OrderField> > ret_orders;
+  std::for_each(order_container_.begin(), order_container_.end(),
+                [&ret_orders, &instrument, direction](const auto& key_value) {
+                  const std::shared_ptr<OrderField>& order = key_value.second;
+                  if (IsOpenOrder(order->position_effect) ||
+                      order->instrument_id != instrument ||
+                      order->direction != direction ||
+                      order->status != OrderStatus::kActive) {
+                    return;
+                  }
+                  ret_orders.push_back(order);
+                });
+  return std::move(ret_orders);
 }

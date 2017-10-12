@@ -156,6 +156,7 @@ struct InputOrder {
 };
 
 struct CancelOrderSignal {
+  std::string account_id;
   std::string order_id;
 };
 struct CloseMarket {};

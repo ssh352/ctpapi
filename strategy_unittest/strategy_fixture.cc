@@ -6,9 +6,9 @@
 std::shared_ptr<OrderField> StrategyFixture::MakeCanceledOrder(
     const std::string& account_id,
     const std::string& order_id) {
-  BOOST_ASSERT(order_containter_.find(account_id + ":" + order_id) !=
-               order_containter_.end());
-  auto order = std::make_shared<OrderField>(*order_containter_.at(order_id));
+  auto key = account_id + ":" + order_id;
+  BOOST_ASSERT(order_containter_.find(key) != order_containter_.end());
+  auto order = std::make_shared<OrderField>(*order_containter_.at(key));
   order->status = OrderStatus::kCanceled;
   return std::move(order);
 }
@@ -20,10 +20,9 @@ std::shared_ptr<OrderField> StrategyFixture::MakeNewCloseOrder(
     OrderDirection direction,
     double price,
     double qty,
-    TimeStamp timestamp,
     PositionEffect position_effect /*= PositionEffect::kClose*/) {
   return MakeNewOrder(account_id, order_id, instrument, position_effect,
-                      direction, price, qty, timestamp);
+                      direction, price, qty);
 }
 
 std::shared_ptr<OrderField> StrategyFixture::MakeNewOpenOrder(
@@ -32,26 +31,25 @@ std::shared_ptr<OrderField> StrategyFixture::MakeNewOpenOrder(
     const std::string& instrument,
     OrderDirection direction,
     double price,
-    double qty,
-    TimeStamp timestamp) {
+    double qty) {
   return MakeNewOrder(account_id, order_id, instrument, PositionEffect::kOpen,
-                      direction, price, qty, timestamp);
+                      direction, price, qty);
 }
 
 std::shared_ptr<OrderField> StrategyFixture::MakeTradedOrder(
     const std::string& account_id,
     const std::string& order_id,
-    double traded_qty,
-    TimeStamp timestamp) {
+    double traded_qty) {
   auto key = account_id + ":" + order_id;
   BOOST_ASSERT(order_containter_.find(key) != order_containter_.end());
   auto order = std::make_shared<OrderField>(*order_containter_.at(key));
-  order->status =
-      traded_qty == order->qty ? OrderStatus::kAllFilled : OrderStatus::kActive;
+  order->status = traded_qty == order->leaves_qty ? OrderStatus::kAllFilled
+                                                  : OrderStatus::kActive;
   order->trading_price = order->input_price;
   order->trading_qty = traded_qty;
-  order->leaves_qty = order->qty - traded_qty;
-  order->update_timestamp = timestamp;
+  order->leaves_qty -= traded_qty;
+  BOOST_ASSERT(order->leaves_qty >= 0);
+  order->update_timestamp = now_timestamp_;
   order_containter_[key] = order;
   return std::move(order);
 }
@@ -59,9 +57,8 @@ std::shared_ptr<OrderField> StrategyFixture::MakeTradedOrder(
 std::shared_ptr<OrderField> StrategyFixture::MakeTradedOrder(
     const std::string& account_id,
     const std::string& order_id,
-    double traded_qty,
     double trading_price,
-    TimeStamp timestamp) {
+    double traded_qty) {
   auto key = account_id + ":" + order_id;
   BOOST_ASSERT(order_containter_.find(key) != order_containter_.end());
   auto order = std::make_shared<OrderField>(*order_containter_.at(key));
@@ -70,7 +67,7 @@ std::shared_ptr<OrderField> StrategyFixture::MakeTradedOrder(
   order->trading_price = trading_price;
   order->trading_qty = traded_qty;
   order->leaves_qty = order->qty - traded_qty;
-  order->update_timestamp = timestamp;
+  order->update_timestamp = now_timestamp_;
   order_containter_[key] = order;
   return std::move(order);
 }
@@ -82,11 +79,10 @@ std::shared_ptr<OrderField> StrategyFixture::MakeNewOrder(
     PositionEffect position_effect,
     OrderDirection direction,
     double price,
-    double qty,
-    TimeStamp timestamp) {
+    double qty) {
   auto order = MakeOrderField(account_id, order_id, instrument, position_effect,
                               direction, OrderStatus::kActive, price, qty, 0,
-                              qty, timestamp, timestamp);
+                              qty, now_timestamp_, now_timestamp_);
   order_containter_.insert({account_id + ":" + order_id, order});
   return std::move(order);
 }
@@ -120,23 +116,23 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
   return std::move(order);
 }
 
-void StrategyFixture::OpenAndFillOrder(const std::string& master_account_id,
-                                       const std::string& slave_account_id,
-                                       OrderDirection order_direction,
-                                       int qty,
-                                       int trading_qty,
-                                       int slave_trading_qty,
-                                       int delayed_open_order_after_seconds) {
-  Send(CTASignalAtom::value, MakeNewOpenOrder(master_account_id, "0", "I1",
-                                              order_direction, 88.8, qty, 0));
-  Send(CTASignalAtom::value,
-       MakeTradedOrder(master_account_id, "0", trading_qty, 0));
-
-  Send(MakeTick("I1", 88.8, 10, delayed_open_order_after_seconds * 1000));
-
-  Send(MakeNewOpenOrder(slave_account_id, "0", "I1", order_direction, 88.8, qty,
-                        0));
-  Send(MakeTradedOrder(slave_account_id, "0", slave_trading_qty, 0));
-
-  Clear();
+void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
+  event_queues_.push_back(input_order);
+  Send(MakeNewOrder(input_order.strategy_id, input_order.order_id,
+                    input_order.instrument_, input_order.position_effect_,
+                    input_order.order_direction_, input_order.price_,
+                    input_order.qty_));
 }
+
+void StrategyFixture::HandleCancelOrder(const CancelOrderSignal& signal) {
+  event_queues_.push_back(signal);
+  Send(MakeCanceledOrder(signal.account_id, signal.order_id));
+}
+
+const CTASignalAtom CTASignalAtom::value;
+
+const BeforeTradingAtom BeforeTradingAtom::value;
+
+const BeforeCloseMarketAtom BeforeCloseMarketAtom::value;
+
+const CloseMarketNearAtom CloseMarketNearAtom::value;

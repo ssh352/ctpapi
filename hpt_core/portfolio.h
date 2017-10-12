@@ -52,7 +52,19 @@ class Portfolio {
     return position_container_.at(instrument);
   }
 
-  int UnfillQty(const std::string& instrument, OrderDirection direction) const;
+  int UnfillOpenQty(const std::string& instrument,
+                    OrderDirection direction) const;
+
+  int UnfillCloseQty(const std::string& instrument,
+                     OrderDirection directon) const;
+
+  std::vector<std::shared_ptr<OrderField> > UnfillOpenOrders(
+      const std::string& instrument,
+      OrderDirection direction) const;
+
+  std::vector<std::shared_ptr<OrderField> > UnfillCloseOrders(
+      const std::string& instrument,
+      OrderDirection direction) const;
 
   const std::unordered_map<std::string, Position>& positions() const {
     return position_container_;
@@ -61,11 +73,6 @@ class Portfolio {
   int PositionQty(const std::string& instrument,
                   OrderDirection direction) const;
 
-  std::vector<std::shared_ptr<OrderField> > UnfillOrders(
-      const std::string& instrument,
-      OrderDirection direction) const;
-
- private:
   double UpdateCostBasis(PositionEffect position_effect,
                          double price,
                          int qty,
@@ -77,6 +84,8 @@ class Portfolio {
                         int qty,
                         int constract_multiple,
                         const CostBasis& cost_basis);
+
+  std::vector<std::string> InstrumentList() const;
 
   double init_cash_ = 0.0;
   double cash_ = 0.0;
