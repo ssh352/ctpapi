@@ -19,7 +19,9 @@
 #include <boost/log/utility/setup/formatter_parser.hpp>
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/severity_feature.hpp>
+#include "common/api_data_type.h"
 BOOST_LOG_ATTRIBUTE_KEYWORD(strategy_id, "strategy_id", std::string)
 BOOST_LOG_ATTRIBUTE_KEYWORD(account_id, "account_id", std::string)
+BOOST_LOG_ATTRIBUTE_KEYWORD(quant_timestamp, "quant_timestamp", boost::posix_time::ptime)
 
 #endif  // follow_strategy_LOGGING_DEFINES_H

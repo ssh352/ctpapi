@@ -15,13 +15,14 @@
 using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
 using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
+using CloseMarketNearAtom = caf::atom_constant<caf::atom("cmn")>;
 #include "hpt_core/time_series_reader.h"
 #include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
-#include "follow_strategy/follow_strategy.h"
-#include "strategies/delayed_open_strategy.h"
+#include "follow_strategy/delayed_open_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
-#include "follow_strategy/cta_traded_strategy.h"
+
+// #include "follow_strategy/cta_traded_strategy.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
@@ -66,7 +67,7 @@ auto ReadTickTimeSeries(const char* hdf_file,
   hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
   hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(Tick));
   TimeSeriesReader<Tick> ts_db(file, tick_compound);
-
+  
   H5Tinsert(tick_compound, "timestamp", HOFFSET(Tick, timestamp),
             H5T_NATIVE_INT64);
   H5Tinsert(tick_compound, "last_price", HOFFSET(Tick, last_price),
@@ -80,7 +81,7 @@ auto ReadTickTimeSeries(const char* hdf_file,
             H5T_NATIVE_DOUBLE);
   H5Tinsert(tick_compound, "ask_qty1", HOFFSET(Tick, ask_qty1),
             H5T_NATIVE_INT64);
-
+  
   auto ts_ret =
       ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
                       boost::posix_time::time_from_string(datetime_from),
@@ -95,15 +96,6 @@ auto ReadCTAOrderSignalTimeSeries(const char* hdf_file,
                                   const std::string& datetime_to) {
   hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
   hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(CTATransaction));
-
-  // int64_t timestamp;
-  // OrderIDType order_id;
-  // int32_t position_effect;
-  // int32_t direction;
-  // int32_t status;
-  // double price;
-  // int32_t qty;
-  // int32_t traded_qty;
 
   H5Tinsert(tick_compound, "timestamp", HOFFSET(CTATransaction, timestamp),
             H5T_NATIVE_INT64);
@@ -194,13 +186,14 @@ caf::behavior worker(caf::event_based_actor* self,
     // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
     //                                            10 * 60);
 
-    CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
+    // CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
 
     BacktestingCTASignalBroker<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
 
-    // DelayedOpenStrategy<BacktestingMailBox> strategy(&mail_box, 30 * 60);
+    DelayedOpenStrategy<BacktestingMailBox> strategy(
+        &mail_box, "cta", "follower", 60, instrument);
     // MyStrategy<BacktestingMailBox> strategy(
     //    &mail_box, std::move(cta_signal_container),
     //    delayed_input_order_by_minute, cancel_order_after_minute,
@@ -254,24 +247,24 @@ void InitLogging() {
   boost::shared_ptr<logging::core> core = logging::core::get();
 
   {
-    boost::shared_ptr<sinks::text_multifile_backend> backend =
-        boost::make_shared<sinks::text_multifile_backend>();
-    // Set up the file naming pattern
-    backend->set_file_name_composer(sinks::file::as_file_name_composer(
-        expr::stream << "logs/"
-                     << "order_" << expr::attr<std::string>("strategy_id")
-                     << ".log"));
+    //boost::shared_ptr<sinks::text_multifile_backend> backend =
+    //    boost::make_shared<sinks::text_multifile_backend>();
+    //// Set up the file naming pattern
+    //backend->set_file_name_composer(sinks::file::as_file_name_composer(
+    //    expr::stream << "logs/"
+    //                 << "order_" << expr::attr<std::string>("strategy_id")
+    //                 << ".log"));
 
-    // Wrap it into the frontend and register in the core.
-    // The backend requires synchronization in the frontend.
-    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
-    boost::shared_ptr<sink_t> sink(new sink_t(backend));
-    sink->set_formatter(expr::stream
-                        << expr::attr<boost::posix_time::ptime>("TimeStamp")
-                        << "[" << expr::attr<std::string>("strategy_id")
-                        << "]: " << expr::smessage);
+    //// Wrap it into the frontend and register in the core.
+    //// The backend requires synchronization in the frontend.
+    //typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+    //boost::shared_ptr<sink_t> sink(new sink_t(backend));
+    //sink->set_formatter(expr::stream
+    //                    << expr::attr<boost::posix_time::ptime>("TimeStamp")
+    //                    << "[" << expr::attr<std::string>("strategy_id")
+    //                    << "]: " << expr::smessage);
 
-    core->add_sink(sink);
+    //core->add_sink(sink);
   }
   {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
@@ -286,13 +279,13 @@ void InitLogging() {
     typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
     boost::shared_ptr<sink_t> sink(new sink_t(backend));
     sink->set_formatter(expr::format("[%1%] %2%") %
-                        expr::attr<boost::posix_time::ptime>("TimeStamp") %
+                        expr::attr<boost::posix_time::ptime>("quant_timestamp") %
                         expr::smessage);
     core->add_sink(sink);
   }
 
   boost::log::add_common_attributes();
-  core->set_logging_enabled(false);
+  //core->set_logging_enabled(false);
 }
 
 int caf_main(caf::actor_system& system, const config& cfg) {

@@ -124,7 +124,8 @@ class DelayedOpenStrategyFixture : public StrategyFixture {
  protected:
   virtual void SetUp() override {
     CreateStrategy<DelayedOpenStrategy<UnittestMailBox> >(
-        master_account_id, slave_account_id, delayed_open_after_seconds);
+        master_account_id, slave_account_id, delayed_open_after_seconds,
+        defalut_instrument_id);
   }
 };
 
@@ -210,6 +211,44 @@ TEST_F(DelayedOpenStrategyFixture, Close) {
     EXPECT_EQ(OrderDirection::kSell, input_order->order_direction_);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect_);
     EXPECT_EQ(10, input_order->qty_);
+  }
+}
+
+TEST_F(DelayedOpenStrategyFixture, PartiallyClose) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 123.1, 10, 10);
+
+  ElapseSeconds(delayed_open_after_seconds);
+  MarketTick(88.8);
+  Clear();
+
+  TradedOrder("0", 10);
+
+  MasterNewCloseOrder("1", OrderDirection::kSell, 123.1, 5);
+
+  {
+    auto input_order = PopupRntOrder<InputOrder>();
+    ASSERT_TRUE(input_order);
+    EXPECT_EQ(OrderDirection::kSell, input_order->order_direction_);
+    EXPECT_EQ(PositionEffect::kClose, input_order->position_effect_);
+    EXPECT_EQ(5, input_order->qty_);
+  }
+}
+
+TEST_F(DelayedOpenStrategyFixture, DonotCloseUntilFillOpenOrder) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 123.1, 10, 10);
+
+  ElapseSeconds(delayed_open_after_seconds);
+  MarketTick(88.8);
+  Clear();
+
+  // NewOpenAndFill("0", OrderDirection::kBuy, 123.1, 10, 10);
+  // TradedOrder("0", 10);
+
+  MasterNewCloseOrder("1", OrderDirection::kSell, 123.1, 10);
+
+  {
+    auto input_order = PopupRntOrder<InputOrder>();
+    EXPECT_FALSE(input_order);
   }
 }
 

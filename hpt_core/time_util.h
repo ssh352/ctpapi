@@ -6,4 +6,6 @@
 
 TimeStamp ptime_to_timestamp(boost::posix_time::ptime timestamp);
 
+boost::posix_time::ptime TimeStampToPtime(TimeStamp timestamp);
+
 #endif  // BACKTESTING_TIME_UTIL_H

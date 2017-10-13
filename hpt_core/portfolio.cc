@@ -7,9 +7,10 @@ bool IsOpenPositionEffect(PositionEffect position_effect) {
   return position_effect == PositionEffect::kOpen;
 }
 
-Portfolio::Portfolio(double init_cash) {
+Portfolio::Portfolio(double init_cash, bool frozen_close_qty_by_rtn_order) {
   init_cash_ = init_cash;
   cash_ = init_cash;
+  frozen_close_qty_by_rtn_order_ = frozen_close_qty_by_rtn_order;
 }
 
 void Portfolio::ResetByNewTradingDate() {
@@ -66,6 +67,11 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
                          constract_multiple, cost_basis);
       frozen_cash_ += frozen_cash;
       cash_ -= frozen_cash;
+    } else {
+      if (frozen_close_qty_by_rtn_order_) {
+        HandleNewInputCloseOrder(order->instrument_id, order->direction,
+                                 order->qty);
+      }
     }
 
     order_container_.insert({order->order_id, order});
@@ -176,6 +182,17 @@ void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
     auto& position = position_container_.at(instrument);
     position.InputClose(direction, qty);
   }
+}
+
+int Portfolio::GetPositionQty(const std::string& instrument,
+                              OrderDirection direction) const {
+  if (position_container_.find(instrument) != position_container_.end()) {
+    const auto& position = position_container_.at(instrument);
+    return direction == OrderDirection::kBuy ? position.long_qty()
+                                             : position.short_qty();
+  }
+
+  return 0;
 }
 
 int Portfolio::GetPositionCloseableQty(const std::string& instrument,

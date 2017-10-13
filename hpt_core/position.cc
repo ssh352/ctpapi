@@ -72,6 +72,7 @@ void Position::TradedClose(OrderDirection direction,
 
   if (direction == OrderDirection::kBuy) {
     BOOST_ASSERT(short_qty_ >= last_traded_qty);
+    BOOST_ASSERT(frozen_short_qty_ >= last_traded_qty);
     short_qty_ -= last_traded_qty;
     frozen_short_qty_ -= last_traded_qty;
     if (short_qty_ == 0) {
@@ -82,6 +83,7 @@ void Position::TradedClose(OrderDirection direction,
     }
   } else {
     BOOST_ASSERT(long_qty_ >= last_traded_qty);
+    BOOST_ASSERT(frozen_long_qty_ >= last_traded_qty);
     long_qty_ -= last_traded_qty;
     frozen_long_qty_ -= last_traded_qty;
     if (long_qty_ == 0) {

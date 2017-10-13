@@ -56,7 +56,6 @@ class PriceHandler {
     }
     previous_time_stamp_ = tick->timestamp;
   }
-
  private:
   bool IsNextMarketOpen(Tick* tick) const {
     if (previous_time_stamp_ == 0) {

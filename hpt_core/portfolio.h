@@ -7,8 +7,9 @@
 #include "position.h"
 
 class Portfolio {
+
  public:
-  Portfolio(double init_cash);
+  Portfolio(double init_cash, bool frozen_close_qty_by_rtn_order = true);
 
   void ResetByNewTradingDate();
 
@@ -24,6 +25,8 @@ class Portfolio {
   void HandleNewInputCloseOrder(const std::string& instrument,
                                 OrderDirection direction,
                                 int qty);
+
+  int GetPositionQty(const std::string& instrument, OrderDirection direction) const;
 
   int GetPositionCloseableQty(const std::string& instrument,
                               OrderDirection direction) const;
@@ -100,6 +103,7 @@ class Portfolio {
   std::unordered_map<std::string, Position> position_container_;
   std::unordered_map<std::string, std::tuple<double, int, CostBasis> >
       instrument_info_container_;
+  bool frozen_close_qty_by_rtn_order_;
 };
 
 #endif  // BACKTESTING_PROTFOLIO_H

@@ -1,5 +1,8 @@
 #ifndef FOLLOW_STRATEGY_DELAYED_OPEN_STRATEGY_H
 #define FOLLOW_STRATEGY_DELAYED_OPEN_STRATEGY_H
+#include <boost/log/sources/logger.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/utility/manipulators/add_value.hpp>
 #include "hpt_core/portfolio.h"
 #include "follow_strategy/cta_generic_strategy.h"
 #include "follow_strategy/cta_signal.h"
@@ -7,7 +10,12 @@
 #include "follow_strategy/logging_defines.h"
 #include "follow_strategy/strategy_order_dispatch.h"
 #include "follow_strategy/string_util.h"
+#include "follow_strategy/logging_defines.h"
+#include "hpt_core/time_util.h"
 #include "order_util.h"
+
+
+
 
 template <typename MailBox>
 class DelayedOpenStrategy : public EnterOrderObserver,
@@ -16,17 +24,18 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   DelayedOpenStrategy(MailBox* mail_box,
                       std::string master_account_id,
                       std::string slave_account_id,
-                      int delayed_open_order)
+                      int delayed_open_order,
+                      const std::string& instrument)
       : mail_box_(mail_box),
         master_account_id_(master_account_id),
         slave_account_id_(slave_account_id),
         delayed_open_order_by_seconds_(delayed_open_order),
-        portfolio_(1000000),
+        portfolio_(1000000, false),
         master_portfolio_(1000000) {
-    portfolio_.InitInstrumentDetail("I1", 0.02, 10,
+    portfolio_.InitInstrumentDetail(instrument, 0.02, 10,
                                     CostBasis{CommissionType::kFixed, 0, 0, 0});
     master_portfolio_.InitInstrumentDetail(
-        "I1", 0.02, 10, CostBasis{CommissionType::kFixed, 0, 0, 0});
+        instrument, 0.02, 10, CostBasis{CommissionType::kFixed, 0, 0, 0});
 
     signal_dispatch_ =
         std::make_shared<CTASignalDispatch>(this, slave_account_id_);
@@ -44,6 +53,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
     mail_box_->Subscribe(&DelayedOpenStrategy::BeforeCloseMarket, this);
     mail_box_->Subscribe(&DelayedOpenStrategy::HandleTick, this);
     mail_box_->Subscribe(&DelayedOpenStrategy::CloseMarketNear, this);
+
   }
 
   void BeforeTrading(const BeforeTradingAtom&,
@@ -59,6 +69,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
       ProcessRiskCloseOrderWhenCloseMarketNear(instrument,
                                                OrderDirection::kSell);
     }
+
   }
 
   void ProcessRiskCloseOrderWhenCloseMarketNear(const std::string& instrument,
@@ -101,30 +112,49 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
+    last_timestamp_ = tick->tick->timestamp;
     auto it_end = std::find_if(
         pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
         [=, &tick](const auto& order) {
           return tick->tick->timestamp <
                  order.timestamp_ + delayed_open_order_by_seconds_ * 1000;
         });
+
+    if (it_end != pending_delayed_open_order_.begin()) {
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "延迟开仓订单到期 当前 Tick :" << *(tick->instrument) << ":"
+      << " Last:" << tick->tick->last_price << "(" << tick->tick->qty << ")"
+      << " Bid1:" << tick->tick->bid_price1 << "(" << tick->tick->bid_qty1 << ")"
+      << " Ask1:" << tick->tick->ask_price1 << "(" << tick->tick->ask_qty1 << ")";
+
     for (auto it = pending_delayed_open_order_.begin(); it != it_end; ++it) {
       signal_dispatch_->OpenOrder(it->instrument_, GenerateOrderId(),
                                   it->order_direction_, it->price_, it->qty_);
     }
     pending_delayed_open_order_.erase(pending_delayed_open_order_.begin(),
                                       it_end);
+
+    }
     last_tick_ = tick;
   }
 
   void HandleInitPosition(const std::vector<OrderPosition>& quantitys) {}
 
   void HandleOrder(const std::shared_ptr<OrderField>& order) {
+    last_timestamp_ = order->update_timestamp;
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "收到订单事件 - 订单号:" << order->order_id
+      << "价格:" << order->input_price
+      << "数量:" << order->qty
+      << "状态:" << StringifyOrderStatus(order->status)
+      << "开平:" << StringifyPositionEffect(order->position_effect);
     portfolio_.HandleOrder(order);
     signal_dispatch_->RtnOrder(order);
   }
 
   void HandleHistoryOrder(
-      const std::vector<std::shared_ptr<const OrderField>>& orders) {}
+      const std::vector<std::shared_ptr<const OrderField>>& orders) {
+  }
   // CTASignal
   void HandleCTASignalInitPosition(
       const CTASignalAtom&,
@@ -136,8 +166,16 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
   void HandleCTASignalOrder(const CTASignalAtom& cta_signal_atom,
                             const std::shared_ptr<OrderField>& order) {
+    last_timestamp_ = order->update_timestamp;
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "收到**CTA**订单事件 - 订单号:" << order->order_id
+      << "价格:" << order->input_price
+      << "数量:" << order->qty
+      << "状态:" << StringifyOrderStatus(order->status)
+      << "开平:" << StringifyPositionEffect(order->position_effect);
     master_portfolio_.HandleOrder(order);
     signal_dispatch_->RtnOrder(order);
+
   }
 
   virtual void OpenOrder(const std::string& instrument,
@@ -145,9 +183,18 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                          OrderDirection direction,
                          double price,
                          int quantity) override {
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "持仓信息:" << portfolio_.GetPositionQty(instrument, OrderDirection::kBuy) << "(" << StringifyOrderDirection(OrderDirection::kBuy) << ")"
+      << portfolio_.GetPositionQty(instrument, OrderDirection::kSell) << "(" << StringifyOrderDirection(OrderDirection::kSell) << ")";
+
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+    << "发送开仓指令:" << "<" << order_id << ">"
+      << "<" << StringifyOrderDirection(direction) << ">"
+      << price << "(" << quantity << ")";
     mail_box_->Send(InputOrder{instrument, order_id, slave_account_id_,
                                PositionEffect::kOpen, direction, price,
                                quantity, 0});
+
   }
 
   virtual void CloseOrder(const std::string& instrument,
@@ -156,11 +203,26 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                           PositionEffect position_effect,
                           double price,
                           int quantity) override {
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "持仓信息:" << portfolio_.GetPositionQty(instrument, OrderDirection::kBuy) << "(" << StringifyOrderDirection(OrderDirection::kBuy) << ")"
+      << portfolio_.GetPositionQty(instrument, OrderDirection::kSell) << "(" << StringifyOrderDirection(OrderDirection::kSell) << ")";
+
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+    << "发送平仓指令:" << "<" << order_id << ">"
+      << "<" << StringifyOrderDirection(direction) << ">"
+      << "<" << StringifyPositionEffect(position_effect) << ">"
+      << price << "(" << quantity << ")";
+    BOOST_ASSERT(portfolio_.GetPositionCloseableQty(
+                     instrument, OppositeOrderDirection(direction)) >=
+                 quantity);
+    portfolio_.HandleNewInputCloseOrder(instrument, direction, quantity);
     mail_box_->Send(InputOrder{instrument, order_id, slave_account_id_,
                                position_effect, direction, price, quantity, 0});
   }
 
   virtual void CancelOrder(const std::string& order_id) override {
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+    << "发送撤单指令:" << "<" << order_id << ">";
     mail_box_->Send(CancelOrderSignal{slave_account_id_, order_id});
   }
 
@@ -192,19 +254,28 @@ class DelayedOpenStrategy : public EnterOrderObserver,
     if (order_data->strategy_id != master_account_id_) {
       return;
     }
-    auto positions = portfolio_.positions();
-    if (positions.find(order_data->instrument_id) != positions.end()) {
-      const auto& position = positions.at(order_data->instrument_id);
-      int qty = order_data->direction == OrderDirection::kBuy
-                    ? position.short_qty()
-                    : position.long_qty();
-      if (qty > 0) {
-        signal_dispatch_->CloseOrder(
-            order_data->instrument_id, GenerateOrderId(), order_data->direction,
-            order_data->position_effect, order_data->input_price,
-            qty > order_data->qty ? qty : std::min<int>(order_data->qty, qty));
-      }
+    int qty = portfolio_.GetPositionCloseableQty(
+        order_data->instrument_id,
+        OppositeOrderDirection(order_data->direction));
+    if (qty > 0) {
+      signal_dispatch_->CloseOrder(
+          order_data->instrument_id, GenerateOrderId(), order_data->direction,
+          order_data->position_effect, order_data->input_price,
+          std::min<int>(order_data->qty, qty));
     }
+    // auto positions = portfolio_.positions();
+    // if (positions.find(order_data->instrument_id) != positions.end()) {
+    //  const auto& position = positions.at(order_data->instrument_id);
+    //  int qty = order_data->direction == OrderDirection::kBuy
+    //                ? position.short_qty()
+    //                : position.long_qty();
+    //  if (qty > 0) {
+    //    signal_dispatch_->CloseOrder(
+    //        order_data->instrument_id, GenerateOrderId(),
+    //        order_data->direction, order_data->position_effect,
+    //        order_data->input_price, std::min<int>(order_data->qty, qty));
+    //  }
+    //}
   }
 
   virtual void HandleCanceled(
@@ -360,6 +431,13 @@ class DelayedOpenStrategy : public EnterOrderObserver,
         }
       }
     } else {
+      BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+        << "加入延迟开仓队列 延迟时间:" << delayed_open_order_by_seconds_ << "(秒)"
+        << "CTA订单号:" << order_data->order_id
+        << " 价格:" << order_data->trading_price
+        << " 数量:" << order_data->trading_qty
+        << " 方向:" << StringifyOrderDirection(order_data->direction);
+
       pending_delayed_open_order_.push_back(InputOrderSignal{
           order_data->instrument_id, "", "S1", PositionEffect::kOpen,
           order_data->direction, order_data->trading_price,
@@ -420,6 +498,75 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   std::string GenerateOrderId() {
     return boost::lexical_cast<std::string>(order_id_seq_++);
   }
+
+  std::string StringifyOrderStatus(OrderStatus status) const
+  {
+    std::string ret = "Unkown";
+    switch (status) {
+    case OrderStatus::kActive:
+      ret = "Action";
+      break;
+    case OrderStatus::kAllFilled:
+      ret = "AllFilled";
+      break;
+    case OrderStatus::kCanceled:
+      ret = "Canceled";
+      break;
+    case OrderStatus::kInputRejected:
+      ret = "InputRejected";
+      break;
+    case OrderStatus::kCancelRejected:
+      ret = "CancelRejected";
+      break;
+    default:
+      break;
+    }
+    return ret;
+  }
+
+
+
+  std::string StringifyPositionEffect(PositionEffect position_effect) const
+  {
+    std::string ret = "Unkown";
+    switch (position_effect) {
+    case PositionEffect::kUndefine:
+      ret = "Undefine";
+      break;
+    case PositionEffect::kOpen:
+      ret = "Open";
+      break;
+    case PositionEffect::kClose:
+      ret = "Close";
+      break;
+    case PositionEffect::kCloseToday:
+      ret = "CloseToday";
+      break;
+    default:
+      break;
+    }
+    return ret;
+  }
+
+
+
+  std::string StringifyOrderDirection(OrderDirection order_direction) const {
+    std::string ret = "Unkown";
+    switch (order_direction) {
+    case OrderDirection::kUndefine:
+      break;
+    case OrderDirection::kBuy:
+      ret = "Buy";
+      break;
+    case OrderDirection::kSell:
+      ret = "Sell";
+      break;
+    default:
+      break;
+    }
+    return ret;
+  }
+
   Portfolio master_portfolio_;
   Portfolio portfolio_;
   MailBox* mail_box_;
@@ -431,6 +578,8 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   int delayed_open_order_by_seconds_ = 0;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
+  boost::log::sources::logger log_;
+  TimeStamp last_timestamp_ = 0;
 };
 
 #endif  // FOLLOW_STRATEGY_DELAYED_OPEN_STRATEGY_H
