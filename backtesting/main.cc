@@ -116,6 +116,7 @@ auto ReadCTAOrderSignalTimeSeries(const char* hdf_file,
             H5T_NATIVE_DOUBLE);
   H5Tinsert(tick_compound, "qty", HOFFSET(CTATransaction, qty),
             H5T_NATIVE_INT32);
+
   H5Tinsert(tick_compound, "traded_qty", HOFFSET(CTATransaction, traded_qty),
             H5T_NATIVE_INT32);
 
@@ -202,7 +203,7 @@ caf::behavior worker(caf::event_based_actor* self,
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
     PriceHandler<BacktestingMailBox> price_handler(
-        instrument, &running, &mail_box, std::move(tick_container), 5 * 60);
+        instrument, &running, &mail_box, std::move(tick_container), 5 * 60, 60*10);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
@@ -294,20 +295,20 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   auto instruments =
       std::make_shared<std::list<std::pair<std::string, std::string>>>();
-  // instruments->emplace_back(std::make_pair("dc", "a1705"));
-  // instruments->emplace_back(std::make_pair("dc", "a1709"));
-  // instruments->emplace_back(std::make_pair("dc", "a1801"));
-  // instruments->emplace_back(std::make_pair("sc", "al1705"));
-  // instruments->emplace_back(std::make_pair("sc", "bu1705"));
-  // instruments->emplace_back(std::make_pair("sc", "bu1706"));
-  // instruments->emplace_back(std::make_pair("sc", "bu1709"));
-  // instruments->emplace_back(std::make_pair("dc", "c1705"));
-  // instruments->emplace_back(std::make_pair("dc", "c1709"));
-  // instruments->emplace_back(std::make_pair("dc", "c1801"));
-  // instruments->emplace_back(std::make_pair("zc", "cf705"));
-  // instruments->emplace_back(std::make_pair("zc", "cf709"));
-  // instruments->emplace_back(std::make_pair("dc", "cs1705"));
-  // instruments->emplace_back(std::make_pair("dc", "cs1709"));
+   //instruments->emplace_back(std::make_pair("dc", "a1705"));
+   instruments->emplace_back(std::make_pair("dc", "a1709"));
+   //instruments->emplace_back(std::make_pair("dc", "a1801"));
+   //instruments->emplace_back(std::make_pair("sc", "al1705"));
+   //instruments->emplace_back(std::make_pair("sc", "bu1705"));
+   //instruments->emplace_back(std::make_pair("sc", "bu1706"));
+   //instruments->emplace_back(std::make_pair("sc", "bu1709"));
+   //instruments->emplace_back(std::make_pair("dc", "c1705"));
+   //instruments->emplace_back(std::make_pair("dc", "c1709"));
+   //instruments->emplace_back(std::make_pair("dc", "c1801"));
+   //instruments->emplace_back(std::make_pair("zc", "cf705"));
+   //instruments->emplace_back(std::make_pair("zc", "cf709"));
+   //instruments->emplace_back(std::make_pair("dc", "cs1705"));
+   //instruments->emplace_back(std::make_pair("dc", "cs1709"));
   // instruments->emplace_back(std::make_pair("dc", "cs1801"));
   // instruments->emplace_back(std::make_pair("sc", "cu1702"));
   // instruments->emplace_back(std::make_pair("sc", "cu1703"));
@@ -338,7 +339,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // instruments->emplace_back(std::make_pair("zc", "ma705"));
   // instruments->emplace_back(std::make_pair("zc", "ma709"));
   // instruments->emplace_back(std::make_pair("zc", "ma801"));
-  instruments->emplace_back(std::make_pair("sc", "ni1705"));
+  //instruments->emplace_back(std::make_pair("sc", "ni1705"));
   // instruments->emplace_back(std::make_pair("sc", "ni1709"));
   // instruments->emplace_back(std::make_pair("dc", "p1705"));
   // instruments->emplace_back(std::make_pair("dc", "p1709"));

@@ -62,6 +62,9 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   void BeforeCloseMarket(const BeforeCloseMarketAtom&) {}
 
   void CloseMarketNear(const CloseMarketNearAtom&) {
+    BOOST_LOG(log_) 
+          << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "收到临近收市事件:\n";
     auto instruments = portfolio_.InstrumentList();
     for (const auto& instrument : instruments) {
       ProcessRiskCloseOrderWhenCloseMarketNear(instrument,
@@ -90,9 +93,16 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                 });
       for (const auto& order : orders) {
         int order_force_close_qty = std::min<int>(order->qty, force_close_qty);
+        BOOST_LOG(log_) 
+          << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+          << "临近收市撤单:" << order->order_id;
         signal_dispatch_->CancelOrder(order->order_id);
         if (order_force_close_qty < order->qty) {
-          signal_dispatch_->CloseOrder(order->instrument_id, GenerateOrderId(),
+          std::string order_id = GenerateOrderId();
+          BOOST_LOG(log_) 
+          << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+            << "临近收市重新平仓:" << order_id;
+          signal_dispatch_->CloseOrder(order->instrument_id, std::move(order_id),
                                        order->direction, order->position_effect,
                                        order->input_price,
                                        order->qty - order_force_close_qty);
@@ -103,8 +113,12 @@ class DelayedOpenStrategy : public EnterOrderObserver,
           break;
         }
       }
+      std::string order_id = GenerateOrderId();
+      BOOST_LOG(log_) 
+          << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+        << "临近收市强平:" << order_id;
       signal_dispatch_->CloseOrder(
-          instrument, GenerateOrderId(), direction, PositionEffect::kOpen,
+          instrument, std::move(order_id), direction, PositionEffect::kOpen,
           direction == OrderDirection::kBuy ? last_tick_->tick->ask_price1
                                             : last_tick_->tick->bid_price1,
           force_close_qty);
@@ -143,11 +157,11 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   void HandleOrder(const std::shared_ptr<OrderField>& order) {
     last_timestamp_ = order->update_timestamp;
     BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
-      << "收到订单事件 - 订单号:" << order->order_id
-      << "价格:" << order->input_price
-      << "数量:" << order->qty
-      << "状态:" << StringifyOrderStatus(order->status)
-      << "开平:" << StringifyPositionEffect(order->position_effect);
+      << "RECV: " << " ("
+      << StringifyPositionEffect(order->position_effect) << ") "
+      << "Order Event \"" << order->order_id << "\": "
+      << order->input_price << "("
+       << order->leaves_qty << "/" << order->qty << ")";
     portfolio_.HandleOrder(order);
     signal_dispatch_->RtnOrder(order);
   }
@@ -168,11 +182,11 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                             const std::shared_ptr<OrderField>& order) {
     last_timestamp_ = order->update_timestamp;
     BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
-      << "收到**CTA**订单事件 - 订单号:" << order->order_id
-      << "价格:" << order->input_price
-      << "数量:" << order->qty
-      << "状态:" << StringifyOrderStatus(order->status)
-      << "开平:" << StringifyPositionEffect(order->position_effect);
+      << "RECV: " << "__CTA__" << " ("
+      << StringifyPositionEffect(order->position_effect) << ") "
+      << "Order Event \"" << order->order_id << "\": "
+      << order->input_price << "("
+       << order->leaves_qty << "/" << order->qty << ")";
     master_portfolio_.HandleOrder(order);
     signal_dispatch_->RtnOrder(order);
 
@@ -302,6 +316,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
     if (qty == 0) {
       auto orders = portfolio_.UnfillOpenOrders(order_data->instrument_id,
+
                                                 position_direction);
       std::for_each(orders.begin(), orders.end(), [=](const auto& order) {
         signal_dispatch_->CancelOrder(order->order_id);

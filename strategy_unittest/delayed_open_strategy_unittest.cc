@@ -240,7 +240,6 @@ TEST_F(DelayedOpenStrategyFixture, DonotCloseUntilFillOpenOrder) {
   ElapseSeconds(delayed_open_after_seconds);
   MarketTick(88.8);
   Clear();
-
   // NewOpenAndFill("0", OrderDirection::kBuy, 123.1, 10, 10);
   // TradedOrder("0", 10);
 
