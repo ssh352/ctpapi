@@ -30,7 +30,6 @@ class MyStrategy {
 
     mail_box_->Subscribe(&MyStrategy::HandleTick, this);
     mail_box_->Subscribe(&MyStrategy::HandleOrder, this);
-    mail_box_->Subscribe(&MyStrategy::HandleCloseMarket, this);
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
@@ -104,11 +103,6 @@ class MyStrategy {
     } else {
     }
   }
-
-  // Inherited via AbstractStrategy
-
-  // Inherited via AbstractStrategy
-  void HandleCloseMarket(const CloseMarket&) {}
 
  private:
   class CompareOrderId {

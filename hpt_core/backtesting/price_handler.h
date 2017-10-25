@@ -40,6 +40,9 @@ class PriceHandler {
     Tick* tick = &it_->first.get()[current_tick_index_];
 
     if (IsNextMarketOpen(tick)) {
+      if (NeedsSendDaySettleEvent(previous_time_stamp_)) {
+        mail_box_->Send(DaySettleAtom::value);
+      }
       TradingTime trading_time = GetTradingTime(tick->timestamp);
       mail_box_->Send(BeforeTradingAtom::value, trading_time);
       UpdateNextBeforeCloseMarketEventTimeStamp(trading_time, tick->timestamp);
@@ -126,6 +129,18 @@ class PriceHandler {
            tick->timestamp > next_event_before_close_market_near_timestamp_;
   }
 
+  bool NeedsSendDaySettleEvent(TimeStamp timestamp) const {
+    if (timestamp == 0) {
+      return false;
+    }
+      boost::posix_time::ptime pt(
+          boost::gregorian::date(1970, 1, 1),
+          boost::posix_time::milliseconds(timestamp));
+      auto day_close_market_pt = boost::posix_time::ptime(
+          pt.date(), boost::posix_time::time_duration(15, 0, 0));
+      return abs((pt - day_close_market_pt).total_seconds()) < 30 * 60;
+  }
+
   std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter_;
   std::vector<std::pair<std::shared_ptr<Tick>, int64_t> >::const_iterator it_;
   std::shared_ptr<std::string> instrument_;
@@ -137,6 +152,8 @@ class PriceHandler {
   int event_before_close_market_near_seconds_ = 0;
   TimeStamp next_event_before_close_market_timestamp_ = 0;
   TimeStamp next_event_before_close_market_near_timestamp_ = 0;
+
+
 };
 
 #endif  // BACKTESTING_PRICE_HANDLER_H

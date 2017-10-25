@@ -16,11 +16,14 @@ using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
 using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
 using CloseMarketNearAtom = caf::atom_constant<caf::atom("cmn")>;
+using DaySettleAtom = caf::atom_constant<caf::atom("daysetl")>;
 #include "hpt_core/time_series_reader.h"
 #include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
 #include "follow_strategy/delayed_open_strategy.h"
+#include "follow_strategy/cta_traded_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
+#include "hpt_core/backtesting/simulated_always_treade_execution_handler.h"
 
 // #include "follow_strategy/cta_traded_strategy.h"
 
@@ -29,8 +32,65 @@ using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
 using CTASignalContainer =
     std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>;
 
+std::map<std::string, std::string> g_instrument_market_set = {
+    {"a1705", "dc"},  {"a1709", "dc"},  {"a1801", "dc"},  {"al1705", "sc"},
+    {"bu1705", "sc"}, {"bu1706", "sc"}, {"bu1709", "sc"}, {"c1705", "dc"},
+    {"c1709", "dc"},  {"c1801", "dc"},  {"cf705", "zc"},  {"cf709", "zc"},
+    {"cs1705", "dc"}, {"cs1709", "dc"}, {"cs1801", "dc"}, {"cu1702", "sc"},
+    {"cu1703", "sc"}, {"cu1704", "sc"}, {"cu1705", "sc"}, {"cu1706", "sc"},
+    {"cu1707", "sc"}, {"cu1708", "sc"}, {"cu1709", "sc"}, {"fg705", "zc"},
+    {"fg709", "zc"},  {"i1705", "dc"},  {"i1709", "dc"},  {"j1705", "dc"},
+    {"j1709", "dc"},  {"jd1705", "dc"}, {"jd1708", "dc"}, {"jd1709", "dc"},
+    {"jd1801", "dc"}, {"jm1705", "dc"}, {"jm1709", "dc"}, {"l1705", "dc"},
+    {"l1709", "dc"},  {"l1801", "dc"},  {"m1705", "dc"},  {"m1709", "dc"},
+    {"m1801", "dc"},  {"ma705", "zc"},  {"ma709", "zc"},  {"ma801", "zc"},
+    {"ni1705", "sc"}, {"ni1709", "sc"}, {"p1705", "dc"},  {"p1709", "dc"},
+    {"p1801", "dc"},  {"pp1705", "dc"}, {"pp1709", "dc"}, {"pp1801", "dc"},
+    {"rb1705", "sc"}, {"rb1710", "sc"}, {"rb1801", "sc"}, {"rm705", "zc"},
+    {"rm709", "zc"},  {"rm801", "zc"},  {"ru1705", "sc"}, {"ru1709", "sc"},
+    {"ru1801", "sc"}, {"sm709", "zc"},  {"sr705", "zc"},  {"sr709", "zc"},
+    {"ta705", "zc"},  {"ta709", "zc"},  {"v1709", "dc"},  {"y1705", "dc"},
+    {"y1709", "dc"},  {"y1801", "dc"},  {"zc705", "zc"},  {"zn1702", "sc"},
+    {"zn1703", "sc"}, {"zn1704", "sc"}, {"zn1705", "sc"}, {"zn1706", "sc"},
+    {"zn1707", "sc"}, {"zn1708", "sc"}, {"zn1709", "sc"}};
+
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
+
+class config : public caf::actor_system_config {
+ public:
+  int delay_open_order_after_seconds = 10;
+  int force_close_before_close_market = 5;
+  double price_offset_rate = 0.0;
+  bool enable_logging = false;
+  std::string instrument = "";
+  std::string ts_db = "";
+  std::string cta_transaction_db = "";
+  std::string backtesting_from_datetime = "";
+  std::string backtesting_to_datetime = "";
+
+  config() {
+    opt_group{custom_options_, "global"}
+        .add(delay_open_order_after_seconds, "delayed_seconds",
+             "set delayed close seconds")
+        .add(force_close_before_close_market, "force_close",
+             "force close before close market minues. default is 5")
+        .add(price_offset_rate, "price_offset_rate", "price offset rate")
+        .add(enable_logging, "enable_logging", "enable logging")
+        .add(instrument, "instrument",
+             "instrument: is no set then backtesting all instrument")
+        .add(ts_db, "tick_db", "tick time series db")
+        .add(cta_transaction_db, "ts_cta_db", "cta transaction time series db")
+        .add(backtesting_from_datetime, "bs_from_datetime",
+             "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
+             "\"2016-12-05 09:00:00\"")
+        .add(backtesting_to_datetime, "bs_to_datetime",
+             "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
+             "\"2017-07-23 15:00:00\"");
+  }
+};
+
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(config*)
 
 template <typename MailBox>
 class RtnOrderToCSV {
@@ -67,7 +127,7 @@ auto ReadTickTimeSeries(const char* hdf_file,
   hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
   hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(Tick));
   TimeSeriesReader<Tick> ts_db(file, tick_compound);
-  
+
   H5Tinsert(tick_compound, "timestamp", HOFFSET(Tick, timestamp),
             H5T_NATIVE_INT64);
   H5Tinsert(tick_compound, "last_price", HOFFSET(Tick, last_price),
@@ -81,7 +141,7 @@ auto ReadTickTimeSeries(const char* hdf_file,
             H5T_NATIVE_DOUBLE);
   H5Tinsert(tick_compound, "ask_qty1", HOFFSET(Tick, ask_qty1),
             H5T_NATIVE_INT64);
-  
+
   auto ts_ret =
       ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
                       boost::posix_time::time_from_string(datetime_from),
@@ -131,26 +191,28 @@ auto ReadCTAOrderSignalTimeSeries(const char* hdf_file,
 
 caf::behavior coordinator(
     caf::event_based_actor* self,
-    const std::shared_ptr<std::list<std::pair<std::string, std::string>>>
+    const std::shared_ptr<std::list<std::pair<std::string, std::string>>>&
         instruments,
-    int delayed_input_order_by_minute,
-    int cancel_order_after_minute) {
-  return {[=](IdleAtom, caf::actor work) {
-    std::string ts_tick_path = "d:/ts_futures.h5";
-    // std::string ts_cta_signal_path = "d:/cta_tstable.h5";
-    std::string ts_cta_signal_path =
-        "d:/WorkSpace/backtesing_cta/cta_tstable.h5";
+    const config* cfg) {
+  std::string ts_tick_path = cfg->ts_db;
+  std::string ts_cta_signal_path = cfg->cta_transaction_db;
+  std::string datetime_from = cfg->backtesting_from_datetime;
+  std::string datetime_to = cfg->backtesting_to_datetime;
+  int delay_open_order_after_seconds = cfg->delay_open_order_after_seconds;
+  int force_close_before_close_market = cfg->force_close_before_close_market;
 
-    std::string datetime_from = "2016-12-05 09:00:00";
-    std::string datetime_to = "2017-07-31 15:00:00";
+  return {[=](IdleAtom, caf::actor work) {
+    // std::string ts_tick_path = "d:/ts_futures.h5";
+    // std::string ts_cta_signal_path =
+    //    "d:/WorkSpace/backtesing_cta/cta_tstable.h5";
 
     auto instrument_with_market = instruments->front();
     instruments->pop_front();
     std::string market = instrument_with_market.first;
     std::string instrument = instrument_with_market.second;
     self->send(
-        work, market, instrument, delayed_input_order_by_minute,
-        cancel_order_after_minute,
+        work, market, instrument, delay_open_order_after_seconds,
+        force_close_before_close_market,
         ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
                            datetime_from, datetime_to),
         ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
@@ -162,9 +224,7 @@ caf::behavior coordinator(
   }};
 }
 
-caf::behavior worker(caf::event_based_actor* self,
-                     caf::actor coor,
-                     int backtesting_position_effect) {
+caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
   return {[=](const std::string& market, const std::string& instrument,
               int delayed_input_order_by_minute, int cancel_order_after_minute,
               TickContainer tick_container,
@@ -176,38 +236,45 @@ caf::behavior worker(caf::event_based_actor* self,
 
     // std::string market = "dc";
     // std::string instrument = "a1709";
-    std::string csv_file_prefix =
-        str(boost::format("%s_%d_%d_%s") % instrument %
-            delayed_input_order_by_minute % cancel_order_after_minute %
-            (backtesting_position_effect == 0 ? "O" : "C"));
+    std::string csv_file_prefix = str(boost::format("%s") % instrument);
     BacktestingMailBox mail_box(&callable_queue);
 
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
 
     // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
-    //                                            10 * 60);
-
-    // CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
+    //                                           10 * 60);
 
     BacktestingCTASignalBroker<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
 
+    ///****
+    DelayedOpenStrategy<BacktestingMailBox>::StrategyParam strategy_param;
+    strategy_param.delayed_open_after_seconds = 60;
+    strategy_param.price_offset_rate = 0.002;
     DelayedOpenStrategy<BacktestingMailBox> strategy(
-        &mail_box, "cta", "follower", 60, instrument);
-    // MyStrategy<BacktestingMailBox> strategy(
-    //    &mail_box, std::move(cta_signal_container),
-    //    delayed_input_order_by_minute, cancel_order_after_minute,
-    //    backtesting_position_effect);
+        &mail_box, "cta", "follower", std::move(strategy_param), instrument);
 
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
-    PriceHandler<BacktestingMailBox> price_handler(
-        instrument, &running, &mail_box, std::move(tick_container), 5 * 60, 60*10);
-
-    PortfolioHandler<BacktestingMailBox> portfolio_handler_(
+    PortfolioHandler<BacktestingMailBox> portfolio_handler(
         init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
-        CostBasis{CommissionType::kFixed, 165, 165, 165});
+        CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
+    ///***
+
+    ///**************************
+    // CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
+    // SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
+    //    &mail_box);
+
+    // PortfolioHandler<BacktestingMailBox> portfolio_handler_(
+    //    init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
+    //    CostBasis{CommissionType::kFixed, 165, 165, 165}, true);
+    ///*********************
+
+    PriceHandler<BacktestingMailBox> price_handler(
+        instrument, &running, &mail_box, std::move(tick_container), 5 * 60,
+        60 * 10);
 
     while (running) {
       if (!callable_queue.empty()) {
@@ -224,21 +291,7 @@ caf::behavior worker(caf::event_based_actor* self,
   }};
 }
 
-class config : public caf::actor_system_config {
- public:
-  int delayed_close_minutes = 10;
-  int cancel_after_minutes = 10;
-  int position_effect = 0;
-
-  config() {
-    opt_group{custom_options_, "global"}
-        .add(delayed_close_minutes, "delayed,d", "set delayed close minutes")
-        .add(cancel_after_minutes, "cancel,c", "set cancel after minutes")
-        .add(position_effect, "open_close", "backtesting open(0) close(1)");
-  }
-};
-
-void InitLogging() {
+void InitLogging(bool enable_logging) {
   namespace logging = boost::log;
   namespace attrs = boost::log::attributes;
   namespace src = boost::log::sources;
@@ -248,26 +301,25 @@ void InitLogging() {
   boost::shared_ptr<logging::core> core = logging::core::get();
 
   {
-    //boost::shared_ptr<sinks::text_multifile_backend> backend =
-    //    boost::make_shared<sinks::text_multifile_backend>();
-    //// Set up the file naming pattern
-    //backend->set_file_name_composer(sinks::file::as_file_name_composer(
-    //    expr::stream << "logs/"
-    //                 << "order_" << expr::attr<std::string>("strategy_id")
-    //                 << ".log"));
+      // boost::shared_ptr<sinks::text_multifile_backend> backend =
+      //    boost::make_shared<sinks::text_multifile_backend>();
+      //// Set up the file naming pattern
+      // backend->set_file_name_composer(sinks::file::as_file_name_composer(
+      //    expr::stream << "logs/"
+      //                 << "order_" << expr::attr<std::string>("strategy_id")
+      //                 << ".log"));
 
-    //// Wrap it into the frontend and register in the core.
-    //// The backend requires synchronization in the frontend.
-    //typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
-    //boost::shared_ptr<sink_t> sink(new sink_t(backend));
-    //sink->set_formatter(expr::stream
-    //                    << expr::attr<boost::posix_time::ptime>("TimeStamp")
-    //                    << "[" << expr::attr<std::string>("strategy_id")
-    //                    << "]: " << expr::smessage);
+      //// Wrap it into the frontend and register in the core.
+      //// The backend requires synchronization in the frontend.
+      // typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
+      // boost::shared_ptr<sink_t> sink(new sink_t(backend));
+      // sink->set_formatter(expr::stream
+      //                    << expr::attr<boost::posix_time::ptime>("TimeStamp")
+      //                    << "[" << expr::attr<std::string>("strategy_id")
+      //                    << "]: " << expr::smessage);
 
-    //core->add_sink(sink);
-  }
-  {
+      // core->add_sink(sink);
+  } {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern
@@ -279,107 +331,39 @@ void InitLogging() {
     // The backend requires synchronization in the frontend.
     typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
     boost::shared_ptr<sink_t> sink(new sink_t(backend));
-    sink->set_formatter(expr::format("[%1%] %2%") %
-                        expr::attr<boost::posix_time::ptime>("quant_timestamp") %
-                        expr::smessage);
+    sink->set_formatter(
+        expr::format("[%1%] %2%") %
+        expr::attr<boost::posix_time::ptime>("quant_timestamp") %
+        expr::smessage);
     core->add_sink(sink);
   }
 
   boost::log::add_common_attributes();
-  //core->set_logging_enabled(false);
+  core->set_logging_enabled(enable_logging);
 }
 
 int caf_main(caf::actor_system& system, const config& cfg) {
-  InitLogging();
+  InitLogging(cfg.enable_logging);
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   auto instruments =
       std::make_shared<std::list<std::pair<std::string, std::string>>>();
-   //instruments->emplace_back(std::make_pair("dc", "a1705"));
-   instruments->emplace_back(std::make_pair("dc", "a1709"));
-   //instruments->emplace_back(std::make_pair("dc", "a1801"));
-   //instruments->emplace_back(std::make_pair("sc", "al1705"));
-   //instruments->emplace_back(std::make_pair("sc", "bu1705"));
-   //instruments->emplace_back(std::make_pair("sc", "bu1706"));
-   //instruments->emplace_back(std::make_pair("sc", "bu1709"));
-   //instruments->emplace_back(std::make_pair("dc", "c1705"));
-   //instruments->emplace_back(std::make_pair("dc", "c1709"));
-   //instruments->emplace_back(std::make_pair("dc", "c1801"));
-   //instruments->emplace_back(std::make_pair("zc", "cf705"));
-   //instruments->emplace_back(std::make_pair("zc", "cf709"));
-   //instruments->emplace_back(std::make_pair("dc", "cs1705"));
-   //instruments->emplace_back(std::make_pair("dc", "cs1709"));
-  // instruments->emplace_back(std::make_pair("dc", "cs1801"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1702"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1703"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1704"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1705"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1706"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1707"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1708"));
-  // instruments->emplace_back(std::make_pair("sc", "cu1709"));
-  // instruments->emplace_back(std::make_pair("zc", "fg705"));
-  // instruments->emplace_back(std::make_pair("zc", "fg709"));
-  // instruments->emplace_back(std::make_pair("dc", "i1705"));
-  // instruments->emplace_back(std::make_pair("dc", "i1709"));
-  // instruments->emplace_back(std::make_pair("dc", "j1705"));
-  // instruments->emplace_back(std::make_pair("dc", "j1709"));
-  // instruments->emplace_back(std::make_pair("dc", "jd1705"));
-  // instruments->emplace_back(std::make_pair("dc", "jd1708"));
-  // instruments->emplace_back(std::make_pair("dc", "jd1709"));
-  // instruments->emplace_back(std::make_pair("dc", "jd1801"));
-  // instruments->emplace_back(std::make_pair("dc", "jm1705"));
-  // instruments->emplace_back(std::make_pair("dc", "jm1709"));
-  // instruments->emplace_back(std::make_pair("dc", "l1705"));
-  // instruments->emplace_back(std::make_pair("dc", "l1709"));
-  // instruments->emplace_back(std::make_pair("dc", "l1801"));
-  // instruments->emplace_back(std::make_pair("dc", "m1705"));
-  // instruments->emplace_back(std::make_pair("dc", "m1709"));
-  // instruments->emplace_back(std::make_pair("dc", "m1801"));
-  // instruments->emplace_back(std::make_pair("zc", "ma705"));
-  // instruments->emplace_back(std::make_pair("zc", "ma709"));
-  // instruments->emplace_back(std::make_pair("zc", "ma801"));
-  //instruments->emplace_back(std::make_pair("sc", "ni1705"));
-  // instruments->emplace_back(std::make_pair("sc", "ni1709"));
-  // instruments->emplace_back(std::make_pair("dc", "p1705"));
-  // instruments->emplace_back(std::make_pair("dc", "p1709"));
-  // instruments->emplace_back(std::make_pair("dc", "p1801"));
-  // instruments->emplace_back(std::make_pair("dc", "pp1705"));
-  // instruments->emplace_back(std::make_pair("dc", "pp1709"));
-  // instruments->emplace_back(std::make_pair("dc", "pp1801"));
-  // instruments->emplace_back(std::make_pair("sc", "rb1705"));
-  // instruments->emplace_back(std::make_pair("sc", "rb1710"));
-  // instruments->emplace_back(std::make_pair("sc", "rb1801"));
-  // instruments->emplace_back(std::make_pair("zc", "rm705"));
-  // instruments->emplace_back(std::make_pair("zc", "rm709"));
-  // instruments->emplace_back(std::make_pair("zc", "rm801"));
-  // instruments->emplace_back(std::make_pair("sc", "ru1705"));
-  // instruments->emplace_back(std::make_pair("sc", "ru1709"));
-  // instruments->emplace_back(std::make_pair("sc", "ru1801"));
-  // instruments->emplace_back(std::make_pair("zc", "sm709"));
-  // instruments->emplace_back(std::make_pair("zc", "sr705"));
-  // instruments->emplace_back(std::make_pair("zc", "sr709"));
-  // instruments->emplace_back(std::make_pair("zc", "ta705"));
-  // instruments->emplace_back(std::make_pair("zc", "ta709"));
-  // instruments->emplace_back(std::make_pair("dc", "v1709"));
-  // instruments->emplace_back(std::make_pair("dc", "y1705"));
-  // instruments->emplace_back(std::make_pair("dc", "y1709"));
-  // instruments->emplace_back(std::make_pair("dc", "y1801"));
-  // instruments->emplace_back(std::make_pair("zc", "zc705"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1702"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1703"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1704"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1705"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1706"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1707"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1708"));
-  // instruments->emplace_back(std::make_pair("sc", "zn1709"));
 
+  if (cfg.instrument.empty()) {
+    std::for_each(
+        g_instrument_market_set.begin(), g_instrument_market_set.end(),
+        [&instruments](const auto& item) {
+          instruments->emplace_back(std::make_pair(item.second, item.first));
+        });
+  } else {
+    instruments->emplace_back(std::make_pair(
+        g_instrument_market_set[cfg.instrument], cfg.instrument));
+  }
+
+  auto coor = system.spawn(coordinator, instruments, &cfg);
   std::cout << "start\n";
-  auto coor = system.spawn(coordinator, instruments, cfg.delayed_close_minutes,
-                           cfg.cancel_after_minutes);
   for (size_t i = 0; i < instruments->size(); ++i) {
-    auto actor = system.spawn(worker, coor, cfg.position_effect);
+    auto actor = system.spawn(worker, coor);
 
     caf::anon_send(coor, IdleAtom::value, actor);
   }

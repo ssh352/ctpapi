@@ -21,15 +21,19 @@ template <typename MailBox>
 class DelayedOpenStrategy : public EnterOrderObserver,
                             public CTASignalObserver {
  public:
+   struct StrategyParam{
+     int delayed_open_after_seconds;
+     double price_offset_rate;
+   };
   DelayedOpenStrategy(MailBox* mail_box,
                       std::string master_account_id,
                       std::string slave_account_id,
-                      int delayed_open_order,
+                      StrategyParam strategy_param,
                       const std::string& instrument)
       : mail_box_(mail_box),
         master_account_id_(master_account_id),
         slave_account_id_(slave_account_id),
-        delayed_open_order_by_seconds_(delayed_open_order),
+        strategy_param_(std::move(strategy_param)),
         portfolio_(1000000, false),
         master_portfolio_(1000000) {
     portfolio_.InitInstrumentDetail(instrument, 0.02, 10,
@@ -127,27 +131,43 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
     last_timestamp_ = tick->tick->timestamp;
-    auto it_end = std::find_if(
-        pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
-        [=, &tick](const auto& order) {
-          return tick->tick->timestamp <
-                 order.timestamp_ + delayed_open_order_by_seconds_ * 1000;
-        });
+    
 
-    if (it_end != pending_delayed_open_order_.begin()) {
-    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
-      << "延迟开仓订单到期 当前 Tick :" << *(tick->instrument) << ":"
-      << " Last:" << tick->tick->last_price << "(" << tick->tick->qty << ")"
-      << " Bid1:" << tick->tick->bid_price1 << "(" << tick->tick->bid_qty1 << ")"
-      << " Ask1:" << tick->tick->ask_price1 << "(" << tick->tick->ask_qty1 << ")";
+    if (!pending_delayed_open_order_.empty()) {
+      auto it_end = std::remove_if(pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
+        [=](const auto& order) -> bool{
+        // is expire
+        if (tick->tick->timestamp >= order.timestamp_ + strategy_param_.delayed_open_after_seconds * 1000) {
+          double maybe_input_price = order.order_direction_ == OrderDirection::kBuy ? order.price_ - strategy_param_.price_offset_rate * order.price_ :
+            order.price_ + strategy_param_.price_offset_rate * order.price_;
+          if (order.order_direction_ == OrderDirection::kBuy && 
+            tick->tick->last_price > maybe_input_price && 
+            tick->tick->last_price < order.price_) {
+            return false;
+          } else if (order.order_direction_ == OrderDirection::kSell && 
+            tick->tick->last_price < maybe_input_price && 
+            tick->tick->last_price > order.price_) {
+            return false;
+          } else {
+          }
 
-    for (auto it = pending_delayed_open_order_.begin(); it != it_end; ++it) {
-      signal_dispatch_->OpenOrder(it->instrument_, GenerateOrderId(),
-                                  it->order_direction_, it->price_, it->qty_);
-    }
-    pending_delayed_open_order_.erase(pending_delayed_open_order_.begin(),
-                                      it_end);
-
+          double input_price = order.order_direction_ == OrderDirection::kBuy ? 
+            std::min(order.price_, tick->tick->last_price) : 
+            std::max(order.price_, tick->tick->last_price);
+          BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+            << "延迟开仓订单到期 开仓价:" <<  input_price
+            << "当前 Tick :" << *(tick->instrument) << ":"
+            << " Last:" << tick->tick->last_price << "(" << tick->tick->qty << ")"
+            << " Bid1:" << tick->tick->bid_price1 << "(" << tick->tick->bid_qty1 << ")"
+            << " Ask1:" << tick->tick->ask_price1 << "(" << tick->tick->ask_qty1 << ")";
+          signal_dispatch_->OpenOrder(order.instrument_, GenerateOrderId(),
+                                      order.order_direction_, input_price, order.qty_);
+          return true;
+        } 
+          return ImmediateOpenOrderIfPriceArrive(order, tick->tick);
+        }
+      );
+      pending_delayed_open_order_.erase(it_end, pending_delayed_open_order_.end());
     }
     last_tick_ = tick;
   }
@@ -189,7 +209,6 @@ class DelayedOpenStrategy : public EnterOrderObserver,
        << order->leaves_qty << "/" << order->qty << ")";
     master_portfolio_.HandleOrder(order);
     signal_dispatch_->RtnOrder(order);
-
   }
 
   virtual void OpenOrder(const std::string& instrument,
@@ -226,9 +245,9 @@ class DelayedOpenStrategy : public EnterOrderObserver,
       << "<" << StringifyOrderDirection(direction) << ">"
       << "<" << StringifyPositionEffect(position_effect) << ">"
       << price << "(" << quantity << ")";
-    BOOST_ASSERT(portfolio_.GetPositionCloseableQty(
-                     instrument, OppositeOrderDirection(direction)) >=
-                 quantity);
+    //BOOST_ASSERT(portfolio_.GetPositionCloseableQty(
+    //                 instrument, OppositeOrderDirection(direction)) >=
+    //             quantity);
     portfolio_.HandleNewInputCloseOrder(instrument, direction, quantity);
     mail_box_->Send(InputOrder{instrument, order_id, slave_account_id_,
                                position_effect, direction, price, quantity, 0});
@@ -447,7 +466,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
       }
     } else {
       BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
-        << "加入延迟开仓队列 延迟时间:" << delayed_open_order_by_seconds_ << "(秒)"
+        << "加入延迟开仓队列 延迟时间:" << strategy_param_.delayed_open_after_seconds << "(秒)"
         << "CTA订单号:" << order_data->order_id
         << " 价格:" << order_data->trading_price
         << " 数量:" << order_data->trading_qty
@@ -582,6 +601,35 @@ class DelayedOpenStrategy : public EnterOrderObserver,
     return ret;
   }
 
+
+  bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal& order,
+                                       const std::shared_ptr<Tick>& tick) {
+    
+    double maybe_input_price = order.order_direction_ == OrderDirection::kBuy ? order.price_ - strategy_param_.price_offset_rate * order.price_ :
+      order.price_ + strategy_param_.price_offset_rate * order.price_;
+    if (order.order_direction_ == OrderDirection::kBuy && 
+      tick->last_price > maybe_input_price) {
+      return false;
+    } else if (order.order_direction_ == OrderDirection::kSell &&
+      tick->last_price < maybe_input_price) {
+      return false;
+    } else {
+
+    }
+
+    BOOST_LOG(log_) << boost::log::add_value("quant_timestamp", TimeStampToPtime(last_timestamp_))
+      << "Price best immediate open order: open price is :" << maybe_input_price 
+      << "LAST TICK:" << order.instrument_ << ":"
+      << " Last:" << tick->last_price << "(" << tick->qty << ")"
+      << " Bid1:" << tick->bid_price1 << "(" << tick->bid_qty1 << ")"
+      << " Ask1:" << tick->ask_price1 << "(" << tick->ask_qty1 << ")";
+
+    signal_dispatch_->OpenOrder(
+        order.instrument_, GenerateOrderId(), order.order_direction_,
+        maybe_input_price, order.qty_);
+    return true;
+  }
+
   Portfolio master_portfolio_;
   Portfolio portfolio_;
   MailBox* mail_box_;
@@ -590,7 +638,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
   std::string slave_account_id_;
   std::shared_ptr<CTASignalDispatch> signal_dispatch_;
   std::list<InputOrderSignal> pending_delayed_open_order_;
-  int delayed_open_order_by_seconds_ = 0;
+  StrategyParam strategy_param_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
   boost::log::sources::logger log_;

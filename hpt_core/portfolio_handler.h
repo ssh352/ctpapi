@@ -13,8 +13,9 @@ class PortfolioHandler {
                    const std::string& csv_file_prefix,
                    double margin_rate,
                    int constract_multiple,
-                   CostBasis cost_basis)
-      : portfolio_(init_cash),
+                   CostBasis cost_basis,
+                   bool handle_input_signal)
+      : portfolio_(init_cash, !handle_input_signal),
         mail_box_(mail_box),
         csv_(csv_file_prefix + "_equitys.csv"),
         instrument_(instrument) {
@@ -22,7 +23,7 @@ class PortfolioHandler {
                                     constract_multiple, std::move(cost_basis));
     mail_box_->Subscribe(&PortfolioHandler::HandleTick, this);
     mail_box_->Subscribe(&PortfolioHandler::HandleOrder, this);
-    mail_box_->Subscribe(&PortfolioHandler::HandleCloseMarket, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandleDaySettleAtom, this);
     mail_box_->Subscribe(&PortfolioHandler::HandlerInputOrder, this);
     mail_box_->Subscribe(&PortfolioHandler::BeforeTrading, this);
   }
@@ -67,7 +68,7 @@ class PortfolioHandler {
     portfolio_.HandleOrder(order);
   }
 
-  void HandleCloseMarket(const CloseMarket&) {
+  void HandleDaySettleAtom(const DaySettleAtom&) {
     csv_ << last_tick_->timestamp << ","
          << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
          << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","

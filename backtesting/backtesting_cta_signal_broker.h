@@ -231,11 +231,11 @@ class BacktestingCTASignalBroker {
 
   void SendOrder(std::shared_ptr<OrderField> order) {
     order->strategy_id = "cta";
-    if (order->status == OrderStatus::kActive &&
-        IsCloseOrder(order->position_effect)) {
-      portfolio_.HandleNewInputCloseOrder(order->instrument_id,
-                                          order->direction, order->qty);
-    }
+    //if (order->status == OrderStatus::kActive &&
+    //    IsCloseOrder(order->position_effect)) {
+    //  portfolio_.HandleNewInputCloseOrder(order->instrument_id,
+    //                                      order->direction, order->qty);
+    //}
     csv_ << "BeforeHandleOrder:"
          << "(" << order->order_id << ")"
          << (order->position_effect == PositionEffect::kOpen ? "O," : "C,")

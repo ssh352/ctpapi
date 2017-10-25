@@ -60,24 +60,15 @@ class SimulatedExecutionHandler {
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
-    if (current_tick_ != nullptr) {
-      boost::posix_time::ptime previous_pt(
-          boost::gregorian::date(1970, 1, 1),
-          boost::posix_time::milliseconds(current_tick_->timestamp));
-      boost::posix_time::ptime pt(
-          boost::gregorian::date(1970, 1, 1),
-          boost::posix_time::milliseconds(tick->tick->timestamp));
-      if (previous_pt.date() != pt.date()) {
-        mail_box_->Send(CloseMarket{});
-      }
-    }
     current_tick_ = tick->tick;
 
     if (!long_limit_orders_.empty()) {
       auto end_it = long_limit_orders_.upper_bound(tick->tick->last_price);
       std::for_each(
           long_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
-            EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled, 0, lo.qty);
+            EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,
+                                 std::min(lo.price, tick->tick->ask_price1), 0,
+                                 lo.qty);
           });
       long_limit_orders_.erase(long_limit_orders_.begin(), end_it);
     }
@@ -86,17 +77,15 @@ class SimulatedExecutionHandler {
       auto end_it = short_limit_orders_.upper_bound(tick->tick->last_price);
       std::for_each(
           short_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
-            EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled, 0, lo.qty);
+            EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,
+                                 std::max(lo.price, tick->tick->bid_price1), 0,
+                                 lo.qty);
           });
       short_limit_orders_.erase(short_limit_orders_.begin(), end_it);
     }
   }
 
   void HandlerInputOrder(const InputOrder& input_order) {
-    if (input_order.order_id == "30") {
-      int i = 0;
-    }
-    // std::string order_id = boost::lexical_cast<std::string>(++order_id_seq_);
     std::string order_id = input_order.order_id;
     if (input_order.order_direction_ == OrderDirection::kBuy) {
       long_limit_orders_.insert(
@@ -143,7 +132,8 @@ class SimulatedExecutionHandler {
                      });
 
     if (find_it != long_limit_orders_.end()) {
-      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled, find_it->qty, 0);
+      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled, find_it->price,
+        find_it->qty, 0);
       long_limit_orders_.erase(find_it);
       return;
     }
@@ -154,7 +144,8 @@ class SimulatedExecutionHandler {
                        return limit_order.order_id == order_id;
                      });
     if (find_it != short_limit_orders_.end()) {
-      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled, find_it->qty, 0);
+      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled,
+                           find_it->price, find_it->qty, 0);
       short_limit_orders_.erase(find_it);
       return;
     }
@@ -177,13 +168,14 @@ class SimulatedExecutionHandler {
         {(*it)->instrument_id, (*it)->order_id, (*it)->strategy_id,
          (*it)->direction, (*it)->position_effect, (*it)->input_price,
          (*it)->qty},
-        OrderStatus::kCancelRejected, (*it)->qty, 0);
+        OrderStatus::kCancelRejected, (*it)->input_price, (*it)->qty, 0);
 
     return;
   }
 
   void EnqueueRtnOrderEvent(const LimitOrder& limit_order,
                             OrderStatus order_status,
+                            double price,
                             int leaves_qty,
                             int traded_qty) {
     auto order = std::make_shared<OrderField>();
@@ -193,8 +185,8 @@ class SimulatedExecutionHandler {
     order->position_effect = limit_order.position_effect;
     order->direction = limit_order.direction;
     order->status = order_status;
-    order->input_price = limit_order.price;
-    order->avg_price = limit_order.price;
+    order->input_price = price;
+    order->avg_price = price;
     order->leaves_qty = leaves_qty;
     order->qty = limit_order.qty;
     order->trading_qty = traded_qty;
