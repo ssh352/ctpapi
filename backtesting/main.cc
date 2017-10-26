@@ -68,6 +68,7 @@ class config : public caf::actor_system_config {
   std::string cta_transaction_db = "";
   std::string backtesting_from_datetime = "";
   std::string backtesting_to_datetime = "";
+  std::string out_dir = "";
 
   config() {
     opt_group{custom_options_, "global"}
@@ -86,7 +87,8 @@ class config : public caf::actor_system_config {
              "\"2016-12-05 09:00:00\"")
         .add(backtesting_to_datetime, "bs_to_datetime",
              "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
-             "\"2017-07-23 15:00:00\"");
+             "\"2017-07-23 15:00:00\"")
+        .add(out_dir, "out_dir", "");
   }
 };
 
@@ -95,8 +97,10 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(config*)
 template <typename MailBox>
 class RtnOrderToCSV {
  public:
-  RtnOrderToCSV(MailBox* mail_box, const std::string& prefix_)
-      : mail_box_(mail_box), orders_csv_(prefix_ + "_orders.csv") {
+  RtnOrderToCSV(MailBox* mail_box,
+                const std::string& out_dir,
+                const std::string& prefix_)
+      : mail_box_(mail_box), orders_csv_(out_dir + prefix_ + "_orders.csv") {
     mail_box_->Subscribe(&RtnOrderToCSV::HandleOrder, this);
     boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
     facet->format("%Y-%m-%d %H:%M:%S");
@@ -200,6 +204,8 @@ caf::behavior coordinator(
   std::string datetime_to = cfg->backtesting_to_datetime;
   int delay_open_order_after_seconds = cfg->delay_open_order_after_seconds;
   int force_close_before_close_market = cfg->force_close_before_close_market;
+  std::string out_dir = cfg->out_dir;
+  double price_offset_rate = cfg->price_offset_rate;
 
   return {[=](IdleAtom, caf::actor work) {
     // std::string ts_tick_path = "d:/ts_futures.h5";
@@ -211,8 +217,8 @@ caf::behavior coordinator(
     std::string market = instrument_with_market.first;
     std::string instrument = instrument_with_market.second;
     self->send(
-        work, market, instrument, delay_open_order_after_seconds,
-        force_close_before_close_market,
+        work, market, instrument, out_dir, delay_open_order_after_seconds,
+        force_close_before_close_market, price_offset_rate,
         ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
                            datetime_from, datetime_to),
         ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
@@ -226,7 +232,8 @@ caf::behavior coordinator(
 
 caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
   return {[=](const std::string& market, const std::string& instrument,
-              int delayed_input_order_by_minute, int cancel_order_after_minute,
+              const std::string& out_dir, int delay_open_after_seconds,
+              int cancel_order_after_minute, double price_offset_rate,
               TickContainer tick_container,
               CTASignalContainer cta_signal_container) {
     caf::aout(self) << market << ":" << instrument << "\n";
@@ -239,7 +246,8 @@ caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
     std::string csv_file_prefix = str(boost::format("%s") % instrument);
     BacktestingMailBox mail_box(&callable_queue);
 
-    RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, csv_file_prefix);
+    RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, out_dir,
+                                                   csv_file_prefix);
 
     // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
     //                                           10 * 60);
@@ -250,16 +258,16 @@ caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
 
     ///****
     DelayedOpenStrategy<BacktestingMailBox>::StrategyParam strategy_param;
-    strategy_param.delayed_open_after_seconds = 60;
-    strategy_param.price_offset_rate = 0.002;
+    strategy_param.delayed_open_after_seconds = delay_open_after_seconds;
+    strategy_param.price_offset_rate = price_offset_rate;
     DelayedOpenStrategy<BacktestingMailBox> strategy(
         &mail_box, "cta", "follower", std::move(strategy_param), instrument);
 
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler(
-        init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
-        CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
+        init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
+        0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
     ///***
 
     ///**************************
@@ -273,8 +281,8 @@ caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
     ///*********************
 
     PriceHandler<BacktestingMailBox> price_handler(
-        instrument, &running, &mail_box, std::move(tick_container), 5 * 60,
-        60 * 10);
+        instrument, &running, &mail_box, std::move(tick_container),
+        cancel_order_after_minute * 60, cancel_order_after_minute * 60);
 
     while (running) {
       if (!callable_queue.empty()) {

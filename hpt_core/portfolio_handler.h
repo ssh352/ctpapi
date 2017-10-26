@@ -10,6 +10,7 @@ class PortfolioHandler {
   PortfolioHandler(double init_cash,
                    MailBox* mail_box,
                    std::string instrument,
+                   const std::string& out_dir,
                    const std::string& csv_file_prefix,
                    double margin_rate,
                    int constract_multiple,
@@ -17,7 +18,7 @@ class PortfolioHandler {
                    bool handle_input_signal)
       : portfolio_(init_cash, !handle_input_signal),
         mail_box_(mail_box),
-        csv_(csv_file_prefix + "_equitys.csv"),
+        csv_(out_dir + csv_file_prefix + "_equitys.csv"),
         instrument_(instrument) {
     portfolio_.InitInstrumentDetail(std::move(instrument), margin_rate,
                                     constract_multiple, std::move(cost_basis));
