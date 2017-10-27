@@ -16,8 +16,8 @@ Portfolio::Portfolio(double init_cash, bool frozen_close_qty_by_rtn_order) {
 void Portfolio::ResetByNewTradingDate() {
   daily_commission_ = 0;
   order_container_.clear();
-  for (auto& key_value : position_container_) {
-    key_value.second.Reset();
+  for (auto& item : position_container_) {
+    item->Reset();
   }
 }
 
@@ -31,12 +31,25 @@ void Portfolio::InitInstrumentDetail(std::string instrument,
 }
 
 void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
-  if (position_container_.find(*tick->instrument) !=
-      position_container_.end()) {
-    Position& position = position_container_.at(*tick->instrument);
-    double update_pnl_ = 0.0;
-    position.UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
-    unrealised_pnl_ += update_pnl_;
+  {
+    auto it_find = position_container_.find(
+        std::make_pair(*tick->instrument, OrderDirection::kBuy), HashPosition(),
+        ComparePosition());
+    if (it_find != position_container_.end()) {
+      double update_pnl_ = 0.0;
+      (*it_find)->UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
+      unrealised_pnl_ += update_pnl_;
+    }
+  }
+  {
+    auto it_find = position_container_.find(
+        std::make_pair(*tick->instrument, OrderDirection::kSell),
+        HashPosition(), ComparePosition());
+    if (it_find != position_container_.end()) {
+      double update_pnl_ = 0.0;
+      (*it_find)->UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
+      unrealised_pnl_ += update_pnl_;
+    }
   }
 }
 
@@ -54,13 +67,19 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       memset(&cost_basis, 0, sizeof(CostBasis));
       std::tie(margin_rate, constract_multiple, cost_basis) =
           instrument_info_container_.at(order->instrument_id);
-      if (position_container_.find(order->instrument_id) ==
-          position_container_.end()) {
-        Position position(margin_rate, constract_multiple, cost_basis);
-        position_container_.insert({order->instrument_id, std::move(position)});
+      auto it_pos = position_container_.find(
+          std::make_pair(order->instrument_id, order->direction),
+          HashPosition(), ComparePosition());
+      if (it_pos == position_container_.end()) {
+        // Position position(margin_rate, constract_multiple, cost_basis);
+        position_container_.insert(std::make_shared<Position>(
+            order->instrument_id, order->direction, margin_rate,
+            constract_multiple, cost_basis));
+        it_pos = position_container_.find(
+            std::make_pair(order->instrument_id, order->direction),
+            HashPosition(), ComparePosition());
       }
-      Position& position = position_container_.at(order->instrument_id);
-      position.OpenOrder(order->direction, order->qty);
+      (*it_pos)->OpenOrder(order->qty);
       double frozen_cash =
           order->input_price * order->qty * margin_rate * constract_multiple +
           CalcCommission(PositionEffect::kOpen, order->input_price, order->qty,
@@ -73,7 +92,6 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
                                  order->qty);
       }
     }
-
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);
@@ -82,29 +100,35 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
         if (IsOpenPositionEffect(order->position_effect)) {  // Open
-          Position& position = position_container_.at(order->instrument_id);
+          auto it_pos = position_container_.find(
+              std::make_pair(order->instrument_id, order->direction),
+              HashPosition(), ComparePosition());
+          BOOST_VERIFY(it_pos != position_container_.end());
+
           double add_margin = 0.0;
-          position.TradedOpen(order->direction, order->input_price,
-                              last_traded_qty, &add_margin);
+          (*it_pos)->TradedOpen(order->input_price, last_traded_qty,
+                                &add_margin);
           frozen_cash_ -= add_margin;
           margin_ += add_margin;
         } else {  // Close
-          BOOST_ASSERT(position_container_.find(order->instrument_id) !=
-                       position_container_.end());
-          Position& position = position_container_.at(order->instrument_id);
+          auto it_pos = position_container_.find(
+              std::make_pair(order->instrument_id,
+                             OppositeOrderDirection(order->direction)),
+              HashPosition(), ComparePosition());
+          BOOST_VERIFY(it_pos != position_container_.end());
           double pnl = 0.0;
           double add_cash = 0.0;
           double release_margin = 0.0;
           double update_unrealised_pnl = 0.0;
-          position.TradedClose(order->direction, order->input_price,
-                               last_traded_qty, &pnl, &add_cash,
-                               &release_margin, &update_unrealised_pnl);
+          (*it_pos)->TradedClose(order->input_price, last_traded_qty, &pnl,
+                                 &add_cash, &release_margin,
+                                 &update_unrealised_pnl);
           margin_ -= release_margin;
           cash_ += add_cash + pnl;
           realised_pnl_ += pnl;
           unrealised_pnl_ += update_unrealised_pnl;
-          if (position.IsEmptyQty()) {
-            position_container_.erase(order->instrument_id);
+          if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
+            position_container_.erase(it_pos);
           }
         }
 
@@ -154,10 +178,16 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
                      CalcCommission(order->position_effect, order->input_price,
                                     order->leaves_qty, constract_mutiple,
                                     cost_basis);
-            Position& position = position_container_.at(order->instrument_id);
-            position.CancelOpenOrder(order->direction, order->leaves_qty);
-            if (position.IsEmptyQty()) {
-              position_container_.erase(order->instrument_id);
+            auto it_pos = position_container_.find(
+                std::make_pair(order->instrument_id,
+                               IsOpenPositionEffect(order->position_effect)
+                                   ? order->direction
+                                   : OppositeOrderDirection(order->direction)),
+                HashPosition(), ComparePosition());
+            BOOST_VERIFY(it_pos != position_container_.end());
+            (*it_pos)->CancelOpenOrder(order->leaves_qty);
+            if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
+              position_container_.erase(it_pos);
             }
           }
         }
@@ -176,20 +206,21 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
 void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
                                          OrderDirection direction,
                                          int qty) {
-  BOOST_ASSERT(position_container_.find(instrument) !=
-               position_container_.end());
-  if (position_container_.find(instrument) != position_container_.end()) {
-    auto& position = position_container_.at(instrument);
-    position.InputClose(direction, qty);
+  auto it_find = position_container_.find(
+      std::make_pair(instrument, OppositeOrderDirection(direction)),
+      HashPosition(), ComparePosition());
+  BOOST_ASSERT(it_find != position_container_.end());
+  if (it_find != position_container_.end()) {
+    (*it_find)->InputClose(qty);
   }
 }
 
 int Portfolio::GetPositionQty(const std::string& instrument,
                               OrderDirection direction) const {
-  if (position_container_.find(instrument) != position_container_.end()) {
-    const auto& position = position_container_.at(instrument);
-    return direction == OrderDirection::kBuy ? position.long_qty()
-                                             : position.short_qty();
+  auto it_find = position_container_.find(std::make_pair(instrument, direction),
+                                          HashPosition(), ComparePosition());
+  if (it_find != position_container_.end()) {
+    return (*it_find)->qty();
   }
 
   return 0;
@@ -201,12 +232,11 @@ int Portfolio::GetPositionCloseableQty(const std::string& instrument,
   //   BOOST_ASSERT(position_container_.find(instrument) !=
   //                position_container_.end());
 
-  if (position_container_.find(instrument) != position_container_.end()) {
-    const auto& position = position_container_.at(instrument);
-    return direction == OrderDirection::kBuy ? position.long_closeable_qty()
-                                             : position.short_closeable_qty();
+  auto it_find = position_container_.find(std::make_pair(instrument, direction),
+                                          HashPosition(), ComparePosition());
+  if (it_find != position_container_.end()) {
+    return (*it_find)->closeable_qty();
   }
-
   return 0;
 }
 
@@ -263,10 +293,10 @@ int Portfolio::UnfillOpenQty(const std::string& instrument,
       });
 }
 
-std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillOpenOrders(
+std::vector<std::shared_ptr<OrderField>> Portfolio::UnfillOpenOrders(
     const std::string& instrument,
     OrderDirection direction) const {
-  std::vector<std::shared_ptr<OrderField> > ret_orders;
+  std::vector<std::shared_ptr<OrderField>> ret_orders;
   std::for_each(order_container_.begin(), order_container_.end(),
                 [&ret_orders, &instrument, direction](const auto& key_value) {
                   const std::shared_ptr<OrderField>& order = key_value.second;
@@ -279,16 +309,6 @@ std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillOpenOrders(
                   ret_orders.push_back(order);
                 });
   return std::move(ret_orders);
-}
-
-int Portfolio::PositionQty(const std::string& instrument,
-                           OrderDirection direction) const {
-  if (position_container_.find(instrument) == position_container_.end()) {
-    return 0;
-  }
-  return direction == OrderDirection::kBuy
-             ? position_container_.at(instrument).long_qty()
-             : position_container_.at(instrument).short_qty();
 }
 
 std::vector<std::string> Portfolio::InstrumentList() const {
@@ -319,10 +339,10 @@ int Portfolio::UnfillCloseQty(const std::string& instrument,
       });
 }
 
-std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillCloseOrders(
+std::vector<std::shared_ptr<OrderField>> Portfolio::UnfillCloseOrders(
     const std::string& instrument,
     OrderDirection direction) const {
-  std::vector<std::shared_ptr<OrderField> > ret_orders;
+  std::vector<std::shared_ptr<OrderField>> ret_orders;
   std::for_each(order_container_.begin(), order_container_.end(),
                 [&ret_orders, &instrument, direction](const auto& key_value) {
                   const std::shared_ptr<OrderField>& order = key_value.second;
@@ -335,4 +355,13 @@ std::vector<std::shared_ptr<OrderField> > Portfolio::UnfillCloseOrders(
                   ret_orders.push_back(order);
                 });
   return std::move(ret_orders);
+}
+
+std::vector<std::shared_ptr<const Position>> Portfolio::GetPositionList()
+    const {
+  std::vector<std::shared_ptr<const Position>> ret;
+
+  std::for_each(position_container_.begin(), position_container_.end(),
+                [&ret](const auto& pos) { ret.push_back(pos); });
+  return ret;
 }

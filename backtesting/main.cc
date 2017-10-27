@@ -368,6 +368,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         g_instrument_market_set[cfg.instrument], cfg.instrument));
   }
 
+
   auto coor = system.spawn(coordinator, instruments, &cfg);
   std::cout << "start\n";
   for (size_t i = 0; i < instruments->size(); ++i) {
@@ -384,5 +385,4 @@ int caf_main(caf::actor_system& system, const config& cfg) {
             << "\n";
   return 0;
 }
-
 CAF_MAIN()

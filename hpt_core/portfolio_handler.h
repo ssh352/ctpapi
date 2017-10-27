@@ -39,15 +39,10 @@ class PortfolioHandler {
       histor_orders_.clear();
       quantitys_.clear();
 
-      for (const auto& key_and_value : portfolio_.positions()) {
-        if (key_and_value.second.long_qty() > 0) {
-          quantitys_.push_back(OrderPosition{instrument_, OrderDirection::kBuy,
-                                             key_and_value.second.long_qty()});
-        }
-
-        if (key_and_value.second.short_qty() > 0) {
-          quantitys_.push_back(OrderPosition{instrument_, OrderDirection::kSell,
-                                             key_and_value.second.short_qty()});
+      for (const auto& pos : portfolio_.GetPositionList()) {
+        if (pos->qty() > 0) {
+          quantitys_.push_back(OrderPosition{instrument_, pos->direction(),
+                                             pos->qty()});
         }
       }
 

@@ -3,21 +3,21 @@
 #include "common/api_struct.h"
 class Position {
  public:
-  Position(double margin_rate, int constract_multiple, CostBasis cost_basis);
+  Position(std::string instrument,
+           OrderDirection direction,
+           double margin_rate,
+           int constract_multiple,
+           CostBasis cost_basis);
 
-  void TradedOpen(OrderDirection direction,
-                  double price,
-                  int last_traded_qty,
-                  double* adjust_margin);
+  void TradedOpen(double price, int last_traded_qty, double* adjust_margin);
 
-  void OpenOrder(OrderDirection direciton, int qty);
+  void OpenOrder(int qty);
 
-  void InputClose(OrderDirection direction, int qty);
+  void InputClose(int qty);
 
-  void CancelOpenOrder(OrderDirection direction, int leave_qty);
+  void CancelOpenOrder(int leave_qty);
 
-  void TradedClose(OrderDirection direction,
-                   double traded_price,
+  void TradedClose(double traded_price,
                    int last_traded_qty,
                    double* pnl,
                    double* add_cash,
@@ -28,32 +28,29 @@ class Position {
 
   void Reset();
 
-  bool IsEmptyQty() const;
+  int closeable_qty() const { return qty_ - frozen_qty_; }
 
-  int long_closeable_qty() const { return long_qty_ - frozen_long_qty_; }
-  int short_closeable_qty() const { return short_qty_ - frozen_short_qty_; }
+  int qty() const { return qty_; }
+  
+  int frozen_open_qty() const { return frozen_open_qty_; }
 
-  int long_qty() const { return long_qty_; }
+  const std::string instrument() const { return instrument_; }
 
-  int short_qty() const { return short_qty_; }
+  OrderDirection direction() const { return direction_; }
 
  private:
-  double long_avg_price_ = 0.0;
-  double short_avg_price_ = 0.0;
-  int long_qty_ = 0;
-  int short_qty_ = 0;
-  int frozen_open_long_qty_ = 0;
-  int frozen_open_short_qty_ = 0;
-  int frozen_long_qty_ = 0;
-  int frozen_short_qty_ = 0;
-  double total_long_ = 0.0;
-  double total_short_ = 0.0;
-  double long_margin_ = 0.0;
-  double short_margin_ = 0.0;
+  double avg_price_ = 0.0;
+  int qty_ = 0;
+  int frozen_open_qty_ = 0;
+  int frozen_qty_ = 0;
+  double total_ = 0.0;
+  double margin_ = 0.0;
   double unrealised_pnl_ = 0.0;
   int constract_multiple_ = 0;
   double margin_rate_ = 0.0;
   CostBasis cost_basis_;
+  const std::string instrument_;
+  const OrderDirection direction_;
 };
 
 #endif  // BACKTESTING_POSITION_H

@@ -266,12 +266,12 @@ class DelayedOpenStrategy : public EnterOrderObserver,
       return;
     }
 
-    int qty = master_portfolio_.PositionQty(
+    int qty = master_portfolio_.GetPositionQty(
         order_data->instrument_id,
         OppositeOrderDirection(order_data->direction));
     if (qty != 0) {
       int slave_qty =
-          portfolio_.PositionQty(order_data->instrument_id,
+          portfolio_.GetPositionQty(order_data->instrument_id,
                                  OppositeOrderDirection(order_data->direction));
 
       if (slave_qty > 0) {
@@ -328,7 +328,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
     OrderDirection position_direction =
         OppositeOrderDirection(order_data->direction);
-    int qty = master_portfolio_.PositionQty(order_data->instrument_id,
+    int qty = master_portfolio_.GetPositionQty(order_data->instrument_id,
                                             position_direction);
 
     // CancelAndReopeningOrder(order_data->instrument_id, position_direction);
@@ -354,7 +354,7 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                                         pending_delayed_open_order_.end());
 
     } else {
-      int leaves_opening_qty = master_portfolio_.PositionQty(
+      int leaves_opening_qty = master_portfolio_.GetPositionQty(
           order_data->instrument_id, position_direction);
       int leaves_cancel_qty =
           PendingOpenQty(order_data->instrument_id, position_direction) +
@@ -373,8 +373,8 @@ class DelayedOpenStrategy : public EnterOrderObserver,
                                  OrderDirection position_direction,
                                  int leaves_cancel_qty) {
     auto orders = portfolio_.UnfillOpenOrders(instrument, position_direction);
-    std::sort(orders.begin(), orders.end(), [](const auto& l, const auto& r) {
-      return l->input_price < r->input_price;
+    std::sort(orders.begin(), orders.end(), [position_direction](const auto& l, const auto& r) {
+      return position_direction == OrderDirection::kBuy ? l->input_price < r->input_price : l->input_price > r->input_price;
     });
 
     auto for_each_lambda = [=, &leaves_cancel_qty](const auto& order) {
@@ -408,10 +408,10 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
     OrderDirection position_direction =
         OppositeOrderDirection(order_data->direction);
-    int opposite_qty = master_portfolio_.PositionQty(order_data->instrument_id,
+    int opposite_qty = master_portfolio_.GetPositionQty(order_data->instrument_id,
                                                      position_direction);
     if (opposite_qty > 0) {
-      int qty = master_portfolio_.PositionQty(order_data->instrument_id,
+      int qty = master_portfolio_.GetPositionQty(order_data->instrument_id,
                                               order_data->direction);
       if (opposite_qty == qty) {
         auto orders = portfolio_.UnfillOpenOrders(order_data->instrument_id,
@@ -423,11 +423,11 @@ class DelayedOpenStrategy : public EnterOrderObserver,
         int leaves_opening_qty =
             master_portfolio_.UnfillOpenQty(order_data->instrument_id,
                                             position_direction) +
-            master_portfolio_.PositionQty(order_data->instrument_id,
+            master_portfolio_.GetPositionQty(order_data->instrument_id,
                                           position_direction) -
             master_portfolio_.UnfillOpenQty(order_data->instrument_id,
                                             order_data->direction) -
-            master_portfolio_.PositionQty(order_data->instrument_id,
+            master_portfolio_.GetPositionQty(order_data->instrument_id,
                                           order_data->direction);
 
         int leaves_cancel_qty =
@@ -604,7 +604,10 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
   bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal& order,
                                        const std::shared_ptr<Tick>& tick) {
-    
+    if (strategy_param_.price_offset_rate == 0.0) {
+      return false;
+    }
+
     double maybe_input_price = order.order_direction_ == OrderDirection::kBuy ? order.price_ - strategy_param_.price_offset_rate * order.price_ :
       order.price_ + strategy_param_.price_offset_rate * order.price_;
     if (order.order_direction_ == OrderDirection::kBuy && 

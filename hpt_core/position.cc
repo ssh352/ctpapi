@@ -1,99 +1,67 @@
 #include "position.h"
 #include <boost/assert.hpp>
 
-Position::Position(double margin_rate,
+Position::Position(std::string instrument,
+                   OrderDirection direction,
+                   double margin_rate,
                    int constract_multiple,
                    CostBasis cost_basis)
-    : margin_rate_(margin_rate),
+    : instrument_(instrument),
+      direction_(direction),
+      margin_rate_(margin_rate),
       constract_multiple_(constract_multiple),
       cost_basis_(std::move(cost_basis)) {}
 
-void Position::TradedOpen(OrderDirection direction,
-                          double price,
+void Position::TradedOpen(double price,
                           int last_traded_qty,
                           double* adjust_margin) {
   *adjust_margin = price * last_traded_qty * margin_rate_ * constract_multiple_;
-  if (direction == OrderDirection::kBuy) {
-    total_long_ += price * last_traded_qty;
-    long_qty_ += last_traded_qty;
-    long_avg_price_ = total_long_ / long_qty_;
-    frozen_open_long_qty_ -= last_traded_qty;
-  } else {
-    total_short_ += price * last_traded_qty;
-    short_qty_ += last_traded_qty;
-    short_avg_price_ = total_short_ / short_qty_;
-    frozen_open_short_qty_ -= last_traded_qty;
-  }
+  total_ += price * last_traded_qty;
+  qty_ += last_traded_qty;
+  avg_price_ = total_ / qty_;
+  frozen_open_qty_ -= last_traded_qty;
 }
 
-void Position::OpenOrder(OrderDirection direciton, int qty) {
-  if (direciton == OrderDirection::kBuy) {
-    frozen_open_long_qty_ += qty;
-  } else {
-    frozen_open_short_qty_ += qty;
-  }
+void Position::OpenOrder(int qty) {
+  frozen_open_qty_ += qty;
 }
 
-void Position::InputClose(OrderDirection direction, int qty) {
-  if (direction == OrderDirection::kBuy) {
-    frozen_short_qty_ += qty;
-  } else {
-    frozen_long_qty_ += qty;
-  }
+void Position::InputClose(int qty) {
+  frozen_qty_ += qty;
 }
 
-void Position::CancelOpenOrder(OrderDirection direction, int leave_qty) {
-  if (direction == OrderDirection::kBuy) {
-    frozen_open_long_qty_ -= leave_qty;
-  } else {
-    frozen_open_short_qty_ -= leave_qty;
-  }
+void Position::CancelOpenOrder(int leave_qty) {
+  frozen_open_qty_ -= leave_qty;
 }
 
-void Position::TradedClose(OrderDirection direction,
-                           double traded_price,
+void Position::TradedClose(double traded_price,
                            int last_traded_qty,
                            double* pnl,
                            double* add_cash,
                            double* release_margin,
                            double* unrealised_pnl) {
-  *pnl =
-      direction == OrderDirection::kBuy
-          ? short_avg_price_ * last_traded_qty - traded_price * last_traded_qty
-          : traded_price * last_traded_qty - long_avg_price_ * last_traded_qty;
+  *pnl = direction_ == OrderDirection::kBuy
+             ? traded_price * last_traded_qty - avg_price_ * last_traded_qty
+             : avg_price_ * last_traded_qty - traded_price * last_traded_qty;
 
   *pnl *= constract_multiple_;
 
-  *add_cash =
-      (direction == OrderDirection::kBuy ? short_avg_price_ : long_avg_price_) *
-      last_traded_qty * constract_multiple_ * margin_rate_;
+  *add_cash = avg_price_ * last_traded_qty * constract_multiple_ * margin_rate_;
 
   *release_margin = *add_cash;
 
-  if (direction == OrderDirection::kBuy) {
-    BOOST_ASSERT(short_qty_ >= last_traded_qty);
-    BOOST_ASSERT(frozen_short_qty_ >= last_traded_qty);
-    short_qty_ -= last_traded_qty;
-    frozen_short_qty_ -= last_traded_qty;
-    if (short_qty_ == 0) {
-      short_avg_price_ = 0.0;
-      total_short_ = 0.0;
-    } else {
-      total_short_ -= short_avg_price_ * last_traded_qty;
-    }
+  BOOST_ASSERT(qty_ >= last_traded_qty);
+  BOOST_ASSERT(frozen_qty_ >= last_traded_qty);
+  qty_ -= last_traded_qty;
+  frozen_qty_ -= last_traded_qty;
+  if (qty_ == 0) {
+    avg_price_ = 0.0;
+    total_ = 0.0;
   } else {
-    BOOST_ASSERT(long_qty_ >= last_traded_qty);
-    BOOST_ASSERT(frozen_long_qty_ >= last_traded_qty);
-    long_qty_ -= last_traded_qty;
-    frozen_long_qty_ -= last_traded_qty;
-    if (long_qty_ == 0) {
-      long_avg_price_ = 0.0;
-      total_long_ = 0.0;
-    } else {
-      total_long_ -= long_avg_price_ * last_traded_qty;
-    }
+    total_ -= avg_price_ * last_traded_qty;
   }
-  if (IsEmptyQty()) {
+
+  if (qty_ == 0) {
     *unrealised_pnl = -unrealised_pnl_;
     unrealised_pnl_ = 0.0;
   } else {
@@ -102,22 +70,16 @@ void Position::TradedClose(OrderDirection direction,
 }
 
 void Position::UpdateMarketPrice(double price, double* update_pnl) {
-  double lastst_unrealised_pnl_ =
-      (price * long_qty_ - long_avg_price_ * long_qty_) +
-      (short_avg_price_ * short_qty_ - price * short_qty_);
+  double lastst_unrealised_pnl_ = direction_ == OrderDirection::kBuy
+                                      ? (price - avg_price_) * qty_
+                                      : (avg_price_ - price) * qty_;
+
   lastst_unrealised_pnl_ *= constract_multiple_;
   *update_pnl = lastst_unrealised_pnl_ - unrealised_pnl_;
   unrealised_pnl_ = lastst_unrealised_pnl_;
 }
 
 void Position::Reset() {
-  frozen_open_long_qty_ = 0;
-  frozen_open_short_qty_ = 0;
-  frozen_long_qty_ = 0;
-  frozen_short_qty_ = 0;
-}
-
-bool Position::IsEmptyQty() const {
-  return long_qty_ == 0 && short_qty_ == 0 && frozen_open_long_qty_ == 0 &&
-         frozen_open_short_qty_ == 0;
+  frozen_open_qty_ = 0;
+  frozen_qty_ = 0;
 }

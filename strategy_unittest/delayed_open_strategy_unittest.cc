@@ -123,8 +123,10 @@ class DelayedOpenStrategyFixture : public StrategyFixture {
 
  protected:
   virtual void SetUp() override {
+    DelayedOpenStrategy<UnittestMailBox>::StrategyParam param{
+        delayed_open_after_seconds, 0};
     CreateStrategy<DelayedOpenStrategy<UnittestMailBox> >(
-        master_account_id, slave_account_id, delayed_open_after_seconds,
+        master_account_id, slave_account_id, std::move(param),
         defalut_instrument_id);
   }
 };
@@ -406,14 +408,14 @@ TEST_F(DelayedOpenStrategyFixture, MultiUnfillOrder_Buy_Cancel_Lessers) {
   // Prepare Data
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 80.8, 10, 10);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(79.8);
+  MarketTick(81.8);
   Clear();
   // NewOpenOrder("0", OrderDirection::kBuy, 80.8, 10);
 
   MasterNewOpenAndFill("1", OrderDirection::kBuy, 81.0, 5, 5);
 
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(78.0);
+  MarketTick(82.0);
   // NewOpenOrder("1", OrderDirection::kBuy, 81.0, 5);
   Clear();
 
@@ -438,14 +440,14 @@ TEST_F(DelayedOpenStrategyFixture,
   // Prepare Data
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 80.8, 10, 10);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(79.8);
+  MarketTick(81.8);
   Clear();
   // NewOpenOrder("0", OrderDirection::kBuy, 80.8, 10);
 
   MasterNewOpenAndFill("1", OrderDirection::kBuy, 81.0, 5, 5);
 
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(78.0);
+  MarketTick(82.8);
   // NewOpenOrder("1", OrderDirection::kBuy, 81.0, 5);
   Clear();
 
@@ -477,7 +479,7 @@ TEST_F(DelayedOpenStrategyFixture, CancelOpeningOrderTwice) {
   // Prepare Data
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 80.8, 10, 10);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(79.8);
+  MarketTick(80.8);
   Clear();
   // NewOpenOrder("0", OrderDirection::kBuy, 80.8, 10);
   Clear();
@@ -591,7 +593,7 @@ TEST_F(DelayedOpenStrategyFixture, CloseBeforeOpening_OnlyNeedOpengOneOrder) {
   ElapseMillisecond(1);
   MasterNewCloseAndFill("2", OrderDirection::kSell, 121.1, 15, 10);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(121.1);
+  MarketTick(124.2, 124.2, 120.0);
 
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
@@ -604,7 +606,7 @@ TEST_F(DelayedOpenStrategyFixture, CloseBeforeOpening_OnlyNeedOpengOneOrder) {
 TEST_F(DelayedOpenStrategyFixture, RemovePendingOpenAndCancelOrder) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 123.1, 10, 10);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(121.1);
+  MarketTick(125.1);
   Clear();
   MasterNewOpenAndFill("1", OrderDirection::kBuy, 120.1, 5, 5);
   ElapseMillisecond(1);
@@ -631,7 +633,7 @@ TEST_F(DelayedOpenStrategyFixture, MinusOpening) {
   ElapseMillisecond(1);
   MasterNewCloseAndFill("1", OrderDirection::kSell, 121.1, 10, 1);
   ElapseSeconds(delayed_open_after_seconds);
-  MarketTick(121.1);
+  MarketTick(125.1);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ("0", input_order->order_id);
