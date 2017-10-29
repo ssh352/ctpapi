@@ -30,6 +30,8 @@ class Portfolio {
   int GetPositionQty(const std::string& instrument,
                      OrderDirection direction) const;
 
+  int GetFrozenQty(const std::string& instrument, OrderDirection direction) const;
+
   int GetPositionCloseableQty(const std::string& instrument,
                               OrderDirection direction) const;
 

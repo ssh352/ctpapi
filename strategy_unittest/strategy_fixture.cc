@@ -129,6 +129,12 @@ void StrategyFixture::HandleCancelOrder(const CancelOrderSignal& signal) {
   Send(MakeCanceledOrder(signal.account_id, signal.order_id));
 }
 
+void StrategyFixture::HandleCTARtnOrderSignal(
+    const std::shared_ptr<OrderField>& order,
+    const CTAPositionQty& position) {
+  event_queues_.push_back(std::make_tuple(order, position));
+}
+
 const CTASignalAtom CTASignalAtom::value;
 
 const BeforeTradingAtom BeforeTradingAtom::value;

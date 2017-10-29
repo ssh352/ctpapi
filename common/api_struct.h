@@ -160,4 +160,10 @@ struct CancelOrderSignal {
   std::string order_id;
 };
 
+struct CTAPositionQty {
+  int position;
+  int frozen;
+};
+
+
 #endif  // COMMON_API_STRUCT_H

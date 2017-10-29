@@ -49,6 +49,7 @@ class StrategyFixture : public testing::Test {
   StrategyFixture() {
     mail_box_.Subscribe(&StrategyFixture::HandleInputOrder, this);
     mail_box_.Subscribe(&StrategyFixture::HandleCancelOrder, this);
+    mail_box_.Subscribe(&StrategyFixture::HandleCTARtnOrderSignal, this);
   }
 
   template <typename T, typename... Args>
@@ -70,9 +71,20 @@ class StrategyFixture : public testing::Test {
     if (event_queues_.empty()) {
       return boost::optional<T>();
     }
-    auto order = event_queues_.front();
+    auto event = event_queues_.front();
     event_queues_.pop_front();
-    return boost::any_cast<T>(order);
+    return boost::any_cast<T>(event);
+  }
+
+  template <typename... Ts>
+  std::enable_if_t<sizeof...(Ts) >= 2, boost::optional<std::tuple<Ts...>>>
+  PopupRntOrder() {
+    if (event_queues_.empty()) {
+      return boost::optional<std::tuple<Ts...>>();
+    }
+    auto event = event_queues_.front();
+    event_queues_.pop_front();
+    return boost::any_cast<std::tuple<Ts...>>(event);
   }
 
   void ElapseSeconds(int seconds) { now_timestamp_ += seconds * 1000; }
@@ -81,6 +93,9 @@ class StrategyFixture : public testing::Test {
   void HandleInputOrder(const InputOrder& input_order);
 
   void HandleCancelOrder(const CancelOrderSignal& signal);
+
+  void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& order,
+                               const CTAPositionQty& position);
 
   std::shared_ptr<OrderField> MakeOrderField(const std::string& account_id,
                                              const std::string& order_id,

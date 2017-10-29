@@ -31,6 +31,8 @@ class Position {
   int closeable_qty() const { return qty_ - frozen_qty_; }
 
   int qty() const { return qty_; }
+
+  int frozen_qty() const { return frozen_qty_; }
   
   int frozen_open_qty() const { return frozen_open_qty_; }
 

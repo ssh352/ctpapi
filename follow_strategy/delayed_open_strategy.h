@@ -15,8 +15,6 @@
 #include "order_util.h"
 
 
-
-
 template <typename MailBox>
 class DelayedOpenStrategy : public EnterOrderObserver,
                             public CTASignalObserver {
@@ -76,7 +74,6 @@ class DelayedOpenStrategy : public EnterOrderObserver,
       ProcessRiskCloseOrderWhenCloseMarketNear(instrument,
                                                OrderDirection::kSell);
     }
-
   }
 
   void ProcessRiskCloseOrderWhenCloseMarketNear(const std::string& instrument,
@@ -131,8 +128,6 @@ class DelayedOpenStrategy : public EnterOrderObserver,
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
     last_timestamp_ = tick->tick->timestamp;
-    
-
     if (!pending_delayed_open_order_.empty()) {
       auto it_end = std::remove_if(pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
         [=](const auto& order) -> bool{

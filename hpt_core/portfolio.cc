@@ -113,7 +113,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
         } else {  // Close
           auto it_pos = position_container_.find(
               std::make_pair(order->instrument_id,
-                             OppositeOrderDirection(order->direction)),
+                             order->direction),
               HashPosition(), ComparePosition());
           BOOST_VERIFY(it_pos != position_container_.end());
           double pnl = 0.0;
@@ -207,7 +207,7 @@ void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
                                          OrderDirection direction,
                                          int qty) {
   auto it_find = position_container_.find(
-      std::make_pair(instrument, OppositeOrderDirection(direction)),
+      std::make_pair(instrument, direction),
       HashPosition(), ComparePosition());
   BOOST_ASSERT(it_find != position_container_.end());
   if (it_find != position_container_.end()) {
@@ -221,6 +221,17 @@ int Portfolio::GetPositionQty(const std::string& instrument,
                                           HashPosition(), ComparePosition());
   if (it_find != position_container_.end()) {
     return (*it_find)->qty();
+  }
+
+  return 0;
+}
+
+int Portfolio::GetFrozenQty(const std::string& instrument,
+                            OrderDirection direction) const {
+  auto it_find = position_container_.find(std::make_pair(instrument, direction),
+                                          HashPosition(), ComparePosition());
+  if (it_find != position_container_.end()) {
+    return (*it_find)->frozen_qty();
   }
 
   return 0;
