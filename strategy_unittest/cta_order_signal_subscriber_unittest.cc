@@ -10,6 +10,10 @@ static const std::string defalut_instrument_id = "default instrument";
 
 class CTAOrderSignalScriberFixture : public StrategyFixture {
  public:
+  CTAOrderSignalScriberFixture() {
+    mail_box_.Subscribe(&CTAOrderSignalScriberFixture::HandleCTARtnOrderSignal,
+                        this);
+  }
   void MasterNewOpenAndFill(const std::string& order_id,
                             OrderDirection direction,
                             double price,
@@ -63,6 +67,11 @@ class CTAOrderSignalScriberFixture : public StrategyFixture {
   }
 
  protected:
+  void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& order,
+                               const CTAPositionQty& position) {
+    event_queues_.push_back(std::make_tuple(order, position));
+  }
+
   virtual void SetUp() override {
     CreateStrategy<CTAOrderSignalSubscriber<UnittestMailBox> >(
         defalut_instrument_id);
@@ -328,7 +337,7 @@ TEST_F(
   EXPECT_FALSE((PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>()));
 }
 
- TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Fully) {
+TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Fully) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
   MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
@@ -350,7 +359,7 @@ TEST_F(
   EXPECT_EQ(10, position_qty.frozen);
 }
 
- TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Partially) {
+TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Partially) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
   MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 7);
@@ -372,7 +381,7 @@ TEST_F(
   EXPECT_EQ(7, position_qty.frozen);
 }
 
- TEST_F(CTAOrderSignalScriberFixture, Traded_Fully_Close_Order) {
+TEST_F(CTAOrderSignalScriberFixture, Traded_Fully_Close_Order) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
   MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
@@ -397,7 +406,7 @@ TEST_F(
   EXPECT_EQ(0, position_qty.frozen);
 }
 
- TEST_F(CTAOrderSignalScriberFixture, Traded_Partially_Close_Order) {
+TEST_F(CTAOrderSignalScriberFixture, Traded_Partially_Close_Order) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
   MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
@@ -421,4 +430,3 @@ TEST_F(
   EXPECT_EQ(3, position_qty.position);
   EXPECT_EQ(3, position_qty.frozen);
 }
-
