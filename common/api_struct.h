@@ -166,5 +166,13 @@ struct CTAPositionQty {
   int frozen;
 };
 
+struct CTPOrderField {
+
+};
+
+struct CTPEnterOrder {
+};
+
 
 #endif  // COMMON_API_STRUCT_H
+

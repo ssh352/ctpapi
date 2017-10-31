@@ -4,11 +4,7 @@
 #include <boost/log/common.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
 #include "hpt_core/portfolio.h"
-#include "follow_strategy/cta_generic_strategy.h"
-#include "follow_strategy/cta_signal.h"
-#include "follow_strategy/cta_signal_dispatch.h"
 #include "follow_strategy/logging_defines.h"
-#include "follow_strategy/strategy_order_dispatch.h"
 #include "follow_strategy/string_util.h"
 #include "follow_strategy/logging_defines.h"
 #include "hpt_core/time_util.h"

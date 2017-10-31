@@ -275,9 +275,9 @@ double Portfolio::CalcCommission(PositionEffect position_effect,
     case PositionEffect::kClose:
       commission_param = cost_basis.close_commission;
       break;
-    case PositionEffect::kCloseToday:
-      commission_param = cost_basis.close_today_commission;
-      break;
+    //case PositionEffect::kCloseToday:
+    //  commission_param = cost_basis.close_today_commission;
+    //  break;
     default:
       BOOST_ASSERT(false);
       break;

@@ -6,11 +6,7 @@
 #include <boost/log/utility/manipulators/add_value.hpp>
 #include <boost/unordered_set.hpp>
 #include "hpt_core/portfolio.h"
-#include "follow_strategy/cta_generic_strategy.h"
-#include "follow_strategy/cta_signal.h"
-#include "follow_strategy/cta_signal_dispatch.h"
 #include "follow_strategy/logging_defines.h"
-#include "follow_strategy/strategy_order_dispatch.h"
 #include "follow_strategy/string_util.h"
 #include "follow_strategy/logging_defines.h"
 #include "hpt_core/time_util.h"
@@ -203,7 +199,6 @@ class CTAOrderSignalSubscriber {
 
   OrderEventType OrdersContextHandleRtnOrder(
       const std::shared_ptr<OrderField>& order) {
-    std::unordered_set<std::shared_ptr<OrderField>> slave_orders_;
     OrderEventType ret_type = OrderEventType::kIgnore;
     auto it = orders_.find(order);
     if (it == orders_.end()) {

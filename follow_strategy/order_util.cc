@@ -1,8 +1,7 @@
 #include "order_util.h"
 
 bool IsCloseOrder(PositionEffect position_effect) {
-  return position_effect == PositionEffect::kClose ||
-         position_effect == PositionEffect::kCloseToday;
+  return position_effect == PositionEffect::kClose;
 }
 
 bool IsOpenOrder(PositionEffect position_effect) {

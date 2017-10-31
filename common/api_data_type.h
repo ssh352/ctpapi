@@ -13,7 +13,7 @@ enum class OrderEventType {
 
 enum class OrderDirection { kUndefine, kBuy, kSell };
 
-enum class PositionEffect { kUndefine, kOpen, kClose, kCloseToday };
+enum class PositionEffect { kUndefine, kOpen, kClose};
 
 enum class OrderStatus {
   kActive,

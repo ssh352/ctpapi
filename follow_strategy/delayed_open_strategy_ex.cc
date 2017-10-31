@@ -409,4 +409,5 @@ DelayedOpenStrategyEx::DelayedOpenStrategyEx(
       portfolio_(1000000, true) {
   portfolio_.InitInstrumentDetail(instrument, 0.02, 10,
                                   CostBasis{CommissionType::kFixed, 0, 0, 0});
+  BOOST_LOG(log_) << "test";
 }

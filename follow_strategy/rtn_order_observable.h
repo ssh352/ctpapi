@@ -1,3 +1,0 @@
-#ifndef follow_strategy_RTN_ORDER_OBSERVABLE_H
-#define follow_strategy_RTN_ORDER_OBSERVABLE_H
-#endif  // follow_strategy_RTN_ORDER_OBSERVABLE_H

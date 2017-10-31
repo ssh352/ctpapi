@@ -421,7 +421,6 @@ TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForSameDirection) {
     EXPECT_EQ(OrderDirection::kBuy, input_order->order_direction_);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect_);
   }
-
 }
 TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForDifferentDirection) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
@@ -436,7 +435,6 @@ TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForDifferentDirection) {
   MarketTick(1.7);
   TradedOrder("1", 5);
   Clear();
-
   MasterNewCloseOrder("2", OrderDirection::kBuy, 1.3, 4, 4, 4);
   MasterNewCloseOrder("3", OrderDirection::kSell, 1.5, 5, 5, 5);
   {
