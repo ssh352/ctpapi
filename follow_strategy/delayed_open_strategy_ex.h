@@ -133,9 +133,13 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
    mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
    mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleRtnOrder, &strategy_);
   }
-  virtual void EnterOrder(InputOrder) override {}
+  virtual void EnterOrder(InputOrder order) override {
+    mail_box_->Send(std::move(order));
+  }
 
-  virtual void CancelOrder(CancelOrderSignal) override {}
+  virtual void CancelOrder(CancelOrderSignal order) override {
+    mail_box_->Send(std::move(order));
+  }
 
  private:
   MailBox* mail_box_;
