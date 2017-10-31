@@ -119,9 +119,9 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
 void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   event_queues_.push_back(input_order);
   auto order = MakeNewOrder(
-      input_order.strategy_id, input_order.order_id, input_order.instrument_,
-      input_order.position_effect_, input_order.order_direction_,
-      input_order.price_, input_order.qty_);
+      input_order.strategy_id, input_order.order_id, input_order.instrument,
+      input_order.position_effect, input_order.direction,
+      input_order.price, input_order.qty);
   if (auto_reply_new_rtn_order) {
     Send(std::move(order));
   } else {

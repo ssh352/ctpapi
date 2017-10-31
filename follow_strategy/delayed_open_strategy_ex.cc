@@ -5,16 +5,16 @@ std::string DelayedOpenStrategyEx::GenerateOrderId() {
 }
 
 int DelayedOpenStrategyEx::PendingOpenQty(const std::string& instrument,
-                                          OrderDirection order_direction) {
+                                          OrderDirection direction) {
   return std::accumulate(
       pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(), 0,
-      [&instrument, order_direction](int val,
+      [&instrument, direction](int val,
                                      const InputOrderSignal& input_order) {
-        if (input_order.instrument_ != instrument ||
-            input_order.order_direction_ != order_direction) {
+        if (input_order.instrument != instrument ||
+            input_order.direction != direction) {
           return val;
         }
-        return val + input_order.qty_;
+        return val + input_order.qty;
       });
 }
 
@@ -61,16 +61,16 @@ void DelayedOpenStrategyEx::DecreasePendingOpenOrderQty(
     return;
   int leaves_qty = qty;
   pending_delayed_open_order_.sort([direction](const auto& l, const auto& r) {
-    return direction == OrderDirection::kBuy ? (l.price_ < r.price_)
-                                             : (l.price_ > r.price_);
+    return direction == OrderDirection::kBuy ? (l.price < r.price)
+                                             : (l.price > r.price);
   });
   for (auto& input_order : pending_delayed_open_order_) {
-    if (input_order.instrument_ != instrument ||
-        input_order.order_direction_ != direction) {
+    if (input_order.instrument != instrument ||
+        input_order.direction != direction) {
       continue;
     }
-    int minus_qty = std::min<int>(input_order.qty_, leaves_qty);
-    input_order.qty_ -= minus_qty;
+    int minus_qty = std::min<int>(input_order.qty, leaves_qty);
+    input_order.qty -= minus_qty;
     leaves_qty -= minus_qty;
     if (leaves_qty <= 0)
       break;
@@ -78,13 +78,13 @@ void DelayedOpenStrategyEx::DecreasePendingOpenOrderQty(
 
   auto remove_it = std::remove_if(
       pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
-      [](const auto& input_order) { return input_order.qty_ == 0; });
+      [](const auto& input_order) { return input_order.qty == 0; });
 
   pending_delayed_open_order_.erase(remove_it,
                                     pending_delayed_open_order_.end());
 
   pending_delayed_open_order_.sort([](const auto& l, const auto& r) -> bool {
-    return l.timestamp_ < r.timestamp_;
+    return l.timestamp < r.timestamp;
   });
 }
 
@@ -96,8 +96,8 @@ DelayedOpenStrategyEx::GetSpecificOrdersInPendingOpenQueue(
   std::copy_if(pending_delayed_open_order_.begin(),
                pending_delayed_open_order_.end(), std::back_inserter(orders),
                [&instrument, direction](const auto& order) {
-                 return order.instrument_ == instrument &&
-                        order.order_direction_ == direction;
+                 return order.instrument == instrument &&
+                        order.direction == direction;
                });
   return orders;
 }
@@ -119,8 +119,8 @@ void DelayedOpenStrategyEx::RemoveSpecificPendingOpenOrders(
   auto remove_it = std::remove_if(
       pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
       [&instrument, direction](const auto& input_order) {
-        return input_order.instrument_ == instrument &&
-               input_order.order_direction_ == direction;
+        return input_order.instrument == instrument &&
+               input_order.direction == direction;
       });
 
   pending_delayed_open_order_.erase(remove_it,
@@ -128,20 +128,20 @@ void DelayedOpenStrategyEx::RemoveSpecificPendingOpenOrders(
 }
 
 bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
-    const InputOrderSignal& order,
+    const InputOrderSignal & order,
     const std::shared_ptr<Tick>& tick) {
   if (strategy_param_.price_offset_rate == 0.0) {
     return false;
   }
 
   double maybe_input_price =
-      order.order_direction_ == OrderDirection::kBuy
-          ? order.price_ - strategy_param_.price_offset_rate * order.price_
-          : order.price_ + strategy_param_.price_offset_rate * order.price_;
-  if (order.order_direction_ == OrderDirection::kBuy &&
+      order.direction == OrderDirection::kBuy
+          ? order.price - strategy_param_.price_offset_rate * order.price
+          : order.price + strategy_param_.price_offset_rate * order.price;
+  if (order.direction == OrderDirection::kBuy &&
       tick->last_price > maybe_input_price) {
     return false;
-  } else if (order.order_direction_ == OrderDirection::kSell &&
+  } else if (order.direction == OrderDirection::kSell &&
              tick->last_price < maybe_input_price) {
     return false;
   } else {
@@ -150,7 +150,7 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
   BOOST_LOG(log_) << boost::log::add_value("quant_timestamp",
                                            TimeStampToPtime(last_timestamp_))
                   << "Price best immediate open order: open price is :"
-                  << maybe_input_price << "LAST TICK:" << order.instrument_
+                  << maybe_input_price << "LAST TICK:" << order.instrument
                   << ":"
                   << " Last:" << tick->last_price << "(" << tick->qty << ")"
                   << " Bid1:" << tick->bid_price1 << "(" << tick->bid_qty1
@@ -158,9 +158,11 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
                   << " Ask1:" << tick->ask_price1 << "(" << tick->ask_qty1
                   << ")";
 
-  // signal_dispatch_->OpenOrder(
-  //    order.instrument_, GenerateOrderId(), order.order_direction_,
-  //    maybe_input_price, order.qty_);
+   //signal_dispatch_->OpenOrder(
+   //   order.instrument, GenerateOrderId(), order.direction,
+   //   maybe_input_price, order.qty);
+  delegate_->EnterOrder(InputOrder{order.instrument, GenerateOrderId(), "salve", PositionEffect::kOpen, order.direction,
+  maybe_input_price, order.qty, 0});
   return true;
 }
 
@@ -210,7 +212,7 @@ void DelayedOpenStrategyEx::HandleClosed(
           pending_open_orders.begin(), pending_open_orders.end(),
           [&orders_from_queue](const auto& order) {
             orders_from_queue.push_back(std::make_tuple(
-                OpenOrderFrom::kPendingQueue, order.price_, order.qty_));
+                OpenOrderFrom::kPendingQueue, order.price, order.qty));
           });
       auto opening_orders = portfolio_.UnfillOpenOrders(
           rtn_order->instrument_id, rtn_order->direction);
@@ -352,29 +354,29 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
         [=](const auto& order) -> bool {
           // is expire
           if (tick->tick->timestamp >=
-              order.timestamp_ +
+              order.timestamp +
                   strategy_param_.delayed_open_after_seconds * 1000) {
             double maybe_input_price =
-                order.order_direction_ == OrderDirection::kBuy
-                    ? order.price_ -
-                          strategy_param_.price_offset_rate * order.price_
-                    : order.price_ +
-                          strategy_param_.price_offset_rate * order.price_;
-            if (order.order_direction_ == OrderDirection::kBuy &&
+                order.direction == OrderDirection::kBuy
+                    ? order.price -
+                          strategy_param_.price_offset_rate * order.price
+                    : order.price +
+                          strategy_param_.price_offset_rate * order.price;
+            if (order.direction == OrderDirection::kBuy &&
                 tick->tick->last_price > maybe_input_price &&
-                tick->tick->last_price < order.price_) {
+                tick->tick->last_price < order.price) {
               return false;
-            } else if (order.order_direction_ == OrderDirection::kSell &&
+            } else if (order.direction == OrderDirection::kSell &&
                        tick->tick->last_price < maybe_input_price &&
-                       tick->tick->last_price > order.price_) {
+                       tick->tick->last_price > order.price) {
               return false;
             } else {
             }
 
             double input_price =
-                order.order_direction_ == OrderDirection::kBuy
-                    ? std::min(order.price_, tick->tick->last_price)
-                    : std::max(order.price_, tick->tick->last_price);
+                order.direction == OrderDirection::kBuy
+                    ? std::min(order.price, tick->tick->last_price)
+                    : std::max(order.price, tick->tick->last_price);
             BOOST_LOG(log_)
                 << boost::log::add_value("quant_timestamp",
                                          TimeStampToPtime(last_timestamp_))
@@ -387,9 +389,9 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
                 << " Ask1:" << tick->tick->ask_price1 << "("
                 << tick->tick->ask_qty1 << ")";
             delegate_->EnterOrder(
-                InputOrder{order.instrument_, GenerateOrderId(), "slave",
-                           PositionEffect::kOpen, order.order_direction_,
-                           input_price, order.qty_, 0});
+                InputOrder{order.instrument, GenerateOrderId(), "slave",
+                           PositionEffect::kOpen, order.direction,
+                           input_price, order.qty, 0});
             return true;
           }
           return ImmediateOpenOrderIfPriceArrive(order, tick->tick);

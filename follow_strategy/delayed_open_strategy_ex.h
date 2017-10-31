@@ -83,7 +83,7 @@ class DelayedOpenStrategyEx {
                       const CTAPositionQty& position_qty);
 
  private:
-  bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal& order,
+  bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal & order,
                                        const std::shared_ptr<Tick>& tick);
 
   void RemoveSpecificPendingOpenOrders(const std::string& instrument,
@@ -180,7 +180,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
 
   virtual void EnterOrder(InputOrder order) override {
     waiting_reply_order_.push_back(OutstandingRequest{
-        order.instrument_, order.order_id, order.order_direction_,
+        order.instrument, order.order_id, order.direction,
         OutStandingEvent::kInputOrder});
     mail_box_->Send(std::move(order));
   }

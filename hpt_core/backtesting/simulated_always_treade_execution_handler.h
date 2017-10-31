@@ -27,14 +27,14 @@ class SimulatedAlwaysExcutionHandler {
     order->order_id = input_order.order_id;
     order->strategy_id = input_order.strategy_id;
 
-    order->instrument_id = input_order.instrument_;
-    order->position_effect = input_order.position_effect_;
-    order->direction = input_order.order_direction_;
+    order->instrument_id = input_order.instrument;
+    order->position_effect = input_order.position_effect;
+    order->direction = input_order.direction;
     order->status = OrderStatus::kActive;
-    order->input_price = input_order.price_;
-    order->avg_price = input_order.price_;
-    order->leaves_qty = input_order.qty_;
-    order->qty = input_order.qty_;
+    order->input_price = input_order.price;
+    order->avg_price = input_order.price;
+    order->leaves_qty = input_order.qty;
+    order->qty = input_order.qty;
     order->trading_qty = 0;
     // TODO:
     // order->input_timestamp = input_order.timestamp_;
@@ -45,10 +45,10 @@ class SimulatedAlwaysExcutionHandler {
         (current_tick_ != nullptr ? current_tick_->timestamp : 0);
     mail_box_->Send(std::move(order));
 
-    EnqueueRtnOrderEvent(input_order.order_id, input_order.instrument_,
-                         input_order.strategy_id, input_order.position_effect_,
-                         input_order.order_direction_, input_order.price_,
-                         input_order.qty_, OrderStatus::kAllFilled);
+    EnqueueRtnOrderEvent(input_order.order_id, input_order.instrument,
+                         input_order.strategy_id, input_order.position_effect,
+                         input_order.direction, input_order.price,
+                         input_order.qty, OrderStatus::kAllFilled);
   }
 
   void HandleCancelOrder(const CancelOrderSignal& cancel_order) {

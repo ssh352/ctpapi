@@ -134,25 +134,25 @@ struct CostBasis {
 };
 
 struct InputOrderSignal {
-  std::string instrument_;
+  std::string instrument;
   std::string order_id;
   std::string strategy_id;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
+  PositionEffect position_effect;
+  OrderDirection direction;
+  double price;
+  int qty;
+  TimeStamp timestamp;
 };
 
 struct InputOrder {
-  std::string instrument_;
+  std::string instrument;
   std::string order_id;
   std::string strategy_id;
-  PositionEffect position_effect_;
-  OrderDirection order_direction_;
-  double price_;
-  int qty_;
-  TimeStamp timestamp_;
+  PositionEffect position_effect;
+  OrderDirection direction;
+  double price;
+  int qty;
+  TimeStamp timestamp;
 };
 
 struct CancelOrderSignal {

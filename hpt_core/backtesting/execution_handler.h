@@ -87,30 +87,30 @@ class SimulatedExecutionHandler {
 
   void HandlerInputOrder(const InputOrder& input_order) {
     std::string order_id = input_order.order_id;
-    if (input_order.order_direction_ == OrderDirection::kBuy) {
+    if (input_order.direction == OrderDirection::kBuy) {
       long_limit_orders_.insert(
-          {input_order.instrument_, order_id, input_order.strategy_id,
-           input_order.order_direction_, input_order.position_effect_,
-           input_order.price_, input_order.qty_});
+          {input_order.instrument, order_id, input_order.strategy_id,
+           input_order.direction, input_order.position_effect,
+           input_order.price, input_order.qty});
     } else {
       short_limit_orders_.insert(
-          {input_order.instrument_, order_id, input_order.strategy_id,
-           input_order.order_direction_, input_order.position_effect_,
-           input_order.price_, input_order.qty_});
+          {input_order.instrument, order_id, input_order.strategy_id,
+           input_order.direction, input_order.position_effect,
+           input_order.price, input_order.qty});
     }
 
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
     order->strategy_id = input_order.strategy_id;
 
-    order->instrument_id = input_order.instrument_;
-    order->position_effect = input_order.position_effect_;
-    order->direction = input_order.order_direction_;
+    order->instrument_id = input_order.instrument;
+    order->position_effect = input_order.position_effect;
+    order->direction = input_order.direction;
     order->status = OrderStatus::kActive;
-    order->input_price = input_order.price_;
-    order->avg_price = input_order.price_;
-    order->leaves_qty = input_order.qty_;
-    order->qty = input_order.qty_;
+    order->input_price = input_order.price;
+    order->avg_price = input_order.price;
+    order->leaves_qty = input_order.qty;
+    order->qty = input_order.qty;
     order->trading_qty = 0;
     // TODO:
     // order->input_timestamp = input_order.timestamp_;
