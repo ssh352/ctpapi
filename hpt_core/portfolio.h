@@ -53,6 +53,9 @@ class Portfolio {
 
   boost::optional<Position> position(const std::string& instrument) const;
 
+
+  std::shared_ptr<OrderField> GetOrder(const std::string& order_id) const;
+
   int UnfillOpenQty(const std::string& instrument,
                     OrderDirection direction) const;
 

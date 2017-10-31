@@ -376,3 +376,13 @@ std::vector<std::shared_ptr<const Position>> Portfolio::GetPositionList()
                 [&ret](const auto& pos) { ret.push_back(pos); });
   return ret;
 }
+
+std::shared_ptr<OrderField> Portfolio::GetOrder(const std::string& order_id) const {
+  BOOST_ASSERT(order_container_.find(order_id) != order_container_.end());
+  auto it = order_container_.find(order_id);
+  if (it == order_container_.end()) {
+    return std::shared_ptr<OrderField>();
+  }
+
+  return it->second;
+}
