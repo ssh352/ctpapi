@@ -34,8 +34,7 @@ void DelayedOpenStrategyEx::CancelUnfillOpeningOrders(
       return;
     }
     int cancel_qty = std::min<int>(order->leaves_qty, leaves_cancel_qty);
-    delegate_->CancelOrder(
-        CancelOrderSignal{"slave", order->order_id, cancel_qty});
+    delegate_->CancelOrder(order->instrument_id,order->order_id, order->direction, cancel_qty);
     // signal_dispatch_->CancelOrder(order->order_id);
 
     // int open_qty = order->leaves_qty - cancel_qty;
@@ -109,7 +108,7 @@ void DelayedOpenStrategyEx::CancelSpecificOpeningOrders(
   if (portfolio_.UnfillOpenQty(instrument, direction) > 0) {
     auto orders = portfolio_.UnfillOpenOrders(instrument, direction);
     for (const auto& order : orders) {
-      delegate_->CancelOrder(CancelOrderSignal{"slave", order->order_id});
+      delegate_->CancelOrder(order->instrument_id, order->order_id, order->direction, 0);
     }
   }
 }
@@ -175,7 +174,7 @@ void DelayedOpenStrategyEx::HandleCanceled(
   if (it != cta_to_strategy_closing_order_id_.end()) {
     auto order = portfolio_.GetOrder(it->second);
     delegate_->CancelOrder(
-        CancelOrderSignal{"slave", order->order_id, order->leaves_qty});
+        order->instrument_id, order->order_id, order->direction, order->leaves_qty);
     cta_to_strategy_closing_order_id_.erase(it);
   }
 }
@@ -407,7 +406,7 @@ DelayedOpenStrategyEx::DelayedOpenStrategyEx(
     const std::string& instrument)
     : delegate_(delegate),
       strategy_param_(std::move(strategy_param)),
-      portfolio_(1000000, false) {
+      portfolio_(1000000, true) {
   portfolio_.InitInstrumentDetail(instrument, 0.02, 10,
                                   CostBasis{CommissionType::kFixed, 0, 0, 0});
 }

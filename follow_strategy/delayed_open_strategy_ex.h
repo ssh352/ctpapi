@@ -18,7 +18,10 @@ class DelayedOpenStrategyEx {
   class Delegate {
    public:
     virtual void EnterOrder(InputOrder) = 0;
-    virtual void CancelOrder(CancelOrderSignal) = 0;
+    virtual void CancelOrder(const std::string& instrument,
+                             const std::string& order_id,
+                             OrderDirection direction,
+                             int cancel_qty) = 0;
   };
 
   struct StrategyParam {
@@ -128,21 +131,91 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
                          DelayedOpenStrategyEx::StrategyParam param,
                          const std::string& instrument)
       : mail_box_(mail_box), strategy_(this, std::move(param), instrument) {
-   mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleCTARtnOrderSignal,
-   &strategy_);
-   mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
-   mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleRtnOrder, &strategy_);
+    mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
+                         this);
+    mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
+    mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleRtnOrder, this);
   }
+
+  void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& rtn_order,
+                               const CTAPositionQty& position_qty) {
+    if (waiting_reply_order_.empty() ||
+        std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
+                     [&rtn_order](const auto& item) {
+                       return item.instrument == rtn_order->instrument_id &&
+                              item.direction == rtn_order->direction;
+                     }) == waiting_reply_order_.end()) {
+      strategy_.HandleCTARtnOrderSignal(rtn_order, position_qty);
+    } else {
+      pending_cta_signal_queue_.emplace_back(rtn_order, position_qty);
+    }
+  }
+
+  void HandleRtnOrder(const std::shared_ptr<OrderField>& rtn_order) {
+    strategy_.HandleRtnOrder(rtn_order);
+    if (!waiting_reply_order_.empty()) {
+      auto it = std::find_if(
+          waiting_reply_order_.begin(), waiting_reply_order_.end(),
+          [&](const auto& i) { return i.order_id == rtn_order->order_id; });
+
+      if (it != waiting_reply_order_.end()) {
+        std::list<std::pair<std::shared_ptr<OrderField>, CTAPositionQty> >
+            try_handing_signals;
+        auto it_erase = std::remove_if(
+            pending_cta_signal_queue_.begin(), pending_cta_signal_queue_.end(),
+            [&rtn_order](const auto& cta_signal) {
+              return cta_signal.first->instrument_id ==
+                         rtn_order->instrument_id &&
+                     cta_signal.first->direction == rtn_order->direction;
+            });
+        std::copy(it_erase, pending_cta_signal_queue_.end(),
+                  std::back_inserter(try_handing_signals));
+        pending_cta_signal_queue_.erase(it_erase,
+                                        pending_cta_signal_queue_.end());
+        waiting_reply_order_.erase(it);
+        std::for_each(try_handing_signals.begin(), try_handing_signals.end(),
+                      [=](const auto& cta_signal) {
+                        HandleCTARtnOrderSignal(cta_signal.first,
+                                                cta_signal.second);
+                      });
+      }
+    }
+  }
+
   virtual void EnterOrder(InputOrder order) override {
+    waiting_reply_order_.push_back(OutstandingRequest{
+        order.instrument_, order.order_id, order.order_direction_,
+        OutStandingEvent::kInputOrder});
     mail_box_->Send(std::move(order));
   }
 
-  virtual void CancelOrder(CancelOrderSignal order) override {
-    mail_box_->Send(std::move(order));
+  virtual void CancelOrder(const std::string& instrument,
+                           const std::string& order_id,
+                           OrderDirection direction,
+                           int cancel_qty) override {
+    waiting_reply_order_.push_back(OutstandingRequest{
+        instrument, order_id, direction, OutStandingEvent::kCancelOrder});
+    mail_box_->Send(CancelOrderSignal{"slave", order_id, cancel_qty});
   }
 
  private:
+  enum class OutStandingEvent {
+    kInputOrder,
+    kCancelOrder,
+  };
+
+  struct OutstandingRequest {
+    std::string instrument;
+    std::string order_id;
+    OrderDirection direction;
+    OutStandingEvent event_type;
+  };
+
   MailBox* mail_box_;
   DelayedOpenStrategyEx strategy_;
+
+  std::vector<OutstandingRequest> waiting_reply_order_;
+  std::list<std::pair<std::shared_ptr<OrderField>, CTAPositionQty> >
+      pending_cta_signal_queue_;
 };
 #endif  // FOLLOW_STRATEGY_DELAYED_OPEN_STRATEGY_EX_H

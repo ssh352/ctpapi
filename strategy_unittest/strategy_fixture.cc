@@ -118,16 +118,30 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
 
 void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   event_queues_.push_back(input_order);
-  Send(MakeNewOrder(input_order.strategy_id, input_order.order_id,
-                    input_order.instrument_, input_order.position_effect_,
-                    input_order.order_direction_, input_order.price_,
-                    input_order.qty_));
+  auto order = MakeNewOrder(
+      input_order.strategy_id, input_order.order_id, input_order.instrument_,
+      input_order.position_effect_, input_order.order_direction_,
+      input_order.price_, input_order.qty_);
+  if (auto_reply_new_rtn_order) {
+    Send(std::move(order));
+  } else {
+    pending_reply_new_rtn_orders_.push_back(std::move(order));
+  }
 }
 
 void StrategyFixture::HandleCancelOrder(const CancelOrderSignal& signal) {
   event_queues_.push_back(signal);
   Send(MakeCanceledOrder(signal.account_id, signal.order_id));
 }
+
+void StrategyFixture::SendAndClearPendingReplyRtnOrder() {
+  std::for_each(pending_reply_new_rtn_orders_.begin(),
+                pending_reply_new_rtn_orders_.end(),
+                [=](const auto& order) { Send(order); });
+
+  pending_reply_new_rtn_orders_.clear();
+}
+
 const CTASignalAtom CTASignalAtom::value;
 
 const BeforeTradingAtom BeforeTradingAtom::value;

@@ -143,7 +143,8 @@ class StrategyFixture : public testing::Test {
 
   std::shared_ptr<OrderField> MakeCanceledOrder(const std::string& account_id,
                                                 const std::string& order_id);
-
+  
+  void SendAndClearPendingReplyRtnOrder();
  protected:
   std::unordered_map<std::string, std::shared_ptr<OrderField>>
       order_containter_;
@@ -151,6 +152,8 @@ class StrategyFixture : public testing::Test {
   boost::any strategy_;
   mutable std::list<boost::any> event_queues_;
   int now_timestamp_ = 0;
+  bool auto_reply_new_rtn_order = true;
+  std::list<std::shared_ptr<OrderField> > pending_reply_new_rtn_orders_;
 };
 
 #endif  // STRATEGY_UNITTEST_STRATEGY_FIXTURE_H
