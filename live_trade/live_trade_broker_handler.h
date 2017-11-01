@@ -5,7 +5,7 @@
 #include "common/api_struct.h"
 
 template <typename MailBox>
-class LiveTradeBrokerHandler : public CThostFtdcTraderSpi {
+class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
  public:
   LiveTradeBrokerHandler(MailBox* mail_box) : mail_box_(mail_box) {
     api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
@@ -14,52 +14,13 @@ class LiveTradeBrokerHandler : public CThostFtdcTraderSpi {
   }
 
   void Connect(const std::string& server,
-               std::string broker_id,
-               std::string user_id,
-               std::string password) {
-    broker_id_ = std::move(broker_id);
-    user_id_ = std::move(user_id);
-    password_ = std::move(password);
-    char fron_server[255] = {0};
-    strcpy(fron_server, server.c_str());
-    api_->RegisterFront(fron_server);
-    api_->SubscribePublicTopic(THOST_TERT_RESUME);
-    api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-    api_->Init();
+               const std::string& broker_id,
+               const std::string& user_id,
+               const std::string& password) {
   }
 
-  void HandleInputOrder(const InputOrder& input_order) {
-    CThostFtdcInputOrderField field = {0};
-    strcpy(field.InstrumentID, input_order.instrument_.c_str());
-    // strcpy(field.OrderRef, order_ref.c_str());
-    field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-    field.Direction =
-        OrderDirectionToTThostOrderDireciton(input_order.order_direction_);
-    field.CombOffsetFlag[0] =
-        PositionEffectToTThostOffsetFlag(input_order.position_effect_);
-    strcpy(field.CombHedgeFlag, "1");
-    field.LimitPrice = input_order.price_;
-    field.VolumeTotalOriginal = input_order.qty_;
-    field.TimeCondition = THOST_FTDC_TC_GFD;
-    strcpy(field.GTDDate, "");
-    field.VolumeCondition = THOST_FTDC_VC_AV;
-    field.MinVolume = 1;
-    field.ContingentCondition = THOST_FTDC_CC_Immediately;
-    field.StopPrice = 0;
-    field.ForceCloseReason = THOST_FTDC_FCC_NotForceClose;
-    field.IsAutoSuspend = 0;
-    field.UserForceClose = 0;
-    strcpy(field.BrokerID, broker_id_.c_str());
-    strcpy(field.UserID, user_id_.c_str());
-    strcpy(field.InvestorID, user_id_.c_str());
-
-    if (api_->ReqOrderInsert(&field, 0) != 0) {
-      auto order_field = std::make_shared<OrderField>();
-      // order_field->strategy_id = sub_account_id;
-      // order_field->order_id = sub_order_id;
-      order_field->status = OrderStatus::kInputRejected;
-      mail_box_->Send(std::move(order_field));
-    }
+  void HandleInputOrder(const CTPEnterOrder& input_order) {
+    
   }
 
   virtual void OnFrontConnected() override {
@@ -145,17 +106,17 @@ class LiveTradeBrokerHandler : public CThostFtdcTraderSpi {
     PositionEffect ps = PositionEffect::kUndefine;
     switch (flag) {
       case THOST_FTDC_OF_Open:
-        ps = PositionEffect::kOpen;
+        ps = CTPPositionEffect::kOpen;
         break;
       case THOST_FTDC_OF_Close:
       case THOST_FTDC_OF_ForceClose:
       case THOST_FTDC_OF_CloseYesterday:
       case THOST_FTDC_OF_ForceOff:
       case THOST_FTDC_OF_LocalForceClose:
-        ps = PositionEffect::kClose;
+        ps = CTPPositionEffect::kClose;
         break;
       case THOST_FTDC_OF_CloseToday:
-        ps = PositionEffect::kCloseToday;
+        ps = CTPPositionEffect::kCloseToday;
         break;
     }
     return ps;
@@ -191,13 +152,7 @@ class LiveTradeBrokerHandler : public CThostFtdcTraderSpi {
                       : THOST_FTDC_OF_Close);
   }
 
-  CThostFtdcTraderApi* api_;
   MailBox* mail_box_;
-  std::string broker_id_;
-  std::string user_id_;
-  std::string password_;
-  TThostFtdcSessionIDType session_id_ = 0;
-  TThostFtdcFrontIDType front_id_ = 0;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_BROKER_HANDLER_H

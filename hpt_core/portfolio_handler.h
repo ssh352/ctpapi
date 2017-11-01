@@ -64,12 +64,12 @@ class PortfolioHandler {
     portfolio_.HandleOrder(order);
   }
 
-  void HandleDaySettleAtom(const DaySettleAtom&) {
-    csv_ << last_tick_->timestamp << ","
-         << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
-         << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","
-         << str(boost::format("%0.2f") % portfolio_.daily_commission()) << "\n";
-  }
+  //void HandleDaySettleAtom(const DaySettleAtom&) {
+  //  csv_ << last_tick_->timestamp << ","
+  //       << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
+  //       << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","
+  //       << str(boost::format("%0.2f") % portfolio_.daily_commission()) << "\n";
+  //}
 
   void HandlerInputOrder(const InputOrderSignal& input_order) {
     BOOST_ASSERT(unique_order_ids_.find(input_order.order_id) ==

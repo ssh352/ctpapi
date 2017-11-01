@@ -16,6 +16,8 @@
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
         '../strategies/strategies.gyp:strategies',
+        '../follow_strategy/follow_strategy.gyp:follow_strategy',
+        '../ctp_broker/ctp_broker.gyp:ctp_broker',
       ],
       'defines' : [
       ],

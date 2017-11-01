@@ -175,6 +175,8 @@ struct CTPOrderField {
   int trading_qty;
   int error_id;
   int raw_error_id;
+  int front_id;
+  int session_id;
   double input_price;
   double trading_price;
   double avg_price;
@@ -184,6 +186,7 @@ struct CTPOrderField {
   std::string exchange_id;
   std::string date;
   std::string order_id;
+  std::string order_ref;
   std::string raw_error_message;
 };
 
