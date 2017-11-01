@@ -27,4 +27,4 @@ python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi strate
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_broker\ctp_broker.gyp
 
 
-:pause
+pause

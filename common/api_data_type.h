@@ -15,6 +15,8 @@ enum class OrderDirection { kUndefine, kBuy, kSell };
 
 enum class PositionEffect { kUndefine, kOpen, kClose};
 
+enum class CTPPositionEffect { kUndefine, kOpen, kClose, kCloseToday};
+
 enum class OrderStatus {
   kActive,
   kAllFilled,

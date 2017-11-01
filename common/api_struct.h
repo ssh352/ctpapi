@@ -167,10 +167,35 @@ struct CTAPositionQty {
 };
 
 struct CTPOrderField {
-
+  OrderDirection direction;
+  CTPPositionEffect position_effect;
+  OrderStatus status;
+  int qty;
+  int leaves_qty;
+  int trading_qty;
+  int error_id;
+  int raw_error_id;
+  double input_price;
+  double trading_price;
+  double avg_price;
+  TimeStamp input_timestamp;
+  TimeStamp update_timestamp;
+  std::string instrument;
+  std::string exchange_id;
+  std::string date;
+  std::string order_id;
+  std::string raw_error_message;
 };
 
 struct CTPEnterOrder {
+  std::string instrument;
+  std::string order_id;
+  std::string strategy_id;
+  CTPPositionEffect position_effect;
+  OrderDirection direction;
+  double price;
+  int qty;
+  TimeStamp timestamp;
 };
 
 
