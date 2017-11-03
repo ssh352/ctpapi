@@ -73,14 +73,12 @@ void CTPTraderApi::OnRspOrderAction(
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
     bool bIsLast) {
-  throw std::logic_error("The method or operation is not implemented.");
 }
 
 void CTPTraderApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                     CThostFtdcRspInfoField* pRspInfo,
                                     int nRequestID,
                                     bool bIsLast) {
-  throw std::logic_error("The method or operation is not implemented.");
 }
 
 void CTPTraderApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,

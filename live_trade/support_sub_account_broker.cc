@@ -14,7 +14,7 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
             order->front_id, order->session_id, order->order_ref));
         if (it != order_id_bimap_.right.end()) {
           order->order_id = it->second.order_id;
-          auto actor_it =sub_actors_.find(it->second.sub_account_id);
+          auto actor_it = sub_actors_.find(it->second.sub_account_id);
           if (actor_it != sub_actors_.end()) {
             send(actor_it->second, order);
           }
@@ -23,7 +23,7 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
       [=](const CTPEnterOrder& enter_order) {
         std::string order_ref = GenerateOrderRef();
         order_id_bimap_.insert(OrderIdBimap::value_type(
-          SubAccountOrderId{enter_order.strategy_id, enter_order.order_id},
+            SubAccountOrderId{enter_order.strategy_id, enter_order.order_id},
             trader_api_.MakeOrderId(order_ref)));
         trader_api_.HandleInputOrder(enter_order, order_ref);
       },
@@ -37,4 +37,11 @@ void SupportSubAccountBroker::HandleCTPRtnOrder(
 
 std::string SupportSubAccountBroker::GenerateOrderRef() {
   return boost::lexical_cast<std::string>(order_seq_++);
+}
+
+void SupportSubAccountBroker::Connect(const std::string& server,
+                                      const std::string& broker_id,
+                                      const std::string& user_id,
+                                      const std::string& password) {
+  trader_api_.Connect(server, broker_id, user_id, password);
 }

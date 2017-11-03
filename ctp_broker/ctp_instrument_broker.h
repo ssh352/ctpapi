@@ -19,10 +19,17 @@ class CTPInstrumentBroker {
 
   void HandleCancel(const CancelOrderSignal& cancel);
 
+  void InitPosition(int long_qty, int short_qty);
+
  protected:
   CTPOrderDelegate* order_delegate_;
 
  private:
+  struct Position {
+    int qty;
+    int frozen;
+    int opening;
+  };
   template <typename T>
   struct HashOrderField {
     size_t operator()(const T& order) const {
@@ -52,7 +59,8 @@ class CTPInstrumentBroker {
 
   void BindOrderId(const std::string& order_id,
                    const std::string& ctp_order_id);
-
+  int CloseableQty(const Position& pos) const;
+  bool IsCtpOpenPositionEffect(CTPPositionEffect position_effect) const;
   std::unordered_multimap<std::string, std::string> ctp_order_id_to_order_id_;
   std::unordered_multimap<std::string, std::string> order_id_to_ctp_order_id_;
 
@@ -71,12 +79,6 @@ class CTPInstrumentBroker {
       ctp_orders_;
 
   std::function<std::string(void)> generate_order_id_func_;
-
-  struct Position {
-    int qty;
-    int frozen;
-    int opening;
-  };
 
   Position long_;
   Position short_;
