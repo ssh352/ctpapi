@@ -8,5 +8,6 @@ bool IsOpenOrder(PositionEffect position_effect);
 
 OrderDirection OppositeOrderDirection(OrderDirection direction);
 
+bool IsCancelableOrderStatus(OrderStatus status);
 
 #endif  // FOLLOW_TRADE_ORDER_UTIL_H

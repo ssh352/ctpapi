@@ -12,3 +12,7 @@ OrderDirection OppositeOrderDirection(OrderDirection direction) {
   return direction == OrderDirection::kBuy ? OrderDirection::kSell
                                            : OrderDirection::kBuy;
 }
+
+bool IsCancelableOrderStatus(OrderStatus status) {
+  return status == OrderStatus::kActive;
+}

@@ -14,9 +14,14 @@ class NoCloseTodayCostNoCloseTodayPositionEffect : public testing::Test,
   NoCloseTodayCostNoCloseTodayPositionEffect()
       : broker_(
             this,
+            default_instrument,
+            false,
             std::bind(
                 &NoCloseTodayCostNoCloseTodayPositionEffect::GenerateOrderId,
-                this)) {}
+                this)) {
+    broker_.SetPositionEffectStrategy<GenericCTPPositionEffectStrategy,
+                                      GenericCTPPositionEffectFlagStrategy>();
+  }
   virtual void EnterOrder(CTPEnterOrder enter_order) override {
     event_queues_.push_back(enter_order);
   }
@@ -301,7 +306,7 @@ TEST_F(NoCloseTodayCostNoCloseTodayPositionEffect, CloseOrderThenRecvCTPOrder) {
 }
 
 TEST_F(NoCloseTodayCostNoCloseTodayPositionEffect, InitPosition) {
-  broker_.InitPosition(10, 0);
+  broker_.InitPosition(std::make_pair(0, 10), std::make_pair(0, 10));
   MakeCloseOrderRequest("xx", OrderDirection::kBuy, 1.2, 10);
   auto enter_order = PopupOrder<CTPEnterOrder>();
   ASSERT_TRUE(enter_order);

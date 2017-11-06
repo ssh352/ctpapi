@@ -1,25 +1,35 @@
 #include "ctp_instrument_broker.h"
+#include "follow_strategy/order_util.h"
 CTPInstrumentBroker::CTPInstrumentBroker(
     CTPOrderDelegate* delegate,
+    std::string instrument,
+    bool close_today_aware,
     std::function<std::string(void)> generate_order_id_func)
     : order_delegate_(delegate),
-      generate_order_id_func_(generate_order_id_func) {}
+      instrument_(std::move(instrument)),
+      generate_order_id_func_(generate_order_id_func) {
+  if (close_today_aware) {
+    long_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
+    short_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
+  } else {
+    long_ = std::make_unique<CTPPositionAmount>();
+    short_ = std::make_unique<CTPPositionAmount>();
+  }
+}
 
 void CTPInstrumentBroker::HandleRtnOrder(
     const std::shared_ptr<CTPOrderField>& order) {
   if (IsCtpOpenPositionEffect(order->position_effect)) {
     if (order->direction == OrderDirection::kBuy) {
-      long_.qty += order->trading_qty;
+      long_->OpenTraded(order->trading_qty);
     } else {
-      short_.qty += order->trading_qty;
+      short_->OpenTraded(order->trading_qty);
     }
   } else {
     if (order->direction == OrderDirection::kBuy) {
-      long_.qty -= order->trading_qty;
-      long_.frozen -= order->trading_qty;
+      long_->CloseTraded(order->trading_qty, order->position_effect);
     } else {
-      short_.qty -= order->trading_qty;
-      short_.frozen -= order->trading_qty;
+      short_->CloseTraded(order->trading_qty, order->position_effect);
     }
   }
 
@@ -39,48 +49,74 @@ void CTPInstrumentBroker::HandleRtnOrder(
 }
 
 void CTPInstrumentBroker::HandleInputOrder(const InputOrder& order) {
-  if (order.position_effect == PositionEffect::kClose &&
-      order.qty > CloseableQty(order.direction == OrderDirection::kBuy
-                                   ? long_
-                                   : short_)) {
-    // TODO: reply error
-    return;
-  }
-  if (order.position_effect == PositionEffect::kClose) {
-    if (order.direction == OrderDirection::kBuy) {
-      long_.frozen += order.qty;
-    } else {
-      short_.frozen += order.qty;
-    }
-  }
-  CTPEnterOrder ctp_enter_order;
-  ctp_enter_order.order_id = generate_order_id_func_();
-  ctp_enter_order.instrument = order.instrument;
-  ctp_enter_order.position_effect =
-      order.position_effect == PositionEffect::kOpen
-          ? CTPPositionEffect::kOpen
-          : CTPPositionEffect::kClose;
-  ctp_enter_order.direction = order.direction;
-  ctp_enter_order.price = order.price;
-  ctp_enter_order.qty = order.qty;
-  InsertOrderField(ctp_enter_order.instrument, order.order_id, order.direction,
+  position_effect_strategy_->HandleInputOrder(order, *long_, *short_);
+  InsertOrderField(order.instrument, order.order_id, order.direction,
                    order.position_effect, order.price, order.qty);
-  BindOrderId(order.order_id, ctp_enter_order.order_id);
-  order_delegate_->EnterOrder(std::move(ctp_enter_order));
 }
 
 void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
-  auto it = orders_.find(cancel.order_id, HashInnerOrderField(),
-                         CompareInnerOrderField());
-  BOOST_ASSERT(it != orders_.end());
-  if ((*it)->position_effect == PositionEffect::kClose) {
-    if ((*it)->direction == OrderDirection::kBuy) {
-      long_.frozen -= (*it)->leaves_qty;
-    } else {
-      short_.frozen -= (*it)->leaves_qty;
+  BOOST_ASSERT(cancel.qty > 0);
+  auto range = order_id_to_ctp_order_id_.equal_range(cancel.order_id);
+  std::vector<std::tuple<std::string, CTPPositionEffect, int> > ctp_leave_order;
+  int leaves_qty = 0;
+  for (auto it = range.first; it != range.second; ++it) {
+    auto ctp_it = ctp_orders_.find(it->second, HashCTPOrderField(),
+                                   CompareCTPOrderField());
+    BOOST_ASSERT(ctp_it != ctp_orders_.end());
+    if (ctp_it == ctp_orders_.end() ||
+        (*ctp_it)->status != OrderStatus::kActive) {
+      continue;
     }
+    leaves_qty += (*ctp_it)->leaves_qty;
+    ctp_leave_order.emplace_back(
+        (*ctp_it)->order_id, (*ctp_it)->position_effect, (*ctp_it)->leaves_qty);
   }
-  order_delegate_->CancelOrder(cancel.account_id, cancel.order_id);
+  BOOST_ASSERT(leaves_qty >= cancel.qty);
+  std::sort(ctp_leave_order.begin(), ctp_leave_order.end(),
+            [](const auto& l, const auto& r) {
+              return std::make_pair(std::get<1>(l), std::get<2>(l)) <
+                     std::make_pair(std::get<1>(r), std::get<2>(r));
+            });
+
+  int leaves_cancel_qty = cancel.qty;
+  for (auto it = ctp_leave_order.begin(); it != ctp_leave_order.end(); ++it) {
+    int cancel_qty = std::min<int>(std::get<2>(*it), leaves_cancel_qty);
+    order_delegate_->CancelOrder(cancel.account_id, std::get<0>(*it));
+    auto ctp_order_it = ctp_orders_.find(std::get<0>(*it), HashCTPOrderField(),
+                                         CompareCTPOrderField());
+    BOOST_ASSERT(ctp_order_it != ctp_orders_.end());
+    if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
+      if ((*ctp_order_it)->direction == OrderDirection::kBuy) {
+        long_->Unfrozen(std::get<2>(*it), (*ctp_order_it)->position_effect);
+      } else {
+        short_->Unfrozen(std::get<2>(*it), (*ctp_order_it)->position_effect);
+      }
+    }
+    if (cancel_qty < std::get<2>(*it)) {
+      // Re input leaves qty
+      CTPEnterOrder enter_order;
+      enter_order.order_id = generate_order_id_func_();
+      enter_order.instrument = instrument_;
+      enter_order.position_effect = (*ctp_order_it)->position_effect;
+      enter_order.direction = (*ctp_order_it)->direction;
+      enter_order.price = (*ctp_order_it)->input_price;
+      enter_order.qty = std::get<2>(*it) - cancel_qty;
+      BindOrderId(cancel.order_id, enter_order.order_id);
+
+      if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
+        if ((*ctp_order_it)->direction == OrderDirection::kBuy) {
+          long_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);
+        } else {
+          short_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);
+        }
+      }
+
+      order_delegate_->EnterOrder(std::move(enter_order));
+    }
+    leaves_cancel_qty -= cancel_qty;
+  }
+
+  BOOST_ASSERT(leaves_cancel_qty == 0);
 }
 
 void CTPInstrumentBroker::InsertOrderField(const std::string& instrument,
@@ -109,16 +145,35 @@ void CTPInstrumentBroker::BindOrderId(const std::string& order_id,
   order_id_to_ctp_order_id_.insert({order_id, ctp_order_id});
 }
 
-void CTPInstrumentBroker::InitPosition(int long_qty, int short_qty) {
-  long_.qty = long_qty;
-  short_.qty = short_qty;
-}
-
-int CTPInstrumentBroker::CloseableQty(const Position& pos) const {
-  return pos.qty - pos.frozen;
+void CTPInstrumentBroker::InitPosition(std::pair<int, int> long_pos,
+                                       std::pair<int, int> short_pos) {
+  long_->Init(long_pos.first, 0, long_pos.second, 0);
+  short_->Init(short_pos.first, 0, short_pos.second, 0);
 }
 
 bool CTPInstrumentBroker::IsCtpOpenPositionEffect(
     CTPPositionEffect position_effect) const {
   return position_effect == CTPPositionEffect::kOpen;
+}
+
+void CTPInstrumentBroker::PosstionEffectStrategyHandleInputOrder(
+    const std::string& input_order_id,
+    CTPPositionEffect position_effect,
+    OrderDirection direction,
+    double price,
+    int qty) {
+  CTPPositionAmount* position =
+      (direction == OrderDirection::kBuy ? long_.get() : short_.get());
+  if (!IsCtpOpenPositionEffect(position_effect)) {
+    position->Frozen(qty, position_effect);
+  }
+  CTPEnterOrder ctp_enter_order;
+  ctp_enter_order.order_id = generate_order_id_func_();
+  ctp_enter_order.instrument = instrument_;
+  ctp_enter_order.position_effect = position_effect;
+  ctp_enter_order.direction = direction;
+  ctp_enter_order.price = price;
+  ctp_enter_order.qty = qty;
+  BindOrderId(input_order_id, ctp_enter_order.order_id);
+  order_delegate_->EnterOrder(std::move(ctp_enter_order));
 }

@@ -7,10 +7,14 @@
 #include <boost/unordered_set.hpp>
 #include "common/api_struct.h"
 #include "ctp_broker/ctp_order_delegate.h"
+#include "ctp_position_effect_flag_strategy.h"
+#include "ctp_position_effect_strategy.h"
 
-class CTPInstrumentBroker {
+class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
  public:
   CTPInstrumentBroker(CTPOrderDelegate* delegate,
+    std::string instrument,
+                      bool close_today_aware,
                       std::function<std::string(void)> generate_order_id_func);
 
   void HandleRtnOrder(const std::shared_ptr<CTPOrderField>& order);
@@ -19,17 +23,25 @@ class CTPInstrumentBroker {
 
   void HandleCancel(const CancelOrderSignal& cancel);
 
-  void InitPosition(int long_qty, int short_qty);
+  void InitPosition(std::pair<int, int> long_pos,
+                    std::pair<int, int> short_pos);
+
+  virtual void PosstionEffectStrategyHandleInputOrder(
+      const std::string& input_order_id,
+      CTPPositionEffect position_effect,
+      OrderDirection direction,
+      double price,
+      int qty) override;
+
+  template <typename T, typename S>
+  void SetPositionEffectStrategy() {
+    position_effect_strategy_ = std::make_unique<T>(new S(this));
+  }
 
  protected:
   CTPOrderDelegate* order_delegate_;
 
  private:
-  struct Position {
-    int qty;
-    int frozen;
-    int opening;
-  };
   template <typename T>
   struct HashOrderField {
     size_t operator()(const T& order) const {
@@ -59,9 +71,11 @@ class CTPInstrumentBroker {
 
   void BindOrderId(const std::string& order_id,
                    const std::string& ctp_order_id);
-  int CloseableQty(const Position& pos) const;
+
   bool IsCtpOpenPositionEffect(CTPPositionEffect position_effect) const;
+
   std::unordered_multimap<std::string, std::string> ctp_order_id_to_order_id_;
+
   std::unordered_multimap<std::string, std::string> order_id_to_ctp_order_id_;
 
   using HashInnerOrderField = HashOrderField<std::unique_ptr<OrderField>>;
@@ -71,17 +85,20 @@ class CTPInstrumentBroker {
                        CompareInnerOrderField>
       orders_;
 
-  using HashCTPOrderField = HashOrderField<std::unique_ptr<OrderField>>;
-  using CompareCTPOrderField = CompareOrderField<std::unique_ptr<OrderField>>;
-  boost::unordered_set<std::shared_ptr<CTPOrderField>,
+  using HashCTPOrderField = HashOrderField<std::unique_ptr<CTPOrderField>>;
+  using CompareCTPOrderField =
+      CompareOrderField<std::unique_ptr<CTPOrderField>>;
+  boost::unordered_set<std::unique_ptr<CTPOrderField>,
                        HashCTPOrderField,
                        CompareCTPOrderField>
       ctp_orders_;
 
   std::function<std::string(void)> generate_order_id_func_;
 
-  Position long_;
-  Position short_;
+  std::unique_ptr<CTPPositionAmount> long_;
+  std::unique_ptr<CTPPositionAmount> short_;
+  std::string instrument_;
+  std::unique_ptr<CTPPositionEffectStrategy> position_effect_strategy_;
 };
 
 #endif  // CTP_BROKER_CTP_INSTRUMENT_BROKER_H
