@@ -48,6 +48,9 @@ class GenericCTPPositionEffectFlagStrategy
 class CloseTodayAwareCTPPositionEffectFlagStrategy
     : public CTPPositionEffectFlagStrategy {
  public:
+  CloseTodayAwareCTPPositionEffectFlagStrategy(
+      CTPPositionEffectStrategyDelegate* delegate)
+      : CTPPositionEffectFlagStrategy(delegate) {}
   virtual void HandleInputOrder(
       const std::string& input_order_id,
       PositionEffect position_effect,

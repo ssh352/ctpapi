@@ -29,16 +29,16 @@ void CloseTodayAwareCTPPositionEffectFlagStrategy::HandleInputOrder(
         input_order_id, CTPPositionEffect::kOpen, direction, price, qty);
   } else {
     BOOST_ASSERT(position_amount.Closeable() >= qty);
-    if (position_amount.YesterdayCloseable() > 0) {
-      int yesterday = std::min<int>(qty, position_amount.YesterdayCloseable());
+    int yesterday = std::min<int>(qty, position_amount.YesterdayCloseable());
+    if (yesterday > 0) {
       delegate_->PosstionEffectStrategyHandleInputOrder(
-          input_order_id, CTPPositionEffect::kClose, direction, price, qty);
-      int leaves_closeable = position_amount.YesterdayCloseable() - yesterday;
-      if (leaves_closeable > 0) {
-        delegate_->PosstionEffectStrategyHandleInputOrder(
-            input_order_id, CTPPositionEffect::kCloseToday, direction, price,
-            qty);
-      }
+          input_order_id, CTPPositionEffect::kClose, direction, price, yesterday);
+    }
+    int leaves_closeable = qty - yesterday;
+    if (leaves_closeable > 0) {
+      delegate_->PosstionEffectStrategyHandleInputOrder(
+          input_order_id, CTPPositionEffect::kCloseToday, direction, price,
+          leaves_closeable);
     }
   }
 }
