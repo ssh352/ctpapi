@@ -1,4 +1,5 @@
 #include "ctp_trader_api.h"
+#include "follow_strategy/order_util.h"
 
 CTPTraderApi::CTPTraderApi(Delegate* delegate) : delegate_(delegate) {
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
@@ -57,65 +58,76 @@ CTPPositionEffect CTPTraderApi::ParseTThostFtdcPositionEffect(
   return ps;
 }
 
-std::string CTPTraderApi::MakeOrderId(TThostFtdcFrontIDType front_id,
-                                      TThostFtdcSessionIDType session_id,
-                                      const std::string& order_ref) const {
+std::string CTPTraderApi::MakeCtpUniqueOrderId(
+    TThostFtdcFrontIDType front_id,
+    TThostFtdcSessionIDType session_id,
+    const std::string& order_ref) const {
   return str(boost::format("%d:%d:%s") % front_id % session_id % order_ref);
 }
 
-std::string CTPTraderApi::MakeOrderId(const std::string& order_ref) const
-{
-  return MakeOrderId(front_id_, session_id_, order_ref);
+std::string CTPTraderApi::MakeCtpUniqueOrderId(
+    const std::string& order_ref) const {
+  return MakeCtpUniqueOrderId(front_id_, session_id_, order_ref);
 }
 
 void CTPTraderApi::OnRspOrderAction(
     CThostFtdcInputOrderActionField* pInputOrderAction,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
-    bool bIsLast) {
-}
+    bool bIsLast) {}
 
 void CTPTraderApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                     CThostFtdcRspInfoField* pRspInfo,
                                     int nRequestID,
-                                    bool bIsLast) {
-}
+                                    bool bIsLast) {}
 
 void CTPTraderApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                               int nRequestID,
                               bool bIsLast) {}
 
 void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
+  std::string order_id = MakeCtpUniqueOrderId(
+      pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
+  auto it = order_traded_qty_set_.find(order_id);
+  if (it == order_traded_qty_set_.end()) {
+    order_traded_qty_set_.insert({order_id, 0});
+  }
+
   auto order_field = std::make_shared<CTPOrderField>();
   // order_field->instrument_name = order->InstrumentName;
   order_field->instrument = pOrder->InstrumentID;
   order_field->exchange_id = pOrder->ExchangeID;
-  order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
-                               ? OrderDirection::kBuy
-                               : OrderDirection::kSell;
+
   order_field->qty = pOrder->VolumeTotalOriginal;
   order_field->input_price = pOrder->LimitPrice;
   order_field->position_effect =
       ParseTThostFtdcPositionEffect(pOrder->CombOffsetFlag[0]);
+
+  if (order_field->position_effect == CTPPositionEffect::kOpen) {
+    order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+                                 ? OrderDirection::kBuy
+                                 : OrderDirection::kSell;
+  } else {
+    order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+                                 ? OrderDirection::kSell
+                                 : OrderDirection::kBuy;
+  }
   order_field->date = pOrder->InsertDate;
   // order_field->input_timestamp = pOrder->InsertTime;
   // order_field->update_timestamp = pOrder->UpdateTime;
 
   order_field->status = ParseTThostFtdcOrderStatus(pOrder);
   order_field->leaves_qty = pOrder->VolumeTotal;
-  order_field->order_id = pOrder->OrderRef;
-  auto it = order_traded_qty_set_.find(order_field->order_id);
-  if (it != order_traded_qty_set_.end()) {
-    order_field->trading_qty = pOrder->VolumeTraded - it->second;
-    it->second = pOrder->VolumeTraded;
-  } else {
-    order_field->trading_qty = 0;
-  }
+  order_field->order_ref = pOrder->OrderRef;
+  order_field->order_id = order_id;
+  order_field->trading_qty =
+      pOrder->VolumeTraded - order_traded_qty_set_.at(order_id);
+  order_traded_qty_set_.at(order_id) = pOrder->VolumeTraded;
   order_field->error_id = 0;
   order_field->raw_error_id = 0;
   order_field->front_id = pOrder->FrontID;
   order_field->session_id = pOrder->SessionID;
-  
+
   delegate_->HandleCTPRtnOrder(std::move(order_field));
 }
 
@@ -144,13 +156,16 @@ void CTPTraderApi::OnFrontConnected() {
   api_->ReqUserLogin(&field, 0);
 }
 
-void CTPTraderApi::HandleInputOrder(const CTPEnterOrder& input_order, const std::string& order_id) {
+void CTPTraderApi::HandleInputOrder(const CTPEnterOrder& input_order,
+                                    const std::string& order_id) {
   CThostFtdcInputOrderField field = {0};
   strcpy(field.InstrumentID, input_order.instrument.c_str());
   strcpy(field.OrderRef, order_id.c_str());
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-  field.Direction =
-      OrderDirectionToTThostOrderDireciton(input_order.direction);
+  field.Direction = OrderDirectionToTThostOrderDireciton(
+      input_order.position_effect == CTPPositionEffect::kOpen
+          ? input_order.direction
+          : OppositeOrderDirection(input_order.direction));
   field.CombOffsetFlag[0] =
       PositionEffectToTThostOffsetFlag(input_order.position_effect);
   strcpy(field.CombHedgeFlag, "1");
@@ -191,4 +206,12 @@ void CTPTraderApi::Connect(const std::string& server,
   api_->SubscribePublicTopic(THOST_TERT_RESUME);
   api_->SubscribePrivateTopic(THOST_TERT_RESUME);
   api_->Init();
+}
+
+void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                       CThostFtdcRspInfoField* pRspInfo) {
+}
+
+void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
+                                       CThostFtdcRspInfoField* pRspInfo) {
 }

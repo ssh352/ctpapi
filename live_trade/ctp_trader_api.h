@@ -8,10 +8,11 @@
 
 class CTPTraderApi : public CThostFtdcTraderSpi {
  public:
-   class Delegate {
+  class Delegate {
    public:
-     virtual void HandleCTPRtnOrder(const std::shared_ptr<CTPOrderField>& order) = 0;
-   };
+    virtual void HandleCTPRtnOrder(
+        const std::shared_ptr<CTPOrderField>& order) = 0;
+  };
   CTPTraderApi(Delegate* delegate);
 
   void Connect(const std::string& server,
@@ -19,7 +20,8 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
                std::string user_id,
                std::string password);
 
-  void HandleInputOrder(const CTPEnterOrder& order, const std::string& order_id);
+  void HandleInputOrder(const CTPEnterOrder& order,
+                        const std::string& order_id);
 
   virtual void OnFrontConnected() override;
 
@@ -50,15 +52,14 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
       int nRequestID,
       bool bIsLast) override;
 
+  std::string MakeCtpUniqueOrderId(const std::string& order_ref) const;
 
-  std::string MakeOrderId(const std::string& order_ref) const;
+  std::string MakeCtpUniqueOrderId(TThostFtdcFrontIDType front_id,
+                                   TThostFtdcSessionIDType session_id,
+                                   const std::string& order_ref) const;
 
-  std::string MakeOrderId(TThostFtdcFrontIDType front_id,
-                          TThostFtdcSessionIDType session_id,
-                          const std::string& order_ref) const;
-
-
-  CTPPositionEffect ParseTThostFtdcPositionEffect(TThostFtdcOffsetFlagType flag);
+  CTPPositionEffect ParseTThostFtdcPositionEffect(
+      TThostFtdcOffsetFlagType flag);
 
   OrderStatus ParseTThostFtdcOrderStatus(CThostFtdcOrderField* order) const;
 
@@ -68,6 +69,14 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
   TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(
       CTPPositionEffect position_effect);
 
+
+
+  virtual void OnErrRtnOrderInsert(CThostFtdcInputOrderField *pInputOrder, CThostFtdcRspInfoField *pRspInfo) override;
+
+
+  virtual void OnErrRtnOrderAction(CThostFtdcOrderActionField *pOrderAction, CThostFtdcRspInfoField *pRspInfo) override;
+
+private:
   Delegate* delegate_;
   CThostFtdcTraderApi* api_;
   std::string broker_id_;
@@ -75,7 +84,6 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
   std::string password_;
   TThostFtdcSessionIDType session_id_ = 0;
   TThostFtdcFrontIDType front_id_ = 0;
-
   std::unordered_map<std::string, int> order_traded_qty_set_;
 };
 

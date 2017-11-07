@@ -73,8 +73,7 @@ class CTAOrderSignalScriberFixture : public StrategyFixture {
   }
 
   virtual void SetUp() override {
-    CreateStrategy<CTAOrderSignalSubscriber<UnittestMailBox> >(
-        defalut_instrument_id);
+    CreateStrategy<CTAOrderSignalSubscriber<UnittestMailBox> >();
   }
 };
 

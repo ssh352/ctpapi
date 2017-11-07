@@ -7,9 +7,10 @@
 template <typename MailBox>
 class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
  public:
-  LiveTradeBrokerHandler(MailBox* mail_box) : mail_box_(mail_box) {
-    api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
-    api_->RegisterSpi(this);
+  LiveTradeBrokerHandler(MailBox* mail_box)
+      : mail_box_(mail_box), trade_api_(this) {
+    //api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
+    //api_->RegisterSpi(this);
     mail_box_->Subscribe(&LiveTradeBrokerHandler::HandleInputOrder, this);
   }
 
@@ -17,18 +18,11 @@ class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
                const std::string& broker_id,
                const std::string& user_id,
                const std::string& password) {
+    trade_api_.Connect(server,broker_id, user_id, password);
   }
 
   void HandleInputOrder(const CTPEnterOrder& input_order) {
-    
-  }
-
-  virtual void OnFrontConnected() override {
-    CThostFtdcReqUserLoginField field{0};
-    strcpy(field.UserID, user_id_.c_str());
-    strcpy(field.Password, password_.c_str());
-    strcpy(field.BrokerID, broker_id_.c_str());
-    api_->ReqUserLogin(&field, 0);
+    //trade_api_.HandleInputOrder(input_order, );
   }
 
   virtual void OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
@@ -95,6 +89,9 @@ class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
     throw std::logic_error("The method or operation is not implemented.");
   }
 
+  virtual void HandleCTPRtnOrder(
+      const std::shared_ptr<CTPOrderField>& order) override {}
+
  private:
   std::string MakeOrderId(TThostFtdcFrontIDType front_id,
                           TThostFtdcSessionIDType session_id,
@@ -153,6 +150,7 @@ class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
   }
 
   MailBox* mail_box_;
+  CTPTraderApi trade_api_;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_BROKER_HANDLER_H

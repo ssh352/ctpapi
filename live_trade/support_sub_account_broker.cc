@@ -10,7 +10,7 @@ SupportSubAccountBroker::SupportSubAccountBroker(caf::actor_config& cfg)
 caf::behavior SupportSubAccountBroker::make_behavior() {
   return {
       [=](const std::shared_ptr<CTPOrderField>& order) {
-        auto it = order_id_bimap_.right.find(trader_api_.MakeOrderId(
+        auto it = order_id_bimap_.right.find(trader_api_.MakeCtpUniqueOrderId(
             order->front_id, order->session_id, order->order_ref));
         if (it != order_id_bimap_.right.end()) {
           order->order_id = it->second.order_id;
@@ -24,7 +24,7 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
         std::string order_ref = GenerateOrderRef();
         order_id_bimap_.insert(OrderIdBimap::value_type(
             SubAccountOrderId{enter_order.strategy_id, enter_order.order_id},
-            trader_api_.MakeOrderId(order_ref)));
+            trader_api_.MakeCtpUniqueOrderId(order_ref)));
         trader_api_.HandleInputOrder(enter_order, order_ref);
       },
   };

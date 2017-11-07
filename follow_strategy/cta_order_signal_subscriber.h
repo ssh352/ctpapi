@@ -11,18 +11,13 @@
 #include "follow_strategy/logging_defines.h"
 #include "hpt_core/time_util.h"
 #include "order_util.h"
+#include "simply_portfolio.h"
 
 template <typename MailBox>
 class CTAOrderSignalSubscriber {
  public:
-  CTAOrderSignalSubscriber(MailBox* mail_box, const std::string& instrument)
-      : mail_box_(mail_box),
-        master_portfolio_(1000000),
-        inner_size_portfolio_(1000000) {
-    master_portfolio_.InitInstrumentDetail(
-        instrument, 0.02, 10, CostBasis{CommissionType::kFixed, 0, 0, 0});
-    inner_size_portfolio_.InitInstrumentDetail(
-        instrument, 0.02, 10, CostBasis{CommissionType::kFixed, 0, 0, 0});
+  CTAOrderSignalSubscriber(MailBox* mail_box)
+      : mail_box_(mail_box) {
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalInitPosition,
                          this);
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalHistoryOrder,
@@ -281,8 +276,8 @@ class CTAOrderSignalSubscriber {
     return boost::lexical_cast<std::string>(order_id_seq_++);
   }
 
-  Portfolio master_portfolio_;
-  Portfolio inner_size_portfolio_;
+  SimplyPortfolio master_portfolio_;
+  SimplyPortfolio inner_size_portfolio_;
   MailBox* mail_box_;
   std::string master_account_id_;
   int order_id_seq_ = 0;

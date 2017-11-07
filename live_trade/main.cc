@@ -23,51 +23,14 @@
 #include "support_sub_account_broker.h"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "ctp_broker/ctp_instrument_broker.h"
-
-using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
+#include "caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
+#include "live_trade_broker_handler.h"
+#include "live_trade_mail_box.h"
+#include "ctp_rtn_order_subscriber.h"
 
 //#include "live_trade_broker_handler.h"
-
 class AbstractExecutionHandler;
-
-using IdleAtom = caf::atom_constant<caf::atom("idle")>;
-
-using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
-using CTASignalContainer =
-    std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>;
-
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
-// CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrder)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(InputOrderSignal)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(InputOrder)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<TickData>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<OrderField>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderPosition>)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTAPositionQty)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrderSignal)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTPEnterOrder)
-
-class LiveTradeMailBox {
- public:
-  void Subscribe(std::type_index type_id, caf::actor actor) {
-    observers_.insert({type_id, actor});
-  }
-
-  template <typename... Ts>
-  void Send(Ts&&... args) {
-    auto it = observers_.find(typeid(std::tuple<std::decay_t<Ts>...>));
-    if (it != observers_.end()) {
-      caf::anon_send(it->second, std::forward<Ts>(args)...);
-    } else {
-      BOOST_ASSERT(false);
-    }
-  }
-
- private:
-  std::unordered_map<std::type_index, caf::actor> observers_;
-};
 
 class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
  public:
@@ -98,7 +61,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
   void Subscribe(void (CLASS::*pfn)(const std::shared_ptr<OrderField>&),
                  CLASS* ptr) {
     inner_mail_box_->Subscribe(typeid(std::tuple<std::shared_ptr<OrderField>>),
-                                this);
+                               this);
     message_handler_ = message_handler_.or_else(
         [ptr, pfn](const std::shared_ptr<OrderField>& order) {
           (ptr->*pfn)(order);
@@ -115,10 +78,13 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
 class CAFSubAccountBroker : public caf::event_based_actor,
                             public CTPOrderDelegate {
  public:
-  CAFSubAccountBroker(caf::actor_config& cfg, LiveTradeMailBox* inner_mail_box, 
-    LiveTradeMailBox* common_mail_box)
-      : caf::event_based_actor(cfg), inner_mail_box_(inner_mail_box), common_mail_box_(common_mail_box) {
-    //inner_mail_box_->Subscrdibe(
+  CAFSubAccountBroker(caf::actor_config& cfg,
+                      LiveTradeMailBox* inner_mail_box,
+                      LiveTradeMailBox* common_mail_box)
+      : caf::event_based_actor(cfg),
+        inner_mail_box_(inner_mail_box),
+        common_mail_box_(common_mail_box) {
+    // inner_mail_box_->Subscrdibe(
     //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrderSignal>), this);
@@ -133,7 +99,8 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             it->second.HandleInputOrder(order);
           } else {
             CTPInstrumentBroker broker(
-                this, std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
+                this, order.instrument, false,
+                std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
             broker.HandleInputOrder(order);
             instrument_brokers_.insert({order.instrument, std::move(broker)});
           }
@@ -168,45 +135,6 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   int order_seq_ = 0;
 };
 
-class CAFCTAOrderSignalSubscriber : public caf::event_based_actor {
- public:
-  CAFCTAOrderSignalSubscriber(caf::actor_config& cfg,
-                              LiveTradeMailBox* common_mail_box)
-      : caf::event_based_actor(cfg),
-        common_mail_box_(common_mail_box),
-        signal_subscriber_(this, "") {}
-
-  virtual caf::behavior make_behavior() override {
-    return {
-        [=](const CTASignalAtom& value,
-            const std::vector<OrderPosition>& quantitys) {
-          signal_subscriber_.HandleCTASignalInitPosition(value, quantitys);
-        },
-        [=](const CTASignalAtom& value,
-            const std::vector<std::shared_ptr<const OrderField>>& orders) {
-          signal_subscriber_.HandleCTASignalHistoryOrder(value, orders);
-        },
-
-        [=](const CTASignalAtom& value,
-            const std::shared_ptr<OrderField>& order) {
-          signal_subscriber_.HandleCTASignalOrder(value, order);
-        },
-    };
-  }
-
-  template <typename... Ts>
-  void Send(Ts&&... args) {
-    common_mail_box_->Send(std::forward<Ts>(args)...);
-  }
-
-  template <typename... Ts>
-  void Subscribe(Ts...) {}
-
- private:
-  LiveTradeMailBox* common_mail_box_;
-  CTAOrderSignalSubscriber<CAFCTAOrderSignalSubscriber> signal_subscriber_;
-};
-
 class config : public caf::actor_system_config {
  public:
   int delayed_close_minutes = 10;
@@ -232,7 +160,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   int cancel_order_after_minute = 10;
   int backtesting_position_effect = 0;
 
-  std::string instrument = "FG801";
+  std::string instrument = "MA801";
 
   // std::string market = "dc";
   // std::string instrument = "a1709";
@@ -249,15 +177,17 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                                           &common_mail_box);
   system.spawn<CAFSubAccountBroker>(&inner_mail_box, &common_mail_box);
 
-  system.spawn<CAFCTAOrderSignalSubscriber>(&common_mail_box);
-  // DelayOpenStrategyAgent<CAFMailBox> strategy(&mail_box, std::move(param),
-  // "1");
-  // CTAOrderSignalSubscriber<CAFMailBox>(&mail_box, "");
-  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>();
-  // LiveTradeBrokerHandler<CAFMailBox> live_trade_borker_handler(&mail_box);
+  auto cta = system.spawn<CtpRtnOrderSubscriber>(&common_mail_box);
 
-  // LiveTradeDataFeedHandler<CAFMailBox>
-  // live_trade_data_feed_handler(&mail_box);
+  // DelayOpenStrategyAgent<CAFMailBox> strategy(&mail_box,
+  // std::move(param), "1"); CTAOrderSignalSubscriber<CAFMailBox>(&mail_box,
+  // "");
+  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>();
+  // LiveTradeBrokerHandler<LiveTradeMailBox>
+  // live_trade_borker_handler(&mail_box);
+
+  LiveTradeDataFeedHandler<LiveTradeMailBox> live_trade_data_feed_handler(
+      &common_mail_box);
 
   // PortfolioHandler<CAFMailBox> portfolio_handler_(
   //    init_cash, &mail_box, instrument, csv_file_prefix, 0.1, 10,
@@ -265,16 +195,17 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   // mail_box.FinishInitital();
 
-  // live_trade_data_feed_handler.SubscribeInstrument(instrument);
+  live_trade_data_feed_handler.SubscribeInstrument(instrument);
 
-  // live_trade_data_feed_handler.Connect("tcp://180.166.11.33:41213", "4200",
-  //                                     "15500011", "371070");
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
+                 "9999", "053867", "8661188");
+  live_trade_data_feed_handler.Connect("tcp://180.166.11.33:41213", "4200",
+                                       "15500011", "Yunqizhi2_");
 
-  // live_trade_borker_handler.Connect("tcp://180.168.146.187:10000", "9999",
-  //                                  "053867", "8661188");
+  // live_trade_borker_handler.Connect();
 
-  //int qty;
-  //while (std::cin >> qty) {
+  // int qty;
+  // while (std::cin >> qty) {
   //  mail_box.Send(qty);
   //}
 
