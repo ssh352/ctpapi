@@ -187,6 +187,7 @@ struct CTPOrderField {
   std::string date;
   std::string order_id;
   std::string order_ref;
+  std::string order_sys_id;
   std::string raw_error_message;
 };
 

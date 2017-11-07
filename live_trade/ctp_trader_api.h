@@ -5,6 +5,7 @@
 #include <boost/format.hpp>
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "common/api_struct.h"
+#include <boost/functional/hash.hpp>
 
 class CTPTraderApi : public CThostFtdcTraderSpi {
  public:
@@ -12,6 +13,10 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
    public:
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
+
+    virtual void HandleCTPTradeOrder(const std::string& order_id,
+                                     double trading_price,
+                                     int trading_qty) = 0;
   };
   CTPTraderApi(Delegate* delegate);
 
@@ -52,11 +57,11 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
       int nRequestID,
       bool bIsLast) override;
 
-  std::string MakeCtpUniqueOrderId(const std::string& order_ref) const;
-
-  std::string MakeCtpUniqueOrderId(TThostFtdcFrontIDType front_id,
-                                   TThostFtdcSessionIDType session_id,
+  std::string MakeCtpUniqueOrderId(int front_id,
+                                   int session_id,
                                    const std::string& order_ref) const;
+
+  std::string MakeCtpUniqueOrderId(const std::string& order_ref) const;
 
   CTPPositionEffect ParseTThostFtdcPositionEffect(
       TThostFtdcOffsetFlagType flag);
@@ -69,14 +74,36 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
   TThostFtdcOffsetFlagType PositionEffectToTThostOffsetFlag(
       CTPPositionEffect position_effect);
 
+  virtual void OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                   CThostFtdcRspInfoField* pRspInfo) override;
 
+  virtual void OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
+                                   CThostFtdcRspInfoField* pRspInfo) override;
 
-  virtual void OnErrRtnOrderInsert(CThostFtdcInputOrderField *pInputOrder, CThostFtdcRspInfoField *pRspInfo) override;
+  virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) override;
 
+ private:
+  struct ExchangeIdOrderSysId {
+    std::string exchange_id;
+    std::string order_sys_id;
+  };
 
-  virtual void OnErrRtnOrderAction(CThostFtdcOrderActionField *pOrderAction, CThostFtdcRspInfoField *pRspInfo) override;
+  struct HashExchagneIdOrderSysId {
+    size_t operator()(const ExchangeIdOrderSysId& id) const {
+      size_t seed = 0;
+      boost::hash_combine(seed, id.exchange_id);
+      boost::hash_combine(seed, id.order_sys_id);
+      return seed;
+    }
+  };
 
-private:
+  struct CompareExchangeIdOrderSysId {
+    bool operator()(const ExchangeIdOrderSysId& l,
+                    const ExchangeIdOrderSysId& r) const {
+      return l.exchange_id == r.exchange_id && l.order_sys_id == r.order_sys_id;
+    }
+  };
+
   Delegate* delegate_;
   CThostFtdcTraderApi* api_;
   std::string broker_id_;
@@ -84,7 +111,12 @@ private:
   std::string password_;
   TThostFtdcSessionIDType session_id_ = 0;
   TThostFtdcFrontIDType front_id_ = 0;
-  std::unordered_map<std::string, int> order_traded_qty_set_;
+
+  std::unordered_map<ExchangeIdOrderSysId,
+                     std::string,
+                     HashExchagneIdOrderSysId,
+                     CompareExchangeIdOrderSysId>
+      order_sys_id_to_order_id_;
 };
 
 #endif  // LIVE_TRADE_CTP_TRADER_API_H

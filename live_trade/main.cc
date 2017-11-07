@@ -101,6 +101,9 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             CTPInstrumentBroker broker(
                 this, order.instrument, false,
                 std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
+            broker.SetPositionEffectStrategy<
+                GenericCTPPositionEffectStrategy,
+                GenericCTPPositionEffectFlagStrategy>();
             broker.HandleInputOrder(order);
             instrument_brokers_.insert({order.instrument, std::move(broker)});
           }
@@ -177,7 +180,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                                           &common_mail_box);
   system.spawn<CAFSubAccountBroker>(&inner_mail_box, &common_mail_box);
 
-  auto cta = system.spawn<CtpRtnOrderSubscriber>(&common_mail_box);
+  auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
   // DelayOpenStrategyAgent<CAFMailBox> strategy(&mail_box,
   // std::move(param), "1"); CTAOrderSignalSubscriber<CAFMailBox>(&mail_box,

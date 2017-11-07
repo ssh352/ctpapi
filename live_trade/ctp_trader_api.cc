@@ -59,8 +59,8 @@ CTPPositionEffect CTPTraderApi::ParseTThostFtdcPositionEffect(
 }
 
 std::string CTPTraderApi::MakeCtpUniqueOrderId(
-    TThostFtdcFrontIDType front_id,
-    TThostFtdcSessionIDType session_id,
+    int front_id,
+    int session_id,
     const std::string& order_ref) const {
   return str(boost::format("%d:%d:%s") % front_id % session_id % order_ref);
 }
@@ -86,11 +86,8 @@ void CTPTraderApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                               bool bIsLast) {}
 
 void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
-  std::string order_id = MakeCtpUniqueOrderId(
-      pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
-  auto it = order_traded_qty_set_.find(order_id);
-  if (it == order_traded_qty_set_.end()) {
-    order_traded_qty_set_.insert({order_id, 0});
+  if (strlen(pOrder->OrderSysID) == 0) {
+    return;
   }
 
   auto order_field = std::make_shared<CTPOrderField>();
@@ -119,16 +116,24 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   order_field->status = ParseTThostFtdcOrderStatus(pOrder);
   order_field->leaves_qty = pOrder->VolumeTotal;
   order_field->order_ref = pOrder->OrderRef;
-  order_field->order_id = order_id;
-  order_field->trading_qty =
-      pOrder->VolumeTraded - order_traded_qty_set_.at(order_id);
-  order_traded_qty_set_.at(order_id) = pOrder->VolumeTraded;
+  order_field->order_id = MakeCtpUniqueOrderId(
+      pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
+  order_field->trading_qty = 0;
   order_field->error_id = 0;
   order_field->raw_error_id = 0;
   order_field->front_id = pOrder->FrontID;
   order_field->session_id = pOrder->SessionID;
 
   delegate_->HandleCTPRtnOrder(std::move(order_field));
+}
+
+void CTPTraderApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
+  auto it =
+      order_sys_id_to_order_id_.find({pTrade->ExchangeID, pTrade->OrderSysID});
+  BOOST_ASSERT(it != order_sys_id_to_order_id_.end());
+  if (it != order_sys_id_to_order_id_.end()) {
+    delegate_->HandleCTPTradeOrder(it->second, pTrade->Price, pTrade->Volume);
+  }
 }
 
 void CTPTraderApi::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
@@ -209,9 +214,7 @@ void CTPTraderApi::Connect(const std::string& server,
 }
 
 void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
-                                       CThostFtdcRspInfoField* pRspInfo) {
-}
+                                       CThostFtdcRspInfoField* pRspInfo) {}
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
-                                       CThostFtdcRspInfoField* pRspInfo) {
-}
+                                       CThostFtdcRspInfoField* pRspInfo) {}

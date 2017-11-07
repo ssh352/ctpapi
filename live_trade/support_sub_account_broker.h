@@ -20,6 +20,11 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                const std::string& broker_id,
                const std::string& user_id,
                const std::string& password);
+
+  virtual void HandleCTPTradeOrder(const std::string& order_id,
+                                   double trading_price,
+                                   int trading_qty) override;
+
  private:
   struct SubAccountOrderId {
     std::string sub_account_id;
