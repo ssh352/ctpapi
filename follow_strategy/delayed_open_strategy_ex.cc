@@ -161,7 +161,7 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
    //signal_dispatch_->OpenOrder(
    //   order.instrument, GenerateOrderId(), order.direction,
    //   maybe_input_price, order.qty);
-  delegate_->EnterOrder(InputOrder{order.instrument, GenerateOrderId(), "salve", PositionEffect::kOpen, order.direction,
+  delegate_->EnterOrder(InputOrder{order.instrument, GenerateOrderId(),PositionEffect::kOpen, order.direction,
   maybe_input_price, order.qty, 0});
   return true;
 }
@@ -267,7 +267,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
     delegate_->EnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id), "slave",
+        InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
                    rtn_order->input_price, closeable_qty, 0});
   } else if (rtn_order->qty <=
@@ -277,7 +277,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
     delegate_->EnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id), "slave",
+        InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
                    rtn_order->input_price, rtn_order->qty, 0});
   } else if (closeable_qty > 0) {
@@ -285,7 +285,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
     delegate_->EnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id), "slave",
+        InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
                    rtn_order->input_price, closeable_qty, 0});
   } else {
@@ -296,7 +296,7 @@ void DelayedOpenStrategyEx::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
   pending_delayed_open_order_.push_back(InputOrderSignal{
-      rtn_order->instrument_id, "", "S1", PositionEffect::kOpen,
+      rtn_order->instrument_id, "",PositionEffect::kOpen,
       rtn_order->direction, rtn_order->trading_price, rtn_order->trading_qty,
       rtn_order->update_timestamp});
 }
@@ -389,7 +389,7 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
                 << " Ask1:" << tick->tick->ask_price1 << "("
                 << tick->tick->ask_qty1 << ")";
             delegate_->EnterOrder(
-                InputOrder{order.instrument, GenerateOrderId(), "slave",
+                InputOrder{order.instrument, GenerateOrderId(),
                            PositionEffect::kOpen, order.direction,
                            input_price, order.qty, 0});
             return true;

@@ -136,7 +136,6 @@ struct CostBasis {
 struct InputOrderSignal {
   std::string instrument;
   std::string order_id;
-  std::string strategy_id;
   PositionEffect position_effect;
   OrderDirection direction;
   double price;
@@ -147,7 +146,6 @@ struct InputOrderSignal {
 struct InputOrder {
   std::string instrument;
   std::string order_id;
-  std::string strategy_id;
   PositionEffect position_effect;
   OrderDirection direction;
   double price;
