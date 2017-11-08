@@ -37,18 +37,18 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
             } else {
             }
           },
-          [=](const std::string& order_id,
-              double trading_price, int trading_qty) {
+          [=](const std::string& order_id, double trading_price,
+              int trading_qty, TimeStamp timestamp) {
             BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
                                           CompareCTPOrderField()) !=
                          ctp_orders_.end());
             auto it = ctp_orders_.find(order_id, HashCTPOrderField(),
                                        CompareCTPOrderField());
             if (it != ctp_orders_.end()) {
+              (*it)->leaves_qty -= trading_qty;
               signal_subscriber_.HandleCTASignalOrder(
                   CTASignalAtom::value,
-                  MakeOrderField(*it, trading_price, trading_qty));
-              (*it)->leaves_qty -= trading_qty;
+                  MakeOrderField(*it, trading_price, trading_qty, timestamp));
             }
           }};
 }
@@ -68,7 +68,8 @@ void CAFCTAOrderSignalBroker::Connect(const std::string& server,
 std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
     const std::shared_ptr<CTPOrderField>& ctp_order,
     double trading_price,
-    int trading_qty) const {
+    int trading_qty,
+    TimeStamp timestamp) const {
   auto order = std::make_shared<OrderField>();
   order->direction = ctp_order->direction;
   order->position_effect =
@@ -83,7 +84,11 @@ std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
   order->input_price = ctp_order->input_price;
   order->avg_price = ctp_order->avg_price;
   order->input_timestamp = ctp_order->input_timestamp;
-  order->update_timestamp = ctp_order->update_timestamp;
+  if (timestamp != 0) {
+    order->update_timestamp = timestamp;
+  } else {
+    order->update_timestamp = ctp_order->update_timestamp;
+  }
   order->instrument_id = ctp_order->instrument;
   order->exchange_id = ctp_order->exchange_id;
   order->date = ctp_order->date;
@@ -94,9 +99,9 @@ std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
   return order;
 }
 
-void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(
-    const std::string& order_id,
-    double trading_price,
-    int trading_qty) {
-  send(this, order_id, trading_price, trading_qty);
+void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& order_id,
+                                                  double trading_price,
+                                                  int trading_qty,
+                                                  TimeStamp timestamp) {
+  send(this, order_id, trading_price, trading_qty, timestamp);
 }

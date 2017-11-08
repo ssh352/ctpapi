@@ -21,10 +21,10 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override;
 
-  virtual void HandleCTPTradeOrder(
-                                   const std::string& order_id,
+  virtual void HandleCTPTradeOrder(const std::string& order_id,
                                    double trading_price,
-                                   int trading_qty) override;
+                                   int trading_qty,
+                                   TimeStamp timestamp) override;
 
   template <typename... Ts>
   void Send(Ts&&... args) {
@@ -59,7 +59,8 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
   std::shared_ptr<OrderField> MakeOrderField(
       const std::shared_ptr<CTPOrderField>& ctp_order,
       double trading_price,
-      int trading_qty) const;
+      int trading_qty,
+      TimeStamp timestamp = 0) const;
   CTPTraderApi trade_api_;
 
   LiveTradeMailBox* mail_box_;

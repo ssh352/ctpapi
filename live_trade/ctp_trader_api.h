@@ -16,7 +16,8 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
     virtual void HandleCTPTradeOrder(const std::string& order_id,
                                      double trading_price,
-                                     int trading_qty) = 0;
+                                     int trading_qty,
+                                     TimeStamp timestamp) = 0;
   };
   CTPTraderApi(Delegate* delegate);
 

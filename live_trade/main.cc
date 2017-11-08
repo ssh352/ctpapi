@@ -163,34 +163,23 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   int cancel_order_after_minute = 10;
   int backtesting_position_effect = 0;
 
-  std::string instrument = "MA801";
-
-  // std::string market = "dc";
-  // std::string instrument = "a1709";
-  std::string csv_file_prefix =
-      str(boost::format("%s_%d_%d_%s") % instrument %
-          delayed_input_order_by_minute % cancel_order_after_minute %
-          (backtesting_position_effect == 0 ? "O" : "C"));
-  // KeyInputStrategy<CAFMailBox> strategy(&mail_box, instrument);
-
   LiveTradeMailBox common_mail_box;
   LiveTradeMailBox inner_mail_box;
   DelayedOpenStrategyEx::StrategyParam param;
+  param.delayed_open_after_seconds = 30;
+  param.price_offset_rate = 0.01;
   system.spawn<CAFDelayOpenStrategyAgent>(std::move(param), &inner_mail_box,
                                           &common_mail_box);
   system.spawn<CAFSubAccountBroker>(&inner_mail_box, &common_mail_box);
 
   auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
-  // DelayOpenStrategyAgent<CAFMailBox> strategy(&mail_box,
-  // std::move(param), "1"); CTAOrderSignalSubscriber<CAFMailBox>(&mail_box,
-  // "");
-  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>();
+  auto support_sub_account_broker =
+      system.spawn<SupportSubAccountBroker>(&common_mail_box);
   // LiveTradeBrokerHandler<LiveTradeMailBox>
   // live_trade_borker_handler(&mail_box);
 
-  LiveTradeDataFeedHandler<LiveTradeMailBox> live_trade_data_feed_handler(
-      &common_mail_box);
+  auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
   // PortfolioHandler<CAFMailBox> portfolio_handler_(
   //    init_cash, &mail_box, instrument, csv_file_prefix, 0.1, 10,
@@ -198,12 +187,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   // mail_box.FinishInitital();
 
-  live_trade_data_feed_handler.SubscribeInstrument(instrument);
+  // live_trade_data_feed_handler.SubscribeInstrument(instrument);
+
+  caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+                 "tcp://180.168.146.187:10000", "9999", "099344", "a12345678");
 
   caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
                  "9999", "053867", "8661188");
-  live_trade_data_feed_handler.Connect("tcp://180.166.11.33:41213", "4200",
-                                       "15500011", "Yunqizhi2_");
+  caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
+                 "4200", "15500011", "Yunqizhi2_");
 
   // live_trade_borker_handler.Connect();
 

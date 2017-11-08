@@ -1,5 +1,7 @@
 #include "ctp_trader_api.h"
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "follow_strategy/order_util.h"
+#include "hpt_core/time_util.h"
 
 CTPTraderApi::CTPTraderApi(Delegate* delegate) : delegate_(delegate) {
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
@@ -89,6 +91,15 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   if (strlen(pOrder->OrderSysID) == 0) {
     return;
   }
+  std::string order_id = MakeCtpUniqueOrderId(
+      pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
+
+  if (order_sys_id_to_order_id_.find(
+          {pOrder->ExchangeID, pOrder->OrderSysID}) ==
+      order_sys_id_to_order_id_.end()) {
+    order_sys_id_to_order_id_.insert(
+        {{pOrder->ExchangeID, pOrder->OrderSysID}, order_id});
+  }
 
   auto order_field = std::make_shared<CTPOrderField>();
   // order_field->instrument_name = order->InstrumentName;
@@ -111,19 +122,18 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   }
   order_field->date = pOrder->InsertDate;
   // order_field->input_timestamp = pOrder->InsertTime;
-  // order_field->update_timestamp = pOrder->UpdateTime;
+  order_field->update_timestamp =
+      ptime_to_timestamp(boost::posix_time::microsec_clock::local_time());
 
   order_field->status = ParseTThostFtdcOrderStatus(pOrder);
   order_field->leaves_qty = pOrder->VolumeTotal;
   order_field->order_ref = pOrder->OrderRef;
-  order_field->order_id = MakeCtpUniqueOrderId(
-      pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
+  order_field->order_id = order_id;
   order_field->trading_qty = 0;
   order_field->error_id = 0;
   order_field->raw_error_id = 0;
   order_field->front_id = pOrder->FrontID;
   order_field->session_id = pOrder->SessionID;
-
   delegate_->HandleCTPRtnOrder(std::move(order_field));
 }
 
@@ -132,7 +142,9 @@ void CTPTraderApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
       order_sys_id_to_order_id_.find({pTrade->ExchangeID, pTrade->OrderSysID});
   BOOST_ASSERT(it != order_sys_id_to_order_id_.end());
   if (it != order_sys_id_to_order_id_.end()) {
-    delegate_->HandleCTPTradeOrder(it->second, pTrade->Price, pTrade->Volume);
+    delegate_->HandleCTPTradeOrder(
+        it->second, pTrade->Price, pTrade->Volume,
+        ptime_to_timestamp(boost::posix_time::microsec_clock::local_time()));
   }
 }
 
@@ -208,8 +220,10 @@ void CTPTraderApi::Connect(const std::string& server,
   char fron_server[255] = {0};
   strcpy(fron_server, server.c_str());
   api_->RegisterFront(fron_server);
-  api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+  //api_->SubscribePublicTopic(THOST_TERT_RESUME);
+  //api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+  api_->SubscribePublicTopic(THOST_TERT_QUICK);
+  api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
 }
 

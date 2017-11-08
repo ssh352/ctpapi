@@ -11,16 +11,14 @@ class LiveTradeMailBox {
 
   template <typename... Ts>
   void Send(Ts&&... args) {
-    auto it = observers_.find(typeid(std::tuple<std::decay_t<Ts>...>));
-    if (it != observers_.end()) {
-      caf::anon_send(it->second, std::forward<Ts>(args)...);
-    } else {
-      BOOST_ASSERT(false);
+    auto range = observers_.equal_range(typeid(std::tuple<std::decay_t<Ts>...>));
+    for (auto it = range.first; it != range.second; ++it) {
+      caf::anon_send(it->second, args...);
     }
   }
 
  private:
-  std::unordered_map<std::type_index, caf::actor> observers_;
+  std::unordered_multimap<std::type_index, caf::actor> observers_;
 };
 
 #endif // LIVE_TRADE_LIVE_TRADE_MAIL_BOX_H

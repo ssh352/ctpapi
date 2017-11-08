@@ -5,25 +5,22 @@
 #include "caf/all.hpp"
 #include "ctp_trader_api.h"
 #include "common/api_struct.h"
+#include "live_trade_mail_box.h"
 
 class SupportSubAccountBroker : public caf::event_based_actor,
                                 public CTPTraderApi::Delegate {
  public:
-  SupportSubAccountBroker(caf::actor_config& cfg);
+  SupportSubAccountBroker(caf::actor_config& cfg, LiveTradeMailBox* mail_box);
 
   virtual caf::behavior make_behavior() override;
 
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override;
 
-  void Connect(const std::string& server,
-               const std::string& broker_id,
-               const std::string& user_id,
-               const std::string& password);
-
   virtual void HandleCTPTradeOrder(const std::string& order_id,
                                    double trading_price,
-                                   int trading_qty) override;
+                                   int trading_qty,
+                                   TimeStamp timestamp) override;
 
  private:
   struct SubAccountOrderId {
@@ -51,6 +48,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                    std::string>;
   OrderIdBimap order_id_bimap_;
   std::unordered_map<std::string, caf::actor> sub_actors_;
+  LiveTradeMailBox* mail_box_;
   CTPTraderApi trader_api_;
   int order_seq_ = 0;
 };
