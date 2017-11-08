@@ -3,10 +3,16 @@
 #include <boost/format.hpp>
 #include "caf_atom_defines.h"
 
-SupportSubAccountBroker::SupportSubAccountBroker(caf::actor_config& cfg,
-                                                 LiveTradeMailBox* mail_box)
+SupportSubAccountBroker::SupportSubAccountBroker(
+    caf::actor_config& cfg,
+    LiveTradeMailBox* mail_box,
+    const std::vector<std::pair<std::string, caf::actor> >& sub_accounts)
     : caf::event_based_actor(cfg), trader_api_(this), mail_box_(mail_box) {
   mail_box_->Subscribe(typeid(std::tuple<CTPEnterOrder>), this);
+
+  for (const auto& sub_account : sub_accounts) {
+    sub_actors_.insert({sub_account.first, sub_account.second});
+  }
 }
 
 caf::behavior SupportSubAccountBroker::make_behavior() {

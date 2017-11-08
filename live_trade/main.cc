@@ -163,16 +163,18 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   int cancel_order_after_minute = 10;
   int backtesting_position_effect = 0;
 
+
   LiveTradeMailBox common_mail_box;
   LiveTradeMailBox inner_mail_box;
+
+  auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
+
   DelayedOpenStrategyEx::StrategyParam param;
   param.delayed_open_after_seconds = 30;
   param.price_offset_rate = 0.01;
   system.spawn<CAFDelayOpenStrategyAgent>(std::move(param), &inner_mail_box,
                                           &common_mail_box);
   system.spawn<CAFSubAccountBroker>(&inner_mail_box, &common_mail_box);
-
-  auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
   auto support_sub_account_broker =
       system.spawn<SupportSubAccountBroker>(&common_mail_box);
