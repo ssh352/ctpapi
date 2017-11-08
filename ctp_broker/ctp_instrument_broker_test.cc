@@ -103,12 +103,11 @@ void CTPInstrumentBrokerTest::ReturnOrderField(
   event_queues_.push_back(order);
 }
 
-void CTPInstrumentBrokerTest::CancelOrder(const std::string& account_id,
-                                          const std::string& order_id) {
-  event_queues_.push_back(std::make_tuple(account_id, order_id));
+void CTPInstrumentBrokerTest::CancelOrder(const CTPCancelOrder& cancel_order) {
+  event_queues_.push_back(cancel_order);
 }
 
-void CTPInstrumentBrokerTest::EnterOrder(CTPEnterOrder enter_order) {
+void CTPInstrumentBrokerTest::EnterOrder(const CTPEnterOrder& enter_order) {
   event_queues_.push_back(enter_order);
 }
 

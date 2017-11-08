@@ -9,10 +9,9 @@
 class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
  public:
   CTPInstrumentBrokerTest();
-  virtual void EnterOrder(CTPEnterOrder enter_order) override;
+  virtual void EnterOrder(const CTPEnterOrder& enter_order) override;
 
-  virtual void CancelOrder(const std::string& account_id,
-                           const std::string& order_id) override;
+  virtual void CancelOrder(const CTPCancelOrder& cancel_order) override;
 
   virtual void ReturnOrderField(
       const std::shared_ptr<OrderField>& order) override;
