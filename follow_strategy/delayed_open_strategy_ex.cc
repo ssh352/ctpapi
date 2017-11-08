@@ -130,14 +130,14 @@ void DelayedOpenStrategyEx::RemoveSpecificPendingOpenOrders(
 bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
     const InputOrderSignal & order,
     const std::shared_ptr<Tick>& tick) {
-  if (strategy_param_.price_offset_rate == 0.0) {
+  if (strategy_param_.price_offset == 0.0) {
     return false;
   }
 
   double maybe_input_price =
       order.direction == OrderDirection::kBuy
-          ? order.price - strategy_param_.price_offset_rate * order.price
-          : order.price + strategy_param_.price_offset_rate * order.price;
+          ? order.price - strategy_param_.price_offset
+          : order.price + strategy_param_.price_offset;
   if (order.direction == OrderDirection::kBuy &&
       tick->last_price > maybe_input_price) {
     return false;
@@ -359,9 +359,9 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
             double maybe_input_price =
                 order.direction == OrderDirection::kBuy
                     ? order.price -
-                          strategy_param_.price_offset_rate * order.price
+                          strategy_param_.price_offset
                     : order.price +
-                          strategy_param_.price_offset_rate * order.price;
+                          strategy_param_.price_offset;
             if (order.direction == OrderDirection::kBuy &&
                 tick->tick->last_price > maybe_input_price &&
                 tick->tick->last_price < order.price) {

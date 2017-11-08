@@ -9,6 +9,7 @@
 #include "hpt_core/time_util.h"
 #include "order_util.h"
 #include "simply_portfolio.h"
+#include "hpt_core/instrument_mananger.h"
 
 class DelayedOpenStrategyEx {
  public:
@@ -23,9 +24,10 @@ class DelayedOpenStrategyEx {
 
   struct StrategyParam {
     int delayed_open_after_seconds;
-    double price_offset_rate;
+    double price_offset;
   };
-  DelayedOpenStrategyEx(Delegate* delegate, StrategyParam strategy_param);
+  DelayedOpenStrategyEx(Delegate* delegate,
+                        StrategyParam strategy_param);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -124,7 +126,8 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
  public:
   DelayOpenStrategyAgent(MailBox* mail_box,
                          DelayedOpenStrategyEx::StrategyParam param)
-      : mail_box_(mail_box), strategy_(this, std::move(param)) {
+      : mail_box_(mail_box),
+        strategy_(this, std::move(param)) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);

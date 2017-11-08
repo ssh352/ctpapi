@@ -4,9 +4,10 @@
 #include <memory>
 #include "common/api_data_type.h"
 
-struct InstrumentField {
-  InstrumentIDType instrument;
-  double margin_rate;
+struct Instrument {
+  std::string symbol;
+  double multiplier;
+  double mfprice;
 };
 
 struct OrderField {
@@ -199,7 +200,6 @@ struct CTPEnterOrder {
   TimeStamp timestamp;
 };
 
-
 struct CTPCancelOrder {
   int front_id;
   int session_id;
@@ -210,4 +210,3 @@ struct CTPCancelOrder {
 };
 
 #endif  // COMMON_API_STRUCT_H
-

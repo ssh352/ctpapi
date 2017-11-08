@@ -1,9 +1,8 @@
 #include "gtest/gtest.h"
-#include "strategy_fixture.h"
 
 #include "follow_strategy/delayed_open_strategy_ex.h"
 #include "unittest_helper.h"
-#include "hpt_core/portfolio.h"
+#include "default_delay_open_strategy_ex_fixture.h"
 
 const static std::string master_account_id = "master";
 const static std::string slave_account_id = "slave";
@@ -11,83 +10,21 @@ const static int delayed_open_after_seconds = 60;
 const static std::string defalut_instrument_id = "I1";
 const static int default_market_tick_qty = 10;
 
-class DelayedOpenStrategyExFixture : public StrategyFixture {
- public:
-  DelayedOpenStrategyExFixture() : StrategyFixture(slave_account_id) {}
-  template <typename... Ts>
-  void MasterNewOpenOrder(const std::string& order_id,
-                          OrderDirection direction,
-                          double price,
-                          int qty,
-                          Ts&&... params) {
-    Send(MakeNewOpenOrder(master_account_id, order_id, defalut_instrument_id,
-                          direction, price, qty),
-         CTAPositionQty{std::forward<Ts>(params)...});
-  }
-
-  template <typename... Ts>
-  void MasterNewCloseOrder(const std::string& order_id,
-                           OrderDirection direction,
-                           double price,
-                           int qty,
-                           Ts&&... params) {
-    Send(MakeNewCloseOrder(master_account_id, order_id, defalut_instrument_id,
-                           direction, price, qty),
-         CTAPositionQty{std::forward<Ts>(params)...});
-  }
-
-  template <typename... Ts>
-  void MasterTradedOrder(const std::string& order_id,
-                         int trading_qty,
-                         Ts&&... params) {
-    Send(MakeTradedOrder(master_account_id, order_id, trading_qty),
-         CTAPositionQty{std::forward<Ts>(params)...});
-  }
-
-  template <typename... Ts>
-  void MasterTradedOrderWithTradingPrice(const std::string& order_id,
-                                         double trading_price,
-                                         int trading_qty,
-                                         Ts&&... params) {
-    Send(MakeTradedOrder(master_account_id, order_id, trading_qty),
-         CTAPositionQty{std::forward<Ts>(params)...});
-  }
-
-  template <typename... Ts>
-  void MasterCancelOrder(const std::string& order_id, Ts&&... params) {
-    auto order = MakeCanceledOrder(master_account_id, order_id);
-    Send(order, CTAPositionQty{std::forward<Ts>(params)...});
-  }
-
-  void MarketTick(double last_price) {
-    Send(MakeTick(defalut_instrument_id, last_price, default_market_tick_qty,
-                  now_timestamp_));
-  }
-
-  void MarketTick(double last_price, double bid_price, double ask_price) {
-    Send(MakeTick(defalut_instrument_id, last_price, bid_price, ask_price,
-                  default_market_tick_qty, now_timestamp_));
-  }
-
-  void TradedOrder(const std::string& order_id, int trading_qty) {
-    Send(MakeTradedOrder(slave_account_id, order_id, trading_qty));
-  }
-
-  void TradedOrderWithTradingPrice(const std::string& order_id,
-                                   double trading_price,
-                                   int trading_qty) {
-    Send(MakeTradedOrder(slave_account_id, order_id, trading_price,
-                         trading_qty));
-  }
-
+class TestDelayOpenStrategyWithoutTickSizeOffset
+    : public DefaultDelayedOpenStrategyExFixture {
  protected:
+  TestDelayOpenStrategyWithoutTickSizeOffset()
+      : DefaultDelayedOpenStrategyExFixture(master_account_id,
+                                            slave_account_id,
+                                            defalut_instrument_id,
+                                            default_market_tick_qty) {}
   virtual void SetUp() override {
     DelayedOpenStrategyEx::StrategyParam param{delayed_open_after_seconds, 0};
     CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(param));
   }
 };
 
-TEST_F(DelayedOpenStrategyExFixture, Open_Order) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Open_Order) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -102,7 +39,7 @@ TEST_F(DelayedOpenStrategyExFixture, Open_Order) {
   EXPECT_EQ("0", input_order->order_id);
 }
 
-TEST_F(DelayedOpenStrategyExFixture, Closeing_Fully_Position) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Closeing_Fully_Position) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -119,7 +56,7 @@ TEST_F(DelayedOpenStrategyExFixture, Closeing_Fully_Position) {
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 }
 
-TEST_F(DelayedOpenStrategyExFixture, CTAFullyCloseNoDelayHadOpeningHadPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpeningHadPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -141,7 +78,7 @@ TEST_F(DelayedOpenStrategyExFixture, CTAFullyCloseNoDelayHadOpeningHadPos) {
   ASSERT_TRUE(cancel_order);
   EXPECT_EQ("0", cancel_order->order_id);
 }
-TEST_F(DelayedOpenStrategyExFixture, CTAFullyCloseHadDelayHadOpeningHadPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseHadDelayHadOpeningHadPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   MasterTradedOrder("0", 10, 10, 0);
   ElapseSeconds(delayed_open_after_seconds);
@@ -173,7 +110,7 @@ TEST_F(DelayedOpenStrategyExFixture, CTAFullyCloseHadDelayHadOpeningHadPos) {
   EXPECT_FALSE(PopupRntOrder<InputOrder>());
 }
 
-TEST_F(DelayedOpenStrategyExFixture, CTAPartiallyCloseQtyLessOrEqualToThanPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAPartiallyCloseQtyLessOrEqualToThanPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -193,7 +130,7 @@ TEST_F(DelayedOpenStrategyExFixture, CTAPartiallyCloseQtyLessOrEqualToThanPos) {
   ASSERT_FALSE(PopupRntOrder<CancelOrderSignal>());
 }
 
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseNoDelaySingleOpeningAndQtyGreaterToThanPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
@@ -218,7 +155,7 @@ TEST_F(DelayedOpenStrategyExFixture,
   EXPECT_EQ(1, cancel_order->qty);
 }
 
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseNoDelayMultiOpeningAndQtyGreaterToThanPos_Ascending) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   MasterTradedOrder("0", 10, 10, 0);
@@ -251,7 +188,7 @@ TEST_F(DelayedOpenStrategyExFixture,
   EXPECT_FALSE(PopupRntOrder<CancelOrderSignal>());
 }
 
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseNoDelayMultiOpeningAndQtyGreaterToThanPos_Descending) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
@@ -294,7 +231,7 @@ TEST_F(DelayedOpenStrategyExFixture,
   }
 }
 
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseSingleDelayNoOpeningAndQtyGreaterToThanPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
@@ -317,7 +254,7 @@ TEST_F(DelayedOpenStrategyExFixture,
   EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
   EXPECT_EQ(PositionEffect::kOpen, input_order->position_effect);
 }
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseMultiDelayNoOpeningAndQtyGreaterToThanPos_Descending) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
   MasterTradedOrder("0", 4, 4, 0);
@@ -369,10 +306,10 @@ TEST_F(DelayedOpenStrategyExFixture,
   }
 }
 
-TEST_F(DelayedOpenStrategyExFixture,
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
        CTAPartiallyCloseMultiDelayMultiOpeningAndQtyGreaterToThanPos) {}
 
-TEST_F(DelayedOpenStrategyExFixture, CancelCloseOrder) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CancelCloseOrder) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -389,7 +326,7 @@ TEST_F(DelayedOpenStrategyExFixture, CancelCloseOrder) {
   EXPECT_EQ(4, cancel->qty);
 }
 
-TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForSameDirection) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirection) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
   MasterTradedOrder("0", 4, 4, 0);
   ElapseSeconds(delayed_open_after_seconds);
@@ -422,7 +359,7 @@ TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForSameDirection) {
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
 }
-TEST_F(DelayedOpenStrategyExFixture, OutstandingOrderForDifferentDirection) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForDifferentDirection) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
   MasterTradedOrder("0", 4, 4, 0);
   ElapseSeconds(delayed_open_after_seconds);
