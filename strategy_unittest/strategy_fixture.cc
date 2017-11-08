@@ -119,7 +119,7 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
 void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   event_queues_.push_back(input_order);
   auto order = MakeNewOrder(
-      input_order.strategy_id, input_order.order_id, input_order.instrument,
+      account_id_, input_order.order_id, input_order.instrument,
       input_order.position_effect, input_order.direction,
       input_order.price, input_order.qty);
   if (auto_reply_new_rtn_order) {
@@ -131,7 +131,7 @@ void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
 
 void StrategyFixture::HandleCancelOrder(const CancelOrderSignal& signal) {
   event_queues_.push_back(signal);
-  Send(MakeCanceledOrder(signal.account_id, signal.order_id));
+  Send(MakeCanceledOrder(account_id_, signal.order_id));
 }
 
 void StrategyFixture::SendAndClearPendingReplyRtnOrder() {

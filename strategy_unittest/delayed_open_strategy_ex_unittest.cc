@@ -13,6 +13,7 @@ const static int default_market_tick_qty = 10;
 
 class DelayedOpenStrategyExFixture : public StrategyFixture {
  public:
+  DelayedOpenStrategyExFixture() : StrategyFixture(slave_account_id) {}
   template <typename... Ts>
   void MasterNewOpenOrder(const std::string& order_id,
                           OrderDirection direction,

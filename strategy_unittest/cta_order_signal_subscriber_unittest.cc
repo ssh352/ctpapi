@@ -10,7 +10,7 @@ static const std::string defalut_instrument_id = "default instrument";
 
 class CTAOrderSignalScriberFixture : public StrategyFixture {
  public:
-  CTAOrderSignalScriberFixture() {
+  CTAOrderSignalScriberFixture() : StrategyFixture("slave") {
     mail_box_.Subscribe(&CTAOrderSignalScriberFixture::HandleCTARtnOrderSignal,
                         this);
   }

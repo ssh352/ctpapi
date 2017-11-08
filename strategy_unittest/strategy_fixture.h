@@ -46,7 +46,7 @@ class UnittestMailBox {
 
 class StrategyFixture : public testing::Test {
  public:
-  StrategyFixture() {
+  StrategyFixture(std::string account_id) : account_id_(std::move(account_id)) {
     mail_box_.Subscribe(&StrategyFixture::HandleInputOrder, this);
     mail_box_.Subscribe(&StrategyFixture::HandleCancelOrder, this);
   }
@@ -92,8 +92,6 @@ class StrategyFixture : public testing::Test {
   void HandleInputOrder(const InputOrder& input_order);
 
   void HandleCancelOrder(const CancelOrderSignal& signal);
-
-
 
   std::shared_ptr<OrderField> MakeOrderField(const std::string& account_id,
                                              const std::string& order_id,
@@ -143,8 +141,9 @@ class StrategyFixture : public testing::Test {
 
   std::shared_ptr<OrderField> MakeCanceledOrder(const std::string& account_id,
                                                 const std::string& order_id);
-  
+
   void SendAndClearPendingReplyRtnOrder();
+
  protected:
   std::unordered_map<std::string, std::shared_ptr<OrderField>>
       order_containter_;
@@ -153,7 +152,8 @@ class StrategyFixture : public testing::Test {
   mutable std::list<boost::any> event_queues_;
   int now_timestamp_ = 0;
   bool auto_reply_new_rtn_order = true;
-  std::list<std::shared_ptr<OrderField> > pending_reply_new_rtn_orders_;
+  std::list<std::shared_ptr<OrderField>> pending_reply_new_rtn_orders_;
+  std::string account_id_;
 };
 
 #endif  // STRATEGY_UNITTEST_STRATEGY_FIXTURE_H
