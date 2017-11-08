@@ -80,10 +80,12 @@ class CAFSubAccountBroker : public caf::event_based_actor,
  public:
   CAFSubAccountBroker(caf::actor_config& cfg,
                       LiveTradeMailBox* inner_mail_box,
-                      LiveTradeMailBox* common_mail_box)
+                      LiveTradeMailBox* common_mail_box,
+                      std::string account_id)
       : caf::event_based_actor(cfg),
         inner_mail_box_(inner_mail_box),
-        common_mail_box_(common_mail_box) {
+        common_mail_box_(common_mail_box),
+        account_id_(std::move(account_id)) {
     // inner_mail_box_->Subscrdibe(
     //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
@@ -92,7 +94,13 @@ class CAFSubAccountBroker : public caf::event_based_actor,
 
   virtual caf::behavior make_behavior() override {
     return {
-        [=](const std::shared_ptr<CTPOrderField>& order) {},
+        [=](const std::shared_ptr<CTPOrderField>& order) {
+          auto it = instrument_brokers_.find(order->instrument);
+          BOOST_ASSERT(it != instrument_brokers_.end());
+          if (it != instrument_brokers_.end()) {
+            it->second.HandleRtnOrder(order);
+          }
+        },
         [=](const InputOrder& order) {
           auto it = instrument_brokers_.find(order.instrument);
           if (it != instrument_brokers_.end()) {
@@ -113,12 +121,11 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   }
 
   virtual void EnterOrder(CTPEnterOrder enter_order) override {
-    common_mail_box_->Send(enter_order);
+    common_mail_box_->Send(account_id_, enter_order);
   }
 
-  virtual void CancelOrder(const std::string& account_id,
-                           const std::string& order_id) override {
-    common_mail_box_->Send(account_id, order_id);
+  virtual void CancelOrder(const std::string& order_id) override {
+    common_mail_box_->Send(account_id_, order_id);
   }
 
   virtual void ReturnOrderField(
@@ -133,8 +140,8 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   caf::actor ctp_actor_;
   LiveTradeMailBox* inner_mail_box_;
   LiveTradeMailBox* common_mail_box_;
-  CTPOrderDelegate* delegate_;
   std::unordered_map<std::string, CTPInstrumentBroker> instrument_brokers_;
+  std::string account_id_;
   int order_seq_ = 0;
 };
 
@@ -163,6 +170,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   int cancel_order_after_minute = 10;
   int backtesting_position_effect = 0;
 
+  std::string account_id = "foo";
 
   LiveTradeMailBox common_mail_box;
   LiveTradeMailBox inner_mail_box;
@@ -170,14 +178,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
   DelayedOpenStrategyEx::StrategyParam param;
-  param.delayed_open_after_seconds = 30;
+  param.delayed_open_after_seconds = 5;
   param.price_offset_rate = 0.01;
   system.spawn<CAFDelayOpenStrategyAgent>(std::move(param), &inner_mail_box,
                                           &common_mail_box);
-  system.spawn<CAFSubAccountBroker>(&inner_mail_box, &common_mail_box);
+  auto sub_account = system.spawn<CAFSubAccountBroker>(
+      &inner_mail_box, &common_mail_box, account_id);
 
-  auto support_sub_account_broker =
-      system.spawn<SupportSubAccountBroker>(&common_mail_box);
+  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
+      &common_mail_box, std::vector<std::pair<std::string, caf::actor>>{
+                            std::make_pair(account_id, sub_account)});
   // LiveTradeBrokerHandler<LiveTradeMailBox>
   // live_trade_borker_handler(&mail_box);
 

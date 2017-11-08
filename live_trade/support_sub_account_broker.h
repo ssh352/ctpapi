@@ -10,7 +10,10 @@
 class SupportSubAccountBroker : public caf::event_based_actor,
                                 public CTPTraderApi::Delegate {
  public:
-  SupportSubAccountBroker(caf::actor_config& cfg, LiveTradeMailBox* mail_box, const std::vector<std::pair<std::string, caf::actor> >& sub_accounts);
+  SupportSubAccountBroker(
+      caf::actor_config& cfg,
+      LiveTradeMailBox* mail_box,
+      const std::vector<std::pair<std::string, caf::actor> >& sub_accounts);
 
   virtual caf::behavior make_behavior() override;
 

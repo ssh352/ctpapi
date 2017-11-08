@@ -8,7 +8,8 @@ SupportSubAccountBroker::SupportSubAccountBroker(
     LiveTradeMailBox* mail_box,
     const std::vector<std::pair<std::string, caf::actor> >& sub_accounts)
     : caf::event_based_actor(cfg), trader_api_(this), mail_box_(mail_box) {
-  mail_box_->Subscribe(typeid(std::tuple<CTPEnterOrder>), this);
+  mail_box_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>), this);
+  mail_box_->Subscribe(typeid(std::tuple<std::string, std::string>), this);
 
   for (const auto& sub_account : sub_accounts) {
     sub_actors_.insert({sub_account.first, sub_account.second});
@@ -32,12 +33,19 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
           }
         }
       },
-      [=](const CTPEnterOrder& enter_order) {
+      [=](const std::string& account_id, const CTPEnterOrder& enter_order) {
         std::string order_ref = GenerateOrderRef();
         order_id_bimap_.insert(OrderIdBimap::value_type(
-            SubAccountOrderId{enter_order.strategy_id, enter_order.order_id},
+            SubAccountOrderId{account_id, enter_order.order_id},
             trader_api_.MakeCtpUniqueOrderId(order_ref)));
-        trader_api_.HandleInputOrder(enter_order, order_ref);
+        trader_api_.InputOrder(enter_order, order_ref);
+      },
+      [=](const std::string& account_id, const std::string& order_id) {
+        auto it = order_id_bimap_.left.find(SubAccountOrderId{account_id, order_id});
+        BOOST_ASSERT(it != order_id_bimap_.left.end());
+        if (it != order_id_bimap_.left.end()) {
+          trader_api_.CancelOrder(it->second);
+        }
       },
   };
 }

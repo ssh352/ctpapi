@@ -194,7 +194,6 @@ struct CTPOrderField {
 struct CTPEnterOrder {
   std::string instrument;
   std::string order_id;
-  std::string strategy_id;
   CTPPositionEffect position_effect;
   OrderDirection direction;
   double price;

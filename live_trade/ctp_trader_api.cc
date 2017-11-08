@@ -173,7 +173,7 @@ void CTPTraderApi::OnFrontConnected() {
   api_->ReqUserLogin(&field, 0);
 }
 
-void CTPTraderApi::HandleInputOrder(const CTPEnterOrder& input_order,
+void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
                                     const std::string& order_id) {
   CThostFtdcInputOrderField field = {0};
   strcpy(field.InstrumentID, input_order.instrument.c_str());
@@ -232,3 +232,8 @@ void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {}
+
+void CTPTraderApi::CancelOrder(const std::string& order_id)
+{
+  throw std::logic_error("The method or operation is not implemented.");
+}

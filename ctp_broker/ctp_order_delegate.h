@@ -6,8 +6,7 @@
 class CTPOrderDelegate {
  public:
   virtual void EnterOrder(CTPEnterOrder enter_order) = 0;
-  virtual void CancelOrder(const std::string& account_id,
-                           const std::string& order_id) = 0;
+  virtual void CancelOrder(const std::string& order_id) = 0;
   virtual void ReturnOrderField(const std::shared_ptr<OrderField>& order) = 0;
 };
 

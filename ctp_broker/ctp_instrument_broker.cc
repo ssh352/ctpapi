@@ -81,7 +81,7 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
   int leaves_cancel_qty = cancel.qty;
   for (auto it = ctp_leave_order.begin(); it != ctp_leave_order.end(); ++it) {
     int cancel_qty = std::min<int>(std::get<2>(*it), leaves_cancel_qty);
-    order_delegate_->CancelOrder(cancel.account_id, std::get<0>(*it));
+    order_delegate_->CancelOrder(std::get<0>(*it));
     auto ctp_order_it = ctp_orders_.find(std::get<0>(*it), HashCTPOrderField(),
                                          CompareCTPOrderField());
     BOOST_ASSERT(ctp_order_it != ctp_orders_.end());
