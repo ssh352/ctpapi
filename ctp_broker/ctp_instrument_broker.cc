@@ -81,10 +81,13 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
   int leaves_cancel_qty = cancel.qty;
   for (auto it = ctp_leave_order.begin(); it != ctp_leave_order.end(); ++it) {
     int cancel_qty = std::min<int>(std::get<2>(*it), leaves_cancel_qty);
-    order_delegate_->CancelOrder(std::get<0>(*it));
     auto ctp_order_it = ctp_orders_.find(std::get<0>(*it), HashCTPOrderField(),
                                          CompareCTPOrderField());
     BOOST_ASSERT(ctp_order_it != ctp_orders_.end());
+    order_delegate_->CancelOrder(
+        {(*ctp_order_it)->front_id, (*ctp_order_it)->session_id,
+         (*ctp_order_it)->order_id, (*ctp_order_it)->order_ref,
+         (*ctp_order_it)->order_sys_id, (*ctp_order_it)->exchange_id});
     if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
       if ((*ctp_order_it)->direction == OrderDirection::kBuy) {
         long_->Unfrozen(std::get<2>(*it), (*ctp_order_it)->position_effect);

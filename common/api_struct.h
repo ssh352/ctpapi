@@ -202,5 +202,14 @@ struct CTPEnterOrder {
 };
 
 
+struct CTPCancelOrder {
+  int front_id;
+  int session_id;
+  std::string order_id;
+  std::string order_ref;
+  std::string order_sys_id;
+  std::string exchange_id;
+};
+
 #endif  // COMMON_API_STRUCT_H
 

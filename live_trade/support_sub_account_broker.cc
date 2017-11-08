@@ -40,12 +40,18 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
             trader_api_.MakeCtpUniqueOrderId(order_ref)));
         trader_api_.InputOrder(enter_order, order_ref);
       },
-      [=](const std::string& account_id, const std::string& order_id) {
-        auto it = order_id_bimap_.left.find(SubAccountOrderId{account_id, order_id});
+      [=](const std::string& account_id, const CTPCancelOrder& cancel) {
+        auto it = order_id_bimap_.left.find(
+            SubAccountOrderId{account_id, cancel.order_id});
         BOOST_ASSERT(it != order_id_bimap_.left.end());
-        if (it != order_id_bimap_.left.end()) {
-          trader_api_.CancelOrder(it->second);
-        }
+        CThostFtdcInputOrderActionField order = {0};
+        order.ActionFlag = THOST_FTDC_AF_Delete;
+        order.FrontID = cancel.front_id;
+        order.SessionID = cancel.session_id;
+        strcpy(order.OrderRef, cancel.order_ref.c_str());
+        strcpy(order.ExchangeID, cancel.exchange_id.c_str());
+        strcpy(order.OrderSysID, cancel.order_sys_id.c_str());
+        trader_api_.CancelOrder(std::move(order));
       },
   };
 }

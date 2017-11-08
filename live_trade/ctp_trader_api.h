@@ -28,7 +28,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
   void InputOrder(const CTPEnterOrder& order, const std::string& order_id);
 
-  void CancelOrder(const std::string& order_id);
+  void CancelOrder(CThostFtdcInputOrderActionField order);
 
   virtual void OnFrontConnected() override;
 

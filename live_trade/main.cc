@@ -126,12 +126,12 @@ class CAFSubAccountBroker : public caf::event_based_actor,
     };
   }
 
-  virtual void EnterOrder(CTPEnterOrder enter_order) override {
+  virtual void EnterOrder(const CTPEnterOrder& enter_order) override {
     common_mail_box_->Send(account_id_, enter_order);
   }
 
-  virtual void CancelOrder(const std::string& order_id) override {
-    common_mail_box_->Send(account_id_, order_id);
+  virtual void CancelOrder(const CTPCancelOrder& cancel_order) override {
+    common_mail_box_->Send(account_id_, cancel_order);
   }
 
   virtual void ReturnOrderField(

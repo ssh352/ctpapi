@@ -211,8 +211,11 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
 }
 
 
-void CTPTraderApi::CancelOrder(const std::string& order_id)
-{
+void CTPTraderApi::CancelOrder(CThostFtdcInputOrderActionField order) {
+  strcpy(order.BrokerID, broker_id_.c_str());
+  strcpy(order.UserID, user_id_.c_str());
+  strcpy(order.InvestorID, user_id_.c_str());
+  api_->ReqOrderAction(&order, 1);
 }
 
 void CTPTraderApi::Connect(const std::string& server,
