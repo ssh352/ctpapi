@@ -19,6 +19,22 @@ class SimplyPortfolio {
   int GetFrozenQty(const std::string& instrument,
                    OrderDirection direction) const;
 
+  std::shared_ptr<OrderField> GetOrder(const std::string& order_id) const;
+
+  int UnfillOpenQty(const std::string& instrument,
+                    OrderDirection direction) const;
+
+  int UnfillCloseQty(const std::string& instrument,
+                     OrderDirection directon) const;
+
+  std::vector<std::shared_ptr<OrderField> > UnfillOpenOrders(
+      const std::string& instrument,
+      OrderDirection direction) const;
+
+  std::vector<std::shared_ptr<OrderField> > UnfillCloseOrders(
+      const std::string& instrument,
+      OrderDirection direction) const;
+
  private:
   struct PositionKey {
     std::string instrument;
@@ -44,6 +60,9 @@ class SimplyPortfolio {
                      HashPositionKey,
                      ComparePositionKey>
       positions_;
+
+  std::unordered_map<std::string, std::shared_ptr<OrderField> >
+      order_container_;
 };
 
 #endif  // FOLLOW_STRATEGY_SIMPLY_PORTFOLIO_H

@@ -404,12 +404,8 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
 
 DelayedOpenStrategyEx::DelayedOpenStrategyEx(
     DelayedOpenStrategyEx::Delegate* delegate,
-    StrategyParam strategy_param,
-    const std::string& instrument)
+    StrategyParam strategy_param)
     : delegate_(delegate),
-      strategy_param_(std::move(strategy_param)),
-      portfolio_(1000000, true) {
-  portfolio_.InitInstrumentDetail(instrument, 0.02, 10,
-                                  CostBasis{CommissionType::kFixed, 0, 0, 0});
+      strategy_param_(std::move(strategy_param)) {
   BOOST_LOG(log_) << "test";
 }

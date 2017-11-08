@@ -3,12 +3,13 @@
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/common.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
-#include "hpt_core/portfolio.h"
 #include "follow_strategy/logging_defines.h"
 #include "follow_strategy/string_util.h"
 #include "follow_strategy/logging_defines.h"
 #include "hpt_core/time_util.h"
 #include "order_util.h"
+#include "simply_portfolio.h"
+
 class DelayedOpenStrategyEx {
  public:
   class Delegate {
@@ -24,9 +25,7 @@ class DelayedOpenStrategyEx {
     int delayed_open_after_seconds;
     double price_offset_rate;
   };
-  DelayedOpenStrategyEx(Delegate* delegate,
-                        StrategyParam strategy_param,
-                        const std::string& instrument);
+  DelayedOpenStrategyEx(Delegate* delegate, StrategyParam strategy_param);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -83,7 +82,7 @@ class DelayedOpenStrategyEx {
                       const CTAPositionQty& position_qty);
 
  private:
-  bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal & order,
+  bool ImmediateOpenOrderIfPriceArrive(const InputOrderSignal& order,
                                        const std::shared_ptr<Tick>& tick);
 
   void RemoveSpecificPendingOpenOrders(const std::string& instrument,
@@ -111,7 +110,7 @@ class DelayedOpenStrategyEx {
 
   std::list<InputOrderSignal> pending_delayed_open_order_;
   std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
-  Portfolio portfolio_;
+  SimplyPortfolio portfolio_;
   StrategyParam strategy_param_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
@@ -124,9 +123,8 @@ template <typename MailBox>
 class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
  public:
   DelayOpenStrategyAgent(MailBox* mail_box,
-                         DelayedOpenStrategyEx::StrategyParam param,
-                         const std::string& instrument)
-      : mail_box_(mail_box), strategy_(this, std::move(param), instrument) {
+                         DelayedOpenStrategyEx::StrategyParam param)
+      : mail_box_(mail_box), strategy_(this, std::move(param)) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
@@ -179,9 +177,9 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
   }
 
   virtual void EnterOrder(InputOrder order) override {
-    waiting_reply_order_.push_back(OutstandingRequest{
-        order.instrument, order.order_id, order.direction,
-        OutStandingEvent::kInputOrder});
+    waiting_reply_order_.push_back(
+        OutstandingRequest{order.instrument, order.order_id, order.direction,
+                           OutStandingEvent::kInputOrder});
     mail_box_->Send(std::move(order));
   }
 
@@ -191,7 +189,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
                            int cancel_qty) override {
     waiting_reply_order_.push_back(OutstandingRequest{
         instrument, order_id, direction, OutStandingEvent::kCancelOrder});
-    mail_box_->Send(CancelOrderSignal{"slave", order_id, cancel_qty});
+    mail_box_->Send(CancelOrderSignal{order_id, instrument, cancel_qty});
   }
 
  private:

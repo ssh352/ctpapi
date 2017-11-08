@@ -82,8 +82,7 @@ class DelayedOpenStrategyExFixture : public StrategyFixture {
  protected:
   virtual void SetUp() override {
     DelayedOpenStrategyEx::StrategyParam param{delayed_open_after_seconds, 0};
-    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(
-        std::move(param), defalut_instrument_id);
+    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(param));
   }
 };
 

@@ -39,7 +39,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
                             LiveTradeMailBox* inner_mail_box,
                             LiveTradeMailBox* common_mail_box)
       : caf::event_based_actor(cfg),
-        agent_(this, std::move(param), ""),
+        agent_(this, std::move(param)),
         inner_mail_box_(inner_mail_box),
         common_mail_box_(common_mail_box) {}
 
@@ -98,25 +98,31 @@ class CAFSubAccountBroker : public caf::event_based_actor,
           auto it = instrument_brokers_.find(order->instrument);
           BOOST_ASSERT(it != instrument_brokers_.end());
           if (it != instrument_brokers_.end()) {
-            it->second.HandleRtnOrder(order);
+            it->second->HandleRtnOrder(order);
           }
         },
         [=](const InputOrder& order) {
           auto it = instrument_brokers_.find(order.instrument);
           if (it != instrument_brokers_.end()) {
-            it->second.HandleInputOrder(order);
+            it->second->HandleInputOrder(order);
           } else {
-            CTPInstrumentBroker broker(
+            auto broker = std::make_unique<CTPInstrumentBroker>(
                 this, order.instrument, false,
                 std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
-            broker.SetPositionEffectStrategy<
+            broker->SetPositionEffectStrategy<
                 GenericCTPPositionEffectStrategy,
                 GenericCTPPositionEffectFlagStrategy>();
-            broker.HandleInputOrder(order);
+            broker->HandleInputOrder(order);
             instrument_brokers_.insert({order.instrument, std::move(broker)});
           }
         },
-        [=](const CancelOrderSignal& cancel) {},
+        [=](const CancelOrderSignal& cancel) {
+          auto it = instrument_brokers_.find(cancel.instrument);
+          BOOST_ASSERT(it != instrument_brokers_.end());
+          if (it != instrument_brokers_.end()) {
+            it->second->HandleCancel(cancel);
+          }
+        },
     };
   }
 
@@ -140,7 +146,8 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   caf::actor ctp_actor_;
   LiveTradeMailBox* inner_mail_box_;
   LiveTradeMailBox* common_mail_box_;
-  std::unordered_map<std::string, CTPInstrumentBroker> instrument_brokers_;
+  std::unordered_map<std::string, std::unique_ptr<CTPInstrumentBroker>>
+      instrument_brokers_;
   std::string account_id_;
   int order_seq_ = 0;
 };

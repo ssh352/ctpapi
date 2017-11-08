@@ -210,6 +210,11 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
   }
 }
 
+
+void CTPTraderApi::CancelOrder(const std::string& order_id)
+{
+}
+
 void CTPTraderApi::Connect(const std::string& server,
                            std::string broker_id,
                            std::string user_id,
@@ -232,8 +237,3 @@ void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {}
-
-void CTPTraderApi::CancelOrder(const std::string& order_id)
-{
-  throw std::logic_error("The method or operation is not implemented.");
-}
