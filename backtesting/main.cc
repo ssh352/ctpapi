@@ -5,6 +5,8 @@
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
 #include <boost/any.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include "caf/all.hpp"
 #include "atom_defines.h"
 #include "common/api_struct.h"
@@ -25,178 +27,34 @@
 #include "type_defines.h"
 #include "run_strategy.h"
 #include "run_benchmark.h"
+#include "caf_coordinator.h"
 
-std::map<std::string, std::string> g_instrument_market_set = {
-    {"a1705", "dc"},  {"a1709", "dc"},  {"a1801", "dc"},  {"al1705", "sc"},
-    {"bu1705", "sc"}, {"bu1706", "sc"}, {"bu1709", "sc"}, {"c1705", "dc"},
-    {"c1709", "dc"},  {"c1801", "dc"},  {"cf705", "zc"},  {"cf709", "zc"},
-    {"cs1705", "dc"}, {"cs1709", "dc"}, {"cs1801", "dc"}, {"cu1702", "sc"},
-    {"cu1703", "sc"}, {"cu1704", "sc"}, {"cu1705", "sc"}, {"cu1706", "sc"},
-    {"cu1707", "sc"}, {"cu1708", "sc"}, {"cu1709", "sc"}, {"fg705", "zc"},
-    {"fg709", "zc"},  {"i1705", "dc"},  {"i1709", "dc"},  {"j1705", "dc"},
-    {"j1709", "dc"},  {"jd1705", "dc"}, {"jd1708", "dc"}, {"jd1709", "dc"},
-    {"jd1801", "dc"}, {"jm1705", "dc"}, {"jm1709", "dc"}, {"l1705", "dc"},
-    {"l1709", "dc"},  {"l1801", "dc"},  {"m1705", "dc"},  {"m1709", "dc"},
-    {"m1801", "dc"},  {"ma705", "zc"},  {"ma709", "zc"},  {"ma801", "zc"},
-    {"ni1705", "sc"}, {"ni1709", "sc"}, {"p1705", "dc"},  {"p1709", "dc"},
-    {"p1801", "dc"},  {"pp1705", "dc"}, {"pp1709", "dc"}, {"pp1801", "dc"},
-    {"rb1705", "sc"}, {"rb1710", "sc"}, {"rb1801", "sc"}, {"rm705", "zc"},
-    {"rm709", "zc"},  {"rm801", "zc"},  {"ru1705", "sc"}, {"ru1709", "sc"},
-    {"ru1801", "sc"}, {"sm709", "zc"},  {"sr705", "zc"},  {"sr709", "zc"},
-    {"ta705", "zc"},  {"ta709", "zc"},  {"v1709", "dc"},  {"y1705", "dc"},
-    {"y1709", "dc"},  {"y1801", "dc"},  {"zc705", "zc"},  {"zn1702", "sc"},
-    {"zn1703", "sc"}, {"zn1704", "sc"}, {"zn1705", "sc"}, {"zn1706", "sc"},
-    {"zn1707", "sc"}, {"zn1708", "sc"}, {"zn1709", "sc"}};
+namespace pt = boost::property_tree;
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
+//std::map<std::string, std::string> g_instrument_market_set = {
+//    {"a1705", "dc"},  {"a1709", "dc"},  {"a1801", "dc"},  {"al1705", "sc"},
+//    {"bu1705", "sc"}, {"bu1706", "sc"}, {"bu1709", "sc"}, {"c1705", "dc"},
+//    {"c1709", "dc"},  {"c1801", "dc"},  {"cf705", "zc"},  {"cf709", "zc"},
+//    {"cs1705", "dc"}, {"cs1709", "dc"}, {"cs1801", "dc"}, {"cu1702", "sc"},
+//    {"cu1703", "sc"}, {"cu1704", "sc"}, {"cu1705", "sc"}, {"cu1706", "sc"},
+//    {"cu1707", "sc"}, {"cu1708", "sc"}, {"cu1709", "sc"}, {"fg705", "zc"},
+//    {"fg709", "zc"},  {"i1705", "dc"},  {"i1709", "dc"},  {"j1705", "dc"},
+//    {"j1709", "dc"},  {"jd1705", "dc"}, {"jd1708", "dc"}, {"jd1709", "dc"},
+//    {"jd1801", "dc"}, {"jm1705", "dc"}, {"jm1709", "dc"}, {"l1705", "dc"},
+//    {"l1709", "dc"},  {"l1801", "dc"},  {"m1705", "dc"},  {"m1709", "dc"},
+//    {"m1801", "dc"},  {"ma705", "zc"},  {"ma709", "zc"},  {"ma801", "zc"},
+//    {"ni1705", "sc"}, {"ni1709", "sc"}, {"p1705", "dc"},  {"p1709", "dc"},
+//    {"p1801", "dc"},  {"pp1705", "dc"}, {"pp1709", "dc"}, {"pp1801", "dc"},
+//    {"rb1705", "sc"}, {"rb1710", "sc"}, {"rb1801", "sc"}, {"rm705", "zc"},
+//    {"rm709", "zc"},  {"rm801", "zc"},  {"ru1705", "sc"}, {"ru1709", "sc"},
+//    {"ru1801", "sc"}, {"sm709", "zc"},  {"sr705", "zc"},  {"sr709", "zc"},
+//    {"ta705", "zc"},  {"ta709", "zc"},  {"v1709", "dc"},  {"y1705", "dc"},
+//    {"y1709", "dc"},  {"y1801", "dc"},  {"zc705", "zc"},  {"zn1702", "sc"},
+//    {"zn1703", "sc"}, {"zn1704", "sc"}, {"zn1705", "sc"}, {"zn1706", "sc"},
+//    {"zn1707", "sc"}, {"zn1708", "sc"}, {"zn1709", "sc"}};
 
-class config : public caf::actor_system_config {
- public:
-  int delay_open_order_after_seconds = 10;
-  int force_close_before_close_market = 5;
-  double price_offset_rate = 0.0;
-  bool enable_logging = false;
-  bool benchmark = false;
-  std::string instrument = "";
-  std::string ts_db = "";
-  std::string cta_transaction_db = "";
-  std::string backtesting_from_datetime = "";
-  std::string backtesting_to_datetime = "";
-  std::string out_dir = "";
-
-  config() {
-    opt_group{custom_options_, "global"}
-        .add(delay_open_order_after_seconds, "delayed_seconds",
-             "set delayed close seconds")
-        .add(force_close_before_close_market, "force_close",
-             "force close before close market minues. default is 5")
-        .add(price_offset_rate, "price_offset_rate", "price offset rate")
-        .add(enable_logging, "enable_logging", "enable logging")
-        .add(instrument, "instrument",
-             "instrument: is no set then backtesting all instrument")
-        .add(ts_db, "tick_db", "tick time series db")
-        .add(cta_transaction_db, "ts_cta_db", "cta transaction time series db")
-        .add(backtesting_from_datetime, "bs_from_datetime",
-             "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
-             "\"2016-12-05 09:00:00\"")
-        .add(backtesting_to_datetime, "bs_to_datetime",
-             "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
-             "\"2017-07-23 15:00:00\"")
-        .add(benchmark, "benchmark", "run benchmark")
-        .add(out_dir, "out_dir", "");
-  }
-};
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(config*)
-
-
-auto ReadTickTimeSeries(const char* hdf_file,
-                        const std::string& market,
-                        const std::string& instrument,
-                        const std::string& datetime_from,
-                        const std::string& datetime_to) {
-  hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
-  hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(Tick));
-  TimeSeriesReader<Tick> ts_db(file, tick_compound);
-
-  H5Tinsert(tick_compound, "timestamp", HOFFSET(Tick, timestamp),
-            H5T_NATIVE_INT64);
-  H5Tinsert(tick_compound, "last_price", HOFFSET(Tick, last_price),
-            H5T_NATIVE_DOUBLE);
-  H5Tinsert(tick_compound, "qty", HOFFSET(Tick, qty), H5T_NATIVE_INT64);
-  H5Tinsert(tick_compound, "bid_price1", HOFFSET(Tick, bid_price1),
-            H5T_NATIVE_DOUBLE);
-  H5Tinsert(tick_compound, "bid_qty1", HOFFSET(Tick, bid_qty1),
-            H5T_NATIVE_INT64);
-  H5Tinsert(tick_compound, "ask_price1", HOFFSET(Tick, ask_price1),
-            H5T_NATIVE_DOUBLE);
-  H5Tinsert(tick_compound, "ask_qty1", HOFFSET(Tick, ask_qty1),
-            H5T_NATIVE_INT64);
-
-  auto ts_ret =
-      ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
-                      boost::posix_time::time_from_string(datetime_from),
-                      boost::posix_time::time_from_string(datetime_to));
-  herr_t ret = H5Fclose(file);
-  return std::move(ts_ret);
-}
-
-auto ReadCTAOrderSignalTimeSeries(const char* hdf_file,
-                                  const std::string& instrument,
-                                  const std::string& datetime_from,
-                                  const std::string& datetime_to) {
-  hid_t file = H5Fopen(hdf_file, H5F_ACC_RDONLY, H5P_DEFAULT);
-  hid_t tick_compound = H5Tcreate(H5T_COMPOUND, sizeof(CTATransaction));
-
-  H5Tinsert(tick_compound, "timestamp", HOFFSET(CTATransaction, timestamp),
-            H5T_NATIVE_INT64);
-  hid_t order_no_str = H5Tcopy(H5T_C_S1);
-  int len = sizeof(OrderIDType) / sizeof(char);
-  H5Tset_size(order_no_str, len);
-
-  H5Tinsert(tick_compound, "order_no", HOFFSET(CTATransaction, order_id),
-            order_no_str);
-
-  H5Tinsert(tick_compound, "position_effect",
-            HOFFSET(CTATransaction, position_effect), H5T_NATIVE_INT32);
-  H5Tinsert(tick_compound, "direction", HOFFSET(CTATransaction, direction),
-            H5T_NATIVE_INT32);
-  H5Tinsert(tick_compound, "status", HOFFSET(CTATransaction, status),
-            H5T_NATIVE_INT32);
-  H5Tinsert(tick_compound, "price", HOFFSET(CTATransaction, price),
-            H5T_NATIVE_DOUBLE);
-  H5Tinsert(tick_compound, "qty", HOFFSET(CTATransaction, qty),
-            H5T_NATIVE_INT32);
-
-  H5Tinsert(tick_compound, "traded_qty", HOFFSET(CTATransaction, traded_qty),
-            H5T_NATIVE_INT32);
-
-  TimeSeriesReader<CTATransaction> ts_db(file, tick_compound);
-  auto ts_ret =
-      ts_db.ReadRange(str(boost::format("/%s") % instrument),
-                      boost::posix_time::time_from_string(datetime_from),
-                      boost::posix_time::time_from_string(datetime_to));
-  herr_t ret = H5Fclose(file);
-  return std::move(ts_ret);
-}
-
-caf::behavior coordinator(
-    caf::event_based_actor* self,
-    const std::shared_ptr<std::list<std::pair<std::string, std::string>>>&
-        instruments,
-    const config* cfg) {
-  std::string ts_tick_path = cfg->ts_db;
-  std::string ts_cta_signal_path = cfg->cta_transaction_db;
-  std::string datetime_from = cfg->backtesting_from_datetime;
-  std::string datetime_to = cfg->backtesting_to_datetime;
-  int delay_open_order_after_seconds = cfg->delay_open_order_after_seconds;
-  int force_close_before_close_market = cfg->force_close_before_close_market;
-  std::string out_dir = cfg->out_dir;
-  double price_offset_rate = cfg->price_offset_rate;
-
-  return {[=](IdleAtom, caf::actor work) {
-    // std::string ts_tick_path = "d:/ts_futures.h5";
-    // std::string ts_cta_signal_path =
-    //    "d:/WorkSpace/backtesing_cta/cta_tstable.h5";
-
-    auto instrument_with_market = instruments->front();
-    instruments->pop_front();
-    std::string market = instrument_with_market.first;
-    std::string instrument = instrument_with_market.second;
-    self->send(
-        work, market, instrument, out_dir, delay_open_order_after_seconds,
-        force_close_before_close_market, price_offset_rate,
-        ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
-                           datetime_from, datetime_to),
-        ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
-                                     datetime_from, datetime_to));
-
-    if (instruments->empty()) {
-      self->quit();
-    }
-  }};
-}
 
 
 void InitLogging(bool enable_logging) {
@@ -252,31 +110,50 @@ void InitLogging(bool enable_logging) {
 
 int caf_main(caf::actor_system& system, const config& cfg) {
   InitLogging(cfg.enable_logging);
+  pt::ptree ins_infos_pt;
+  try {
+    pt::read_json(cfg.instrument_infos_file, ins_infos_pt);
+  } catch (pt::ptree_error& err) {
+    std::cout << "Read Confirg File Error:" << err.what() << "\n";
+    return 1;
+  }
+
+  double margin_rate = ins_infos_pt.get<double>("a1705.MarginRate");
+
+  pt::ptree strategy_config_pt;
+  try {
+    pt::read_json(cfg.strategy_config_file, strategy_config_pt);
+  } catch (pt::ptree_error& err) {
+    std::cout << "Read Confirg File Error:" << err.what() << "\n";
+    return 1;
+  }
+
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   auto instruments =
       std::make_shared<std::list<std::pair<std::string, std::string>>>();
 
-  if (cfg.instrument.empty()) {
-    std::for_each(
-        g_instrument_market_set.begin(), g_instrument_market_set.end(),
-        [&instruments](const auto& item) {
-          instruments->emplace_back(std::make_pair(item.second, item.first));
-        });
-  } else {
-    instruments->emplace_back(std::make_pair(
-        g_instrument_market_set[cfg.instrument], cfg.instrument));
-  }
+  // if (cfg.instrument.empty()) {
+  //  std::for_each(
+  //      g_instrument_market_set.begin(), g_instrument_market_set.end(),
+  //      [&instruments](const auto& item) {
+  //        instruments->emplace_back(std::make_pair(item.second, item.first));
+  //      });
+  //} else {
+  //  instruments->emplace_back(std::make_pair(
+  //      g_instrument_market_set[cfg.instrument], cfg.instrument));
+  //}
 
-  auto coor = system.spawn(coordinator, instruments, &cfg);
+  auto coor =
+      system.spawn(Coordinator, &ins_infos_pt, &strategy_config_pt, &cfg);
   std::cout << "start\n";
-  for (size_t i = 0; i < instruments->size(); ++i) {
-    if (cfg.benchmark) {
-    auto actor = system.spawn(RunBenchmark, coor);
-    caf::anon_send(coor, IdleAtom::value, actor);
+  for (size_t i = 0; i < 16; ++i) {
+    if (cfg.run_benchmark) {
+      auto actor = system.spawn(RunBenchmark, coor);
+      caf::anon_send(coor, IdleAtom::value, actor);
     } else {
-    auto actor = system.spawn(RunStrategy, coor);
-    caf::anon_send(coor, IdleAtom::value, actor);
+      auto actor = system.spawn(RunStrategy, coor);
+      caf::anon_send(coor, IdleAtom::value, actor);
     }
   }
   system.await_all_actors_done();
