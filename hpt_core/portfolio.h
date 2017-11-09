@@ -89,16 +89,18 @@ class Portfolio {
   struct HashPosition {
     using is_transparent = void;
     std::size_t operator()(const std::shared_ptr<Position>& position) const {
-      std::stringstream ss;
-      ss << position->instrument() << static_cast<int>(position->direction());
-      return std::hash<std::string>()(ss.str());
+      size_t seed = 0;
+      boost::hash_combine(seed, position->instrument());
+      boost::hash_combine(seed, static_cast<int>(position->direction()));
+      return seed;
     }
 
     std::size_t operator()(
         const std::pair<std::string, OrderDirection>& pair) const {
-      std::stringstream ss;
-      ss << pair.first << static_cast<int>(pair.second);
-      return std::hash<std::string>()(ss.str());
+      size_t seed = 0;
+      boost::hash_combine(seed, pair.first);
+      boost::hash_combine(seed, static_cast<int>(pair.second));
+      return seed;
     }
   };
 
