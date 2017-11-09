@@ -50,8 +50,9 @@ class BacktestingCTASignalBrokerEx {
         order->order_id = order_id;
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
-        order->direction = ParseThostFtdcOrderDirection(order->position_effect,
-                                                        (*i)->direction);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kActive;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -71,8 +72,9 @@ class BacktestingCTASignalBrokerEx {
         order->order_id = order_id;
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
-        order->direction = ParseThostFtdcOrderDirection(order->position_effect,
-                                                        (*i)->direction);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kAllFilled;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -94,8 +96,9 @@ class BacktestingCTASignalBrokerEx {
 
           order->position_effect =
               ParseThostFtdcPosition((*i)->position_effect);
-          order->direction = ParseThostFtdcOrderDirection(
-              order->position_effect, (*i)->direction);
+          order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+          order->position_effect_direction = AdjustDirectionByPositionEffect(
+              order->position_effect, order->direction);
           order->status = OrderStatus::kActive;
           order->input_price = (*i)->price;
           order->avg_price = (*i)->price;
@@ -113,8 +116,9 @@ class BacktestingCTASignalBrokerEx {
         order->order_id = order_id;
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
-        order->direction = ParseThostFtdcOrderDirection(order->position_effect,
-                                                        (*i)->direction);
+        order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kCanceled;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -151,8 +155,7 @@ class BacktestingCTASignalBrokerEx {
     return ret;
   }
 
-  OrderDirection ParseThostFtdcOrderDirection(PositionEffect position_effect,
-                                              int order_direction) const {
+  OrderDirection ParseThostFtdcOrderDirection(int order_direction) const {
     OrderDirection ret = OrderDirection::kUndefine;
     switch (order_direction) {
       case 0:
@@ -164,9 +167,7 @@ class BacktestingCTASignalBrokerEx {
       default:
         break;
     }
-    return position_effect == PositionEffect::kOpen
-               ? ret
-               : OppositeOrderDirection(ret);
+    return ret;
   }
 
   MailBox* mail_box_;

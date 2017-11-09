@@ -82,7 +82,7 @@ std::shared_ptr<CTPOrderField> CTPInstrumentBrokerTest::MakeCTPOrderField(
   auto order = std::make_shared<CTPOrderField>();
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->direction = direction;
+  order->position_effect_direction = direction;
   order->status = status;
   order->instrument = instrument;
   order->input_price = price;

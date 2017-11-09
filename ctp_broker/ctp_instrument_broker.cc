@@ -20,13 +20,13 @@ CTPInstrumentBroker::CTPInstrumentBroker(
 void CTPInstrumentBroker::HandleRtnOrder(
     const std::shared_ptr<CTPOrderField>& order) {
   if (IsCtpOpenPositionEffect(order->position_effect)) {
-    if (order->direction == OrderDirection::kBuy) {
+    if (order->position_effect_direction == OrderDirection::kBuy) {
       long_->OpenTraded(order->trading_qty);
     } else {
       short_->OpenTraded(order->trading_qty);
     }
   } else {
-    if (order->direction == OrderDirection::kBuy) {
+    if (order->position_effect_direction == OrderDirection::kBuy) {
       long_->CloseTraded(order->trading_qty, order->position_effect);
     } else {
       short_->CloseTraded(order->trading_qty, order->position_effect);
@@ -89,7 +89,7 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
          (*ctp_order_it)->order_id, (*ctp_order_it)->order_ref,
          (*ctp_order_it)->order_sys_id, (*ctp_order_it)->exchange_id});
     if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
-      if ((*ctp_order_it)->direction == OrderDirection::kBuy) {
+      if ((*ctp_order_it)->position_effect_direction == OrderDirection::kBuy) {
         long_->Unfrozen(std::get<2>(*it), (*ctp_order_it)->position_effect);
       } else {
         short_->Unfrozen(std::get<2>(*it), (*ctp_order_it)->position_effect);
@@ -107,7 +107,7 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
       BindOrderId(cancel.order_id, enter_order.order_id);
 
       if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
-        if ((*ctp_order_it)->direction == OrderDirection::kBuy) {
+        if ((*ctp_order_it)->position_effect_direction == OrderDirection::kBuy) {
           long_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);
         } else {
           short_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);

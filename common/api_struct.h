@@ -168,6 +168,7 @@ struct CTAPositionQty {
 
 struct CTPOrderField {
   OrderDirection direction;
+  OrderDirection position_effect_direction;
   CTPPositionEffect position_effect;
   OrderStatus status;
   int qty;

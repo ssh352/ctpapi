@@ -77,12 +77,18 @@ class PortfolioHandler {
     unique_order_ids_.insert(input_order.order_id);
     if (input_order.position_effect == PositionEffect::kClose) {
       int position_qty = portfolio_.GetPositionCloseableQty(
-          input_order.instrument, input_order.direction);
+          input_order.instrument,
+          AdjustDirectionByPositionEffect(input_order.position_effect,
+                                          input_order.direction));
       if (position_qty < input_order.qty) {
+        BOOST_ASSERT(false);
         return;
       }
       portfolio_.HandleNewInputCloseOrder(
-          input_order.instrument, input_order.direction, input_order.qty);
+          input_order.instrument,
+          AdjustDirectionByPositionEffect(input_order.position_effect,
+                                          input_order.direction),
+          input_order.qty);
     }
 
     mail_box_->Send(InputOrder{input_order.instrument, input_order.order_id,

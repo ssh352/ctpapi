@@ -27,7 +27,7 @@
       ],
     },
     {
-      'target_name' : 'hp_trade_unittest',
+      'target_name' : 'hpt_core_unittest',
       'type' : 'executable',
       'variables' : {
       },

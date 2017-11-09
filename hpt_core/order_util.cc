@@ -16,3 +16,10 @@ OrderDirection OppositeOrderDirection(OrderDirection direction) {
 bool IsCancelableOrderStatus(OrderStatus status) {
   return status == OrderStatus::kActive;
 }
+
+OrderDirection AdjustDirectionByPositionEffect(PositionEffect position_effect,
+                                               OrderDirection direction) {
+  return position_effect == PositionEffect::kOpen
+             ? direction
+             : OppositeOrderDirection(direction);
+}

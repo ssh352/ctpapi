@@ -10,4 +10,7 @@ OrderDirection OppositeOrderDirection(OrderDirection direction);
 
 bool IsCancelableOrderStatus(OrderStatus status);
 
+OrderDirection AdjustDirectionByPositionEffect(PositionEffect position_effect,
+                                               OrderDirection direction);
+
 #endif  // FOLLOW_TRADE_ORDER_UTIL_H

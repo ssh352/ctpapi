@@ -112,11 +112,11 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
       ParseTThostFtdcPositionEffect(pOrder->CombOffsetFlag[0]);
 
   if (order_field->position_effect == CTPPositionEffect::kOpen) {
-    order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+    order_field->position_effect_direction = pOrder->Direction == THOST_FTDC_D_Buy
                                  ? OrderDirection::kBuy
                                  : OrderDirection::kSell;
   } else {
-    order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+    order_field->position_effect_direction = pOrder->Direction == THOST_FTDC_D_Buy
                                  ? OrderDirection::kSell
                                  : OrderDirection::kBuy;
   }
