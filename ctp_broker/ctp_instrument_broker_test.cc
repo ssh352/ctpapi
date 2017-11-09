@@ -53,7 +53,7 @@ void CTPInstrumentBrokerTest::MakeCloseOrderRequest(const std::string& order_id,
                                                     OrderDirection direction,
                                                     double price,
                                                     int qty) {
-  broker_.HandleInputOrder(InputOrder{default_instrument, account_id, order_id,
+  broker_.HandleInputOrder(InputOrder{default_instrument, order_id,
                                       PositionEffect::kClose, direction, price,
                                       10, 0});
 }
@@ -62,7 +62,7 @@ void CTPInstrumentBrokerTest::MakeOpenOrderRequest(const std::string& order_id,
                                                    OrderDirection direction,
                                                    double price,
                                                    int qty) {
-  broker_.HandleInputOrder(InputOrder{default_instrument, order_id, account_id,
+  broker_.HandleInputOrder(InputOrder{default_instrument, order_id,
                                       PositionEffect::kOpen, direction, price,
                                       10, 0});
 }

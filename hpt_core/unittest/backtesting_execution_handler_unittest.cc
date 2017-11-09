@@ -102,7 +102,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
-    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
     EXPECT_EQ(1.1, order->input_price);
     EXPECT_EQ(10, order->trading_qty);
@@ -162,7 +162,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
-    EXPECT_EQ(OrderDirection::kSell, order->direction);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
     EXPECT_EQ(0.9, order->input_price);
     EXPECT_EQ(10, order->trading_qty);
@@ -194,7 +194,7 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
 
   auto order = event_factory.PopupRntOrder();
   EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
-  EXPECT_EQ(OrderDirection::kSell, order->direction);
+  EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
   EXPECT_EQ(OrderStatus::kActive, order->status);
   EXPECT_EQ(1.1, order->input_price);
   EXPECT_EQ(10, order->qty);

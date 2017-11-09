@@ -1,5 +1,5 @@
 #include "ctp_instrument_broker.h"
-#include "follow_strategy/order_util.h"
+#include "hpt_core/order_util.h"
 CTPInstrumentBroker::CTPInstrumentBroker(
     CTPOrderDelegate* delegate,
     std::string instrument,
@@ -131,7 +131,7 @@ void CTPInstrumentBroker::InsertOrderField(const std::string& instrument,
   auto order = std::make_unique<OrderField>();
   order->instrument_id = instrument;
   order->order_id = order_id;
-  order->direction = direciton;
+  order->position_effect_direction = direciton;
   order->position_effect = position_effect;
   order->input_price = price;
   order->trading_price = 0.0;

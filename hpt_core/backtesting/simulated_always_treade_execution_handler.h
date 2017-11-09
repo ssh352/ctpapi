@@ -27,7 +27,7 @@ class SimulatedAlwaysExcutionHandler {
     order->order_id = input_order.order_id;
     order->instrument_id = input_order.instrument;
     order->position_effect = input_order.position_effect;
-    order->direction = input_order.direction;
+    order->position_effect_direction = input_order.direction;
     order->status = OrderStatus::kActive;
     order->input_price = input_order.price;
     order->avg_price = input_order.price;
@@ -66,7 +66,7 @@ class SimulatedAlwaysExcutionHandler {
     order->order_id = order_id;
     order->instrument_id = instrument;
     order->position_effect = position_effect;
-    order->direction = direction;
+    order->position_effect_direction = direction;
     order->status = order_status;
     order->input_price = price;
     order->avg_price = price;

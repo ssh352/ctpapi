@@ -11,7 +11,7 @@ struct Instrument {
 };
 
 struct OrderField {
-  OrderDirection direction;
+  OrderDirection position_effect_direction;
   PositionEffect position_effect;
   OrderStatus status;
   int qty;

@@ -47,7 +47,7 @@ class LiveTradeBrokerHandler : public CTPTraderApi::Delegate {
     // order_field->instrument_name = order->InstrumentName;
     order_field->instrument_id = pOrder->InstrumentID;
     order_field->exchange_id = pOrder->ExchangeID;
-    order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+    order_field->position_effect_direction = pOrder->Direction == THOST_FTDC_D_Buy
                                  ? OrderDirection::kBuy
                                  : OrderDirection::kSell;
     order_field->qty = pOrder->VolumeTotalOriginal;

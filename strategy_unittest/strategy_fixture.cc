@@ -104,7 +104,7 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
   order->strategy_id = account_id;
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->direction = direction;
+  order->position_effect_direction = direction;
   order->status = status;
   order->instrument_id = instrument;
   order->input_price = price;

@@ -140,7 +140,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
                      [&rtn_order](const auto& item) {
                        return item.instrument == rtn_order->instrument_id &&
-                              item.direction == rtn_order->direction;
+                              item.direction == rtn_order->position_effect_direction;
                      }) == waiting_reply_order_.end()) {
       strategy_.HandleCTARtnOrderSignal(rtn_order, position_qty);
     } else {
@@ -163,7 +163,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
             [&rtn_order](const auto& cta_signal) {
               return cta_signal.first->instrument_id ==
                          rtn_order->instrument_id &&
-                     cta_signal.first->direction == rtn_order->direction;
+                     cta_signal.first->position_effect_direction == rtn_order->position_effect_direction;
             });
         std::copy(it_erase, pending_cta_signal_queue_.end(),
                   std::back_inserter(try_handing_signals));

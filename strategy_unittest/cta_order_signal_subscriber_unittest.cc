@@ -15,39 +15,39 @@ class CTAOrderSignalScriberFixture : public StrategyFixture {
                         this);
   }
   void MasterNewOpenAndFill(const std::string& order_id,
-                            OrderDirection direction,
+                            OrderDirection position_effect_direction,
                             double price,
                             int qty,
                             int trading_qty) {
-    MasterNewOpenOrder(order_id, direction, price, qty);
+    MasterNewOpenOrder(order_id, position_effect_direction, price, qty);
     MasterTradedOrder(order_id, trading_qty);
   }
 
   void MasterNewCloseAndFill(const std::string& order_id,
-                             OrderDirection direction,
+                             OrderDirection position_effect_direction,
                              double price,
                              int qty,
                              int trading_qty) {
-    MasterNewCloseOrder(order_id, direction, price, qty);
+    MasterNewCloseOrder(order_id, position_effect_direction, price, qty);
     MasterTradedOrder(order_id, trading_qty);
   }
 
   void MasterNewOpenOrder(const std::string& order_id,
-                          OrderDirection direction,
+                          OrderDirection position_effect_direction,
                           double price,
                           int qty) {
     Send(CTASignalAtom::value,
          MakeNewOpenOrder(master_account_id, order_id, defalut_instrument_id,
-                          direction, price, qty));
+                          position_effect_direction, price, qty));
   }
 
   void MasterNewCloseOrder(const std::string& order_id,
-                           OrderDirection direction,
+                           OrderDirection position_effect_direction,
                            double price,
                            int qty) {
     Send(CTASignalAtom::value,
          MakeNewCloseOrder(master_account_id, order_id, defalut_instrument_id,
-                           direction, price, qty));
+                           position_effect_direction, price, qty));
   }
 
   void MasterTradedOrder(const std::string& order_id, int trading_qty) {
@@ -134,7 +134,7 @@ TEST_F(CTAOrderSignalScriberFixture, Opening_Fully_Oppisiton_Direction_Order) {
   EXPECT_EQ(10, order->leaves_qty);
   EXPECT_EQ(10, order->qty);
   EXPECT_EQ(80.8, order->input_price);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(10, position_qty.position);
@@ -157,7 +157,7 @@ TEST_F(CTAOrderSignalScriberFixture,
   EXPECT_EQ(6, order->leaves_qty);
   EXPECT_EQ(6, order->qty);
   EXPECT_EQ(80.8, order->input_price);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(10, position_qty.position);
@@ -181,7 +181,7 @@ TEST_F(CTAOrderSignalScriberFixture,
     EXPECT_EQ(10, order->leaves_qty);
     EXPECT_EQ(10, order->qty);
     EXPECT_EQ(80.8, order->input_price);
-    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
     EXPECT_EQ(10, position_qty.position);
@@ -199,7 +199,7 @@ TEST_F(CTAOrderSignalScriberFixture,
     EXPECT_EQ(7, order->qty);
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(OrderDirection::kSell, order->direction);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
 
     EXPECT_EQ(0, position_qty.position);
@@ -228,7 +228,7 @@ TEST_F(CTAOrderSignalScriberFixture,
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(80.8, order->trading_price);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
     EXPECT_EQ(0, position_qty.position);
@@ -247,7 +247,7 @@ TEST_F(CTAOrderSignalScriberFixture,
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(80.8, order->trading_price);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-    EXPECT_EQ(OrderDirection::kSell, order->direction);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
 
     EXPECT_EQ(7, position_qty.position);
@@ -277,7 +277,7 @@ TEST_F(
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(80.8, order->trading_price);
     EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
     EXPECT_EQ(0, position_qty.position);
@@ -296,7 +296,7 @@ TEST_F(
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(80.8, order->trading_price);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(OrderDirection::kSell, order->direction);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
 
     EXPECT_EQ(1, position_qty.position);
@@ -326,7 +326,7 @@ TEST_F(
     EXPECT_EQ(80.8, order->input_price);
     EXPECT_EQ(80.8, order->trading_price);
     EXPECT_EQ(OrderStatus::kActive, order->status);
-    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
     EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
     EXPECT_EQ(2, position_qty.position);
@@ -351,7 +351,7 @@ TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Fully) {
   EXPECT_EQ(80.1, order->input_price);
   EXPECT_EQ(0, order->trading_price);
   EXPECT_EQ(OrderStatus::kActive, order->status);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(10, position_qty.position);
@@ -373,7 +373,7 @@ TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Partially) {
   EXPECT_EQ(80.1, order->input_price);
   EXPECT_EQ(0, order->trading_price);
   EXPECT_EQ(OrderStatus::kActive, order->status);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(10, position_qty.position);
@@ -398,7 +398,7 @@ TEST_F(CTAOrderSignalScriberFixture, Traded_Fully_Close_Order) {
   EXPECT_EQ(80.1, order->input_price);
   EXPECT_EQ(80.1, order->trading_price);
   EXPECT_EQ(OrderStatus::kAllFilled, order->status);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(0, position_qty.position);
@@ -423,7 +423,7 @@ TEST_F(CTAOrderSignalScriberFixture, Traded_Partially_Close_Order) {
   EXPECT_EQ(80.1, order->input_price);
   EXPECT_EQ(80.1, order->trading_price);
   EXPECT_EQ(OrderStatus::kActive, order->status);
-  EXPECT_EQ(OrderDirection::kBuy, order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
   EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
   EXPECT_EQ(3, position_qty.position);

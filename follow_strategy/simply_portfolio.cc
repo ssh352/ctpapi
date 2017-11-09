@@ -5,14 +5,14 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     // New Order
     if (order->position_effect == PositionEffect::kOpen) {
       auto it =
-          positions_.find(PositionKey{order->instrument_id, order->direction});
+          positions_.find(PositionKey{order->instrument_id, order->position_effect_direction});
       if (it == positions_.end()) {
-        positions_.insert({PositionKey{order->instrument_id, order->direction},
+        positions_.insert({PositionKey{order->instrument_id, order->position_effect_direction},
                            JustQtyPosition()});
       }
     } else {
       auto it =
-          positions_.find(PositionKey{order->instrument_id, order->direction});
+          positions_.find(PositionKey{order->instrument_id, order->position_effect_direction});
       BOOST_ASSERT(it != positions_.end());
       if (it != positions_.end()) {
         it->second.Freeze(order->qty);
@@ -27,7 +27,7 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
         auto it_pos = positions_.find(
-            PositionKey{order->instrument_id, order->direction});
+            PositionKey{order->instrument_id, order->position_effect_direction});
         BOOST_VERIFY(it_pos != positions_.end());
         if (order->position_effect == PositionEffect::kOpen) {  // Open
           it_pos->second.OpenTraded(order->trading_qty);
@@ -37,7 +37,7 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       } break;
       case OrderStatus::kCanceled: {
         auto it_pos = positions_.find(
-            PositionKey{order->instrument_id, order->direction});
+            PositionKey{order->instrument_id, order->position_effect_direction});
         BOOST_ASSERT(it_pos != positions_.end());
         it_pos->second.Unfreeze(order->leaves_qty);
       } break;
@@ -88,7 +88,7 @@ int SimplyPortfolio::UnfillOpenQty(const std::string& instrument,
         const std::shared_ptr<OrderField>& order = key_value.second;
         if (order->position_effect == PositionEffect::kClose ||
             order->instrument_id != instrument ||
-            order->direction != direction) {
+            order->position_effect_direction != direction) {
           return val;
         }
         return val +
@@ -104,7 +104,7 @@ int SimplyPortfolio::UnfillCloseQty(const std::string& instrument,
         const std::shared_ptr<OrderField>& order = key_value.second;
         if (order->position_effect == PositionEffect::kOpen ||
             order->instrument_id != instrument ||
-            order->direction != direction) {
+            order->position_effect_direction != direction) {
           return val;
         }
         return val +
@@ -121,7 +121,7 @@ std::vector<std::shared_ptr<OrderField>> SimplyPortfolio::UnfillOpenOrders(
                   const std::shared_ptr<OrderField>& order = key_value.second;
                   if (order->position_effect == PositionEffect::kClose ||
                       order->instrument_id != instrument ||
-                      order->direction != direction ||
+                      order->position_effect_direction != direction ||
                       order->status != OrderStatus::kActive) {
                     return;
                   }
@@ -139,7 +139,7 @@ std::vector<std::shared_ptr<OrderField>> SimplyPortfolio::UnfillCloseOrders(
                   const std::shared_ptr<OrderField>& order = key_value.second;
                   if (order->position_effect == PositionEffect::kOpen ||
                       order->instrument_id != instrument ||
-                      order->direction != direction ||
+                      order->position_effect_direction != direction ||
                       order->status != OrderStatus::kActive) {
                     return;
                   }

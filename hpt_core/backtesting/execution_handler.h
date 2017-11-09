@@ -12,7 +12,7 @@
 struct LimitOrder {
   std::string instrument;
   std::string order_id;
-  OrderDirection direction;
+  OrderDirection position_effect_direction;
   PositionEffect position_effect;
   double price;
   int qty;
@@ -104,7 +104,7 @@ class SimulatedExecutionHandler {
 
     order->instrument_id = input_order.instrument;
     order->position_effect = input_order.position_effect;
-    order->direction = input_order.direction;
+    order->position_effect_direction = input_order.direction;
     order->status = OrderStatus::kActive;
     order->input_price = input_order.price;
     order->avg_price = input_order.price;
@@ -158,14 +158,14 @@ class SimulatedExecutionHandler {
     // std::string instrument;
     // std::string order_id;
     // std::string strategy_id;
-    // orderDirection direction;
+    // orderDirection position_effect_direction;
     // positionEffect position_effect;
     // double price;
     // int qty;
 
     EnqueueRtnOrderEvent(
         {(*it)->instrument_id, (*it)->order_id, 
-         (*it)->direction, (*it)->position_effect, (*it)->input_price,
+         (*it)->position_effect_direction, (*it)->position_effect, (*it)->input_price,
          (*it)->qty},
         OrderStatus::kCancelRejected, (*it)->input_price, (*it)->qty, 0);
 
@@ -181,7 +181,7 @@ class SimulatedExecutionHandler {
     order->order_id = limit_order.order_id;
     order->instrument_id = limit_order.instrument;
     order->position_effect = limit_order.position_effect;
-    order->direction = limit_order.direction;
+    order->position_effect_direction = limit_order.position_effect_direction;
     order->status = order_status;
     order->input_price = price;
     order->avg_price = price;

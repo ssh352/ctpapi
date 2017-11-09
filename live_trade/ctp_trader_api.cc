@@ -1,6 +1,6 @@
 #include "ctp_trader_api.h"
 #include <boost/date_time/posix_time/posix_time.hpp>
-#include "follow_strategy/order_util.h"
+#include "hpt_core/order_util.h"
 #include "hpt_core/time_util.h"
 
 CTPTraderApi::CTPTraderApi(Delegate* delegate) : delegate_(delegate) {

@@ -18,7 +18,7 @@ std::shared_ptr<OrderField> MakeOrderField(const std::string& order_id,
   auto order = std::make_shared<OrderField>();
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->direction = direction;
+  order->position_effect_direction = direction;
   order->status = status;
   order->instrument_id = instrument;
   order->input_price = price;

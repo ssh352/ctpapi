@@ -183,7 +183,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
     DelayedOpenStrategyEx::StrategyParam param;
     param.delayed_open_after_seconds = 5;
-    param.price_offset_rate = 0.01;
+    param.price_offset = 0.01;
     system.spawn<CAFDelayOpenStrategyAgent>(std::move(param), inner_mail_box.get(),
                                             &common_mail_box);
     sub_actors.push_back(std::make_pair(

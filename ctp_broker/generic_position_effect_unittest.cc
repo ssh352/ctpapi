@@ -36,7 +36,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderThenRecvCTPRtnOrder) {
   auto order = PopupOrder<std::shared_ptr<OrderField>>();
   EXPECT_EQ("I1", (*order)->instrument_id);
   EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
-  EXPECT_EQ(OrderDirection::kBuy, (*order)->direction);
+  EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
   EXPECT_EQ(1.1, (*order)->input_price);
   EXPECT_EQ(10, (*order)->qty);
   EXPECT_EQ("xx", (*order)->order_id);
@@ -52,7 +52,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderThenRecvCTPOrderFill) {
   ASSERT_TRUE(order);
   EXPECT_EQ("I1", (*order)->instrument_id);
   EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
-  EXPECT_EQ(OrderDirection::kBuy, (*order)->direction);
+  EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
   EXPECT_EQ(OrderStatus::kAllFilled, (*order)->status);
   EXPECT_EQ(1.1, (*order)->input_price);
   EXPECT_EQ(10, (*order)->qty);
@@ -71,7 +71,7 @@ TEST_F(GenericPositionEffectTest,
   ASSERT_TRUE(order);
   EXPECT_EQ("I1", (*order)->instrument_id);
   EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
-  EXPECT_EQ(OrderDirection::kBuy, (*order)->direction);
+  EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
   EXPECT_EQ(OrderStatus::kAllFilled, (*order)->status);
   EXPECT_EQ(1.1, (*order)->input_price);
   EXPECT_EQ(1.2, (*order)->trading_price);
@@ -91,7 +91,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderThenReceMultiCTPOrderField) {
     ASSERT_TRUE(order);
     EXPECT_EQ("I1", (*order)->instrument_id);
     EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
-    EXPECT_EQ(OrderDirection::kBuy, (*order)->direction);
+    EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
     EXPECT_EQ(OrderStatus::kActive, (*order)->status);
     EXPECT_EQ(1.2, (*order)->input_price);
     EXPECT_EQ(10, (*order)->qty);
@@ -106,7 +106,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderThenReceMultiCTPOrderField) {
     ASSERT_TRUE(order);
     EXPECT_EQ("I1", (*order)->instrument_id);
     EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
-    EXPECT_EQ(OrderDirection::kBuy, (*order)->direction);
+    EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
     EXPECT_EQ(OrderStatus::kAllFilled, (*order)->status);
     EXPECT_EQ(1.2, (*order)->input_price);
     EXPECT_EQ(10, (*order)->qty);
