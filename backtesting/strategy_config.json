@@ -1,0 +1,320 @@
+﻿{
+    "Instruments": {
+        "a1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "a1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "a1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "al1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "bu1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "bu1706": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "bu1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "c1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "c1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "c1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cf705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cf709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cs1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cs1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cs1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1702": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1703": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1704": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1706": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1707": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1708": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "cu1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "fg705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "fg709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "i1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "i1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "j1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "j1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jd1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jd1708": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jd1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jd1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jm1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "jm1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "l1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "l1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "l1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "m1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "m1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "m1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ma705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ma709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ma801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ni1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ni1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "p1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "p1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "p1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "pp1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "pp1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "pp1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rb1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rb1710": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rb1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rm705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rm709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "rm801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ru1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ru1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ru1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "sm709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "sr705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "sr709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ta705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "ta709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "v1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "y1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "y1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "y1801": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zc705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1702": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1703": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1704": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1705": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1706": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1707": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1708": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        },
+        "zn1709": {
+            "DelayOpenOrderAfterSeconds": 5,
+            "PriceOffset": 1
+        }
+    }
+}
