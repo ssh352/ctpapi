@@ -6,33 +6,25 @@
 #include <boost/assign.hpp>
 #include <boost/any.hpp>
 #include "caf/all.hpp"
+#include "atom_defines.h"
 #include "common/api_struct.h"
 #include "hpt_core/backtesting/price_handler.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "hpt_core/tick_series_data_base.h"
 #include "hpt_core/cta_transaction_series_data_base.h"
 #include "strategies/strategy.h"
-using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
-using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
-using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
-using CloseMarketNearAtom = caf::atom_constant<caf::atom("cmn")>;
-using DaySettleAtom = caf::atom_constant<caf::atom("daysetl")>;
 #include "hpt_core/time_series_reader.h"
 #include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
 #include "follow_strategy/delayed_open_strategy_ex.h"
-//#include "follow_strategy/cta_traded_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
 #include "hpt_core/backtesting/simulated_always_treade_execution_handler.h"
 #include "backtesting_cta_signal_broker_ex.h"
 #include "follow_strategy/cta_traded_strategy.h"
-
-// #include "follow_strategy/cta_traded_strategy.h"
-
-using IdleAtom = caf::atom_constant<caf::atom("idle")>;
-using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
-using CTASignalContainer =
-    std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>;
+#include "rtn_order_recorder.h"
+#include "type_defines.h"
+#include "run_strategy.h"
+#include "run_benchmark.h"
 
 std::map<std::string, std::string> g_instrument_market_set = {
     {"a1705", "dc"},  {"a1709", "dc"},  {"a1801", "dc"},  {"al1705", "sc"},
@@ -65,6 +57,7 @@ class config : public caf::actor_system_config {
   int force_close_before_close_market = 5;
   double price_offset_rate = 0.0;
   bool enable_logging = false;
+  bool benchmark = false;
   std::string instrument = "";
   std::string ts_db = "";
   std::string cta_transaction_db = "";
@@ -90,40 +83,13 @@ class config : public caf::actor_system_config {
         .add(backtesting_to_datetime, "bs_to_datetime",
              "backtesting from datetime %Y-%m-%d %H:%M:%D, default is "
              "\"2017-07-23 15:00:00\"")
+        .add(benchmark, "benchmark", "run benchmark")
         .add(out_dir, "out_dir", "");
   }
 };
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(config*)
 
-template <typename MailBox>
-class RtnOrderToCSV {
- public:
-  RtnOrderToCSV(MailBox* mail_box,
-                const std::string& out_dir,
-                const std::string& prefix_)
-      : mail_box_(mail_box), orders_csv_(out_dir + prefix_ + "_orders.csv") {
-    mail_box_->Subscribe(&RtnOrderToCSV::HandleOrder, this);
-    boost::posix_time::time_facet* facet = new boost::posix_time::time_facet();
-    facet->format("%Y-%m-%d %H:%M:%S");
-    orders_csv_.imbue(std::locale(std::locale::classic(), facet));
-  }
-
-  void HandleOrder(const std::shared_ptr<OrderField>& order) {
-    boost::posix_time::ptime pt(
-        boost::gregorian::date(1970, 1, 1),
-        boost::posix_time::milliseconds(order->update_timestamp));
-    orders_csv_ << pt << "," << order->order_id << ","
-                << (order->position_effect == PositionEffect::kOpen ? "O" : "C")
-                << "," << (order->direction == OrderDirection::kBuy ? "B" : "S")
-                << "," << static_cast<int>(order->status) << ","
-                << order->input_price << "," << order->qty << "\n";
-  }
-
- private:
-  MailBox* mail_box_;
-  mutable std::ofstream orders_csv_;
-};
 
 auto ReadTickTimeSeries(const char* hdf_file,
                         const std::string& market,
@@ -232,74 +198,6 @@ caf::behavior coordinator(
   }};
 }
 
-caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
-  return {[=](const std::string& market, const std::string& instrument,
-              const std::string& out_dir, int delay_open_after_seconds,
-              int cancel_order_after_minute, double price_offset_rate,
-              TickContainer tick_container,
-              CTASignalContainer cta_signal_container) {
-    caf::aout(self) << market << ":" << instrument << "\n";
-    std::list<std::function<void(void)>> callable_queue;
-    bool running = true;
-    double init_cash = 50 * 10000;
-
-    // std::string market = "dc";
-    // std::string instrument = "a1709";
-    std::string csv_file_prefix = str(boost::format("%s") % instrument);
-    BacktestingMailBox mail_box(&callable_queue);
-
-    RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, out_dir,
-                                                   csv_file_prefix);
-
-    // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
-    //                                           10 * 60);
-
-    BacktestingCTASignalBrokerEx<BacktestingMailBox>
-        backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
-                                       instrument);
-
-    ///****
-    // DelayedOpenStrategyEx::StrategyParam strategy_param;
-    // strategy_param.delayed_open_after_seconds = delay_open_after_seconds;
-    // strategy_param.price_offset = price_offset_rate;
-    // DelayOpenStrategyAgent<BacktestingMailBox> strategy(
-    //    &mail_box, std::move(strategy_param));
-    ///***
-
-    // SimulatedExecutionHandler<BacktestingMailBox>
-    // execution_handler(&mail_box);
-
-    // PortfolioHandler<BacktestingMailBox> portfolio_handler(
-    //    init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
-    //    0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
-
-    CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
-    ///*********************
-    SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
-        &mail_box);
-
-    PortfolioHandler<BacktestingMailBox> portfolio_handler_(
-        init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
-        0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, true);
-
-    PriceHandler<BacktestingMailBox> price_handler(
-        instrument, &running, &mail_box, std::move(tick_container),
-        cancel_order_after_minute * 60, cancel_order_after_minute * 60);
-
-    while (running) {
-      if (!callable_queue.empty()) {
-        auto callable = callable_queue.front();
-        callable();
-        callable_queue.pop_front();
-      } else {
-        price_handler.StreamNext();
-      }
-    }
-
-    // self->send(coor, IdleAtom::value, self);
-    self->quit();
-  }};
-}
 
 void InitLogging(bool enable_logging) {
   namespace logging = boost::log;
@@ -373,9 +271,13 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto coor = system.spawn(coordinator, instruments, &cfg);
   std::cout << "start\n";
   for (size_t i = 0; i < instruments->size(); ++i) {
-    auto actor = system.spawn(worker, coor);
-
+    if (cfg.benchmark) {
+    auto actor = system.spawn(RunBenchmark, coor);
     caf::anon_send(coor, IdleAtom::value, actor);
+    } else {
+    auto actor = system.spawn(RunStrategy, coor);
+    caf::anon_send(coor, IdleAtom::value, actor);
+    }
   }
   system.await_all_actors_done();
 
