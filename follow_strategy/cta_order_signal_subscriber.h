@@ -10,7 +10,7 @@
 #include "follow_strategy/string_util.h"
 #include "follow_strategy/logging_defines.h"
 #include "hpt_core/time_util.h"
-#include "order_util.h"
+#include "hpt_core/order_util.h"
 #include "simply_portfolio.h"
 
 template <typename MailBox>

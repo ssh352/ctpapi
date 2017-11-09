@@ -21,10 +21,10 @@ REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi c
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_demo\sqlite_demo.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi sqlite_binary\sqlite_binary.gyp
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi live_trade\live_trade.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi strategy_unittest\strategy_unittest.gyp
-python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_broker\ctp_broker.gyp
-
-
+REM
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi backtesting\backtesting.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi live_trade\live_trade.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi strategy_unittest\strategy_unittest.gyp
+REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_broker\ctp_broker.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi all.gyp
 pause

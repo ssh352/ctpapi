@@ -1,7 +1,7 @@
 #ifndef FOLLOW_STRATEGY_CTA_TRADED_STRATEGY_H
 #define FOLLOW_STRATEGY_CTA_TRADED_STRATEGY_H
 #include "common/api_struct.h"
-#include "order_util.h"
+#include "hpt_core/order_util.h"
 template <class MailBox>
 class CTATradedStrategy {
  public:

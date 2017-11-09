@@ -41,8 +41,8 @@ class PortfolioHandler {
 
       for (const auto& pos : portfolio_.GetPositionList()) {
         if (pos->qty() > 0) {
-          quantitys_.push_back(OrderPosition{instrument_, pos->direction(),
-                                             pos->qty()});
+          quantitys_.push_back(
+              OrderPosition{instrument_, pos->direction(), pos->qty()});
         }
       }
 
@@ -77,22 +77,18 @@ class PortfolioHandler {
     unique_order_ids_.insert(input_order.order_id);
     if (input_order.position_effect == PositionEffect::kClose) {
       int position_qty = portfolio_.GetPositionCloseableQty(
-          input_order.instrument,
-          input_order.direction == OrderDirection::kBuy
-              ? OrderDirection::kSell
-              : OrderDirection::kBuy);
+          input_order.instrument, input_order.direction);
       if (position_qty < input_order.qty) {
         return;
       }
-      portfolio_.HandleNewInputCloseOrder(input_order.instrument,
-                                          input_order.direction,
-                                          input_order.qty);
+      portfolio_.HandleNewInputCloseOrder(
+          input_order.instrument, input_order.direction, input_order.qty);
     }
 
-    mail_box_->Send(InputOrder{
-        input_order.instrument, input_order.order_id,
-        input_order.position_effect, input_order.direction,
-        input_order.price, input_order.qty, input_order.timestamp});
+    mail_box_->Send(InputOrder{input_order.instrument, input_order.order_id,
+                               input_order.position_effect,
+                               input_order.direction, input_order.price,
+                               input_order.qty, input_order.timestamp});
   }
 
  private:

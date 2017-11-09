@@ -1,6 +1,6 @@
-#include "..\follow_strategy\order_util.h"
 #ifndef BACKTESTING_BACKTESTING_CTA_SIGNAL_BROKER_H
 #define BACKTESTING_BACKTESTING_CTA_SIGNAL_BROKER_H
+#include "hpt_core/order_util.h"
 
 template <class MailBox>
 class BacktestingCTASignalBroker {
