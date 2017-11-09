@@ -64,36 +64,35 @@ class PortfolioHandler {
     portfolio_.HandleOrder(order);
   }
 
-  //void HandleDaySettleAtom(const DaySettleAtom&) {
-  //  csv_ << last_tick_->timestamp << ","
-  //       << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
-  //       << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","
-  //       << str(boost::format("%0.2f") % portfolio_.daily_commission()) << "\n";
-  //}
+  void HandleDaySettleAtom(const DaySettleAtom&) {
+    csv_ << last_tick_->timestamp << ","
+         << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
+         << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","
+         << str(boost::format("%0.2f") % portfolio_.daily_commission()) << "\n";
+  }
 
   void HandlerInputOrder(const InputOrderSignal& input_order) {
     BOOST_ASSERT(unique_order_ids_.find(input_order.order_id) ==
                  unique_order_ids_.end());
     unique_order_ids_.insert(input_order.order_id);
-    if (input_order.position_effect_ == PositionEffect::kClose ||
-        input_order.position_effect_ == PositionEffect::kCloseToday) {
+    if (input_order.position_effect == PositionEffect::kClose) {
       int position_qty = portfolio_.GetPositionCloseableQty(
-          input_order.instrument_,
-          input_order.order_direction_ == OrderDirection::kBuy
+          input_order.instrument,
+          input_order.direction == OrderDirection::kBuy
               ? OrderDirection::kSell
               : OrderDirection::kBuy);
-      if (position_qty < input_order.qty_) {
+      if (position_qty < input_order.qty) {
         return;
       }
-      portfolio_.HandleNewInputCloseOrder(input_order.instrument_,
-                                          input_order.order_direction_,
-                                          input_order.qty_);
+      portfolio_.HandleNewInputCloseOrder(input_order.instrument,
+                                          input_order.direction,
+                                          input_order.qty);
     }
 
     mail_box_->Send(InputOrder{
-        input_order.instrument_, input_order.order_id, input_order.strategy_id,
-        input_order.position_effect_, input_order.order_direction_,
-        input_order.price_, input_order.qty_, input_order.timestamp_});
+        input_order.instrument, input_order.order_id,
+        input_order.position_effect, input_order.direction,
+        input_order.price, input_order.qty, input_order.timestamp});
   }
 
  private:

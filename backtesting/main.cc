@@ -20,10 +20,12 @@ using DaySettleAtom = caf::atom_constant<caf::atom("daysetl")>;
 #include "hpt_core/time_series_reader.h"
 #include "hpt_core/backtesting/execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
-#include "follow_strategy/delayed_open_strategy.h"
-#include "follow_strategy/cta_traded_strategy.h"
+#include "follow_strategy/delayed_open_strategy_ex.h"
+//#include "follow_strategy/cta_traded_strategy.h"
 #include "backtesting/backtesting_cta_signal_broker.h"
 #include "hpt_core/backtesting/simulated_always_treade_execution_handler.h"
+#include "backtesting_cta_signal_broker_ex.h"
+#include "follow_strategy/cta_traded_strategy.h"
 
 // #include "follow_strategy/cta_traded_strategy.h"
 
@@ -252,33 +254,33 @@ caf::behavior worker(caf::event_based_actor* self, caf::actor coor) {
     // FollowStrategy<BacktestingMailBox> strategy(&mail_box, "cta", "follower",
     //                                           10 * 60);
 
-    BacktestingCTASignalBroker<BacktestingMailBox>
+    BacktestingCTASignalBrokerEx<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
 
     ///****
-    DelayedOpenStrategy<BacktestingMailBox>::StrategyParam strategy_param;
-    strategy_param.delayed_open_after_seconds = delay_open_after_seconds;
-    strategy_param.price_offset_rate = price_offset_rate;
-    DelayedOpenStrategy<BacktestingMailBox> strategy(
-        &mail_box, "cta", "follower", std::move(strategy_param), instrument);
-
-    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
-
-    PortfolioHandler<BacktestingMailBox> portfolio_handler(
-        init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
-        0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
+    // DelayedOpenStrategyEx::StrategyParam strategy_param;
+    // strategy_param.delayed_open_after_seconds = delay_open_after_seconds;
+    // strategy_param.price_offset = price_offset_rate;
+    // DelayOpenStrategyAgent<BacktestingMailBox> strategy(
+    //    &mail_box, std::move(strategy_param));
     ///***
 
-    ///**************************
-    // CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
-    // SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
-    //    &mail_box);
+    // SimulatedExecutionHandler<BacktestingMailBox>
+    // execution_handler(&mail_box);
 
-    // PortfolioHandler<BacktestingMailBox> portfolio_handler_(
-    //    init_cash, &mail_box, std::move(instrument), csv_file_prefix, 0.1, 10,
-    //    CostBasis{CommissionType::kFixed, 165, 165, 165}, true);
+    // PortfolioHandler<BacktestingMailBox> portfolio_handler(
+    //    init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
+    //    0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, false);
+
+    CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
     ///*********************
+    SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
+        &mail_box);
+
+    PortfolioHandler<BacktestingMailBox> portfolio_handler_(
+        init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
+        0.1, 10, CostBasis{CommissionType::kFixed, 165, 165, 165}, true);
 
     PriceHandler<BacktestingMailBox> price_handler(
         instrument, &running, &mail_box, std::move(tick_container),
@@ -367,7 +369,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     instruments->emplace_back(std::make_pair(
         g_instrument_market_set[cfg.instrument], cfg.instrument));
   }
-
 
   auto coor = system.spawn(coordinator, instruments, &cfg);
   std::cout << "start\n";

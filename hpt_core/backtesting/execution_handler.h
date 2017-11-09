@@ -12,7 +12,6 @@
 struct LimitOrder {
   std::string instrument;
   std::string order_id;
-  std::string strategy_id;
   OrderDirection direction;
   PositionEffect position_effect;
   double price;
@@ -89,19 +88,19 @@ class SimulatedExecutionHandler {
     std::string order_id = input_order.order_id;
     if (input_order.direction == OrderDirection::kBuy) {
       long_limit_orders_.insert(
-          {input_order.instrument, order_id, input_order.strategy_id,
+          {input_order.instrument, order_id, 
            input_order.direction, input_order.position_effect,
            input_order.price, input_order.qty});
     } else {
       short_limit_orders_.insert(
-          {input_order.instrument, order_id, input_order.strategy_id,
+          {input_order.instrument, order_id, 
            input_order.direction, input_order.position_effect,
            input_order.price, input_order.qty});
     }
 
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
-    order->strategy_id = input_order.strategy_id;
+    //order->strategy_id = input_order.strategy_id;
 
     order->instrument_id = input_order.instrument;
     order->position_effect = input_order.position_effect;
@@ -165,7 +164,7 @@ class SimulatedExecutionHandler {
     // int qty;
 
     EnqueueRtnOrderEvent(
-        {(*it)->instrument_id, (*it)->order_id, (*it)->strategy_id,
+        {(*it)->instrument_id, (*it)->order_id, 
          (*it)->direction, (*it)->position_effect, (*it)->input_price,
          (*it)->qty},
         OrderStatus::kCancelRejected, (*it)->input_price, (*it)->qty, 0);
@@ -181,7 +180,6 @@ class SimulatedExecutionHandler {
     auto order = std::make_shared<OrderField>();
     order->order_id = limit_order.order_id;
     order->instrument_id = limit_order.instrument;
-    order->strategy_id = limit_order.strategy_id;
     order->position_effect = limit_order.position_effect;
     order->direction = limit_order.direction;
     order->status = order_status;

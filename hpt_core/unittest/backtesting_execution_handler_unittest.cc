@@ -60,7 +60,7 @@ auto MakeInputOrder(std::string instrument,
                     double price,
                     int qty,
                     TimeStamp timestamp) {
-  return InputOrder{instrument, "A1",  "S1", position_effect,
+  return InputOrder{instrument, "A1",position_effect,
                     direction,  price, qty,  timestamp};
 }
 

@@ -108,7 +108,7 @@ TEST(TestPortflioTest, BuyOrder) {
   EXPECT_EQ(init_cash + 200, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A002", "S1", OrderDirection::kSell, 200.0, 10));
+      MakeNewCloseOrder("A002", "S1", OrderDirection::kBuy, 200.0, 10));
   EXPECT_EQ(init_cash + 200, portflio.total_value());
 
   portflio.HandleOrder(MakeTradedOrder("A002", 10));
@@ -117,7 +117,7 @@ TEST(TestPortflioTest, BuyOrder) {
   EXPECT_EQ(init_cash + 400, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 200.0, 10));
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kBuy, 200.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A003", 10));
   EXPECT_EQ(400, portflio.realised_pnl());
   EXPECT_EQ(0, portflio.unrealised_pnl());
@@ -155,7 +155,7 @@ TEST(TestPortflioTest, SellOrder) {
   EXPECT_EQ(init_cash - 200, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A002", "S1", OrderDirection::kBuy, 200.0, 10));
+      MakeNewCloseOrder("A002", "S1", OrderDirection::kSell, 200.0, 10));
   EXPECT_EQ(init_cash - 200, portflio.total_value());
 
   portflio.HandleOrder(MakeTradedOrder("A002", 10));
@@ -164,7 +164,7 @@ TEST(TestPortflioTest, SellOrder) {
   EXPECT_EQ(init_cash - 400, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A003", "S1", OrderDirection::kBuy, 200.0, 10));
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 200.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A003", 10));
   EXPECT_EQ(-400, portflio.realised_pnl());
   EXPECT_EQ(0, portflio.unrealised_pnl());
@@ -197,7 +197,7 @@ TEST(TestPortflioTest, Margin) {
   EXPECT_EQ(36500, portflio.margin());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A003", "S2", OrderDirection::kSell, 60.0, 10));
+      MakeNewCloseOrder("A003", "S2", OrderDirection::kBuy, 60.0, 10));
   EXPECT_EQ(36500, portflio.margin());
   portflio.HandleOrder(MakeTradedOrder("A003", 10));
   EXPECT_EQ(36000, portflio.margin());
@@ -206,7 +206,7 @@ TEST(TestPortflioTest, Margin) {
   EXPECT_EQ(101000, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A004", "S1", OrderDirection::kBuy, 310.0, 10));
+      MakeNewCloseOrder("A004", "S1", OrderDirection::kSell, 310.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A004", 10));
   EXPECT_EQ(18000, portflio.margin());
   EXPECT_EQ(-26000, portflio.unrealised_pnl());
@@ -214,7 +214,7 @@ TEST(TestPortflioTest, Margin) {
   EXPECT_EQ(49000, portflio.total_value());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A005", "S1", OrderDirection::kBuy, 200.0, 10));
+      MakeNewCloseOrder("A005", "S1", OrderDirection::kSell, 200.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A005", 10));
   EXPECT_EQ(0, portflio.margin());
   EXPECT_EQ(0, portflio.unrealised_pnl());
@@ -282,7 +282,7 @@ TEST(TestPortflioTest, RateCommission) {
   EXPECT_EQ(53954, portflio.cash());
 
   portflio.HandleOrder(
-      MakeNewCloseOrder("A003", "S1", OrderDirection::kBuy, 200.0, 25));
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 200.0, 25));
   portflio.HandleOrder(MakeTradedOrder("A003", 25));
   EXPECT_EQ(0, portflio.unrealised_pnl());
   EXPECT_EQ(-8000.0, portflio.realised_pnl());
@@ -306,9 +306,9 @@ TEST(TestPortflioTest, ErasePositionItem) {
       MakeNewOpenOrder("A002", "S1", OrderDirection::kBuy, 190.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A002", 10));
 
-  portflio.HandleNewInputCloseOrder("S1", OrderDirection::kSell, 10);
+  portflio.HandleNewInputCloseOrder("S1", OrderDirection::kBuy, 10);
   portflio.HandleOrder(
-      MakeNewCloseOrder("A003", "S1", OrderDirection::kSell, 190.0, 10));
+      MakeNewCloseOrder("A003", "S1", OrderDirection::kBuy, 190.0, 10));
   portflio.HandleOrder(MakeTradedOrder("A003", 10));
 
   EXPECT_NO_THROW(portflio.HandleOrder(MakeTradedOrder("A001", 20)));

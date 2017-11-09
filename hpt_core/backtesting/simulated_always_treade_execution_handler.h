@@ -25,8 +25,6 @@ class SimulatedAlwaysExcutionHandler {
   void HandlerInputOrder(const InputOrder& input_order) {
     auto order = std::make_shared<OrderField>();
     order->order_id = input_order.order_id;
-    order->strategy_id = input_order.strategy_id;
-
     order->instrument_id = input_order.instrument;
     order->position_effect = input_order.position_effect;
     order->direction = input_order.direction;
@@ -46,9 +44,9 @@ class SimulatedAlwaysExcutionHandler {
     mail_box_->Send(std::move(order));
 
     EnqueueRtnOrderEvent(input_order.order_id, input_order.instrument,
-                         input_order.strategy_id, input_order.position_effect,
-                         input_order.direction, input_order.price,
-                         input_order.qty, OrderStatus::kAllFilled);
+                         input_order.position_effect, input_order.direction,
+                         input_order.price, input_order.qty,
+                         OrderStatus::kAllFilled);
   }
 
   void HandleCancelOrder(const CancelOrderSignal& cancel_order) {
@@ -59,7 +57,6 @@ class SimulatedAlwaysExcutionHandler {
  private:
   void EnqueueRtnOrderEvent(const std::string& order_id,
                             const std::string& instrument,
-                            const std::string& strategy_id,
                             PositionEffect position_effect,
                             OrderDirection direction,
                             double price,
@@ -68,7 +65,6 @@ class SimulatedAlwaysExcutionHandler {
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
     order->instrument_id = instrument;
-    order->strategy_id = strategy_id;
     order->position_effect = position_effect;
     order->direction = direction;
     order->status = order_status;

@@ -1,7 +1,7 @@
 #include "portfolio.h"
 #include <algorithm>
 #include <boost/assert.hpp>
-#include "follow_strategy/order_util.h"
+#include "hpt_core/order_util.h"
 
 bool IsOpenPositionEffect(PositionEffect position_effect) {
   return position_effect == PositionEffect::kOpen;
