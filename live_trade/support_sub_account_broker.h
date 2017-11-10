@@ -2,6 +2,7 @@
 #define LIVE_TRADE_SUPPORT_SUB_ACCOUNT_BROKER_H
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
+#include <boost/unordered_set.hpp>
 #include "caf/all.hpp"
 #include "ctp_trader_api.h"
 #include "common/api_struct.h"
@@ -20,7 +21,8 @@ class SupportSubAccountBroker : public caf::event_based_actor,
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override;
 
-  virtual void HandleCTPTradeOrder(const std::string& order_id,
+  virtual void HandleCTPTradeOrder(const std::string& instrument,
+                                   const std::string& order_id,
                                    double trading_price,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
@@ -43,6 +45,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
       return l.sub_account_id == r.sub_account_id && l.order_id == r.order_id;
     }
   };
+
   std::string GenerateOrderRef();
   using OrderIdBimap =
       boost::bimap<boost::bimaps::unordered_set_of<SubAccountOrderId,

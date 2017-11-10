@@ -21,7 +21,8 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override;
 
-  virtual void HandleCTPTradeOrder(const std::string& order_id,
+  virtual void HandleCTPTradeOrder(const std::string& instrument,
+                                   const std::string& order_id,
                                    double trading_price,
                                    int trading_qty,
                                    TimeStamp timestamp) override;

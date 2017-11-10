@@ -14,12 +14,13 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
 
-    virtual void HandleCTPTradeOrder(const std::string& order_id,
+    virtual void HandleCTPTradeOrder(const std::string& instrument,
+                                     const std::string& order_id,
                                      double trading_price,
                                      int trading_qty,
                                      TimeStamp timestamp) = 0;
   };
-  CTPTraderApi(Delegate* delegate);
+  CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path);
 
   void Connect(const std::string& server,
                std::string broker_id,

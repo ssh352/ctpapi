@@ -101,6 +101,15 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             it->second->HandleRtnOrder(order);
           }
         },
+        [=](const std::string& instrument, const std::string& order_id,
+            double trading_price, int trading_qty, TimeStamp timestamp) {
+          auto it = instrument_brokers_.find(instrument);
+          BOOST_ASSERT(it != instrument_brokers_.end());
+          if (it != instrument_brokers_.end()) {
+            it->second->HandleTrader(order_id, trading_price, trading_qty,
+                                     timestamp);
+          }
+        },
         [=](const InputOrder& order) {
           auto it = instrument_brokers_.find(order.instrument);
           if (it != instrument_brokers_.end()) {
@@ -173,19 +182,20 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   bool running = true;
 
-  auto sub_acconts = {"foo", "bar"};
+  // auto sub_acconts = {"foo", "bar"};
+  auto sub_acconts = {"foo"};
   LiveTradeMailBox common_mail_box;
 
-  std::vector<std::unique_ptr<LiveTradeMailBox> > inner_mail_boxs;
+  std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
   std::vector<std::pair<std::string, caf::actor>> sub_actors;
   auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
   for (const auto& account : sub_acconts) {
     auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
     DelayedOpenStrategyEx::StrategyParam param;
     param.delayed_open_after_seconds = 5;
-    param.price_offset = 0.01;
-    system.spawn<CAFDelayOpenStrategyAgent>(std::move(param), inner_mail_box.get(),
-                                            &common_mail_box);
+    param.price_offset = 0;
+    system.spawn<CAFDelayOpenStrategyAgent>(
+        std::move(param), inner_mail_box.get(), &common_mail_box);
     sub_actors.push_back(std::make_pair(
         account, system.spawn<CAFSubAccountBroker>(inner_mail_box.get(),
                                                    &common_mail_box, account)));
@@ -198,9 +208,9 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
   caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-                 "tcp://180.168.146.187:10000", "9999", "099344", "a12345678");
+                 "tcp://180.168.146.187:10001", "9999", "099344", "a12345678");
 
-  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
                  "9999", "053867", "8661188");
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",

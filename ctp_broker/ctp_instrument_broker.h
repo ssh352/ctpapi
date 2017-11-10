@@ -13,7 +13,7 @@
 class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
  public:
   CTPInstrumentBroker(CTPOrderDelegate* delegate,
-    std::string instrument,
+                      std::string instrument,
                       bool close_today_aware,
                       std::function<std::string(void)> generate_order_id_func);
 
@@ -23,8 +23,13 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   void HandleCancel(const CancelOrderSignal& cancel);
 
-  void InitPosition(std::pair<int, int> long_pos,
-                    std::pair<int, int> short_pos);
+  void HandleTrader(const std::string& order_id,
+                    double trading_price,
+                    int trading_qty,
+                    TimeStamp timestamp);
+
+      void InitPosition(std::pair<int, int> long_pos,
+                        std::pair<int, int> short_pos);
 
   virtual void PosstionEffectStrategyHandleInputOrder(
       const std::string& input_order_id,

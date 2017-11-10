@@ -48,6 +48,11 @@ void CTPInstrumentBroker::HandleRtnOrder(
   }
 }
 
+void CTPInstrumentBroker::HandleTrader(const std::string& order_id,
+                                       double trading_price,
+                                       int trading_qty,
+                                       TimeStamp timestamp) {}
+
 void CTPInstrumentBroker::HandleInputOrder(const InputOrder& order) {
   position_effect_strategy_->HandleInputOrder(order, *long_, *short_);
   InsertOrderField(order.instrument, order.order_id, order.direction,
@@ -107,7 +112,8 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
       BindOrderId(cancel.order_id, enter_order.order_id);
 
       if (!IsCtpOpenPositionEffect((*ctp_order_it)->position_effect)) {
-        if ((*ctp_order_it)->position_effect_direction == OrderDirection::kBuy) {
+        if ((*ctp_order_it)->position_effect_direction ==
+            OrderDirection::kBuy) {
           long_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);
         } else {
           short_->Frozen(enter_order.qty, (*ctp_order_it)->position_effect);
@@ -180,3 +186,4 @@ void CTPInstrumentBroker::PosstionEffectStrategyHandleInputOrder(
   BindOrderId(input_order_id, ctp_enter_order.order_id);
   order_delegate_->EnterOrder(std::move(ctp_enter_order));
 }
+

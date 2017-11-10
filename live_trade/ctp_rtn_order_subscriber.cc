@@ -3,7 +3,7 @@
 CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
                                                  LiveTradeMailBox* mail_box)
     : caf::event_based_actor(cfg),
-      trade_api_(this),
+      trade_api_(this, "./cta"),
       mail_box_(mail_box),
       signal_subscriber_(this) {}
 
@@ -37,8 +37,8 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
             } else {
             }
           },
-          [=](const std::string& order_id, double trading_price,
-              int trading_qty, TimeStamp timestamp) {
+          [=](const std::string& instrument, const std::string& order_id,
+              double trading_price, int trading_qty, TimeStamp timestamp) {
             BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
                                           CompareCTPOrderField()) !=
                          ctp_orders_.end());
@@ -99,9 +99,10 @@ std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
   return order;
 }
 
-void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& order_id,
+void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
+                                                  const std::string& order_id,
                                                   double trading_price,
                                                   int trading_qty,
                                                   TimeStamp timestamp) {
-  send(this, order_id, trading_price, trading_qty, timestamp);
+  send(this, instrument, order_id, trading_price, trading_qty, timestamp);
 }

@@ -3,7 +3,8 @@
 #include "hpt_core/order_util.h"
 #include "hpt_core/time_util.h"
 
-CTPTraderApi::CTPTraderApi(Delegate* delegate) : delegate_(delegate) {
+CTPTraderApi::CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path)
+    : delegate_(delegate) {
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
   api_->RegisterSpi(this);
 }
@@ -112,13 +113,13 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
       ParseTThostFtdcPositionEffect(pOrder->CombOffsetFlag[0]);
 
   if (order_field->position_effect == CTPPositionEffect::kOpen) {
-    order_field->position_effect_direction = pOrder->Direction == THOST_FTDC_D_Buy
-                                 ? OrderDirection::kBuy
-                                 : OrderDirection::kSell;
+    order_field->position_effect_direction =
+        pOrder->Direction == THOST_FTDC_D_Buy ? OrderDirection::kBuy
+                                              : OrderDirection::kSell;
   } else {
-    order_field->position_effect_direction = pOrder->Direction == THOST_FTDC_D_Buy
-                                 ? OrderDirection::kSell
-                                 : OrderDirection::kBuy;
+    order_field->position_effect_direction =
+        pOrder->Direction == THOST_FTDC_D_Buy ? OrderDirection::kSell
+                                              : OrderDirection::kBuy;
   }
   order_field->date = pOrder->InsertDate;
   // order_field->input_timestamp = pOrder->InsertTime;
@@ -143,7 +144,7 @@ void CTPTraderApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
   BOOST_ASSERT(it != order_sys_id_to_order_id_.end());
   if (it != order_sys_id_to_order_id_.end()) {
     delegate_->HandleCTPTradeOrder(
-        it->second, pTrade->Price, pTrade->Volume,
+        pTrade->InstrumentID, it->second, pTrade->Price, pTrade->Volume,
         ptime_to_timestamp(boost::posix_time::microsec_clock::local_time()));
   }
 }
@@ -174,7 +175,7 @@ void CTPTraderApi::OnFrontConnected() {
 }
 
 void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
-                                    const std::string& order_id) {
+                              const std::string& order_id) {
   CThostFtdcInputOrderField field = {0};
   strcpy(field.InstrumentID, input_order.instrument.c_str());
   strcpy(field.OrderRef, order_id.c_str());
@@ -210,7 +211,6 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
   }
 }
 
-
 void CTPTraderApi::CancelOrder(CThostFtdcInputOrderActionField order) {
   strcpy(order.BrokerID, broker_id_.c_str());
   strcpy(order.UserID, user_id_.c_str());
@@ -228,8 +228,8 @@ void CTPTraderApi::Connect(const std::string& server,
   char fron_server[255] = {0};
   strcpy(fron_server, server.c_str());
   api_->RegisterFront(fron_server);
-  //api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  //api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+  // api_->SubscribePublicTopic(THOST_TERT_RESUME);
+  // api_->SubscribePrivateTopic(THOST_TERT_RESUME);
   api_->SubscribePublicTopic(THOST_TERT_QUICK);
   api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
