@@ -339,7 +339,7 @@ TEST_F(
 TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Fully) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 80.1, 10);
   auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
   ASSERT_TRUE(params);
   const auto& order = std::get<0>(*params);
@@ -361,7 +361,7 @@ TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Fully) {
 TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Partially) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 7);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 80.1, 7);
   auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
   ASSERT_TRUE(params);
   const auto& order = std::get<0>(*params);
@@ -380,10 +380,34 @@ TEST_F(CTAOrderSignalScriberFixture, ClosingOrder_Partially) {
   EXPECT_EQ(7, position_qty.frozen);
 }
 
+TEST_F(CTAOrderSignalScriberFixture, CloseingCompleLockOrder) {
+  //MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
+  //MasterNewOpenAndFill("1", OrderDirection::kSell, 81.1, 10, 10);
+  //Clear();
+  //MasterNewCloseOrder("2", OrderDirection::kBuy, 80.1, 10);
+  //auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+  //ASSERT_TRUE(params);
+  //const auto& order = std::get<0>(*params);
+  //const auto& position_qty = std::get<1>(*params);
+
+  //EXPECT_EQ(0, order->trading_qty);
+  //EXPECT_EQ(10, order->leaves_qty);
+  //EXPECT_EQ(0, order->qty);
+  //EXPECT_EQ(80.1, order->input_price);
+  //EXPECT_EQ(0, order->trading_price);
+  //EXPECT_EQ(OrderStatus::kActive, order->status);
+  //EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
+  //EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
+
+  //EXPECT_EQ(10, position_qty.position);
+  //EXPECT_EQ(7, position_qty.frozen);
+}
+
+
 TEST_F(CTAOrderSignalScriberFixture, Traded_Fully_Close_Order) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 80.1, 10);
   Clear();
   MasterTradedOrder("1", 10);
 
@@ -408,7 +432,7 @@ TEST_F(CTAOrderSignalScriberFixture, Traded_Fully_Close_Order) {
 TEST_F(CTAOrderSignalScriberFixture, Traded_Partially_Close_Order) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 80.1, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 80.1, 10);
   Clear();
   MasterTradedOrder("1", 7);
 

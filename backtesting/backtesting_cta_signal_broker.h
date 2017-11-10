@@ -198,10 +198,8 @@ class BacktestingCTASignalBroker {
         ret = PositionEffect::kOpen;
         break;
       case 1:
-        ret = PositionEffect::kClose;
-        break;
       case 2:
-        ret = PositionEffect::kCloseToday;
+        ret = PositionEffect::kClose;
         break;
       default:
         break;

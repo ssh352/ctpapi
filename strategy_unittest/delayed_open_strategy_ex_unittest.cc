@@ -47,7 +47,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Closeing_Fully_Position) {
   MarketTick(1.2);
   TradedOrder("0", 10);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.1, 10, 10, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.1, 10, 10, 10);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
@@ -64,7 +64,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpenin
   MarketTick(1.2);
   TradedOrder("0", 4);
   Clear();
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.1, 10, 10, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.1, 10, 10, 10);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
@@ -91,7 +91,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseHadDelayHadOpeni
   MarketTick(1.2);
   Clear();
 
-  MasterNewCloseOrder("2", OrderDirection::kBuy, 1.1, 15, 15, 15);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 1.1, 15, 15, 15);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
@@ -119,7 +119,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAPartiallyCloseQtyLessOrEqu
   TradedOrder("0", 10);
   Clear();
 
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.0, 4, 10, 4);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.0, 4, 10, 4);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.0, input_order->price);
@@ -140,7 +140,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   TradedOrder("0", 6);
   Clear();
 
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.0, 7, 10, 7);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.0, 7, 10, 7);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.0, input_order->price);
@@ -170,7 +170,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   TradedOrder("1", 3);
   Clear();
 
-  MasterNewCloseOrder("2", OrderDirection::kBuy, 1.3, 11, 15, 11);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 1.3, 11, 15, 11);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
@@ -206,7 +206,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   TradedOrder("1", 3);
   Clear();
 
-  MasterNewCloseOrder("2", OrderDirection::kBuy, 1.3, 11, 15, 11);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 1.3, 11, 15, 11);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
@@ -240,7 +240,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   MarketTick(1.2);
   Clear();
 
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.0, 4, 10, 4);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.0, 4, 10, 4);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("1", 4, 6, 0);
   ElapseSeconds(delayed_open_after_seconds);
@@ -273,7 +273,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   MarketTick(1.3);
   Clear();
 
-  MasterNewCloseOrder("3", OrderDirection::kBuy, 1.3, 7, 19, 7);
+  MasterNewCloseOrder("3", OrderDirection::kSell, 1.3, 7, 19, 7);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
@@ -316,7 +316,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CancelCloseOrder) {
   ElapseSeconds(delayed_open_after_seconds);
   MarketTick(1.2);
   TradedOrder("0", 10);
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.0, 4, 10, 4);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.0, 4, 10, 4);
   Clear();
 
   MasterCancelOrder("1", 10, 0);
@@ -335,8 +335,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirect
   Clear();
 
   auto_reply_new_rtn_order = false;
-  MasterNewCloseOrder("1", OrderDirection::kBuy, 1.3, 1, 4, 1);
-  MasterNewCloseOrder("2", OrderDirection::kBuy, 1.5, 3, 4, 4);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.3, 1, 4, 1);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 1.5, 3, 4, 4);
 
   {
     auto input_order = PopupRntOrder<InputOrder>();
@@ -372,8 +372,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForDifferentD
   MarketTick(1.7);
   TradedOrder("1", 5);
   Clear();
-  MasterNewCloseOrder("2", OrderDirection::kBuy, 1.3, 4, 4, 4);
-  MasterNewCloseOrder("3", OrderDirection::kSell, 1.5, 5, 5, 5);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 1.3, 4, 4, 4);
+  MasterNewCloseOrder("3", OrderDirection::kBuy, 1.5, 5, 5, 5);
   {
     auto input_order = PopupRntOrder<InputOrder>();
     ASSERT_TRUE(input_order);

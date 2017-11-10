@@ -2,6 +2,7 @@
 #include <boost/assert.hpp>
 
 #include "unittest_helper.h"
+#include "hpt_core/order_util.h"
 
 std::shared_ptr<OrderField> StrategyFixture::MakeCanceledOrder(
     const std::string& account_id,
@@ -104,7 +105,9 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
   order->strategy_id = account_id;
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->position_effect_direction = direction;
+  order->direction = direction;
+  order->position_effect_direction =
+      AdjustDirectionByPositionEffect(position_effect, direction);
   order->status = status;
   order->instrument_id = instrument;
   order->input_price = price;
@@ -118,10 +121,12 @@ std::shared_ptr<OrderField> StrategyFixture::MakeOrderField(
 
 void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   event_queues_.push_back(input_order);
-  auto order = MakeNewOrder(
-      account_id_, input_order.order_id, input_order.instrument,
-      input_order.position_effect, input_order.direction,
-      input_order.price, input_order.qty);
+  auto order =
+      MakeNewOrder(account_id_, input_order.order_id, input_order.instrument,
+                   input_order.position_effect,
+                   AdjustDirectionByPositionEffect(input_order.position_effect,
+                                                   input_order.direction),
+                   input_order.price, input_order.qty);
   if (auto_reply_new_rtn_order) {
     Send(std::move(order));
   } else {
