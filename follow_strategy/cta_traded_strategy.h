@@ -7,6 +7,7 @@ class CTATradedStrategy {
  public:
   CTATradedStrategy(MailBox* mail_box) : mail_box_(mail_box) {
     mail_box_->Subscribe(&CTATradedStrategy::HandleCTASignal, this);
+    mail_box_->Subscribe(&CTATradedStrategy::HandleCTASignalEx, this);
     mail_box_->Subscribe(&CTATradedStrategy::HandleTick, this);
   }
 
@@ -17,10 +18,20 @@ class CTATradedStrategy {
   void HandleCTASignal(const std::shared_ptr<OrderField>& order,
                        const CTAPositionQty&) {
     if (order->status == OrderStatus::kAllFilled) {
-      mail_box_->Send(InputOrderSignal{
-          order->instrument_id, GenerateOrderId(), order->position_effect,
-          order->direction, order->input_price, order->qty,
-          last_tick_->timestamp});
+      mail_box_->Send(InputOrderSignal{order->instrument_id, GenerateOrderId(),
+                                       order->position_effect, order->direction,
+                                       order->input_price, order->qty,
+                                       last_tick_->timestamp});
+    }
+  }
+
+  void HandleCTASignalEx(const CTASignalAtom&,
+                         const std::shared_ptr<OrderField>& order) {
+    if (order->status == OrderStatus::kAllFilled) {
+      mail_box_->Send(InputOrderSignal{order->instrument_id, GenerateOrderId(),
+                                       order->position_effect, order->direction,
+                                       order->input_price, order->qty,
+                                       last_tick_->timestamp});
     }
   }
 

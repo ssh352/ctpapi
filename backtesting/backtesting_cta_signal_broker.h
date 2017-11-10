@@ -38,35 +38,35 @@ class BacktestingCTASignalBroker {
 
   void BeforeTrading(const BeforeTradingAtom&,
                      const TradingTime& trading_time) {
-    csv_ << "==================================================\n";
-    if (trading_time == TradingTime::kDay) {
-      mail_box_->Send(CTASignalAtom::value, quantitys_);
-      mail_box_->Send(CTASignalAtom::value, histor_orders_);
-      csv_ << "Day open:"
-           << "positions:" << quantitys_.size()
-           << "history order:" << histor_orders_.size() << "\n";
-    } else if (trading_time == TradingTime::kNight) {
-      // new trade day for cta
-      histor_orders_.clear();
-      quantitys_.clear();
+    // csv_ << "==================================================\n";
+    // if (trading_time == TradingTime::kDay) {
+    //  mail_box_->Send(CTASignalAtom::value, quantitys_);
+    //  mail_box_->Send(CTASignalAtom::value, histor_orders_);
+    //  csv_ << "Day open:"
+    //       << "positions:" << quantitys_.size()
+    //       << "history order:" << histor_orders_.size() << "\n";
+    //} else if (trading_time == TradingTime::kNight) {
+    //  // new trade day for cta
+    //  histor_orders_.clear();
+    //  quantitys_.clear();
 
-      for (const auto& pos : portfolio_.GetPositionList()) {
-        if (pos->qty() > 0) {
-          quantitys_.push_back(
-              OrderPosition{instrument_, pos->direction(), pos->qty()});
-        }
-      }
+    //  for (const auto& pos : portfolio_.GetPositionList()) {
+    //    if (pos->qty() > 0) {
+    //      quantitys_.push_back(
+    //          OrderPosition{instrument_, pos->direction(), pos->qty()});
+    //    }
+    //  }
 
-      portfolio_.ResetByNewTradingDate();
-      mail_box_->Send(CTASignalAtom::value, quantitys_);
-      mail_box_->Send(CTASignalAtom::value, histor_orders_);
+    //  portfolio_.ResetByNewTradingDate();
+    //  mail_box_->Send(CTASignalAtom::value, quantitys_);
+    //  mail_box_->Send(CTASignalAtom::value, histor_orders_);
 
-      csv_ << "Night open:"
-           << "positions:" << quantitys_.size()
-           << "history order:" << histor_orders_.size() << "\n";
-    } else {
-      BOOST_ASSERT(false);
-    }
+    //  csv_ << "Night open:"
+    //       << "positions:" << quantitys_.size()
+    //       << "history order:" << histor_orders_.size() << "\n";
+    //} else {
+    //  BOOST_ASSERT(false);
+    //}
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
@@ -92,6 +92,8 @@ class BacktestingCTASignalBroker {
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kActive;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -110,6 +112,8 @@ class BacktestingCTASignalBroker {
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kAllFilled;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;
@@ -130,6 +134,8 @@ class BacktestingCTASignalBroker {
           order->position_effect =
               ParseThostFtdcPosition((*i)->position_effect);
           order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
           order->status = OrderStatus::kActive;
           order->input_price = (*i)->price;
           order->avg_price = (*i)->price;
@@ -146,6 +152,8 @@ class BacktestingCTASignalBroker {
         order->instrument_id = instrument_;
         order->position_effect = ParseThostFtdcPosition((*i)->position_effect);
         order->direction = ParseThostFtdcOrderDirection((*i)->direction);
+        order->position_effect_direction = AdjustDirectionByPositionEffect(
+            order->position_effect, order->direction);
         order->status = OrderStatus::kCanceled;
         order->input_price = (*i)->price;
         order->avg_price = (*i)->price;

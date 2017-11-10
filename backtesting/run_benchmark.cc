@@ -28,13 +28,13 @@ caf::behavior RunBenchmark(caf::event_based_actor* self, caf::actor coor) {
     RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, out_dir,
                                                    csv_file_prefix);
 
-    BacktestingCTASignalBrokerEx<BacktestingMailBox>
-        backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
-                                       instrument);
-
-    //BacktestingCTASignalBroker<BacktestingMailBox>
+    //BacktestingCTASignalBrokerEx<BacktestingMailBox>
     //    backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
     //                                   instrument);
+
+    BacktestingCTASignalBroker<BacktestingMailBox>
+        backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
+                                       instrument);
     CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
     SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
         &mail_box);
