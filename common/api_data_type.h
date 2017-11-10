@@ -33,6 +33,6 @@ typedef char OrderIDType[21];
 
 enum class CommissionType { kFixed, kRate };
 
-enum class TradingTime { kDay, kNight };
+enum class TradingTime { kUndefined, kDay, kNight };
 
 #endif  // COMMON_API_DATA_TYPE_H

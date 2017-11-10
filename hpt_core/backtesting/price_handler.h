@@ -44,9 +44,10 @@ class PriceHandler {
         mail_box_->Send(DaySettleAtom::value);
       }
       TradingTime trading_time = GetTradingTime(tick->timestamp);
+      BOOST_ASSERT(trading_time != TradingTime::kUndefined);
       mail_box_->Send(BeforeTradingAtom::value, trading_time);
       UpdateNextBeforeCloseMarketEventTimeStamp(trading_time, tick->timestamp);
-    } else if (NeedsSeedBeforeCLoseMarketEvent(tick)) {
+    } else if (NeedsSeedBeforeCloseMarketEvent(tick)) {
       mail_box_->Send(BeforeCloseMarketAtom::value);
       next_event_before_close_market_timestamp_ = 0;
     } else if (NeedsSendCloseMarketNearEvent(tick)) {
@@ -71,15 +72,16 @@ class PriceHandler {
     if (previous_time_stamp_ == 0) {
       return true;
     }
-    return (tick->timestamp - previous_time_stamp_) / 1000.0 > 3 * 3600;
+    return (tick->timestamp - previous_time_stamp_) / 1000.0 > 3 * 3600 &&
+           GetTradingTime(tick->timestamp) != TradingTime::kUndefined;
   }
 
-  bool NeedsSeedBeforeCLoseMarketEvent(Tick* tick) {
+  bool NeedsSeedBeforeCloseMarketEvent(Tick* tick) {
     return next_event_before_close_market_timestamp_ != 0 &&
            tick->timestamp > next_event_before_close_market_timestamp_;
   }
 
-  TradingTime GetTradingTime(TimeStamp time_stamp) {
+  TradingTime GetTradingTime(TimeStamp time_stamp) const {
     boost::posix_time::ptime now(boost::gregorian::date(1970, 1, 1),
                                  boost::posix_time::milliseconds(time_stamp));
     boost::posix_time::ptime day(now.date(),
@@ -87,12 +89,13 @@ class PriceHandler {
     boost::posix_time::ptime night(now.date(),
                                    boost::posix_time::time_duration(21, 0, 0));
 
-    TradingTime trading_time = TradingTime::kDay;
+    TradingTime trading_time = TradingTime::kUndefined;
     if (std::abs((now - day).total_seconds()) < 600) {
+      trading_time = TradingTime::kDay;
     } else if (std::abs((now - night).total_seconds()) < 600) {
       trading_time = TradingTime::kNight;
     } else {
-      BOOST_ASSERT(false);
+      // BOOST_ASSERT(false);
     }
     return trading_time;
   }
@@ -133,12 +136,11 @@ class PriceHandler {
     if (timestamp == 0) {
       return false;
     }
-      boost::posix_time::ptime pt(
-          boost::gregorian::date(1970, 1, 1),
-          boost::posix_time::milliseconds(timestamp));
-      auto day_close_market_pt = boost::posix_time::ptime(
-          pt.date(), boost::posix_time::time_duration(15, 0, 0));
-      return abs((pt - day_close_market_pt).total_seconds()) < 30 * 60;
+    boost::posix_time::ptime pt(boost::gregorian::date(1970, 1, 1),
+                                boost::posix_time::milliseconds(timestamp));
+    auto day_close_market_pt = boost::posix_time::ptime(
+        pt.date(), boost::posix_time::time_duration(15, 0, 0));
+    return abs((pt - day_close_market_pt).total_seconds()) < 30 * 60;
   }
 
   std::vector<std::pair<std::shared_ptr<Tick>, int64_t> > tick_containter_;
@@ -152,8 +154,6 @@ class PriceHandler {
   int event_before_close_market_near_seconds_ = 0;
   TimeStamp next_event_before_close_market_timestamp_ = 0;
   TimeStamp next_event_before_close_market_near_timestamp_ = 0;
-
-
 };
 
 #endif  // BACKTESTING_PRICE_HANDLER_H

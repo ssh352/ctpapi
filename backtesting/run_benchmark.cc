@@ -8,6 +8,7 @@
 #include "rtn_order_recorder.h"
 #include "type_defines.h"
 #include "follow_strategy/cta_traded_strategy.h"
+#include "backtesting_cta_signal_broker.h"
 
 caf::behavior RunBenchmark(caf::event_based_actor* self, caf::actor coor) {
   return {[=](const std::string& market, const std::string& instrument,
@@ -30,6 +31,10 @@ caf::behavior RunBenchmark(caf::event_based_actor* self, caf::actor coor) {
     BacktestingCTASignalBrokerEx<BacktestingMailBox>
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
+
+    //BacktestingCTASignalBroker<BacktestingMailBox>
+    //    backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
+    //                                   instrument);
     CTATradedStrategy<BacktestingMailBox> strategy(&mail_box);
     SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
         &mail_box);
