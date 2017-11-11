@@ -39,6 +39,20 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Open_Order) {
   EXPECT_EQ("0", input_order->order_id);
 }
 
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OpenWithBetterPrice) {
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  MasterTradedOrder("0", 10, 10, 0);
+  ElapseSeconds(delayed_open_after_seconds);
+  MarketTick(0.9, 0.8, 1.0);
+  auto input_order = PopupRntOrder<InputOrder>();
+  ASSERT_TRUE(input_order);
+  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(PositionEffect::kOpen, input_order->position_effect);
+  EXPECT_EQ(1.0, input_order->price);
+  EXPECT_EQ(10, input_order->qty);
+  EXPECT_EQ("0", input_order->order_id);
+}
+
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Closeing_Fully_Position) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());

@@ -375,8 +375,8 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
 
             double input_price =
                 order.direction == OrderDirection::kBuy
-                    ? std::min(order.price, tick->tick->last_price)
-                    : std::max(order.price, tick->tick->last_price);
+                    ? std::min(order.price, tick->tick->ask_price1)
+                    : std::max(order.price, tick->tick->bid_price1);
             BOOST_LOG(log_)
                 << boost::log::add_value("quant_timestamp",
                                          TimeStampToPtime(last_timestamp_))
