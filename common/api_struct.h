@@ -130,9 +130,9 @@ struct OpenOrder {
 
 struct CostBasis {
   CommissionType type;
-  int open_commission;
-  int close_commission;
-  int close_today_commission;
+  double open_commission;
+  double close_commission;
+  double close_today_commission;
 };
 
 struct InputOrderSignal {

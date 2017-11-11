@@ -227,8 +227,8 @@ TEST(TestPortflioTest, FixedCommission) {
   double init_cash = 100000;
   CostBasis cost_basis;
   cost_basis.type = CommissionType::kFixed;
-  cost_basis.open_commission = 120;
-  cost_basis.close_commission = 120;
+  cost_basis.open_commission = 1.2;
+  cost_basis.close_commission = 1.2;
   cost_basis.close_today_commission = 0;
   Portfolio portflio(init_cash);
   portflio.InitInstrumentDetail("S1", 0.5, 20, cost_basis);
@@ -256,8 +256,8 @@ TEST(TestPortflioTest, RateCommission) {
   double init_cash = 100000;
   CostBasis cost_basis;
   cost_basis.type = CommissionType::kRate;
-  cost_basis.open_commission = 5;
-  cost_basis.close_commission = 5;
+  cost_basis.open_commission = 0.05;
+  cost_basis.close_commission = 0.05;
   cost_basis.close_today_commission = 0;
   Portfolio portflio(init_cash);
   portflio.InitInstrumentDetail("S1", 0.5, 20, cost_basis);

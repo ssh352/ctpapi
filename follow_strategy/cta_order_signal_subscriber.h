@@ -69,11 +69,6 @@ class CTAOrderSignalSubscriber {
         open_order->leaves_qty = open_order->qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, open_order));
         inner_size_portfolio_.HandleOrder(open_order);
-        mail_box_->Send(
-            std::move(open_order),
-            GetCTAPositionQty(open_order->instrument_id,
-                              open_order->position_effect_direction));
-
       } else {
         auto order = std::make_shared<OrderField>(*rtn_order);
         order->order_id = GenerateOrderId();

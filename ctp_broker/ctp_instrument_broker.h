@@ -28,8 +28,8 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
                     int trading_qty,
                     TimeStamp timestamp);
 
-      void InitPosition(std::pair<int, int> long_pos,
-                        std::pair<int, int> short_pos);
+  void InitPosition(std::pair<int, int> long_pos,
+                    std::pair<int, int> short_pos);
 
   virtual void PosstionEffectStrategyHandleInputOrder(
       const std::string& input_order_id,

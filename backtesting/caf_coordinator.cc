@@ -114,10 +114,10 @@ caf::behavior Coordinator(caf::event_based_actor* self,
               : CommissionType::kRate;
 
       param.cost_basis.open_commission =
-          instrument_infos_pt->get<int>(pt.first + ".CostBasis.OpenCommission");
-      param.cost_basis.close_commission = instrument_infos_pt->get<int>(
+          instrument_infos_pt->get<double>(pt.first + ".CostBasis.OpenCommission");
+      param.cost_basis.close_commission = instrument_infos_pt->get<double>(
           pt.first + ".CostBasis.CloseCommission");
-      param.cost_basis.close_today_commission = instrument_infos_pt->get<int>(
+      param.cost_basis.close_today_commission = instrument_infos_pt->get<double>(
           pt.first + ".CostBasis.CloseTodayCommission");
       param.delay_open_order_after_seconds =
           pt.second.get<int>("DelayOpenOrderAfterSeconds");

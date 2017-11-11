@@ -108,7 +108,7 @@ void DelayedOpenStrategyEx::CancelSpecificOpeningOrders(
   if (portfolio_.UnfillOpenQty(instrument, direction) > 0) {
     auto orders = portfolio_.UnfillOpenOrders(instrument, direction);
     for (const auto& order : orders) {
-      delegate_->CancelOrder(order->instrument_id, order->order_id, order->position_effect_direction, 0);
+      delegate_->CancelOrder(order->instrument_id, order->order_id, order->position_effect_direction, order->leaves_qty);
     }
   }
 }
@@ -261,7 +261,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
   int closeable_qty = portfolio_.GetPositionCloseableQty(
       rtn_order->instrument_id, rtn_order->position_effect_direction);
   BOOST_ASSERT(position_qty.position >= position_qty.frozen);
-  if (position_qty.position == position_qty.frozen) {
+  if (position_qty.position == position_qty.frozen && closeable_qty > 0) {
     // Close All
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
@@ -375,8 +375,8 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
 
             double input_price =
                 order.direction == OrderDirection::kBuy
-                    ? std::min(order.price, tick->tick->last_price)
-                    : std::max(order.price, tick->tick->last_price);
+                    ? std::min(order.price, tick->tick->bid_price1)
+                    : std::max(order.price, tick->tick->ask_price1);
             BOOST_LOG(log_)
                 << boost::log::add_value("quant_timestamp",
                                          TimeStampToPtime(last_timestamp_))

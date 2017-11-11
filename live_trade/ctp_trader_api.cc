@@ -129,6 +129,7 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   order_field->status = ParseTThostFtdcOrderStatus(pOrder);
   order_field->leaves_qty = pOrder->VolumeTotal;
   order_field->order_ref = pOrder->OrderRef;
+  order_field->order_sys_id = pOrder->OrderSysID;
   order_field->order_id = order_id;
   order_field->trading_qty = 0;
   order_field->error_id = 0;
@@ -239,4 +240,6 @@ void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                        CThostFtdcRspInfoField* pRspInfo) {}
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
-                                       CThostFtdcRspInfoField* pRspInfo) {}
+                                       CThostFtdcRspInfoField* pRspInfo) {
+  int i = 0;
+}

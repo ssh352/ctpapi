@@ -57,6 +57,8 @@ class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
                              double price,
                              int qty);
 
+  void MakeCancelOrderRequest(const std::string& order_id, int qty);
+
   void SimulateCTPNewOpenOrderField(const std::string& order_id,
                                     OrderDirection direction,
                                     double price,

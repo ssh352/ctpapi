@@ -284,8 +284,8 @@ double Portfolio::CalcCommission(PositionEffect position_effect,
   }
 
   return cost_basis.type == CommissionType::kFixed
-             ? qty * commission_param / 100.0
-             : price * qty * constract_multiple * commission_param / 10000.0;
+             ? qty * commission_param
+             : price * qty * constract_multiple * commission_param / 100.0;
 }
 
 int Portfolio::UnfillOpenQty(const std::string& instrument,

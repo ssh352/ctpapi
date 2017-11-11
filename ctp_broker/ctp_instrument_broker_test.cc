@@ -123,11 +123,16 @@ void CTPInstrumentBrokerTest::SimulateCTPNewCloseOrderField(
     double price,
     int qty,
     CTPPositionEffect position_effect /*= CTPPositionEffect::kClose*/) {
-  auto order = MakeCTPOrderField(
-      order_id, default_instrument, position_effect, direction,
-      OrderStatus::kActive, price, qty, 0, qty, 0, 0);
+  auto order = MakeCTPOrderField(order_id, default_instrument, position_effect,
+                                 direction, OrderStatus::kActive, price, qty, 0,
+                                 qty, 0, 0);
   broker_.HandleRtnOrder(order);
   orders_.emplace(std::move(order));
+}
+
+void CTPInstrumentBrokerTest::MakeCancelOrderRequest(
+    const std::string& order_id, int qty) {
+  broker_.HandleCancel(CancelOrderSignal{order_id, default_instrument, qty});
 }
 
 bool CTPInstrumentBrokerTest::CompareCTPOrderField::operator()(

@@ -11,6 +11,7 @@ SupportSubAccountBroker::SupportSubAccountBroker(
       trader_api_(this, "./foo"),
       mail_box_(mail_box) {
   mail_box_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>), this);
+  mail_box_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>), this);
   mail_box_->Subscribe(typeid(std::tuple<std::string, std::string>), this);
 
   for (const auto& sub_account : sub_accounts) {

@@ -19,39 +19,97 @@ CTPInstrumentBroker::CTPInstrumentBroker(
 
 void CTPInstrumentBroker::HandleRtnOrder(
     const std::shared_ptr<CTPOrderField>& order) {
-  if (IsCtpOpenPositionEffect(order->position_effect)) {
-    if (order->position_effect_direction == OrderDirection::kBuy) {
-      long_->OpenTraded(order->trading_qty);
-    } else {
-      short_->OpenTraded(order->trading_qty);
+  auto ctp_it = ctp_orders_.find(order->order_id, HashCTPOrderField(),
+                                 CompareCTPOrderField());
+  if (ctp_it == ctp_orders_.end()) {
+    ctp_orders_.insert(std::make_unique<CTPOrderField>(*order));
+    auto range = ctp_order_id_to_order_id_.equal_range(order->order_id);
+    for (auto it = range.first; it != range.second; ++it) {
+      auto it_find = orders_.find(it->second, HashInnerOrderField(),
+                                  CompareInnerOrderField());
+      BOOST_ASSERT(it_find != orders_.end());
+      (*it_find)->trading_price = order->trading_price;
+      (*it_find)->trading_qty = order->trading_qty;
+      (*it_find)->status = order->status;
+      (*it_find)->leaves_qty -= order->trading_qty;
+      BOOST_ASSERT((*it_find)->leaves_qty >= 0);
+      order_delegate_->ReturnOrderField(
+          std::make_shared<OrderField>(*(*it_find)));
+    }
+  } else if (order->status == OrderStatus::kCanceled) {
+    auto ctp_it = ctp_orders_.find(order->order_id, HashCTPOrderField(),
+                                   CompareCTPOrderField());
+    BOOST_ASSERT(ctp_it != ctp_orders_.end());
+    (*ctp_it)->status = order->status;
+
+    auto range = ctp_order_id_to_order_id_.equal_range(order->order_id);
+    for (auto it = range.first; it != range.second; ++it) {
+      auto it_find = orders_.find(it->second, HashInnerOrderField(),
+                                  CompareInnerOrderField());
+      BOOST_ASSERT(it_find != orders_.end());
+      //(*it_find)->trading_price = order->trading_price;
+      //(*it_find)->trading_qty = order->trading_qty;
+      //(*it_find)->leaves_qty -= order->trading_qty;
+      (*it_find)->status = order->status;
+      BOOST_ASSERT((*it_find)->leaves_qty >= 0);
+      order_delegate_->ReturnOrderField(
+          std::make_shared<OrderField>(*(*it_find)));
     }
   } else {
-    if (order->position_effect_direction == OrderDirection::kBuy) {
-      long_->CloseTraded(order->trading_qty, order->position_effect);
-    } else {
-      short_->CloseTraded(order->trading_qty, order->position_effect);
-    }
-  }
-
-  auto range = ctp_order_id_to_order_id_.equal_range(order->order_id);
-  for (auto it = range.first; it != range.second; ++it) {
-    auto it_find = orders_.find(it->second, HashInnerOrderField(),
-                                CompareInnerOrderField());
-    BOOST_ASSERT(it_find != orders_.end());
-    (*it_find)->trading_price = order->trading_price;
-    (*it_find)->trading_qty = order->trading_qty;
-    (*it_find)->status = order->status;
-    (*it_find)->leaves_qty -= order->trading_qty;
-    BOOST_ASSERT((*it_find)->leaves_qty >= 0);
-    order_delegate_->ReturnOrderField(
-        std::make_shared<OrderField>(*(*it_find)));
   }
 }
 
 void CTPInstrumentBroker::HandleTrader(const std::string& order_id,
                                        double trading_price,
                                        int trading_qty,
-                                       TimeStamp timestamp) {}
+                                       TimeStamp timestamp) {
+  auto ctp_it =
+      ctp_orders_.find(order_id, HashCTPOrderField(), CompareCTPOrderField());
+  BOOST_ASSERT(ctp_it != ctp_orders_.end());
+  if (ctp_it == ctp_orders_.end()) {
+    return;
+  }
+
+  if (IsCtpOpenPositionEffect((*ctp_it)->position_effect)) {
+    if ((*ctp_it)->position_effect_direction == OrderDirection::kBuy) {
+      long_->OpenTraded(trading_qty);
+    } else {
+      short_->OpenTraded(trading_qty);
+    }
+  } else {
+    if ((*ctp_it)->position_effect_direction == OrderDirection::kBuy) {
+      long_->CloseTraded(trading_qty, (*ctp_it)->position_effect);
+    } else {
+      short_->CloseTraded(trading_qty, (*ctp_it)->position_effect);
+    }
+  }
+
+  (*ctp_it)->leaves_qty -= trading_qty;
+  BOOST_ASSERT((*ctp_it)->leaves_qty >= 0);
+
+  auto range = ctp_order_id_to_order_id_.equal_range((*ctp_it)->order_id);
+  int leaves_trading_qty = trading_qty;
+  for (auto it = range.first; it != range.second; ++it) {
+    auto it_find = orders_.find(it->second, HashInnerOrderField(),
+                                CompareInnerOrderField());
+    BOOST_ASSERT(it_find != orders_.end());
+    int trading_qty_on_order =
+        std::min<int>((*it_find)->leaves_qty, leaves_trading_qty);
+    (*it_find)->leaves_qty -= trading_qty_on_order;
+    BOOST_ASSERT((*it_find)->leaves_qty >= 0);
+    (*it_find)->trading_qty = trading_qty_on_order;
+    (*it_find)->trading_price = (*ctp_it)->trading_price;
+    (*it_find)->status = (*it_find)->leaves_qty == 0 ? OrderStatus::kAllFilled
+                                                     : OrderStatus::kActive;
+    order_delegate_->ReturnOrderField(
+        std::make_shared<OrderField>(*(*it_find)));
+    leaves_trading_qty -= trading_qty_on_order;
+    if (leaves_trading_qty <= 0) {
+      BOOST_ASSERT(leaves_trading_qty == 0);
+      break;
+    }
+  }
+}
 
 void CTPInstrumentBroker::HandleInputOrder(const InputOrder& order) {
   position_effect_strategy_->HandleInputOrder(order, *long_, *short_);
@@ -186,4 +244,3 @@ void CTPInstrumentBroker::PosstionEffectStrategyHandleInputOrder(
   BindOrderId(input_order_id, ctp_enter_order.order_id);
   order_delegate_->EnterOrder(std::move(ctp_enter_order));
 }
-

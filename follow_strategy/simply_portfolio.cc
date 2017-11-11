@@ -4,15 +4,16 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
   if (order->trading_qty == 0 && order->status == OrderStatus::kActive) {
     // New Order
     if (order->position_effect == PositionEffect::kOpen) {
-      auto it =
-          positions_.find(PositionKey{order->instrument_id, order->position_effect_direction});
+      auto it = positions_.find(
+          PositionKey{order->instrument_id, order->position_effect_direction});
       if (it == positions_.end()) {
-        positions_.insert({PositionKey{order->instrument_id, order->position_effect_direction},
+        positions_.insert({PositionKey{order->instrument_id,
+                                       order->position_effect_direction},
                            JustQtyPosition()});
       }
     } else {
-      auto it =
-          positions_.find(PositionKey{order->instrument_id, order->position_effect_direction});
+      auto it = positions_.find(
+          PositionKey{order->instrument_id, order->position_effect_direction});
       BOOST_ASSERT(it != positions_.end());
       if (it != positions_.end()) {
         it->second.Freeze(order->qty);
@@ -26,8 +27,8 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     switch (order->status) {
       case OrderStatus::kActive:
       case OrderStatus::kAllFilled: {
-        auto it_pos = positions_.find(
-            PositionKey{order->instrument_id, order->position_effect_direction});
+        auto it_pos = positions_.find(PositionKey{
+            order->instrument_id, order->position_effect_direction});
         BOOST_VERIFY(it_pos != positions_.end());
         if (order->position_effect == PositionEffect::kOpen) {  // Open
           it_pos->second.OpenTraded(order->trading_qty);
@@ -36,10 +37,12 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
         }
       } break;
       case OrderStatus::kCanceled: {
-        auto it_pos = positions_.find(
-            PositionKey{order->instrument_id, order->position_effect_direction});
-        BOOST_ASSERT(it_pos != positions_.end());
-        it_pos->second.Unfreeze(order->leaves_qty);
+        if (order->position_effect == PositionEffect::kClose) {
+          auto it_pos = positions_.find(PositionKey{
+              order->instrument_id, order->position_effect_direction});
+          BOOST_ASSERT(it_pos != positions_.end());
+          it_pos->second.Unfreeze(order->leaves_qty);
+        }
       } break;
       case OrderStatus::kInputRejected:
         break;

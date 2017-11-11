@@ -182,8 +182,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   bool running = true;
 
-  // auto sub_acconts = {"foo", "bar"};
-  auto sub_acconts = {"foo"};
+   auto sub_acconts = {"foo", "bar"};
+  //auto sub_acconts = {"foo"};
   LiveTradeMailBox common_mail_box;
 
   std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;

@@ -187,3 +187,13 @@ TEST_F(GenericPositionEffectTest, OpenOrderButPartiallyLockRightNow) {
     EXPECT_EQ(1.3, enter_order->price);
   }
 }
+
+TEST_F(GenericPositionEffectTest, CancelOrder) {
+  //broker_.InitPosition(std::make_pair(0, 10), std::make_pair(0, 4));
+  MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
+  SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
+  Clear();
+  MakeCancelOrderRequest("xx", 10);
+  auto cancel = PopupOrder<CTPCancelOrder>();
+  ASSERT_TRUE(cancel);
+}
