@@ -4,8 +4,10 @@
 #include "portfolio.h"
 #include "unittest_helper.h"
 
-std::unordered_map<std::string, std::shared_ptr<OrderField>> g_order_containter;
+static std::unordered_map<std::string, std::shared_ptr<OrderField>>
+    g_order_containter;
 
+namespace {
 std::shared_ptr<OrderField> MakeOrderField(const std::string& order_id,
                                            const std::string& instrument,
                                            PositionEffect position_effect,
@@ -313,3 +315,4 @@ TEST(TestPortflioTest, ErasePositionItem) {
 
   EXPECT_NO_THROW(portflio.HandleOrder(MakeTradedOrder("A001", 20)));
 }
+}  // namespace
