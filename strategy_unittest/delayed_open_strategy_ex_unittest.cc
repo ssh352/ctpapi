@@ -56,6 +56,16 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Closeing_Fully_Position) {
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 }
 
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, ClosingWhenInDelayQueue) {
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  MasterTradedOrder("0", 10, 10, 0);
+  ElapseMillisecond(1);
+  MarketTick(1.2);
+  Clear();
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.1, 10, 10, 10);
+  ASSERT_FALSE(PopupRntOrder<InputOrder>());
+}
+
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpeningHadPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
