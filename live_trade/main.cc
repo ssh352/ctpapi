@@ -89,7 +89,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
     // inner_mail_box_->Subscrdibe(
     //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
-    inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrderSignal>), this);
+    inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrder>), this);
   };
 
   virtual caf::behavior make_behavior() override {
@@ -125,7 +125,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             instrument_brokers_.insert({order.instrument, std::move(broker)});
           }
         },
-        [=](const CancelOrderSignal& cancel) {
+        [=](const CancelOrder& cancel) {
           auto it = instrument_brokers_.find(cancel.instrument);
           BOOST_ASSERT(it != instrument_brokers_.end());
           if (it != instrument_brokers_.end()) {
@@ -135,11 +135,11 @@ class CAFSubAccountBroker : public caf::event_based_actor,
     };
   }
 
-  virtual void EnterOrder(const CTPEnterOrder& enter_order) override {
+  virtual void HandleEnterOrder(const CTPEnterOrder& enter_order) override {
     common_mail_box_->Send(account_id_, enter_order);
   }
 
-  virtual void CancelOrder(const CTPCancelOrder& cancel_order) override {
+  virtual void HandleCancelOrder(const CTPCancelOrder& cancel_order) override {
     common_mail_box_->Send(account_id_, cancel_order);
   }
 

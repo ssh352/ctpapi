@@ -49,6 +49,7 @@ class StrategyFixture : public testing::Test {
   StrategyFixture(std::string account_id) : account_id_(std::move(account_id)) {
     mail_box_.Subscribe(&StrategyFixture::HandleInputOrder, this);
     mail_box_.Subscribe(&StrategyFixture::HandleCancelOrder, this);
+    mail_box_.Subscribe(&StrategyFixture::HandleActionOrder, this);
   }
 
   template <typename T, typename... Args>
@@ -91,7 +92,9 @@ class StrategyFixture : public testing::Test {
 
   void HandleInputOrder(const InputOrder& input_order);
 
-  void HandleCancelOrder(const CancelOrderSignal& signal);
+  void HandleCancelOrder(const CancelOrder& signal);
+
+  void HandleActionOrder(const OrderAction& action_order);
 
   std::shared_ptr<OrderField> MakeOrderField(const std::string& account_id,
                                              const std::string& order_id,

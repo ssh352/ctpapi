@@ -122,7 +122,7 @@ class SimulatedExecutionHandler {
     mail_box_->Send(std::move(order));
   }
 
-  void HandleCancelOrder(const CancelOrderSignal& cancel_order) {
+  void HandleCancelOrder(const CancelOrder& cancel_order) {
     const std::string& order_id = cancel_order.order_id;
     auto find_it =
         std::find_if(long_limit_orders_.begin(), long_limit_orders_.end(),

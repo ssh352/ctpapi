@@ -51,7 +51,7 @@ class SimulatedAlwaysExcutionHandler {
                          OrderStatus::kAllFilled);
   }
 
-  void HandleCancelOrder(const CancelOrderSignal& cancel_order) {
+  void HandleCancelOrder(const CancelOrder& cancel_order) {
     BOOST_ASSERT_MSG(false,
                      "Don't support cancel order for this excution handler");
   }

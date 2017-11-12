@@ -155,10 +155,9 @@ struct InputOrder {
   TimeStamp timestamp;
 };
 
-struct CancelOrderSignal {
+struct CancelOrder {
   std::string order_id;
   std::string instrument;
-  int qty;
 };
 
 struct OrderAction {

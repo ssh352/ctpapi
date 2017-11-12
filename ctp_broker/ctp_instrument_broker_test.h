@@ -9,9 +9,9 @@
 class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
  public:
   CTPInstrumentBrokerTest();
-  virtual void EnterOrder(const CTPEnterOrder& enter_order) override;
+  virtual void HandleEnterOrder(const CTPEnterOrder& enter_order) override;
 
-  virtual void CancelOrder(const CTPCancelOrder& cancel_order) override;
+  virtual void HandleCancelOrder(const CTPCancelOrder& cancel_order) override;
 
   virtual void ReturnOrderField(
       const std::shared_ptr<OrderField>& order) override;
@@ -57,7 +57,7 @@ class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
                              double price,
                              int qty);
 
-  void MakeCancelOrderRequest(const std::string& order_id, int qty);
+  void MakeCancelOrderRequest(const std::string& order_id);
 
   void MakeOrderAction(const std::string& order_id, int old_qty, int new_qty);
 

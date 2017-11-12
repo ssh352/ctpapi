@@ -66,7 +66,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, Closeing_Fully_Position) {
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
   EXPECT_EQ(10, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 }
 
@@ -93,12 +93,12 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpenin
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
   EXPECT_EQ(4, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
-  ASSERT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  ASSERT_FALSE(PopupRntOrder<CancelOrder>());
 
   MasterTradedOrder("1", 10, 0, 0);
-  auto cancel_order = PopupRntOrder<CancelOrderSignal>();
+  auto cancel_order = PopupRntOrder<CancelOrder>();
   ASSERT_TRUE(cancel_order);
   EXPECT_EQ("0", cancel_order->order_id);
 }
@@ -120,12 +120,12 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseHadDelayHadOpeni
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.1, input_order->price);
   EXPECT_EQ(4, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
-  ASSERT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  ASSERT_FALSE(PopupRntOrder<CancelOrder>());
 
   MasterTradedOrder("2", 15, 0, 0);
-  auto cancel_order = PopupRntOrder<CancelOrderSignal>();
+  auto cancel_order = PopupRntOrder<CancelOrder>();
   ASSERT_TRUE(cancel_order);
   EXPECT_EQ("0", cancel_order->order_id);
 
@@ -148,10 +148,10 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAPartiallyCloseQtyLessOrEqu
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.0, input_order->price);
   EXPECT_EQ(4, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 
-  ASSERT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  ASSERT_FALSE(PopupRntOrder<CancelOrder>());
 }
 
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
@@ -169,14 +169,17 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.0, input_order->price);
   EXPECT_EQ(6, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 
   MasterTradedOrder("1", 7, 3, 0);
-  auto cancel_order = PopupRntOrder<CancelOrderSignal>();
-  ASSERT_TRUE(cancel_order);
-  EXPECT_EQ("0", cancel_order->order_id);
-  EXPECT_EQ(1, cancel_order->qty);
+  auto action_order = PopupRntOrder<OrderAction>();
+  ASSERT_TRUE(action_order);
+  EXPECT_EQ("0", action_order->order_id);
+  EXPECT_EQ(3, action_order->new_qty);
+  EXPECT_EQ(4, action_order->old_qty);
+  EXPECT_EQ(0.0, action_order->new_price);
+  EXPECT_EQ(0.0, action_order->old_price);
 }
 
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
@@ -199,17 +202,19 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
   EXPECT_EQ(7, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("2", 11, 4, 0);
-  auto cancel_order = PopupRntOrder<CancelOrderSignal>();
-  ASSERT_TRUE(cancel_order);
-  EXPECT_EQ("0", cancel_order->order_id);
-  EXPECT_EQ(4, cancel_order->qty);
-
-  EXPECT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  auto action_order = PopupRntOrder<OrderAction>();
+  ASSERT_TRUE(action_order);
+  EXPECT_EQ("0", action_order->order_id);
+  EXPECT_EQ(2, action_order->new_qty);
+  EXPECT_EQ(6, action_order->old_qty);
+  EXPECT_EQ(0.0, action_order->new_price);
+  EXPECT_EQ(0.0, action_order->old_price);
+  EXPECT_FALSE(PopupRntOrder<CancelOrder>());
 }
 
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
@@ -235,23 +240,25 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
   EXPECT_EQ(7, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
 
-  ASSERT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  ASSERT_FALSE(PopupRntOrder<CancelOrder>());
   MasterTradedOrder("2", 11, 4, 0);
 
   {
-    auto cancel_order = PopupRntOrder<CancelOrderSignal>();
+    auto cancel_order = PopupRntOrder<CancelOrder>();
     ASSERT_TRUE(cancel_order);
     EXPECT_EQ("1", cancel_order->order_id);
-    EXPECT_EQ(2, cancel_order->qty);
   }
   {
-    auto cancel_order = PopupRntOrder<CancelOrderSignal>();
-    ASSERT_TRUE(cancel_order);
-    EXPECT_EQ("0", cancel_order->order_id);
-    EXPECT_EQ(2, cancel_order->qty);
+    auto action_order = PopupRntOrder<OrderAction>();
+    ASSERT_TRUE(action_order);
+    EXPECT_EQ("0", action_order->order_id);
+    EXPECT_EQ(4, action_order->new_qty);
+    EXPECT_EQ(6, action_order->old_qty);
+    EXPECT_EQ(0.0, action_order->new_price);
+    EXPECT_EQ(0.0, action_order->old_price);
   }
 }
 
@@ -302,11 +309,11 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
   ASSERT_TRUE(input_order);
   EXPECT_EQ(1.3, input_order->price);
   EXPECT_EQ(4, input_order->qty);
-  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, input_order->direction);
   EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   MasterTradedOrder("3", 7, 12, 0);
 
-  EXPECT_FALSE(PopupRntOrder<CancelOrderSignal>());
+  EXPECT_FALSE(PopupRntOrder<CancelOrder>());
   EXPECT_FALSE(PopupRntOrder<InputOrder>());
   ElapseSeconds(delayed_open_after_seconds);
 
@@ -344,10 +351,9 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CancelCloseOrder) {
   Clear();
 
   MasterCancelOrder("1", 10, 0);
-  auto cancel = PopupRntOrder<CancelOrderSignal>();
+  auto cancel = PopupRntOrder<CancelOrder>();
   ASSERT_TRUE(cancel);
   EXPECT_EQ("1", cancel->order_id);
-  EXPECT_EQ(4, cancel->qty);
 }
 
 TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirection) {
@@ -368,7 +374,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirect
     EXPECT_EQ("1", input_order->order_id);
     EXPECT_EQ(1.3, input_order->price);
     EXPECT_EQ(1, input_order->qty);
-    EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+    EXPECT_EQ(OrderDirection::kSell, input_order->direction);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
 
@@ -379,7 +385,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirect
     ASSERT_TRUE(input_order);
     EXPECT_EQ(1.5, input_order->price);
     EXPECT_EQ(3, input_order->qty);
-    EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+    EXPECT_EQ(OrderDirection::kSell, input_order->direction);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
 }
@@ -404,7 +410,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForDifferentD
     EXPECT_EQ("2", input_order->order_id);
     EXPECT_EQ(1.3, input_order->price);
     EXPECT_EQ(4, input_order->qty);
-    EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+    EXPECT_EQ(OrderDirection::kSell, input_order->direction);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
   {
@@ -412,7 +418,7 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForDifferentD
     ASSERT_TRUE(input_order);
     EXPECT_EQ(1.5, input_order->price);
     EXPECT_EQ(5, input_order->qty);
-    EXPECT_EQ(OrderDirection::kSell, input_order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
 }

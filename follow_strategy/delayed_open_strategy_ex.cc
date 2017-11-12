@@ -23,18 +23,34 @@ void DelayedOpenStrategyEx::CancelUnfillOpeningOrders(
     OrderDirection direciton,
     int leaves_cancel_qty) {
   auto orders = portfolio_.UnfillOpenOrders(instrument, direciton);
-  std::sort(orders.begin(), orders.end(), [direciton](const auto& l,
-                                                      const auto& r) {
-    return direciton == OrderDirection::kBuy ? l->input_price < r->input_price
-                                             : l->input_price > r->input_price;
-  });
+  std::sort(orders.begin(), orders.end(),
+            [direciton](const auto& l, const auto& r) {
+              return direciton == OrderDirection::kBuy
+                         ? l->input_price < r->input_price
+                         : l->input_price > r->input_price;
+            });
 
   auto for_each_lambda = [=, &leaves_cancel_qty](const auto& order) {
     if (leaves_cancel_qty <= 0) {
       return;
     }
     int cancel_qty = std::min<int>(order->leaves_qty, leaves_cancel_qty);
-    delegate_->CancelOrder(order->instrument_id,order->order_id, order->position_effect_direction, cancel_qty);
+    if (cancel_qty == order->leaves_qty) {
+      delegate_->HandleCancelOrder(order->instrument_id, order->order_id,
+                                   order->position_effect_direction);
+    } else {
+      OrderAction action_order;
+      action_order.instrument = order->instrument_id;
+      action_order.order_id = order->order_id;
+      action_order.old_price = 0.0;
+      action_order.new_price = 0.0;
+      action_order.old_qty = order->leaves_qty;
+      action_order.new_qty = order->leaves_qty - cancel_qty;
+      delegate_->HandleActionOrder(std::move(action_order),
+                                   order->position_effect_direction);
+    }
+    // delegate_->HandleCancelOrder(order->instrument_id,order->order_id,
+    // order->position_effect_direction, cancel_qty);
     // signal_dispatch_->CancelOrder(order->order_id);
 
     // int open_qty = order->leaves_qty - cancel_qty;
@@ -108,7 +124,7 @@ void DelayedOpenStrategyEx::CancelSpecificOpeningOrders(
   if (portfolio_.UnfillOpenQty(instrument, direction) > 0) {
     auto orders = portfolio_.UnfillOpenOrders(instrument, direction);
     for (const auto& order : orders) {
-      delegate_->CancelOrder(order->instrument_id, order->order_id, order->position_effect_direction, order->leaves_qty);
+      delegate_->HandleCancelOrder(order->instrument_id, order->order_id, order->position_effect_direction);
     }
   }
 }
@@ -161,8 +177,8 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
    //signal_dispatch_->OpenOrder(
    //   order.instrument, GenerateOrderId(), order.position_effect_direction,
    //   maybe_input_price, order.qty);
-  delegate_->EnterOrder(InputOrder{order.instrument, GenerateOrderId(),PositionEffect::kOpen, order.direction,
-  maybe_input_price, order.qty, 0});
+  delegate_->HandleEnterOrder(InputOrder{order.instrument, GenerateOrderId(),PositionEffect::kOpen, order.direction,
+  maybe_input_price, order.qty, 0}, order.direction);
   return true;
 }
 
@@ -175,8 +191,8 @@ void DelayedOpenStrategyEx::HandleCanceled(
   auto it = cta_to_strategy_closing_order_id_.find(rtn_order->order_id);
   if (it != cta_to_strategy_closing_order_id_.end()) {
     auto order = portfolio_.GetOrder(it->second);
-    delegate_->CancelOrder(
-        order->instrument_id, order->order_id, order->position_effect_direction, order->leaves_qty);
+    delegate_->HandleCancelOrder(
+        order->instrument_id, order->order_id, order->position_effect_direction);
     cta_to_strategy_closing_order_id_.erase(it);
   }
 }
@@ -266,28 +282,26 @@ void DelayedOpenStrategyEx::HandleCloseing(
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
-    delegate_->EnterOrder(
+    delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->position_effect_direction,
-                   rtn_order->input_price, closeable_qty, 0});
-  } else if (rtn_order->qty <=
-             portfolio_.GetPositionCloseableQty(rtn_order->instrument_id,
-                                                rtn_order->position_effect_direction)) {
+                   PositionEffect::kClose, rtn_order->direction,
+                   rtn_order->input_price, closeable_qty, 0}, rtn_order->position_effect_direction);
+  } else if (rtn_order->qty <= closeable_qty) {
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
-    delegate_->EnterOrder(
+    delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->position_effect_direction,
-                   rtn_order->input_price, rtn_order->qty, 0});
+                   PositionEffect::kClose, rtn_order->direction,
+                   rtn_order->input_price, rtn_order->qty, 0}, rtn_order->position_effect_direction);
   } else if (closeable_qty > 0) {
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
-    delegate_->EnterOrder(
+    delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->position_effect_direction,
-                   rtn_order->input_price, closeable_qty, 0});
+                   PositionEffect::kClose, rtn_order->direction,
+                   rtn_order->input_price, closeable_qty, 0}, rtn_order->position_effect_direction);
   } else {
   }
 }
@@ -388,10 +402,10 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
                 << tick->tick->bid_qty1 << ")"
                 << " Ask1:" << tick->tick->ask_price1 << "("
                 << tick->tick->ask_qty1 << ")";
-            delegate_->EnterOrder(
+            delegate_->HandleEnterOrder(
                 InputOrder{order.instrument, GenerateOrderId(),
                            PositionEffect::kOpen, order.direction,
-                           input_price, order.qty, 0});
+                           input_price, order.qty, 0}, order.direction);
             return true;
           }
           return ImmediateOpenOrderIfPriceArrive(order, tick->tick);

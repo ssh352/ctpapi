@@ -123,9 +123,7 @@ void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   event_queues_.push_back(input_order);
   auto order =
       MakeNewOrder(account_id_, input_order.order_id, input_order.instrument,
-                   input_order.position_effect,
-                   AdjustDirectionByPositionEffect(input_order.position_effect,
-                                                   input_order.direction),
+                   input_order.position_effect, input_order.direction,
                    input_order.price, input_order.qty);
   if (auto_reply_new_rtn_order) {
     Send(std::move(order));
@@ -134,9 +132,13 @@ void StrategyFixture::HandleInputOrder(const InputOrder& input_order) {
   }
 }
 
-void StrategyFixture::HandleCancelOrder(const CancelOrderSignal& signal) {
+void StrategyFixture::HandleCancelOrder(const CancelOrder& signal) {
   event_queues_.push_back(signal);
   Send(MakeCanceledOrder(account_id_, signal.order_id));
+}
+
+void StrategyFixture::HandleActionOrder(const OrderAction& action_order) {
+  event_queues_.push_back(action_order);
 }
 
 void StrategyFixture::SendAndClearPendingReplyRtnOrder() {
@@ -146,6 +148,7 @@ void StrategyFixture::SendAndClearPendingReplyRtnOrder() {
 
   pending_reply_new_rtn_orders_.clear();
 }
+
 
 const CTASignalAtom CTASignalAtom::value;
 

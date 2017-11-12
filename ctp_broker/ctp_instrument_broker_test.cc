@@ -104,11 +104,11 @@ void CTPInstrumentBrokerTest::ReturnOrderField(
   event_queues_.push_back(order);
 }
 
-void CTPInstrumentBrokerTest::CancelOrder(const CTPCancelOrder& cancel_order) {
+void CTPInstrumentBrokerTest::HandleCancelOrder(const CTPCancelOrder& cancel_order) {
   event_queues_.push_back(cancel_order);
 }
 
-void CTPInstrumentBrokerTest::EnterOrder(const CTPEnterOrder& enter_order) {
+void CTPInstrumentBrokerTest::HandleEnterOrder(const CTPEnterOrder& enter_order) {
   event_queues_.push_back(enter_order);
 }
 
@@ -132,9 +132,8 @@ void CTPInstrumentBrokerTest::SimulateCTPNewCloseOrderField(
 }
 
 void CTPInstrumentBrokerTest::MakeCancelOrderRequest(
-    const std::string& order_id,
-    int qty) {
-  broker_.HandleCancel(CancelOrderSignal{order_id, default_instrument, qty});
+    const std::string& order_id ) {
+  broker_.HandleCancel(CancelOrder{order_id, default_instrument});
 }
 
 void CTPInstrumentBrokerTest::MakeOrderAction(const std::string& order_id,

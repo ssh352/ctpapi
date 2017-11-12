@@ -14,19 +14,18 @@ class DelayedOpenStrategyEx {
  public:
   class Delegate {
    public:
-    virtual void EnterOrder(InputOrder) = 0;
-    virtual void CancelOrder(const std::string& instrument,
-                             const std::string& order_id,
-                             OrderDirection direction,
-                             int cancel_qty) = 0;
+    virtual void HandleEnterOrder(InputOrder input_order, OrderDirection position_effect_direction) = 0;
+    virtual void HandleCancelOrder(const std::string& instrument,
+                                   const std::string& order_id,
+                                   OrderDirection position_effect_direction) = 0;
+    virtual void HandleActionOrder(OrderAction action_order, OrderDirection position_effect_direction) = 0;
   };
 
   struct StrategyParam {
     int delayed_open_after_seconds;
     double price_offset;
   };
-  DelayedOpenStrategyEx(Delegate* delegate,
-                        StrategyParam strategy_param);
+  DelayedOpenStrategyEx(Delegate* delegate, StrategyParam strategy_param);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -125,8 +124,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
  public:
   DelayOpenStrategyAgent(MailBox* mail_box,
                          DelayedOpenStrategyEx::StrategyParam param)
-      : mail_box_(mail_box),
-        strategy_(this, std::move(param)) {
+      : mail_box_(mail_box), strategy_(this, std::move(param)) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
@@ -139,7 +137,8 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
         std::find_if(waiting_reply_order_.begin(), waiting_reply_order_.end(),
                      [&rtn_order](const auto& item) {
                        return item.instrument == rtn_order->instrument_id &&
-                              item.direction == rtn_order->position_effect_direction;
+                              item.position_effect_direction ==
+                                  rtn_order->position_effect_direction;
                      }) == waiting_reply_order_.end()) {
       strategy_.HandleCTARtnOrderSignal(rtn_order, position_qty);
     } else {
@@ -162,7 +161,8 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
             [&rtn_order](const auto& cta_signal) {
               return cta_signal.first->instrument_id ==
                          rtn_order->instrument_id &&
-                     cta_signal.first->position_effect_direction == rtn_order->position_effect_direction;
+                     cta_signal.first->position_effect_direction ==
+                         rtn_order->position_effect_direction;
             });
         std::copy(it_erase, pending_cta_signal_queue_.end(),
                   std::back_inserter(try_handing_signals));
@@ -178,32 +178,42 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
     }
   }
 
-  virtual void EnterOrder(InputOrder order) override {
+  virtual void HandleEnterOrder(InputOrder order, OrderDirection position_effect_direction) override {
     waiting_reply_order_.push_back(
-        OutstandingRequest{order.instrument, order.order_id, order.direction,
-                           OutStandingEvent::kInputOrder});
+        OutstandingRequest{order.instrument, order.order_id, position_effect_direction, 
+      0.0, 0, OutStandingEvent::kInputOrder});
     mail_box_->Send(std::move(order));
   }
 
-  virtual void CancelOrder(const std::string& instrument,
-                           const std::string& order_id,
-                           OrderDirection direction,
-                           int cancel_qty) override {
+  virtual void HandleCancelOrder(const std::string& instrument,
+                                 const std::string& order_id,
+                                 OrderDirection position_effect_direction) override {
     waiting_reply_order_.push_back(OutstandingRequest{
-        instrument, order_id, direction, OutStandingEvent::kCancelOrder});
-    mail_box_->Send(CancelOrderSignal{order_id, instrument, cancel_qty});
+        instrument, order_id, position_effect_direction, 0.0, 0, OutStandingEvent::kCancelOrder});
+    mail_box_->Send(CancelOrder{order_id, instrument});
+  }
+
+  virtual void HandleActionOrder(
+      OrderAction action_order,
+    OrderDirection position_effect_direction) override {
+    waiting_reply_order_.push_back(OutstandingRequest{
+        action_order.instrument, action_order.order_id, position_effect_direction, action_order.new_price, action_order.new_qty, OutStandingEvent::kModifyPriceOrQtyOrBoth});
+    mail_box_->Send(std::move(action_order));
   }
 
  private:
   enum class OutStandingEvent {
     kInputOrder,
     kCancelOrder,
+    kModifyPriceOrQtyOrBoth,
   };
 
   struct OutstandingRequest {
     std::string instrument;
     std::string order_id;
-    OrderDirection direction;
+    OrderDirection position_effect_direction;
+    double new_price;
+    int new_qty;
     OutStandingEvent event_type;
   };
 

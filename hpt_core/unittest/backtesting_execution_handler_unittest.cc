@@ -201,7 +201,7 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
 
-  mail_box.Send(CancelOrderSignal{order->order_id});
+  mail_box.Send(CancelOrder{order->order_id});
   {
     auto order = event_factory.PopupRntOrder();
     EXPECT_EQ(true, order != nullptr);

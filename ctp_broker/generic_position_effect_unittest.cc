@@ -193,7 +193,7 @@ TEST_F(GenericPositionEffectTest, CancelOrder) {
   MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
   SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
   Clear();
-  MakeCancelOrderRequest("xx", 10);
+  MakeCancelOrderRequest("xx");
   auto cancel = PopupOrder<CTPCancelOrder>();
   ASSERT_TRUE(cancel);
 }
