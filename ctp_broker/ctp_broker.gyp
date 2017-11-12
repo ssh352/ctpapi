@@ -59,7 +59,7 @@
       '<(DEPTH)/testing/gtest.gyp:gtest_main',
       # '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
       # '../follow_strategy/follow_strategy.gyp:follow_strategy',
-      # '../hpt_core/hpt_core.gyp:hpt_core',
+      '../hpt_core/hpt_core.gyp:hpt_core',
     ],
     'defines' : [
     ],

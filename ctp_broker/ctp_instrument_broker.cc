@@ -59,7 +59,7 @@ void CTPInstrumentBroker::HandleRtnOrder(
   }
 }
 
-void CTPInstrumentBroker::HandleTrader(const std::string& order_id,
+void CTPInstrumentBroker::HandleTraded(const std::string& order_id,
                                        double trading_price,
                                        int trading_qty,
                                        TimeStamp timestamp) {
@@ -98,7 +98,7 @@ void CTPInstrumentBroker::HandleTrader(const std::string& order_id,
     (*it_find)->leaves_qty -= trading_qty_on_order;
     BOOST_ASSERT((*it_find)->leaves_qty >= 0);
     (*it_find)->trading_qty = trading_qty_on_order;
-    (*it_find)->trading_price = (*ctp_it)->trading_price;
+    (*it_find)->trading_price = trading_price;
     (*it_find)->status = (*it_find)->leaves_qty == 0 ? OrderStatus::kAllFilled
                                                      : OrderStatus::kActive;
     order_delegate_->ReturnOrderField(
@@ -188,14 +188,16 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrderSignal& cancel) {
 
 void CTPInstrumentBroker::InsertOrderField(const std::string& instrument,
                                            const std::string& order_id,
-                                           OrderDirection direciton,
+                                           OrderDirection direction,
                                            PositionEffect position_effect,
                                            double price,
                                            int qty) {
   auto order = std::make_unique<OrderField>();
   order->instrument_id = instrument;
   order->order_id = order_id;
-  order->position_effect_direction = direciton;
+  order->direction = direction;
+  order->position_effect_direction =
+      AdjustDirectionByPositionEffect(position_effect, direction);
   order->position_effect = position_effect;
   order->input_price = price;
   order->trading_price = 0.0;
@@ -230,7 +232,9 @@ void CTPInstrumentBroker::PosstionEffectStrategyHandleInputOrder(
     double price,
     int qty) {
   CTPPositionAmount* position =
-      (direction == OrderDirection::kBuy ? long_.get() : short_.get());
+      (OppositeOrderDirection(direction) == OrderDirection::kBuy
+           ? long_.get()
+           : short_.get());
   if (!IsCtpOpenPositionEffect(position_effect)) {
     position->Frozen(qty, position_effect);
   }

@@ -23,7 +23,7 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   void HandleCancel(const CancelOrderSignal& cancel);
 
-  void HandleTrader(const std::string& order_id,
+  void HandleTraded(const std::string& order_id,
                     double trading_price,
                     int trading_qty,
                     TimeStamp timestamp);
@@ -69,7 +69,7 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   void InsertOrderField(const std::string& instrument,
                         const std::string& order_id,
-                        OrderDirection direciton,
+                        OrderDirection direction,
                         PositionEffect position_effect,
                         double price,
                         int qty);

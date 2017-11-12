@@ -1,6 +1,7 @@
 #include "ctp_position_effect_strategy.h"
 #include <algorithm>
 #include <boost/assert.hpp>
+#include "hpt_core/order_util.h"
 
 // GenericCTPPositionEffectStrategy
 GenericCTPPositionEffectStrategy::GenericCTPPositionEffectStrategy(
@@ -39,14 +40,17 @@ void GenericCTPPositionEffectStrategy::HandleInputOrder(
     }
   } else {
     int closeable =
-        (order.direction == OrderDirection::kBuy ? long_amount.Closeable()
-                                                 : short_amount.Closeable());
+        (OppositeOrderDirection(order.direction) == OrderDirection::kBuy
+             ? long_amount.Closeable()
+             : short_amount.Closeable());
     BOOST_ASSERT(closeable >= order.qty);
     // TODO: If assert is fail, maybe throw exception
     position_effect_flag_strategy_->HandleInputOrder(
         order.order_id, order.position_effect, order.direction, order.price,
         order.qty,
-        (order.direction == OrderDirection::kBuy ? long_amount : short_amount));
+        (OppositeOrderDirection(order.direction) == OrderDirection::kBuy
+             ? long_amount
+             : short_amount));
   }
 }
 
@@ -61,11 +65,11 @@ void CloseTodayCostCTPPositionEffectStrategy::HandleInputOrder(
     const CTPPositionAmount& long_amount,
     const CTPPositionAmount& short_amount) {
   if (order.position_effect == PositionEffect::kClose) {
-    OrderDirection opposite_direction = order.direction == OrderDirection::kBuy
-                                            ? OrderDirection::kSell
-                                            : OrderDirection::kBuy;
+    OrderDirection opposite_direction = order.direction;
     const CTPPositionAmount& position =
-        (order.direction == OrderDirection::kBuy ? long_amount : short_amount);
+        (OppositeOrderDirection(order.direction) == OrderDirection::kBuy
+             ? long_amount
+             : short_amount);
 
     const CTPPositionAmount& opposite_position =
         (opposite_direction == OrderDirection::kBuy ? long_amount

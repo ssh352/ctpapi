@@ -184,8 +184,8 @@ void DelayedOpenStrategyEx::HandleCanceled(
 void DelayedOpenStrategyEx::HandleClosed(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  int closeable_qty = portfolio_.GetPositionCloseableQty(
-      rtn_order->instrument_id, rtn_order->position_effect_direction);
+  //int closeable_qty = portfolio_.GetPositionCloseableQty(
+  //    rtn_order->instrument_id, rtn_order->position_effect_direction);
   BOOST_ASSERT(position_qty.position >= position_qty.frozen);
   int pending_open_order_qty =
       PendingOpenQty(rtn_order->instrument_id, rtn_order->position_effect_direction);
@@ -197,10 +197,10 @@ void DelayedOpenStrategyEx::HandleClosed(
     CancelSpecificOpeningOrders(rtn_order->instrument_id, rtn_order->position_effect_direction);
   } else if (pending_open_order_qty + opening_order_qty >
              position_qty.position) {
-    int leaves_cancel_or_remove_qty =
+    int leaves_cancel_or_unqueue_qty =
         pending_open_order_qty + opening_order_qty - position_qty.position;
-    BOOST_ASSERT(leaves_cancel_or_remove_qty > 0);
-    if (leaves_cancel_or_remove_qty > 0) {
+    BOOST_ASSERT(leaves_cancel_or_unqueue_qty > 0);
+    if (leaves_cancel_or_unqueue_qty > 0) {
       enum class OpenOrderFrom {
         kPendingQueue,
         kUnfillQueue,
@@ -232,7 +232,7 @@ void DelayedOpenStrategyEx::HandleClosed(
       int want_decrease_pending_open_qty = 0;
       int want_cancel_opening_qty = 0;
       for (const auto& item : orders_from_queue) {
-        int qty = std::min(std::get<2>(item), leaves_cancel_or_remove_qty);
+        int qty = std::min(std::get<2>(item), leaves_cancel_or_unqueue_qty);
 
         if (std::get<0>(item) == OpenOrderFrom::kPendingQueue) {
           want_decrease_pending_open_qty += qty;
@@ -240,8 +240,8 @@ void DelayedOpenStrategyEx::HandleClosed(
           want_cancel_opening_qty += qty;
         }
 
-        leaves_cancel_or_remove_qty -= qty;
-        if (leaves_cancel_or_remove_qty <= 0) {
+        leaves_cancel_or_unqueue_qty -= qty;
+        if (leaves_cancel_or_unqueue_qty <= 0) {
           break;
         }
       }

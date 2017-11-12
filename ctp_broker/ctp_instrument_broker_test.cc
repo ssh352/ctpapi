@@ -1,5 +1,7 @@
 #include "ctp_instrument_broker_test.h"
 #include <boost/lexical_cast.hpp>
+#include "common/api_data_type.h"
+#include "hpt_core/order_util.h"
 
 const static std::string default_instrument = "I1";
 const static std::string account_id = "A1";
@@ -14,13 +16,14 @@ void CTPInstrumentBrokerTest::SimulateCTPTradedOrderFieldWithPrice(
     int qty) {
   auto order =
       orders_.find(order_id, HashCTPOrderField(), CompareCTPOrderField());
-  (*order)->trading_qty = qty;
-  (*order)->leaves_qty -= qty;
-  (*order)->status = (*order)->leaves_qty == 0 ? OrderStatus::kAllFilled
-                                               : OrderStatus::kActive;
-  (*order)->trading_price = trading_price;
-  BOOST_ASSERT((*order)->leaves_qty >= 0);
-  broker_.HandleRtnOrder(*order);
+  //(*order)->trading_qty = qty;
+  //(*order)->leaves_qty -= qty;
+  //(*order)->status = (*order)->leaves_qty == 0 ? OrderStatus::kAllFilled
+  //                                             : OrderStatus::kActive;
+  //(*order)->trading_price = trading_price;
+  // BOOST_ASSERT((*order)->leaves_qty >= 0);
+  // broker_.HandleRtnOrder(*order);
+  broker_.HandleTraded(order_id, trading_price, qty, 0);
 }
 
 void CTPInstrumentBrokerTest::SimulateCTPTradedOrderField(
@@ -28,13 +31,14 @@ void CTPInstrumentBrokerTest::SimulateCTPTradedOrderField(
     int qty) {
   auto order =
       orders_.find(order_id, HashCTPOrderField(), CompareCTPOrderField());
-  (*order)->trading_qty = qty;
-  (*order)->leaves_qty -= qty;
-  (*order)->status = (*order)->leaves_qty == 0 ? OrderStatus::kAllFilled
-                                               : OrderStatus::kActive;
-  (*order)->trading_price = (*order)->input_price;
-  BOOST_ASSERT((*order)->leaves_qty >= 0);
-  broker_.HandleRtnOrder(*order);
+  //(*order)->trading_qty = qty;
+  //(*order)->leaves_qty -= qty;
+  //(*order)->status = (*order)->leaves_qty == 0 ? OrderStatus::kAllFilled
+  //                                             : OrderStatus::kActive;
+  //(*order)->trading_price = (*order)->input_price;
+  // BOOST_ASSERT((*order)->leaves_qty >= 0);
+  broker_.HandleTraded(order_id, (*order)->input_price, qty, 0);
+  // broker_.HandleRtnOrder(*order);
 }
 
 void CTPInstrumentBrokerTest::SimulateCTPNewOpenOrderField(
@@ -82,7 +86,11 @@ std::shared_ptr<CTPOrderField> CTPInstrumentBrokerTest::MakeCTPOrderField(
   auto order = std::make_shared<CTPOrderField>();
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->position_effect_direction = direction;
+  order->direction = direction;
+  order->position_effect_direction = AdjustDirectionByPositionEffect(
+      position_effect == CTPPositionEffect::kOpen ? PositionEffect::kOpen
+                                                  : PositionEffect::kClose,
+      direction);
   order->status = status;
   order->instrument = instrument;
   order->input_price = price;
@@ -131,7 +139,8 @@ void CTPInstrumentBrokerTest::SimulateCTPNewCloseOrderField(
 }
 
 void CTPInstrumentBrokerTest::MakeCancelOrderRequest(
-    const std::string& order_id, int qty) {
+    const std::string& order_id,
+    int qty) {
   broker_.HandleCancel(CancelOrderSignal{order_id, default_instrument, qty});
 }
 

@@ -130,11 +130,11 @@ TEST_F(GenericPositionEffectTest, CloseOrderThenRecvCTPOrder) {
   SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.2, 10);
   SimulateCTPTradedOrderField("0", 10);
   Clear();
-  MakeCloseOrderRequest("1", OrderDirection::kBuy, 1.3, 10);
+  MakeCloseOrderRequest("1", OrderDirection::kSell, 1.3, 10);
   auto enter_order = PopupOrder<CTPEnterOrder>();
   ASSERT_TRUE(enter_order);
   EXPECT_EQ(CTPPositionEffect::kClose, enter_order->position_effect);
-  EXPECT_EQ(OrderDirection::kBuy, enter_order->direction);
+  EXPECT_EQ(OrderDirection::kSell, enter_order->direction);
   EXPECT_EQ(10, enter_order->qty);
   EXPECT_EQ(1.3, enter_order->price);
   EXPECT_EQ("I1", enter_order->instrument);
