@@ -25,6 +25,11 @@ enum class OrderStatus {
   kCancelRejected,
 };
 
+enum class OrderActionType {
+  kModifyPrice,
+  kModifyQty,
+};
+
 typedef int64_t TimeStamp;
 
 typedef char InstrumentIDType[31];

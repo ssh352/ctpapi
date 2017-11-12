@@ -168,6 +168,7 @@ void CTPTraderApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
   } else {
     session_id_ = pRspUserLogin->SessionID;
     front_id_ = pRspUserLogin->FrontID;
+    SettlementInfoConfirm();
   }
 }
 
@@ -177,6 +178,40 @@ void CTPTraderApi::OnFrontConnected() {
   strcpy(field.Password, password_.c_str());
   strcpy(field.BrokerID, broker_id_.c_str());
   api_->ReqUserLogin(&field, 0);
+}
+
+void CTPTraderApi::SettlementInfoConfirm() {
+  CThostFtdcQrySettlementInfoConfirmField field{0};
+  strcpy(field.BrokerID, broker_id_.c_str());
+  strcpy(field.InvestorID, user_id_.c_str());
+  api_->ReqQrySettlementInfoConfirm(&field, 0);
+}
+
+void CTPTraderApi::OnRspQrySettlementInfoConfirm(
+    CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+    CThostFtdcRspInfoField* pRspInfo,
+    int nRequestID,
+    bool bIsLast) {
+  if (pSettlementInfoConfirm == NULL) {
+    CThostFtdcSettlementInfoConfirmField field{0};
+    strcpy(field.BrokerID, broker_id_.c_str());
+    strcpy(field.InvestorID, user_id_.c_str());
+    api_->ReqSettlementInfoConfirm(&field, 0);
+  } else {
+    //delegate_->OnSettlementInfoConfirm();
+  }
+}
+
+void CTPTraderApi::OnRspSettlementInfoConfirm(
+    CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+    CThostFtdcRspInfoField* pRspInfo,
+    int nRequestID,
+    bool bIsLast) {
+  if (pSettlementInfoConfirm != NULL) {
+    //delegate_->OnSettlementInfoConfirm();
+  } else {
+    // Except
+  }
 }
 
 void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,

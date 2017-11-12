@@ -197,3 +197,63 @@ TEST_F(GenericPositionEffectTest, CancelOrder) {
   auto cancel = PopupOrder<CTPCancelOrder>();
   ASSERT_TRUE(cancel);
 }
+
+TEST_F(GenericPositionEffectTest, ModifyOrderQty) {
+  MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
+  SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
+  Clear();
+  MakeOrderAction("xx", 10, 4);
+  auto cancel = PopupOrder<CTPCancelOrder>();
+  ASSERT_TRUE(cancel);
+  SimulateCTPCancelOrderField("0");
+  
+  auto input_order = PopupOrder<CTPEnterOrder>();
+  ASSERT_TRUE(input_order);
+  EXPECT_EQ("1", input_order->order_id);
+  EXPECT_EQ(4, input_order->qty);
+  EXPECT_EQ(1.3, input_order->price);
+  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(CTPPositionEffect::kOpen, input_order->position_effect);
+  
+  SimulateCTPNewOpenOrderField("1", OrderDirection::kBuy, 1.3, 4);
+}
+
+TEST_F(GenericPositionEffectTest, ModifyOrderPrice) {
+  MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
+  SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
+  Clear();
+  MakeOrderAction("xx", 1.3, 1.5);
+  auto cancel = PopupOrder<CTPCancelOrder>();
+  ASSERT_TRUE(cancel);
+  SimulateCTPCancelOrderField("0");
+  
+  auto input_order = PopupOrder<CTPEnterOrder>();
+  ASSERT_TRUE(input_order);
+  EXPECT_EQ("1", input_order->order_id);
+  EXPECT_EQ(10, input_order->qty);
+  EXPECT_EQ(1.5, input_order->price);
+  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(CTPPositionEffect::kOpen, input_order->position_effect);
+  
+  SimulateCTPNewOpenOrderField("1", OrderDirection::kBuy, 1.5, 10);
+}
+
+TEST_F(GenericPositionEffectTest, ModifyOrderPriceAndQty) {
+  MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
+  SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
+  Clear();
+  MakeOrderAction("xx", 1.3, 1.5, 10, 6);
+  auto cancel = PopupOrder<CTPCancelOrder>();
+  ASSERT_TRUE(cancel);
+  SimulateCTPCancelOrderField("0");
+  
+  auto input_order = PopupOrder<CTPEnterOrder>();
+  ASSERT_TRUE(input_order);
+  EXPECT_EQ("1", input_order->order_id);
+  EXPECT_EQ(6, input_order->qty);
+  EXPECT_EQ(1.5, input_order->price);
+  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(CTPPositionEffect::kOpen, input_order->position_effect);
+  
+  SimulateCTPNewOpenOrderField("1", OrderDirection::kBuy, 1.5, 6);
+}

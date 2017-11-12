@@ -59,6 +59,13 @@ class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
 
   void MakeCancelOrderRequest(const std::string& order_id, int qty);
 
+  void MakeOrderAction(const std::string& order_id, int old_qty, int new_qty);
+
+  void MakeOrderAction(const std::string& order_id, double old_price, double new_price);
+
+  void MakeOrderAction(const std::string& order_id, double old_price, double new_price,
+    int old_qty, int new_qty);
+
   void SimulateCTPNewOpenOrderField(const std::string& order_id,
                                     OrderDirection direction,
                                     double price,
@@ -77,6 +84,7 @@ class CTPInstrumentBrokerTest : public testing::Test, public CTPOrderDelegate {
                                             double trading_price,
                                             int qty);
 
+  void SimulateCTPCancelOrderField(const std::string& order_id);
  private:
   struct HashCTPOrderField {
     size_t operator()(const std::shared_ptr<CTPOrderField>& order) const;

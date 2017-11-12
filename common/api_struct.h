@@ -161,6 +161,15 @@ struct CancelOrderSignal {
   int qty;
 };
 
+struct OrderAction {
+  std::string order_id;
+  std::string instrument;
+  int old_qty;
+  int new_qty;
+  double old_price;
+  double new_price;
+};
+
 struct CTAPositionQty {
   int position;
   int frozen;

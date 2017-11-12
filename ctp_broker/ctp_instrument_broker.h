@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <boost/unordered_set.hpp>
+#include <set>
 #include "common/api_struct.h"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "ctp_position_effect_flag_strategy.h"
@@ -19,14 +20,17 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   void HandleRtnOrder(const std::shared_ptr<CTPOrderField>& order);
 
-  void HandleInputOrder(const InputOrder& order);
-
-  void HandleCancel(const CancelOrderSignal& cancel);
-
   void HandleTraded(const std::string& order_id,
                     double trading_price,
                     int trading_qty,
                     TimeStamp timestamp);
+
+  void HandleInputOrder(const InputOrder& order);
+
+  void HandleCancel(const CancelOrderSignal& cancel);
+
+  void HandleOrderAction(const OrderAction& action);
+
 
   void InitPosition(std::pair<int, int> long_pos,
                     std::pair<int, int> short_pos);
@@ -67,6 +71,11 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
     }
   };
 
+  struct PendingOrderAction {
+    std::set<std::string> pending_cancel_order_ids;
+    OrderAction order_action;
+  };
+
   void InsertOrderField(const std::string& instrument,
                         const std::string& order_id,
                         OrderDirection direction,
@@ -79,7 +88,11 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   bool IsCtpOpenPositionEffect(CTPPositionEffect position_effect) const;
 
-  std::unordered_multimap<std::string, std::string> ctp_order_id_to_order_id_;
+  void HandleModifyOrderPrice(const std::string& order_id, double old_price, double new_price);
+
+  void HandleModifyOrderQty(const std::string& order_id, int old_qty, double new_price);
+
+  std::unordered_map<std::string, std::string> ctp_order_id_to_order_id_;
 
   std::unordered_multimap<std::string, std::string> order_id_to_ctp_order_id_;
 
@@ -104,6 +117,7 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
   std::unique_ptr<CTPPositionAmount> short_;
   std::string instrument_;
   std::unique_ptr<CTPPositionEffectStrategy> position_effect_strategy_;
+  std::list<PendingOrderAction> pending_order_action_queue_;
 };
 
 #endif  // CTP_BROKER_CTP_INSTRUMENT_BROKER_H

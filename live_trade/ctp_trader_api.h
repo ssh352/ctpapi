@@ -85,7 +85,21 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
   virtual void OnRtnTrade(CThostFtdcTradeField* pTrade) override;
 
+  void OnRspQrySettlementInfoConfirm(
+      CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast);
+
+  void OnRspSettlementInfoConfirm(
+      CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast);
+
  private:
+  void SettlementInfoConfirm();
+
   struct ExchangeIdOrderSysId {
     std::string exchange_id;
     std::string order_sys_id;
