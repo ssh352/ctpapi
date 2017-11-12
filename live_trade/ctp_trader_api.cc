@@ -121,6 +121,10 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
         pOrder->Direction == THOST_FTDC_D_Buy ? OrderDirection::kSell
                                               : OrderDirection::kBuy;
   }
+
+  order_field->direction = pOrder->Direction == THOST_FTDC_D_Buy
+                               ? OrderDirection::kBuy
+                               : OrderDirection::kSell;
   order_field->date = pOrder->InsertDate;
   // order_field->input_timestamp = pOrder->InsertTime;
   order_field->update_timestamp =
@@ -181,10 +185,7 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
   strcpy(field.InstrumentID, input_order.instrument.c_str());
   strcpy(field.OrderRef, order_id.c_str());
   field.OrderPriceType = THOST_FTDC_OPT_LimitPrice;
-  field.Direction = OrderDirectionToTThostOrderDireciton(
-      input_order.position_effect == CTPPositionEffect::kOpen
-          ? input_order.direction
-          : OppositeOrderDirection(input_order.direction));
+  field.Direction = OrderDirectionToTThostOrderDireciton(input_order.direction);
   field.CombOffsetFlag[0] =
       PositionEffectToTThostOffsetFlag(input_order.position_effect);
   strcpy(field.CombHedgeFlag, "1");

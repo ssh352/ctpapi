@@ -106,7 +106,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
           auto it = instrument_brokers_.find(instrument);
           BOOST_ASSERT(it != instrument_brokers_.end());
           if (it != instrument_brokers_.end()) {
-            it->second->HandleTrader(order_id, trading_price, trading_qty,
+            it->second->HandleTraded(order_id, trading_price, trading_qty,
                                      timestamp);
           }
         },
