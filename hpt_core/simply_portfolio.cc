@@ -148,7 +148,22 @@ std::vector<std::shared_ptr<OrderField>> SimplyPortfolio::UnfillCloseOrders(
                   }
                   ret_orders.push_back(order);
                 });
-  return std::move(ret_orders);
+  return ret_orders;
+}
+
+std::vector<std::shared_ptr<OrderField>> SimplyPortfolio::UnfillCloseOrders()
+    const {
+  std::vector<std::shared_ptr<OrderField>> ret_orders;
+  std::for_each(order_container_.begin(), order_container_.end(),
+                [&ret_orders](const auto& key_value) {
+                  const std::shared_ptr<OrderField>& order = key_value.second;
+                  if (order->position_effect == PositionEffect::kOpen ||
+                      order->status != OrderStatus::kActive) {
+                    return;
+                  }
+                  ret_orders.push_back(order);
+                });
+  return ret_orders;
 }
 
 std::shared_ptr<OrderField> SimplyPortfolio::GetOrder(

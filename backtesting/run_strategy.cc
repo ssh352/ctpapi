@@ -2,12 +2,13 @@
 #include "atom_defines.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "backtesting_cta_signal_broker_ex.h"
-#include "hpt_core/backtesting/simulated_always_treade_execution_handler.h"
 #include "hpt_core/portfolio_handler.h"
 #include "hpt_core/backtesting/price_handler.h"
 #include "rtn_order_recorder.h"
 #include "type_defines.h"
 #include "follow_strategy/delayed_open_strategy_ex.h"
+#include "follow_strategy/delay_open_strategy_agent.h"
+#include "hpt_core/backtesting/execution_handler.h"
 
 caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
   return {[=](const std::string& market, const std::string& instrument,
@@ -36,7 +37,7 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
     DelayOpenStrategyAgent<BacktestingMailBox> strategy(
         &mail_box, std::move(strategy_param));
 
-    SimulatedAlwaysExcutionHandler<BacktestingMailBox> execution_handler(
+    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(
         &mail_box);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
@@ -56,7 +57,6 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
         price_handler.StreamNext();
       }
     }
-    self->quit();
     self->send(coor, IdleAtom::value, self);
   }};
 }

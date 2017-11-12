@@ -35,6 +35,8 @@ class SimplyPortfolio {
       const std::string& instrument,
       OrderDirection direction) const;
 
+  std::vector<std::shared_ptr<OrderField> > UnfillCloseOrders() const;
+
  private:
   struct PositionKey {
     std::string instrument;

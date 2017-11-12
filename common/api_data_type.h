@@ -23,6 +23,7 @@ enum class OrderStatus {
   kCanceled,
   kInputRejected,
   kCancelRejected,
+  kActionRejected,
 };
 
 enum class OrderActionType {

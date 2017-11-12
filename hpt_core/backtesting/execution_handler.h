@@ -8,11 +8,12 @@
 #include <functional>
 #include "common/api_struct.h"
 #include "hpt_core/tick_series_data_base.h"
+#include "hpt_core/order_util.h"
 
 struct LimitOrder {
   std::string instrument;
   std::string order_id;
-  OrderDirection position_effect_direction;
+  OrderDirection direction;
   PositionEffect position_effect;
   double price;
   int qty;
@@ -45,6 +46,7 @@ class SimulatedExecutionHandler {
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandlerInputOrder, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandleTick, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandleCancelOrder, this);
+    mail_box_->Subscribe(&SimulatedExecutionHandler::HandleActionOrder, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::BeforeTrading, this);
   }
 
@@ -84,27 +86,27 @@ class SimulatedExecutionHandler {
     }
   }
 
-  void HandlerInputOrder(const InputOrder& input_order) {
+  void HandlerInputOrder(const InputOrderSignal& input_order) {
     std::string order_id = input_order.order_id;
     if (input_order.direction == OrderDirection::kBuy) {
       long_limit_orders_.insert(
-          {input_order.instrument, order_id, 
-           input_order.direction, input_order.position_effect,
-           input_order.price, input_order.qty});
+          {input_order.instrument, order_id, input_order.direction,
+           input_order.position_effect, input_order.price, input_order.qty});
     } else {
       short_limit_orders_.insert(
-          {input_order.instrument, order_id, 
-           input_order.direction, input_order.position_effect,
-           input_order.price, input_order.qty});
+          {input_order.instrument, order_id, input_order.direction,
+           input_order.position_effect, input_order.price, input_order.qty});
     }
 
     auto order = std::make_shared<OrderField>();
     order->order_id = order_id;
-    //order->strategy_id = input_order.strategy_id;
+    // order->strategy_id = input_order.strategy_id;
 
     order->instrument_id = input_order.instrument;
     order->position_effect = input_order.position_effect;
-    order->position_effect_direction = input_order.direction;
+    order->direction = input_order.direction;
+    order->position_effect_direction = AdjustDirectionByPositionEffect(
+        input_order.position_effect, input_order.direction);
     order->status = OrderStatus::kActive;
     order->input_price = input_order.price;
     order->avg_price = input_order.price;
@@ -132,7 +134,7 @@ class SimulatedExecutionHandler {
 
     if (find_it != long_limit_orders_.end()) {
       EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled, find_it->price,
-        find_it->qty, 0);
+                           find_it->qty, 0);
       long_limit_orders_.erase(find_it);
       return;
     }
@@ -143,8 +145,8 @@ class SimulatedExecutionHandler {
                        return limit_order.order_id == order_id;
                      });
     if (find_it != short_limit_orders_.end()) {
-      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled,
-                           find_it->price, find_it->qty, 0);
+      EnqueueRtnOrderEvent(*find_it, OrderStatus::kCanceled, find_it->price,
+                           find_it->qty, 0);
       short_limit_orders_.erase(find_it);
       return;
     }
@@ -164,12 +166,71 @@ class SimulatedExecutionHandler {
     // int qty;
 
     EnqueueRtnOrderEvent(
-        {(*it)->instrument_id, (*it)->order_id, 
-         (*it)->position_effect_direction, (*it)->position_effect, (*it)->input_price,
-         (*it)->qty},
+        {(*it)->instrument_id, (*it)->order_id, (*it)->direction,
+         (*it)->position_effect, (*it)->input_price, (*it)->qty},
         OrderStatus::kCancelRejected, (*it)->input_price, (*it)->qty, 0);
 
     return;
+  }
+
+  void SimulatedExecutionHandler::HandleActionOrder(
+      const OrderAction& action_order) {
+    const std::string& order_id = action_order.order_id;
+    auto find_it =
+        std::find_if(long_limit_orders_.begin(), long_limit_orders_.end(),
+                     [=](const LimitOrder& limit_order) {
+                       return limit_order.order_id == order_id;
+                     });
+
+    if (find_it != long_limit_orders_.end()) {
+      LimitOrder lo = *find_it;
+      if (action_order.new_price != action_order.old_price) {
+        lo.price = action_order.new_price;
+      }
+
+      if (action_order.old_qty != action_order.new_qty) {
+        lo.qty = action_order.new_qty;
+      }
+
+      EnqueueRtnOrderEvent(lo, OrderStatus::kActive, lo.price, find_it->qty, 0);
+
+      long_limit_orders_.erase(find_it);
+      long_limit_orders_.insert(std::move(lo));
+      return;
+    }
+
+    find_it =
+        std::find_if(short_limit_orders_.begin(), short_limit_orders_.end(),
+                     [=](const LimitOrder& limit_order) {
+                       return limit_order.order_id == order_id;
+                     });
+    if (find_it != short_limit_orders_.end()) {
+      LimitOrder lo = *find_it;
+      if (action_order.new_price != action_order.old_price) {
+        lo.price = action_order.new_price;
+      }
+
+      if (action_order.old_qty != action_order.new_qty) {
+        lo.qty = action_order.new_qty;
+      }
+
+      EnqueueRtnOrderEvent(lo, OrderStatus::kActive, lo.price, find_it->qty, 0);
+
+      short_limit_orders_.erase(find_it);
+      short_limit_orders_.insert(std::move(lo));
+      return;
+    }
+
+    auto it = orders_.find(action_order.order_id, OrderFieldHask(),
+                           OrderFieldEqualTo());
+
+    BOOST_ASSERT(it != orders_.end());
+
+    EnqueueRtnOrderEvent(
+        {(*it)->instrument_id, (*it)->order_id,
+         (*it)->position_effect_direction, (*it)->position_effect,
+         (*it)->input_price, (*it)->qty},
+        OrderStatus::kActionRejected, (*it)->input_price, (*it)->qty, 0);
   }
 
   void EnqueueRtnOrderEvent(const LimitOrder& limit_order,
@@ -181,7 +242,9 @@ class SimulatedExecutionHandler {
     order->order_id = limit_order.order_id;
     order->instrument_id = limit_order.instrument;
     order->position_effect = limit_order.position_effect;
-    order->position_effect_direction = limit_order.position_effect_direction;
+    order->direction = limit_order.direction;
+    order->position_effect_direction = AdjustDirectionByPositionEffect(
+        limit_order.position_effect, limit_order.direction);
     order->status = order_status;
     order->input_price = price;
     order->avg_price = price;

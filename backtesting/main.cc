@@ -85,7 +85,8 @@ void InitLogging(bool enable_logging) {
       //                    << "]: " << expr::smessage);
 
       // core->add_sink(sink);
-  } {
+  } 
+  {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern

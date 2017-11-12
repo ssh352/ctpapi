@@ -9,7 +9,7 @@ int DelayedOpenStrategyEx::PendingOpenQty(const std::string& instrument,
   return std::accumulate(
       pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(), 0,
       [&instrument, position_effect_direction](int val,
-                                     const InputOrderSignal& input_order) {
+                                     const InputOrder& input_order) {
         if (input_order.instrument != instrument ||
             input_order.direction != position_effect_direction) {
           return val;
@@ -104,11 +104,11 @@ void DelayedOpenStrategyEx::DecreasePendingOpenOrderQty(
   });
 }
 
-std::vector<InputOrderSignal>
+std::vector<InputOrder>
 DelayedOpenStrategyEx::GetSpecificOrdersInPendingOpenQueue(
     const std::string& instrument,
     OrderDirection direction) {
-  std::vector<InputOrderSignal> orders;
+  std::vector<InputOrder> orders;
   std::copy_if(pending_delayed_open_order_.begin(),
                pending_delayed_open_order_.end(), std::back_inserter(orders),
                [&instrument, direction](const auto& order) {
@@ -144,7 +144,7 @@ void DelayedOpenStrategyEx::RemoveSpecificPendingOpenOrders(
 }
 
 bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
-    const InputOrderSignal & order,
+    const InputOrder & order,
     const std::shared_ptr<Tick>& tick) {
   if (strategy_param_.price_offset == 0.0) {
     return false;
@@ -309,7 +309,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
 void DelayedOpenStrategyEx::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  pending_delayed_open_order_.push_back(InputOrderSignal{
+  pending_delayed_open_order_.push_back(InputOrder{
       rtn_order->instrument_id, "",PositionEffect::kOpen,
       rtn_order->position_effect_direction, rtn_order->trading_price, rtn_order->trading_qty,
       rtn_order->update_timestamp});
@@ -421,5 +421,24 @@ DelayedOpenStrategyEx::DelayedOpenStrategyEx(
     StrategyParam strategy_param)
     : delegate_(delegate),
       strategy_param_(std::move(strategy_param)) {
-  BOOST_LOG(log_) << "test";
+}
+
+void DelayedOpenStrategyEx::HandleNearCloseMarket() {
+  auto orders = portfolio_.UnfillCloseOrders();
+  for (const auto& order : orders) {
+    BOOST_LOG(log_)
+        << boost::log::add_value("quant_timestamp",
+                                 TimeStampToPtime(last_timestamp_))
+        << "ÁÙ½üÊÕÊÐ:" << order->instrument_id << ";" << order->order_id;
+    OrderAction action_order;
+    action_order.instrument = order->instrument_id;
+    action_order.order_id = order->order_id;
+    action_order.old_qty = 0;
+    action_order.new_qty = 0;
+    action_order.old_price = order->input_price;
+    action_order.new_price = (order->direction == OrderDirection::kBuy) ?
+      last_tick_->tick->ask_price1 : last_tick_->tick->bid_price1;
+    delegate_->HandleActionOrder(std::move(action_order), 
+      order->position_effect_direction);
+  }
 }

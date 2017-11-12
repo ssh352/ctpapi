@@ -71,7 +71,7 @@ class PortfolioHandler {
          << str(boost::format("%0.2f") % portfolio_.daily_commission()) << "\n";
   }
 
-  void HandlerInputOrder(const InputOrderSignal& input_order) {
+  void HandlerInputOrder(const InputOrder& input_order) {
     BOOST_ASSERT(unique_order_ids_.find(input_order.order_id) ==
                  unique_order_ids_.end());
     unique_order_ids_.insert(input_order.order_id);
@@ -91,10 +91,10 @@ class PortfolioHandler {
           input_order.qty);
     }
 
-    mail_box_->Send(InputOrder{input_order.instrument, input_order.order_id,
-                               input_order.position_effect,
-                               input_order.direction, input_order.price,
-                               input_order.qty, input_order.timestamp});
+    mail_box_->Send(InputOrderSignal{
+        input_order.instrument, input_order.order_id,
+        input_order.position_effect, input_order.direction, input_order.price,
+        input_order.qty, input_order.timestamp});
   }
 
  private:
