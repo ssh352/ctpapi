@@ -6,6 +6,7 @@
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
 #include <boost/any.hpp>
+#include <boost/algorithm/string.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
 #include "live_trade/caf_atom_defines.h"
@@ -31,6 +32,16 @@
 #include "ctp_rtn_order_subscriber.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
 
+std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
+    {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
+    {"cs", "dc"}, {"cu", "sc"}, {"fg", "zc"}, {"i", "dc"},  {"j", "dc"},
+    {"jd", "dc"}, {"jm", "dc"}, {"l", "dc"},  {"m", "dc"},  {"ma", "zc"},
+    {"ni", "sc"}, {"p", "dc"},  {"pp", "dc"}, {"rb", "sc"}, {"rm", "zc"},
+    {"ru", "sc"}, {"sm", "zc"}, {"sr", "zc"}, {"ta", "zc"}, {"v", "dc"},
+    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}};
+
+std::unordered_set<std::string> g_close_today_cost_instrument_codes = {
+    "fg", "hc", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
 
@@ -120,12 +131,40 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             auto broker = std::make_unique<CTPInstrumentBroker>(
                 this, order.instrument, false,
                 std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
-            //broker->SetPositionEffectStrategy<
-            //    GenericCTPPositionEffectStrategy,
-            //    GenericCTPPositionEffectFlagStrategy>();
-            broker->SetPositionEffectStrategy<
-                GenericCTPPositionEffectStrategy,
-                CloseTodayAwareCTPPositionEffectFlagStrategy>();
+            std::string instrument_code = order.instrument.substr(
+                0, order.instrument.find_first_of("0123456789"));
+            boost::algorithm::to_lower(instrument_code);
+            bool close_today_cost = false;
+            bool close_today_aware = false;
+            if (g_instrument_exchange_set.find(instrument_code) !=
+                    g_instrument_exchange_set.end() &&
+                g_instrument_exchange_set.at(instrument_code) == "sc") {
+              close_today_aware = true;
+            } else {
+            }
+
+            if (g_close_today_cost_instrument_codes.find(instrument_code) !=
+                g_close_today_cost_instrument_codes.end()) {
+              close_today_cost = true;
+            }
+
+            if (close_today_cost && close_today_aware) {
+              broker->SetPositionEffectStrategy<
+                  CloseTodayCostCTPPositionEffectStrategy,
+                  CloseTodayAwareCTPPositionEffectFlagStrategy>();
+            } else if (!close_today_cost && close_today_aware) {
+              broker->SetPositionEffectStrategy<
+                  GenericCTPPositionEffectStrategy,
+                  CloseTodayAwareCTPPositionEffectFlagStrategy>();
+            } else if (close_today_cost && !close_today_aware) {
+              broker->SetPositionEffectStrategy<
+                  CloseTodayCostCTPPositionEffectStrategy,
+                  GenericCTPPositionEffectFlagStrategy>();
+            } else {
+              broker->SetPositionEffectStrategy<
+                  GenericCTPPositionEffectStrategy,
+                  GenericCTPPositionEffectFlagStrategy>();
+            }
 
             broker->HandleInputOrder(order);
             instrument_brokers_.insert({order.instrument, std::move(broker)});
@@ -188,8 +227,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   bool running = true;
 
-   auto sub_acconts = {"foo", "bar"};
-  //auto sub_acconts = {"foo"};
+  auto sub_acconts = {"foo", "bar"};
+  // auto sub_acconts = {"foo"};
   LiveTradeMailBox common_mail_box;
 
   std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
