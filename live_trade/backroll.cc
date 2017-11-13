@@ -42,6 +42,8 @@ std::unordered_map<ExchangeIdOrderSysId,
                    CompareExchangeIdOrderSysId>
     order_sys_id_to_order_id_;
 
+std::unordered_map<std::string, std::shared_ptr<CTPOrderField>> g_orders_;
+
 namespace boost {
 namespace serialization {
 template <class Archive>
@@ -256,14 +258,18 @@ class OutputMailBox {
   template <typename... Ts>
   void Subscribe(Ts&&... args) {}
 
-  template <typename... Ts>
-  void Send(Ts&&... args) {}
+  // template <typename... Ts>
+  // void Send(Ts&&... args) {
+  //}
+
+  void Send(const std::shared_ptr<OrderField>& order,
+            const CTAPositionQty& position) {
+    BOOST_ASSERT(position.position >=  position.frozen);
+    std::cout << position.position << ":" << position.frozen << "\n";
+  }
 };
 
 void BackRoolRtnOrder() {
-  OutputMailBox mail_box;
-  CTAOrderSignalSubscriber<OutputMailBox> cta_signal_subscriber(&mail_box);
-
   // auto& it =
   //    ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
   //                     CompareCTPOrderField());
@@ -285,14 +291,34 @@ void BackRoolRtnOrder() {
                        std::ios_base::binary);
     boost::archive::binary_iarchive ia(file);
 
+    OutputMailBox mail_box;
+    CTAOrderSignalSubscriber<OutputMailBox> cta_signal_subscriber(&mail_box);
+    cta_signal_subscriber.AddPosition("MA801", OrderDirection::kBuy, 3);
+    cta_signal_subscriber.AddPosition("m1805", OrderDirection::kSell, 9);
+    cta_signal_subscriber.AddPosition("cu1801", OrderDirection::kSell, 1);
+    cta_signal_subscriber.AddPosition("cs1801", OrderDirection::kBuy, 20);
+    cta_signal_subscriber.AddPosition("c1801", OrderDirection::kBuy, 7);
+    cta_signal_subscriber.AddPosition("RM805", OrderDirection::kSell, 7);
     while (true) {
       CThostFtdcOrderField ftdc_order;
       ia >> ftdc_order;
-
-      auto order = MakeOrderField(MakeCtpOrderField(&ftdc_order), 0.0, 0, 0);
-      if (order != nullptr) {
-        cta_signal_subscriber.HandleCTASignalOrder(CTASignalAtom(),
-                                                   std::move(order));
+      auto ctp_order = MakeCtpOrderField(&ftdc_order);
+      if (ctp_order != nullptr) {
+        auto it = g_orders_.find(ctp_order->order_id);
+        if (it != g_orders_.end()) {
+          int traded_qty = it->second->leaves_qty - ctp_order->leaves_qty;
+          if (traded_qty > 0 || ctp_order->status == OrderStatus::kCanceled) {
+            cta_signal_subscriber.HandleCTASignalOrder(
+                CTASignalAtom(),
+                MakeOrderField(ctp_order, ctp_order->input_price, traded_qty,
+                               0));
+          }
+          it->second = ctp_order;
+        } else {
+          cta_signal_subscriber.HandleCTASignalOrder(
+              CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0, 0));
+          g_orders_.insert({ctp_order->order_id, ctp_order});
+        }
       }
 
       // signal_subscriber_.HandleCTASignalOrder(

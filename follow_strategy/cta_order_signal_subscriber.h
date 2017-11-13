@@ -148,7 +148,22 @@ class CTAOrderSignalSubscriber {
     HandleTradedOrder(rtn_order);
   }
 
-  void HandleCanceled(const std::shared_ptr<OrderField>& rtn_order) {}
+  void HandleCanceled(const std::shared_ptr<OrderField>& rtn_order) {
+    auto range = map_order_ids_.equal_range(rtn_order->order_id);
+    int pending_trading_qty = rtn_order->trading_qty;
+    for (auto it = range.first; it != range.second; ++it) {
+      auto order_copy = std::make_shared<OrderField>(*it->second);
+      order_copy->trading_price = rtn_order->trading_price;
+      order_copy->status = OrderStatus::kCanceled;
+      inner_size_portfolio_.HandleOrder(order_copy);
+      it->second = order_copy;
+      mail_box_->Send(std::move(order_copy),
+                      GetCTAPositionQty(order_copy->instrument_id,
+                                        order_copy->position_effect_direction));
+    }
+
+    BOOST_ASSERT(pending_trading_qty == 0);
+  }
   std::string StringifyOrderStatus(OrderStatus status) const {
     std::string ret = "Unkown";
     switch (status) {
