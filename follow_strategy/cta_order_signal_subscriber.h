@@ -24,8 +24,9 @@ class CTAOrderSignalSubscriber {
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalOrder, this);
   }
 
-
-  void AddPosition(const std::string& instrument, OrderDirection direction, int qty) {
+  void AddPosition(const std::string& instrument,
+                   OrderDirection direction,
+                   int qty) {
     master_portfolio_.AddPosition(instrument, direction, qty);
     inner_size_portfolio_.AddPosition(instrument, direction, qty);
   }
@@ -49,10 +50,11 @@ class CTAOrderSignalSubscriber {
   void HandleOpening(const std::shared_ptr<OrderField>& rtn_order) {
     OrderDirection opposite_direction =
         OppositeOrderDirection(rtn_order->position_effect_direction);
-    int opposite_closeable_qty = master_portfolio_.GetPositionCloseableQty(
-        rtn_order->instrument_id, opposite_direction) - 
-      master_portfolio_.GetPositionCloseableQty(
-        rtn_order->instrument_id, rtn_order->direction);
+    int opposite_closeable_qty =
+        master_portfolio_.GetPositionCloseableQty(rtn_order->instrument_id,
+                                                  opposite_direction) -
+        master_portfolio_.GetPositionCloseableQty(rtn_order->instrument_id,
+                                                  rtn_order->direction);
     if (opposite_closeable_qty > 0) {
       if (opposite_closeable_qty < rtn_order->qty) {
         auto close_order = std::make_shared<OrderField>(*rtn_order);
@@ -105,7 +107,7 @@ class CTAOrderSignalSubscriber {
       order->position_effect = PositionEffect::kOpen;
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       inner_size_portfolio_.HandleOrder(order);
-      //mail_box_->Send(std::move(order),
+      // mail_box_->Send(std::move(order),
       //                GetCTAPositionQty(order->instrument_id,
       //                                  order->position_effect_direction));
     } else {
@@ -131,7 +133,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect = PositionEffect::kOpen;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        //mail_box_->Send(std::move(order),
+        // mail_box_->Send(std::move(order),
         //                GetCTAPositionQty(order->instrument_id,
         //                                  order->position_effect_direction));
       }
