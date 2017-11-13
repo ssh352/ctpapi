@@ -8,6 +8,7 @@
 #include <boost/any.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
+#include "live_trade/caf_atom_defines.h"
 // #include "hpt_core/backtesting/execution_handler.h"
 // #include "hpt_core/backtesting/price_handler.h"
 // #include "hpt_core/backtesting/backtesting_mail_box.h"
@@ -28,6 +29,7 @@
 #include "live_trade_broker_handler.h"
 #include "live_trade_mail_box.h"
 #include "ctp_rtn_order_subscriber.h"
+#include "follow_strategy/delay_open_strategy_agent.h"
 
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
@@ -118,9 +120,13 @@ class CAFSubAccountBroker : public caf::event_based_actor,
             auto broker = std::make_unique<CTPInstrumentBroker>(
                 this, order.instrument, false,
                 std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
+            //broker->SetPositionEffectStrategy<
+            //    GenericCTPPositionEffectStrategy,
+            //    GenericCTPPositionEffectFlagStrategy>();
             broker->SetPositionEffectStrategy<
                 GenericCTPPositionEffectStrategy,
-                GenericCTPPositionEffectFlagStrategy>();
+                CloseTodayAwareCTPPositionEffectFlagStrategy>();
+
             broker->HandleInputOrder(order);
             instrument_brokers_.insert({order.instrument, std::move(broker)});
           }

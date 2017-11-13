@@ -71,6 +71,7 @@ std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
     int trading_qty,
     TimeStamp timestamp) const {
   auto order = std::make_shared<OrderField>();
+  order->direction = ctp_order->direction;
   order->position_effect_direction = ctp_order->position_effect_direction;
   order->position_effect =
       ctp_order->position_effect == CTPPositionEffect::kOpen

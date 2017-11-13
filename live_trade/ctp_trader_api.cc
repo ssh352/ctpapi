@@ -273,7 +273,9 @@ void CTPTraderApi::Connect(const std::string& server,
 }
 
 void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
-                                       CThostFtdcRspInfoField* pRspInfo) {}
+                                       CThostFtdcRspInfoField* pRspInfo) {
+  int i = 0;
+}
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {
