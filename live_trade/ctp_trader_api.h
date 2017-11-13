@@ -11,6 +11,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
  public:
   class Delegate {
    public:
+    virtual void HandleLogon() = 0;
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
 
@@ -19,6 +20,9 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
                                      double trading_price,
                                      int trading_qty,
                                      TimeStamp timestamp) = 0;
+
+    virtual void HandleRspYesterdayPosition(
+        std::vector<OrderPosition> yesterday_positions) = 0;
   };
   CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path);
 
@@ -30,6 +34,14 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
   void InputOrder(const CTPEnterOrder& order, const std::string& order_id);
 
   void CancelOrder(CThostFtdcInputOrderActionField order);
+
+  void RequestYesterdayPosition();
+
+  virtual void OnRspQryInvestorPosition(
+      CThostFtdcInvestorPositionField* pInvestorPosition,
+      CThostFtdcRspInfoField* pRspInfo,
+      int nRequestID,
+      bool bIsLast);
 
   virtual void OnFrontConnected() override;
 
@@ -134,6 +146,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
                      HashExchagneIdOrderSysId,
                      CompareExchangeIdOrderSysId>
       order_sys_id_to_order_id_;
+  std::vector<OrderPosition> rsp_yesterday_position_cache_;
 };
 
 #endif  // LIVE_TRADE_CTP_TRADER_API_H

@@ -198,7 +198,8 @@ void CTPTraderApi::OnRspQrySettlementInfoConfirm(
     strcpy(field.InvestorID, user_id_.c_str());
     api_->ReqSettlementInfoConfirm(&field, 0);
   } else {
-    //delegate_->OnSettlementInfoConfirm();
+    // delegate_->OnSettlementInfoConfirm();
+    delegate_->HandleLogon();
   }
 }
 
@@ -208,7 +209,7 @@ void CTPTraderApi::OnRspSettlementInfoConfirm(
     int nRequestID,
     bool bIsLast) {
   if (pSettlementInfoConfirm != NULL) {
-    //delegate_->OnSettlementInfoConfirm();
+    delegate_->HandleLogon();
   } else {
     // Except
   }
@@ -280,4 +281,31 @@ void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {
   int i = 0;
+}
+
+void CTPTraderApi::OnRspQryInvestorPosition(
+    CThostFtdcInvestorPositionField* pInvestorPosition,
+    CThostFtdcRspInfoField* pRspInfo,
+    int nRequestID,
+    bool bIsLast) {
+  if (pRspInfo != NULL) {
+    // std::cout << "OnRspQryInvestorPosition:" << pRspInfo->ErrorMsg << "\n";
+  }
+  if (pInvestorPosition != NULL) {
+    if (pInvestorPosition->YdPosition != 0) {
+      rsp_yesterday_position_cache_.push_back(
+          {pInvestorPosition->InstrumentID,
+           pInvestorPosition->PosiDirection == THOST_FTDC_PD_Long
+               ? OrderDirection::kBuy
+               : OrderDirection::kSell,
+           pInvestorPosition->YdPosition});
+    }
+  }
+
+  // std::cout << "Last:" << bIsLast << "\n";
+  if (bIsLast) {
+    // std::cout << "OnPositions\n";
+    delegate_->HandleRspYesterdayPosition(rsp_yesterday_position_cache_);
+    rsp_yesterday_position_cache_.clear();
+  }
 }

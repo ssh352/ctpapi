@@ -35,6 +35,11 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
   template <typename... Ts>
   void Subscribe(Ts...) {}
 
+  virtual void HandleLogon() override;
+
+  virtual void HandleRspYesterdayPosition(
+      std::vector<OrderPosition> yesterday_positions) override;
+
  private:
   struct HashCTPOrderField {
     size_t operator()(const std::shared_ptr<CTPOrderField>& order) const {

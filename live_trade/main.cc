@@ -289,7 +289,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                  "140616");
 
   //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-  //               "9999", "053867", "8661188");
+  //               "9999", "053867
   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
                  "8888", "181006", "140616");
 

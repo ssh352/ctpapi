@@ -7,14 +7,14 @@ CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
       mail_box_(mail_box),
       signal_subscriber_(this) {
   // TODO:tempare hard code
-  //signal_subscriber_.AddPosition("MA801", OrderDirection::kBuy, 9);
-  //signal_subscriber_.AddPosition("c1801", OrderDirection::kBuy, 12);
-  //signal_subscriber_.AddPosition("cs1801", OrderDirection::kBuy, 20);
-  //signal_subscriber_.AddPosition("cu1801", OrderDirection::kSell, 1);
-  //signal_subscriber_.AddPosition("l1801", OrderDirection::kBuy, 2);
-  //signal_subscriber_.AddPosition("p1805", OrderDirection::kBuy, 2);
-  //signal_subscriber_.AddPosition("p1801", OrderDirection::kSell, 4);
-  //signal_subscriber_.AddPosition("pp1801", OrderDirection::kBuy, 6);
+  // signal_subscriber_.AddPosition("MA801", OrderDirection::kBuy, 9);
+  // signal_subscriber_.AddPosition("c1801", OrderDirection::kBuy, 12);
+  // signal_subscriber_.AddPosition("cs1801", OrderDirection::kBuy, 20);
+  // signal_subscriber_.AddPosition("cu1801", OrderDirection::kSell, 1);
+  // signal_subscriber_.AddPosition("l1801", OrderDirection::kBuy, 2);
+  // signal_subscriber_.AddPosition("p1805", OrderDirection::kBuy, 2);
+  // signal_subscriber_.AddPosition("p1801", OrderDirection::kSell, 4);
+  // signal_subscriber_.AddPosition("pp1801", OrderDirection::kBuy, 6);
 }
 
 caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
@@ -23,8 +23,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
               const std::string& password) {
             trade_api_.Connect(server, broker_id, user_id, password);
           },
-          [=](const CTASignalAtom& value,
-              const std::vector<OrderPosition>& quantitys) {
+          [=](const std::vector<OrderPosition>& quantitys) {
             signal_subscriber_.HandleCTASignalInitPosition(value, quantitys);
           },
           [=](const CTASignalAtom& value,
@@ -116,4 +115,12 @@ void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
                                                   int trading_qty,
                                                   TimeStamp timestamp) {
   send(this, instrument, order_id, trading_price, trading_qty, timestamp);
+}
+
+void CAFCTAOrderSignalBroker::HandleLogon() {
+  trade_api_->RequestYesterdayPosition();
+}
+
+void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
+    std::vector<OrderPosition> yesterday_positions) {
 }

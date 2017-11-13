@@ -293,12 +293,12 @@ void BackRoolRtnOrder() {
 
     OutputMailBox mail_box;
     CTAOrderSignalSubscriber<OutputMailBox> cta_signal_subscriber(&mail_box);
-    cta_signal_subscriber.AddPosition("MA801", OrderDirection::kBuy, 3);
-    cta_signal_subscriber.AddPosition("m1805", OrderDirection::kSell, 9);
-    cta_signal_subscriber.AddPosition("cu1801", OrderDirection::kSell, 1);
-    cta_signal_subscriber.AddPosition("cs1801", OrderDirection::kBuy, 20);
-    cta_signal_subscriber.AddPosition("c1801", OrderDirection::kBuy, 7);
-    cta_signal_subscriber.AddPosition("RM805", OrderDirection::kSell, 7);
+    //cta_signal_subscriber.AddPosition("MA801", OrderDirection::kBuy, 3);
+    //cta_signal_subscriber.AddPosition("m1805", OrderDirection::kSell, 9);
+    //cta_signal_subscriber.AddPosition("cu1801", OrderDirection::kSell, 1);
+    //cta_signal_subscriber.AddPosition("cs1801", OrderDirection::kBuy, 20);
+    //cta_signal_subscriber.AddPosition("c1801", OrderDirection::kBuy, 7);
+    //cta_signal_subscriber.AddPosition("RM805", OrderDirection::kSell, 7);
     while (true) {
       CThostFtdcOrderField ftdc_order;
       ia >> ftdc_order;

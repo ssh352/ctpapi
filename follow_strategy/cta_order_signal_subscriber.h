@@ -17,31 +17,35 @@ template <typename MailBox>
 class CTAOrderSignalSubscriber {
  public:
   CTAOrderSignalSubscriber(MailBox* mail_box) : mail_box_(mail_box) {
-    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalInitPosition,
+    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncYesterdayPosition,
                          this);
-    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalHistoryOrder,
+    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder,
                          this);
-    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalOrder, this);
+    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleRtnOrder, this);
   }
-
-  void AddPosition(const std::string& instrument,
-                   OrderDirection direction,
-                   int qty) {
-    master_portfolio_.AddPosition(instrument, direction, qty);
-    inner_size_portfolio_.AddPosition(instrument, direction, qty);
-  }
-
   // CTASignal
-  void HandleCTASignalInitPosition(
+  void HandleSyncYesterdayPosition(
       const CTASignalAtom&,
-      const std::vector<OrderPosition>& quantitys) {}
+      const std::vector<OrderPosition>& positions) {
+    for (const auto& position : positions) {
+      master_portfolio_.AddPosition(position.instrument, position.direction,
+                                    position.qty);
+      inner_size_portfolio_.AddPosition(position.instrument, position.direction,
+                                        position.qty);
+    }
+  }
 
-  void HandleCTASignalHistoryOrder(
+  void HandleSyncHistoryRtnOrder(
       const CTASignalAtom&,
-      const std::vector<std::shared_ptr<const OrderField>>& orders) {}
+      const std::vector<std::shared_ptr<const OrderField>>& orders) {
+    on_process_sync_order_ = true;
+    master_portfolio_.HandleOrder(order);
+    HandleRtnOrder(order);
+    on_process_sync_order_ = false;
+  }
 
-  void HandleCTASignalOrder(const CTASignalAtom& cta_signal_atom,
-                            const std::shared_ptr<OrderField>& order) {
+  void HandleRtnOrder(const CTASignalAtom& cta_signal_atom,
+                      const std::shared_ptr<OrderField>& order) {
     master_portfolio_.HandleOrder(order);
     HandleRtnOrder(order);
   }
@@ -66,7 +70,7 @@ class CTAOrderSignalSubscriber {
         close_order->leaves_qty = opposite_closeable_qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, close_order));
         inner_size_portfolio_.HandleOrder(close_order);
-        mail_box_->Send(
+        Send(
             std::move(close_order),
             GetCTAPositionQty(close_order->instrument_id,
                               close_order->position_effect_direction));
@@ -85,7 +89,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect = PositionEffect::kClose;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        mail_box_->Send(std::move(order),
+        Send(std::move(order),
                         GetCTAPositionQty(order->instrument_id,
                                           order->position_effect_direction));
       }
@@ -107,7 +111,7 @@ class CTAOrderSignalSubscriber {
       order->position_effect = PositionEffect::kOpen;
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       inner_size_portfolio_.HandleOrder(order);
-      // mail_box_->Send(std::move(order),
+      // Send(std::move(order),
       //                GetCTAPositionQty(order->instrument_id,
       //                                  order->position_effect_direction));
     } else {
@@ -119,7 +123,7 @@ class CTAOrderSignalSubscriber {
         order->leaves_qty = close;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        mail_box_->Send(std::move(order),
+        Send(std::move(order),
                         GetCTAPositionQty(order->instrument_id,
                                           order->position_effect_direction));
       }
@@ -133,7 +137,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect = PositionEffect::kOpen;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        // mail_box_->Send(std::move(order),
+        // Send(std::move(order),
         //                GetCTAPositionQty(order->instrument_id,
         //                                  order->position_effect_direction));
       }
@@ -157,7 +161,7 @@ class CTAOrderSignalSubscriber {
       order_copy->status = OrderStatus::kCanceled;
       inner_size_portfolio_.HandleOrder(order_copy);
       it->second = order_copy;
-      mail_box_->Send(std::move(order_copy),
+      Send(std::move(order_copy),
                       GetCTAPositionQty(order_copy->instrument_id,
                                         order_copy->position_effect_direction));
     }
@@ -290,7 +294,7 @@ class CTAOrderSignalSubscriber {
                                                        : order_copy->status;
       inner_size_portfolio_.HandleOrder(order_copy);
       it->second = order_copy;
-      mail_box_->Send(std::move(order_copy),
+      Send(std::move(order_copy),
                       GetCTAPositionQty(order_copy->instrument_id,
                                         order_copy->position_effect_direction));
       pending_trading_qty -= trading_qty;
@@ -301,6 +305,14 @@ class CTAOrderSignalSubscriber {
 
     BOOST_ASSERT(pending_trading_qty == 0);
   }
+
+  void Send(std::shared_ptr<OrderField> order, CTAPositionQty pos_qty) {
+    if (on_process_sync_order_) {
+      return;
+    }
+    Send(std::move(order), pos_qty);
+  }
+
 
   struct OrderFieldHask {
     using is_transparent = void;
@@ -344,6 +356,7 @@ class CTAOrderSignalSubscriber {
                        OrderFieldCompare>
       orders_;
   std::multimap<std::string, std::shared_ptr<const OrderField>> map_order_ids_;
+  bool on_process_sync_order_ = false;
 };
 
 #endif
