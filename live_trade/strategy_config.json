@@ -1,0 +1,10 @@
+﻿{
+  "a": {
+      "DelayOpenOrderAfterSeconds": 5,
+      "PriceOffset": 0
+  },
+  "bu": {
+      "DelayOpenOrderAfterSeconds": 10,
+      "PriceOffset": 0.1
+  }
+}

@@ -1,4 +1,5 @@
 #include "delayed_open_strategy_ex.h"
+#include <boost/algorithm/string.hpp>
 
 std::string DelayedOpenStrategyEx::GenerateOrderId() {
   return boost::lexical_cast<std::string>(order_id_seq_++);
@@ -146,14 +147,15 @@ void DelayedOpenStrategyEx::RemoveSpecificPendingOpenOrders(
 bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
     const InputOrder & order,
     const std::shared_ptr<Tick>& tick) {
-  if (strategy_param_.price_offset == 0.0) {
+  double price_offset = GetStrategyParamPriceOffset(order.instrument);
+  if (price_offset == 0.0) {
     return false;
   }
 
   double maybe_input_price =
       order.direction == OrderDirection::kBuy
-          ? order.price - strategy_param_.price_offset
-          : order.price + strategy_param_.price_offset;
+          ? order.price - price_offset
+          : order.price + price_offset;
   if (order.direction == OrderDirection::kBuy &&
       tick->last_price > maybe_input_price) {
     return false;
@@ -366,16 +368,18 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
     auto it_end = std::remove_if(
         pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
         [=](const auto& order) -> bool {
+          int delayed_open_after_seconds = GetStrategyParamDealyOpenAfterSeconds(order.instrument);
+          double price_offset = GetStrategyParamPriceOffset(order.instrument);
           // is expire
           if (tick->tick->timestamp >=
               order.timestamp +
-                  strategy_param_.delayed_open_after_seconds * 1000) {
+                  delayed_open_after_seconds * 1000) {
             double maybe_input_price =
                 order.direction == OrderDirection::kBuy
                     ? order.price -
-                          strategy_param_.price_offset
+                          price_offset
                     : order.price +
-                          strategy_param_.price_offset;
+                          price_offset;
             if (order.direction == OrderDirection::kBuy &&
                 tick->tick->last_price > maybe_input_price &&
                 tick->tick->last_price < order.price) {
@@ -418,9 +422,9 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
 
 DelayedOpenStrategyEx::DelayedOpenStrategyEx(
     DelayedOpenStrategyEx::Delegate* delegate,
-    StrategyParam strategy_param)
+    std::unordered_map<std::string, StrategyParam> strategy_params)
     : delegate_(delegate),
-      strategy_param_(std::move(strategy_param)) {
+      strategy_params_(std::move(strategy_params)) {
 }
 
 void DelayedOpenStrategyEx::HandleNearCloseMarket() {
@@ -441,4 +445,30 @@ void DelayedOpenStrategyEx::HandleNearCloseMarket() {
     delegate_->HandleActionOrder(std::move(action_order), 
       order->position_effect_direction);
   }
+}
+
+double DelayedOpenStrategyEx::GetStrategyParamPriceOffset(const std::string& instrument) const
+{
+  std::string instrument_code = instrument.substr(
+      0, instrument.find_first_of("0123456789"));
+  boost::algorithm::to_lower(instrument_code);
+  if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
+    BOOST_LOG(log_) << "没有找到产品配置:" << instrument;
+    return 0.0;
+  }
+
+  return strategy_params_.at(instrument_code).price_offset;
+}
+
+int DelayedOpenStrategyEx::GetStrategyParamDealyOpenAfterSeconds(const std::string& instrument) const
+{
+  std::string instrument_code = instrument.substr(
+      0, instrument.find_first_of("0123456789"));
+  boost::algorithm::to_lower(instrument_code);
+  if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
+    BOOST_LOG(log_) << "没有找到产品配置:" << instrument;
+    return 0.0;
+  }
+
+  return strategy_params_.at(instrument_code).delayed_open_after_seconds;
 }

@@ -2,6 +2,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/gregorian/gregorian.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
@@ -47,12 +49,14 @@ class AbstractExecutionHandler;
 
 class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
  public:
-  CAFDelayOpenStrategyAgent(caf::actor_config& cfg,
-                            DelayedOpenStrategyEx::StrategyParam param,
-                            LiveTradeMailBox* inner_mail_box,
-                            LiveTradeMailBox* common_mail_box)
+  CAFDelayOpenStrategyAgent(
+      caf::actor_config& cfg,
+      std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+          params,
+      LiveTradeMailBox* inner_mail_box,
+      LiveTradeMailBox* common_mail_box)
       : caf::event_based_actor(cfg),
-        agent_(this, std::move(param)),
+        agent_(this, std::move(params)),
         inner_mail_box_(inner_mail_box),
         common_mail_box_(common_mail_box) {}
 
@@ -222,7 +226,15 @@ class config : public caf::actor_system_config {
   }
 };
 
+namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
+  pt::ptree strategy_config_pt;
+  try {
+    pt::read_json("strategy_config.json", strategy_config_pt);
+  } catch (pt::ptree_error& err) {
+    std::cout << "Read Confirg File Error:" << err.what() << "\n";
+    return 1;
+  }
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   bool running = true;
@@ -236,11 +248,27 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
   for (const auto& account : sub_acconts) {
     auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
-    DelayedOpenStrategyEx::StrategyParam param;
-    param.delayed_open_after_seconds = 5;
-    param.price_offset = 0;
+    // DelayedOpenStrategyEx::StrategyParam param;
+    // param.delayed_open_after_seconds = 5;
+    // param.price_offset = 0;
+    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+        params;
+    for (const auto& pt : strategy_config_pt) {
+      try {
+        DelayedOpenStrategyEx::StrategyParam param;
+        param.delayed_open_after_seconds =
+            pt.second.get<int>("DelayOpenOrderAfterSeconds");
+        param.price_offset = pt.second.get<double>("PriceOffset");
+        params.insert({pt.first, std::move(param)});
+
+      } catch (pt::ptree_error& err) {
+        std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what()
+                  << "\n";
+        return {};
+      }
+    }
     system.spawn<CAFDelayOpenStrategyAgent>(
-        std::move(param), inner_mail_box.get(), &common_mail_box);
+        std::move(params), inner_mail_box.get(), &common_mail_box);
     sub_actors.push_back(std::make_pair(
         account, system.spawn<CAFSubAccountBroker>(inner_mail_box.get(),
                                                    &common_mail_box, account)));

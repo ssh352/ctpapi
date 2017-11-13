@@ -29,7 +29,9 @@ class DelayedOpenStrategyEx {
     int delayed_open_after_seconds;
     double price_offset;
   };
-  DelayedOpenStrategyEx(Delegate* delegate, StrategyParam strategy_param);
+  DelayedOpenStrategyEx(
+      Delegate* delegate,
+      std::unordered_map<std::string, StrategyParam> strategy_params);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -117,12 +119,15 @@ class DelayedOpenStrategyEx {
   std::list<InputOrder> pending_delayed_open_order_;
   std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
   SimplyPortfolio portfolio_;
-  StrategyParam strategy_param_;
+  std::unordered_map<std::string, StrategyParam> strategy_params_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
-  boost::log::sources::logger log_;
+  mutable boost::log::sources::logger log_;
   TimeStamp last_timestamp_ = 0;
   Delegate* delegate_;
+  double GetStrategyParamPriceOffset(const std::string& instrument) const;
+  int GetStrategyParamDealyOpenAfterSeconds(
+      const std::string& instrument) const;
 };
 
 #endif  // FOLLOW_STRATEGY_DELAYED_OPEN_STRATEGY_EX_H

@@ -6,8 +6,8 @@ template <typename MailBox>
 class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
  public:
   DelayOpenStrategyAgent(MailBox* mail_box,
-                         DelayedOpenStrategyEx::StrategyParam param)
-      : mail_box_(mail_box), strategy_(this, std::move(param)) {
+                         std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam> params)
+      : mail_box_(mail_box), strategy_(this, std::move(params)) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
