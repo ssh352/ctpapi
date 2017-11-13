@@ -698,3 +698,26 @@ TEST_F(CTAOrderSignalScriberFixture, Traded_Partially_Close_Order) {
   EXPECT_EQ(3, position_qty.position);
   EXPECT_EQ(3, position_qty.frozen);
 }
+
+TEST_F(CTAOrderSignalScriberFixture, CancelCloseOrder) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 80.1, 10);
+  Clear();
+  MasterCancelOrder("1");
+  auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+  ASSERT_TRUE(params);
+  const auto& order = std::get<0>(*params);
+  const auto& position_qty = std::get<1>(*params);
+
+  EXPECT_EQ(10, order->leaves_qty);
+  EXPECT_EQ(10, order->qty);
+  EXPECT_EQ(0, order->trading_qty);
+  EXPECT_EQ(0, order->trading_price);
+  EXPECT_EQ(80.1, order->input_price);
+  EXPECT_EQ(OrderStatus::kCanceled, order->status);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
+  EXPECT_EQ(PositionEffect::kClose, order->position_effect);
+
+  EXPECT_EQ(10, position_qty.position);
+  EXPECT_EQ(0, position_qty.frozen);
+}

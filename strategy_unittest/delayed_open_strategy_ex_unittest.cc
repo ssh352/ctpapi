@@ -3,6 +3,7 @@
 #include "follow_strategy/delayed_open_strategy_ex.h"
 #include "unittest_helper.h"
 #include "default_delay_open_strategy_ex_fixture.h"
+#include "follow_strategy/delay_open_strategy_agent.h"
 
 const static std::string master_account_id = "master";
 const static std::string slave_account_id = "slave";
@@ -19,8 +20,11 @@ class TestDelayOpenStrategyWithoutTickSizeOffset
                                             defalut_instrument_id,
                                             default_market_tick_qty) {}
   virtual void SetUp() override {
-    DelayedOpenStrategyEx::StrategyParam param{delayed_open_after_seconds, 0};
-    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(param));
+    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+        params;
+    params.insert({"i", DelayedOpenStrategyEx::StrategyParam{
+                            delayed_open_after_seconds, 0}});
+    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(params));
   }
 };
 
@@ -80,7 +84,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, ClosingWhenInDelayQueue) {
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
 }
 
-TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpeningHadPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
+       CTAFullyCloseNoDelayHadOpeningHadPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -102,7 +107,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseNoDelayHadOpenin
   ASSERT_TRUE(cancel_order);
   EXPECT_EQ("0", cancel_order->order_id);
 }
-TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseHadDelayHadOpeningHadPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
+       CTAFullyCloseHadDelayHadOpeningHadPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   MasterTradedOrder("0", 10, 10, 0);
   ElapseSeconds(delayed_open_after_seconds);
@@ -134,7 +140,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAFullyCloseHadDelayHadOpeni
   EXPECT_FALSE(PopupRntOrder<InputOrder>());
 }
 
-TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CTAPartiallyCloseQtyLessOrEqualToThanPos) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
+       CTAPartiallyCloseQtyLessOrEqualToThanPos) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -356,7 +363,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, CancelCloseOrder) {
   EXPECT_EQ("1", cancel->order_id);
 }
 
-TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirection) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
+       OutstandingOrderForSameDirection) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
   MasterTradedOrder("0", 4, 4, 0);
   ElapseSeconds(delayed_open_after_seconds);
@@ -389,7 +397,8 @@ TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForSameDirect
     EXPECT_EQ(PositionEffect::kClose, input_order->position_effect);
   }
 }
-TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset, OutstandingOrderForDifferentDirection) {
+TEST_F(TestDelayOpenStrategyWithoutTickSizeOffset,
+       OutstandingOrderForDifferentDirection) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.6, 4, 0, 0);
   MasterTradedOrder("0", 4, 4, 0);
   ElapseSeconds(delayed_open_after_seconds);

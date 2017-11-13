@@ -1,3 +1,4 @@
+#include <unordered_map>
 
 #include "gtest/gtest.h"
 #include "strategy_fixture.h"
@@ -5,6 +6,7 @@
 #include "follow_strategy/delayed_open_strategy_ex.h"
 #include "unittest_helper.h"
 #include "default_delay_open_strategy_ex_fixture.h"
+#include "follow_strategy/delay_open_strategy_agent.h"
 
 const static std::string master_account_id = "master";
 const static std::string slave_account_id = "slave";
@@ -21,11 +23,14 @@ class TestDelayOpenStrategyWithTickSizeOffset
                                             defalut_instrument_id,
                                             default_market_tick_qty) {}
   virtual void SetUp() override {
-    DelayedOpenStrategyEx::StrategyParam param{delayed_open_after_seconds, 5.0};
-    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(param));
+    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+        params;
+    params.insert(
+        {defalut_instrument_id, DelayedOpenStrategyEx::StrategyParam{
+                                    delayed_open_after_seconds, 5.0}});
+    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(params);
   }
 };
-
 
 TEST_F(TestDelayOpenStrategyWithTickSizeOffset, OpenWithTickSizeOffset) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 15.0, 10, 0, 0);
