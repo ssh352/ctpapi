@@ -1,5 +1,11 @@
 #include "hpt_core/simply_portfolio.h"
 
+void SimplyPortfolio::AddPosition(const std::string& instrument,
+                                  OrderDirection direction,
+                                  int qty) {
+  positions_.insert({PositionKey{instrument, direction}, JustQtyPosition(qty)});
+}
+
 void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
   if (order->trading_qty == 0 && order->status == OrderStatus::kActive) {
     // New Order

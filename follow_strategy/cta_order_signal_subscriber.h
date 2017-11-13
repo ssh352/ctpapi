@@ -24,6 +24,12 @@ class CTAOrderSignalSubscriber {
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleCTASignalOrder, this);
   }
 
+
+  void AddPosition(const std::string& instrument, OrderDirection direction, int qty) {
+    master_portfolio_.AddPosition(instrument, direction, qty);
+    inner_size_portfolio_.AddPosition(instrument, direction, qty);
+  }
+
   // CTASignal
   void HandleCTASignalInitPosition(
       const CTASignalAtom&,

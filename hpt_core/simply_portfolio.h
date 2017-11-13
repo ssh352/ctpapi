@@ -8,6 +8,8 @@
 
 class SimplyPortfolio {
  public:
+  void AddPosition(const std::string& instrument, OrderDirection direction, int qty);
+
   void HandleOrder(const std::shared_ptr<OrderField>& order);
 
   int GetPositionCloseableQty(const std::string& instrument,

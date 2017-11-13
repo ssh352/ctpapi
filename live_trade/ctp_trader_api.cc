@@ -5,7 +5,7 @@
 
 CTPTraderApi::CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path)
     : delegate_(delegate) {
-  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi();
+  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(ctp_flow_path.c_str());
   api_->RegisterSpi(this);
 }
 

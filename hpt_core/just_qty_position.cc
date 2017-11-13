@@ -1,4 +1,11 @@
 #include "just_qty_position.h"
+JustQtyPosition::JustQtyPosition() : qty_(0), frozen_(0) {
+
+}
+
+JustQtyPosition::JustQtyPosition(int qty) : qty_(qty), frozen_(0) {
+
+}
 
 int JustQtyPosition::Closeable() const {
   return qty_ - frozen_;

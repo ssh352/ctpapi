@@ -311,6 +311,8 @@ void DelayedOpenStrategyEx::HandleCloseing(
 void DelayedOpenStrategyEx::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
+  BOOST_LOG(log_) << "加入等待开仓对列:" << rtn_order->instrument_id
+    << "价格:" << rtn_order->trading_price << "数量:" << rtn_order->trading_qty;
   pending_delayed_open_order_.push_back(InputOrder{
       rtn_order->instrument_id, "",PositionEffect::kOpen,
       rtn_order->position_effect_direction, rtn_order->trading_price, rtn_order->trading_qty,

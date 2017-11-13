@@ -3,6 +3,10 @@
 
 class JustQtyPosition {
 public:
+  JustQtyPosition();
+
+  JustQtyPosition(int qty);
+
   void OpenTraded(int traded_qty);
 
   void CloseTraded(int traded_qty);
@@ -19,8 +23,8 @@ public:
     return frozen_;
   }
 private:
-  int qty_ = 0;
-  int frozen_ = 0;
+  int qty_;
+  int frozen_;
 };
 
 #endif // HPT_CORE_JUST_QTY_POSITION_H

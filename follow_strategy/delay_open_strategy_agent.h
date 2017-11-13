@@ -5,8 +5,10 @@
 template <typename MailBox>
 class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
  public:
-  DelayOpenStrategyAgent(MailBox* mail_box,
-                         std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam> params)
+  DelayOpenStrategyAgent(
+      MailBox* mail_box,
+      std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+          params)
       : mail_box_(mail_box), strategy_(this, std::move(params)) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
@@ -62,7 +64,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
     }
   }
 
-  void HandleNearCloseMarket(const CloseMarketNearAtom& ) {
+  void HandleNearCloseMarket(const CloseMarketNearAtom&) {
     strategy_.HandleNearCloseMarket();
   }
 
@@ -119,7 +121,4 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
       pending_cta_signal_queue_;
 };
 
-#endif // FOLLOW_STRATEGY_DELAY_OPEN_STRATEGY_AGENT_H
-
-
-
+#endif  // FOLLOW_STRATEGY_DELAY_OPEN_STRATEGY_AGENT_H
