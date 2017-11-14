@@ -1,6 +1,16 @@
 #include "delayed_open_strategy_ex.h"
 #include <boost/algorithm/string.hpp>
 
+
+DelayedOpenStrategyEx::DelayedOpenStrategyEx(
+    DelayedOpenStrategyEx::Delegate* delegate,
+    std::unordered_map<std::string, StrategyParam> strategy_params,
+    boost::log::sources::logger* log)
+    : delegate_(delegate),
+      strategy_params_(std::move(strategy_params)),
+      log_(log) {
+}
+
 std::string DelayedOpenStrategyEx::GenerateOrderId() {
   return boost::lexical_cast<std::string>(order_id_seq_++);
 }
@@ -165,7 +175,7 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
   } else {
   }
 
-  BOOST_LOG(log_) << boost::log::add_value("quant_timestamp",
+  BOOST_LOG(*log_) << boost::log::add_value("quant_timestamp",
                                            TimeStampToPtime(last_timestamp_))
                   << "价差区间被触碰: 下单价格:"
                   << maybe_input_price << "LAST TICK:" << order.instrument
@@ -193,7 +203,7 @@ void DelayedOpenStrategyEx::HandleCanceled(
   auto it = cta_to_strategy_closing_order_id_.find(rtn_order->order_id);
   if (it != cta_to_strategy_closing_order_id_.end()) {
     auto order = portfolio_.GetOrder(it->second);
-    BOOST_LOG(log_)  << boost::log::add_value("quant_timestamp",
+    BOOST_LOG(*log_)  << boost::log::add_value("quant_timestamp",
                            TimeStampToPtime(last_timestamp_))
     << "处理撤捎订单:" << order->instrument_id;
     delegate_->HandleCancelOrder(
@@ -314,7 +324,7 @@ void DelayedOpenStrategyEx::HandleCloseing(
 void DelayedOpenStrategyEx::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  BOOST_LOG(log_)  << 
+  BOOST_LOG(*log_)  << 
     boost::log::add_value("quant_timestamp",
                            TimeStampToPtime(last_timestamp_))
     << "加入等待开仓对列:" << rtn_order->instrument_id
@@ -394,7 +404,7 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
             if (order.direction == OrderDirection::kBuy &&
                 tick->tick->last_price > maybe_input_price &&
                 tick->tick->last_price < order.price) {
-            BOOST_LOG(log_)
+            BOOST_LOG(*log_)
                 << boost::log::add_value("quant_timestamp",
                                          TimeStampToPtime(last_timestamp_))
                 << "延迟开仓订单到期但在价差范围内:"
@@ -407,7 +417,7 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
             } else if (order.direction == OrderDirection::kSell &&
                        tick->tick->last_price < maybe_input_price &&
                        tick->tick->last_price > order.price) {
-              BOOST_LOG(log_)
+              BOOST_LOG(*log_)
                   << boost::log::add_value("quant_timestamp",
                                            TimeStampToPtime(last_timestamp_))
                   << "延迟开仓订单到期但在价差范围内:"
@@ -424,7 +434,7 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
                 order.direction == OrderDirection::kBuy
                     ? std::min(order.price, tick->tick->ask_price1)
                     : std::max(order.price, tick->tick->bid_price1);
-            BOOST_LOG(log_)
+            BOOST_LOG(*log_)
                 << boost::log::add_value("quant_timestamp",
                                          TimeStampToPtime(last_timestamp_))
                 << "延迟开仓订单到期 开仓价:" << input_price
@@ -449,17 +459,11 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
   last_tick_ = tick;
 }
 
-DelayedOpenStrategyEx::DelayedOpenStrategyEx(
-    DelayedOpenStrategyEx::Delegate* delegate,
-    std::unordered_map<std::string, StrategyParam> strategy_params)
-    : delegate_(delegate),
-      strategy_params_(std::move(strategy_params)) {
-}
 
 void DelayedOpenStrategyEx::HandleNearCloseMarket() {
   auto orders = portfolio_.UnfillCloseOrders();
   for (const auto& order : orders) {
-    BOOST_LOG(log_)
+    BOOST_LOG(*log_)
         << boost::log::add_value("quant_timestamp",
                                  TimeStampToPtime(last_timestamp_))
         << "临近收市:" << order->instrument_id << ";" << order->order_id;
@@ -482,7 +486,7 @@ double DelayedOpenStrategyEx::GetStrategyParamPriceOffset(const std::string& ins
       0, instrument.find_first_of("0123456789"));
   boost::algorithm::to_lower(instrument_code);
   if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
-    BOOST_LOG(log_) << "没有找到产品配置:" << instrument;
+    BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
     return 0.0;
   }
 
@@ -495,7 +499,7 @@ int DelayedOpenStrategyEx::GetStrategyParamDealyOpenAfterSeconds(const std::stri
       0, instrument.find_first_of("0123456789"));
   boost::algorithm::to_lower(instrument_code);
   if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
-    BOOST_LOG(log_) << "没有找到产品配置:" << instrument;
+    BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
     return 0.0;
   }
 

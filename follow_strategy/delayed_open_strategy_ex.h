@@ -31,7 +31,8 @@ class DelayedOpenStrategyEx {
   };
   DelayedOpenStrategyEx(
       Delegate* delegate,
-      std::unordered_map<std::string, StrategyParam> strategy_params);
+      std::unordered_map<std::string, StrategyParam> strategy_params,
+      boost::log::sources::logger* log);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -122,7 +123,7 @@ class DelayedOpenStrategyEx {
   std::unordered_map<std::string, StrategyParam> strategy_params_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
-  mutable boost::log::sources::logger log_;
+  boost::log::sources::logger* log_;
   TimeStamp last_timestamp_ = 0;
   Delegate* delegate_;
   double GetStrategyParamPriceOffset(const std::string& instrument) const;

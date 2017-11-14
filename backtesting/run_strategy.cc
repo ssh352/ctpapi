@@ -1,5 +1,6 @@
 #include "run_strategy.h"
 #include <boost/algorithm/string.hpp>
+#include <boost/log/sources/logger.hpp>
 #include "atom_defines.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "backtesting_cta_signal_broker_ex.h"
@@ -19,6 +20,11 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
               TickContainer tick_container,
               CTASignalContainer cta_signal_container) {
     caf::aout(self) << market << ":" << instrument << "\n";
+    boost::log::sources::logger log;
+    log.add_attribute(
+        "instrument",
+        boost::log::attributes::constant<std::string>(instrument));
+
     std::list<std::function<void(void)>> callable_queue;
     bool running = true;
     double init_cash = 50 * 10000;
@@ -42,7 +48,7 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
         {instrument_code, DelayedOpenStrategyEx::StrategyParam{
                               delay_open_after_seconds, price_offset_rate}});
     DelayOpenStrategyAgent<BacktestingMailBox> strategy(
-        &mail_box, std::move(strategy_params));
+        &mail_box, std::move(strategy_params), &log);
 
     SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 

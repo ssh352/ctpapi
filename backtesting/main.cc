@@ -91,7 +91,7 @@ void InitLogging(bool enable_logging) {
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern
     backend->set_file_name_composer(sinks::file::as_file_name_composer(
-        expr::stream << "logs/" << expr::attr<std::string>("account_id")
+        expr::stream << "logs/" << expr::attr<std::string>("instrument")
                      << ".log"));
 
     // Wrap it into the frontend and register in the core.
