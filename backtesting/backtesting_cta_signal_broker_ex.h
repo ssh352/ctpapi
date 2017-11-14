@@ -63,7 +63,7 @@ class BacktestingCTASignalBrokerEx {
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
         // SendOrder(std::move(order));
-        order_signal_subscriber_.HandleCTASignalOrder(CTASignalAtom::value,
+        order_signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
                                                       order);
       }
 
@@ -84,7 +84,7 @@ class BacktestingCTASignalBrokerEx {
         order->trading_qty = (*i)->qty;
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
-        order_signal_subscriber_.HandleCTASignalOrder(CTASignalAtom::value,
+        order_signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
                                                       order);
         // SendOrder(std::move(order));
       } else if (static_cast<OrderStatus>((*i)->status) ==
@@ -108,7 +108,7 @@ class BacktestingCTASignalBrokerEx {
           order->trading_price = 0;
           order->input_timestamp = tick->tick->timestamp;
           order->update_timestamp = tick->tick->timestamp;
-          order_signal_subscriber_.HandleCTASignalOrder(CTASignalAtom::value,
+          order_signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
                                                         order);
           // SendOrder(std::move(order));
         }
@@ -129,7 +129,7 @@ class BacktestingCTASignalBrokerEx {
         order->input_timestamp = tick->tick->timestamp;
         order->update_timestamp = tick->tick->timestamp;
         // SendOrder(std::move(order));
-        order_signal_subscriber_.HandleCTASignalOrder(CTASignalAtom::value,
+        order_signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
                                                       order);
       } else {
       }

@@ -27,7 +27,13 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
 
- private:
+
+  virtual void HandleLogon() override;
+
+
+  virtual void HandleRspYesterdayPosition(std::vector<OrderPosition> yesterday_positions) override;
+
+private:
   struct SubAccountOrderId {
     std::string sub_account_id;
     std::string order_id;

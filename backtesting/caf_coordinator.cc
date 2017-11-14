@@ -97,35 +97,43 @@ caf::behavior Coordinator(caf::event_based_actor* self,
   auto instrument_strategy_params =
       std::make_shared<std::list<StrategyParam>>();
 
-  for (const auto& pt : strategy_config_pt->get_child("Instruments")) {
+  for (const auto& pt : strategy_config_pt->get_child("backtesting")) {
     try {
       StrategyParam param;
-      param.instrument = pt.first;
+      param.instrument = pt.second.get_value<std::string>();
+
+      std::string instrument_code = param.instrument.substr(
+          0, param.instrument.find_first_of("0123456789"));
+      boost::algorithm::to_lower(instrument_code);
+
       param.market =
-          instrument_infos_pt->get<std::string>(pt.first + ".Market");
+          instrument_infos_pt->get<std::string>(param.instrument + ".Market");
       param.margin_rate =
-          instrument_infos_pt->get<double>(pt.first + ".MarginRate");
+          instrument_infos_pt->get<double>(param.instrument + ".MarginRate");
       param.constract_multiple =
-          instrument_infos_pt->get<int>(pt.first + ".ConstractMultiple");
+          instrument_infos_pt->get<int>(param.instrument + ".ConstractMultiple");
       param.cost_basis.type =
           instrument_infos_pt->get<std::string>(
-              pt.first + ".CostBasis.CommissionType") == "fix"
+              param.instrument + ".CostBasis.CommissionType") == "fix"
               ? CommissionType::kFixed
               : CommissionType::kRate;
 
-      param.cost_basis.open_commission =
-          instrument_infos_pt->get<double>(pt.first + ".CostBasis.OpenCommission");
+      param.cost_basis.open_commission = instrument_infos_pt->get<double>(
+          param.instrument + ".CostBasis.OpenCommission");
       param.cost_basis.close_commission = instrument_infos_pt->get<double>(
-          pt.first + ".CostBasis.CloseCommission");
-      param.cost_basis.close_today_commission = instrument_infos_pt->get<double>(
-          pt.first + ".CostBasis.CloseTodayCommission");
-      param.delay_open_order_after_seconds =
-          pt.second.get<int>("DelayOpenOrderAfterSeconds");
-      param.price_offset = pt.second.get<double>("PriceOffset");
+          param.instrument + ".CostBasis.CloseCommission");
+      param.cost_basis.close_today_commission =
+          instrument_infos_pt->get<double>(param.instrument +
+                                           ".CostBasis.CloseTodayCommission");
+      param.delay_open_order_after_seconds = strategy_config_pt->get<int>(
+          instrument_code + ".DelayOpenOrderAfterSeconds");
+      param.price_offset =
+          strategy_config_pt->get<double>(instrument_code + ".PriceOffset");
       instrument_strategy_params->push_back(std::move(param));
 
     } catch (pt::ptree_error& err) {
-      std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what() << "\n";
+      std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what()
+                << "\n";
       return {};
     }
   }

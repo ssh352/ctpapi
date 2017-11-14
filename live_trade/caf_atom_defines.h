@@ -10,6 +10,8 @@ using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
 using CTASignalContainer =
     std::vector<std::pair<std::shared_ptr<CTATransaction>, int64_t>>;
 
+using CheckHistoryRtnOrderIsDoneAtom =
+    caf::atom_constant<caf::atom("checksync")>;
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
@@ -26,7 +28,4 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderAction)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTPEnterOrder)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTPCancelOrder)
 
-#endif // LIVE_TRADE_CAF_ATOM_DEFINES_H
-
-
-
+#endif  // LIVE_TRADE_CAF_ATOM_DEFINES_H

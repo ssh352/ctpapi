@@ -192,7 +192,7 @@ class SimulatedExecutionHandler {
         lo.qty = action_order.new_qty;
       }
 
-      EnqueueRtnOrderEvent(lo, OrderStatus::kActive, lo.price, find_it->qty, 0);
+      EnqueueRtnOrderEvent(lo, OrderStatus::kActive, lo.price, lo.qty, 0);
 
       long_limit_orders_.erase(find_it);
       long_limit_orders_.insert(std::move(lo));

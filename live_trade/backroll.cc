@@ -308,14 +308,14 @@ void BackRoolRtnOrder() {
         if (it != g_orders_.end()) {
           int traded_qty = it->second->leaves_qty - ctp_order->leaves_qty;
           if (traded_qty > 0 || ctp_order->status == OrderStatus::kCanceled) {
-            cta_signal_subscriber.HandleCTASignalOrder(
+            cta_signal_subscriber.HandleRtnOrder(
                 CTASignalAtom(),
                 MakeOrderField(ctp_order, ctp_order->input_price, traded_qty,
                                0));
           }
           it->second = ctp_order;
         } else {
-          cta_signal_subscriber.HandleCTASignalOrder(
+          cta_signal_subscriber.HandleRtnOrder(
               CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0, 0));
           g_orders_.insert({ctp_order->order_id, ctp_order});
         }

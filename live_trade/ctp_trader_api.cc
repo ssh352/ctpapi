@@ -309,3 +309,12 @@ void CTPTraderApi::OnRspQryInvestorPosition(
     rsp_yesterday_position_cache_.clear();
   }
 }
+
+void CTPTraderApi::RequestYesterdayPosition() {
+  CThostFtdcQryInvestorPositionField field{0};
+  strcpy(field.BrokerID, broker_id_.c_str());
+  strcpy(field.InvestorID, user_id_.c_str());
+  api_->ReqQryInvestorPosition(&field, 0);
+  // std::cout << "ReqQryInvestorPosition:"
+  //           << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
+}

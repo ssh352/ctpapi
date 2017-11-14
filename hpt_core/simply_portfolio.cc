@@ -27,7 +27,9 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     }
 
     BOOST_ASSERT(order_container_.find(order->order_id) ==
-                 order_container_.end());
+                 order_container_.end() || order_container_.at(order->order_id)->qty != 
+    order->qty || order_container_.at(order->order_id)->input_price != 
+    order->input_price);
     order_container_.insert({order->order_id, order});
   } else {
     switch (order->status) {

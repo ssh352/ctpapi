@@ -77,6 +77,7 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
                        HashCTPOrderField,
                        CompareCTPOrderField>
       ctp_orders_;
+  int sync_rtn_order_count_ = 0;
 };
 
 #endif  // LIVE_TRADE_CTP_RTN_ORDER_SUBSCRIBER_H

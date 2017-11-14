@@ -28,26 +28,27 @@ class CTAOrderSignalSubscriber {
       const CTASignalAtom&,
       const std::vector<OrderPosition>& positions) {
     for (const auto& position : positions) {
-      master_portfolio_.AddPosition(position.instrument, position.direction,
-                                    position.qty);
-      inner_size_portfolio_.AddPosition(position.instrument, position.direction,
-                                        position.qty);
+      master_portfolio_.AddPosition(position.instrument, position.order_direction,
+                                    position.quantity);
+      inner_size_portfolio_.AddPosition(position.instrument, position.order_direction,
+                                        position.quantity);
     }
   }
 
   void HandleSyncHistoryRtnOrder(
       const CTASignalAtom&,
-      const std::vector<std::shared_ptr<const OrderField>>& orders) {
+      const std::shared_ptr<OrderField>& order) {
     on_process_sync_order_ = true;
     master_portfolio_.HandleOrder(order);
-    HandleRtnOrder(order);
+    DoHandleRtnOrder(order);
     on_process_sync_order_ = false;
   }
+
 
   void HandleRtnOrder(const CTASignalAtom& cta_signal_atom,
                       const std::shared_ptr<OrderField>& order) {
     master_portfolio_.HandleOrder(order);
-    HandleRtnOrder(order);
+    DoHandleRtnOrder(order);
   }
 
  private:
@@ -230,7 +231,7 @@ class CTAOrderSignalSubscriber {
     return ret;
   }
 
-  void HandleRtnOrder(const std::shared_ptr<OrderField>& rtn_order) {
+  void DoHandleRtnOrder(const std::shared_ptr<OrderField>& rtn_order) {
     switch (OrdersContextHandleRtnOrder(rtn_order)) {
       case OrderEventType::kNewOpen:
         HandleOpening(rtn_order);
@@ -310,7 +311,7 @@ class CTAOrderSignalSubscriber {
     if (on_process_sync_order_) {
       return;
     }
-    Send(std::move(order), pos_qty);
+    mail_box_->Send(std::move(order), pos_qty);
   }
 
 

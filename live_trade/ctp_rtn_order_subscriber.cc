@@ -18,48 +18,102 @@ CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
 }
 
 caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
-  return {[=](CtpConnectAtom, const std::string& server,
-              const std::string& broker_id, const std::string& user_id,
-              const std::string& password) {
-            trade_api_.Connect(server, broker_id, user_id, password);
-          },
-          [=](const std::vector<OrderPosition>& quantitys) {
-            signal_subscriber_.HandleCTASignalInitPosition(value, quantitys);
-          },
-          [=](const CTASignalAtom& value,
-              const std::vector<std::shared_ptr<const OrderField>>& orders) {
-            signal_subscriber_.HandleCTASignalHistoryOrder(value, orders);
-          },
-          [=](const std::shared_ptr<CTPOrderField>& ctp_order) {
-            auto& it =
-                ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
-                                 CompareCTPOrderField());
-            if (it == ctp_orders_.end()) {
-              signal_subscriber_.HandleCTASignalOrder(
-                  CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
-              ctp_orders_.insert(ctp_order);
-            } else if (ctp_order->status == OrderStatus::kCanceled) {
-              signal_subscriber_.HandleCTASignalOrder(
-                  CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
-              ctp_orders_.erase(it);
-              ctp_orders_.insert(ctp_order);
-            } else {
-            }
-          },
-          [=](const std::string& instrument, const std::string& order_id,
-              double trading_price, int trading_qty, TimeStamp timestamp) {
-            BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
-                                          CompareCTPOrderField()) !=
-                         ctp_orders_.end());
-            auto it = ctp_orders_.find(order_id, HashCTPOrderField(),
-                                       CompareCTPOrderField());
-            if (it != ctp_orders_.end()) {
-              (*it)->leaves_qty -= trading_qty;
-              signal_subscriber_.HandleCTASignalOrder(
-                  CTASignalAtom::value,
-                  MakeOrderField(*it, trading_price, trading_qty, timestamp));
-            }
-          }};
+  set_default_handler(caf::skip);
+  caf::behavior work_behavior = {
+      [=](const std::shared_ptr<CTPOrderField>& ctp_order) {
+        auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
+                                    CompareCTPOrderField());
+        if (it == ctp_orders_.end()) {
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          ctp_orders_.insert(ctp_order);
+        } else if (ctp_order->status == OrderStatus::kCanceled) {
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          ctp_orders_.erase(it);
+          ctp_orders_.insert(ctp_order);
+        } else {
+        }
+      },
+      [=](const std::string& instrument, const std::string& order_id,
+          double trading_price, int trading_qty, TimeStamp timestamp) {
+        BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
+                                      CompareCTPOrderField()) !=
+                     ctp_orders_.end());
+        auto it = ctp_orders_.find(order_id, HashCTPOrderField(),
+                                   CompareCTPOrderField());
+        if (it != ctp_orders_.end()) {
+          (*it)->leaves_qty -= trading_qty;
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value,
+              MakeOrderField(*it, trading_price, trading_qty, timestamp));
+        }
+      },
+
+  };
+  caf::behavior sync_order_behaivor = {
+      [=](const std::shared_ptr<CTPOrderField>& ctp_order) {
+        auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
+                                    CompareCTPOrderField());
+        if (it == ctp_orders_.end()) {
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          ctp_orders_.insert(ctp_order);
+        } else if (ctp_order->status == OrderStatus::kCanceled) {
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          ctp_orders_.erase(it);
+          ctp_orders_.insert(ctp_order);
+        } else {
+        }
+        ++sync_rtn_order_count_;
+      },
+      [=](const std::string& instrument, const std::string& order_id,
+          double trading_price, int trading_qty, TimeStamp timestamp) {
+        ++sync_rtn_order_count_;
+        BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
+                                      CompareCTPOrderField()) !=
+                     ctp_orders_.end());
+        auto it = ctp_orders_.find(order_id, HashCTPOrderField(),
+                                   CompareCTPOrderField());
+        if (it != ctp_orders_.end()) {
+          (*it)->leaves_qty -= trading_qty;
+          signal_subscriber_.HandleSyncHistoryRtnOrder(
+              CTASignalAtom::value,
+              MakeOrderField(*it, trading_price, trading_qty, timestamp));
+        }
+      },
+      [=](CheckHistoryRtnOrderIsDoneAtom, size_t last_check_size) {
+        if (last_check_size != sync_rtn_order_count_) {
+          // maybe still on receive
+          delayed_send(this, std::chrono::milliseconds(500),
+                       CheckHistoryRtnOrderIsDoneAtom::value,
+                       sync_rtn_order_count_);
+        } else {
+          // auto& lg = g_logger::get();
+          // BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
+          caf::aout(this) << "";
+          become(work_behavior);
+          set_default_handler(caf::print_and_drop);
+        }
+      },
+  };
+
+  return {
+      [=](CtpConnectAtom, const std::string& server,
+          const std::string& broker_id, const std::string& user_id,
+          const std::string& password) {
+        trade_api_.Connect(server, broker_id, user_id, password);
+      },
+      [=](const std::vector<OrderPosition>& quantitys) {
+        signal_subscriber_.HandleSyncYesterdayPosition(CTASignalAtom::value,
+                                                       quantitys);
+        delayed_send(this, std::chrono::milliseconds(500),
+                     CheckHistoryRtnOrderIsDoneAtom::value,
+                     0);
+        become(sync_order_behaivor);
+      },
+  };
 }
 
 void CAFCTAOrderSignalBroker::HandleCTPRtnOrder(
@@ -118,9 +172,10 @@ void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
 }
 
 void CAFCTAOrderSignalBroker::HandleLogon() {
-  trade_api_->RequestYesterdayPosition();
+  trade_api_.RequestYesterdayPosition();
 }
 
 void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
+  send(this, std::move(yesterday_positions));
 }

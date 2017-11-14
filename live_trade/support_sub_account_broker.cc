@@ -84,3 +84,9 @@ void SupportSubAccountBroker::HandleCTPTradeOrder(const std::string& instrument,
                                                   TimeStamp timestamp) {
   send(this, instrument, order_id, trading_price, trading_qty, timestamp);
 }
+
+void SupportSubAccountBroker::HandleLogon() {
+}
+
+void SupportSubAccountBroker::HandleRspYesterdayPosition(
+    std::vector<OrderPosition> yesterday_positions) {}

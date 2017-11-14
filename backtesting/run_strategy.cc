@@ -1,4 +1,5 @@
 #include "run_strategy.h"
+#include <boost/algorithm/string.hpp>
 #include "atom_defines.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "backtesting_cta_signal_broker_ex.h"
@@ -31,14 +32,19 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
 
-    DelayedOpenStrategyEx::StrategyParam strategy_param;
-    strategy_param.delayed_open_after_seconds = delay_open_after_seconds;
-    strategy_param.price_offset = price_offset_rate;
-    DelayOpenStrategyAgent<BacktestingMailBox> strategy(
-        &mail_box, std::move(strategy_param));
+    std::string instrument_code =
+        instrument.substr(0, instrument.find_first_of("0123456789"));
+    boost::algorithm::to_lower(instrument_code);
 
-    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(
-        &mail_box);
+    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+        strategy_params;
+    strategy_params.insert(
+        {instrument_code, DelayedOpenStrategyEx::StrategyParam{
+                              delay_open_after_seconds, price_offset_rate}});
+    DelayOpenStrategyAgent<BacktestingMailBox> strategy(
+        &mail_box, std::move(strategy_params));
+
+    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,

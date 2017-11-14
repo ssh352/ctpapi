@@ -167,7 +167,7 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
 
   BOOST_LOG(log_) << boost::log::add_value("quant_timestamp",
                                            TimeStampToPtime(last_timestamp_))
-                  << "Price best immediate open order: open price is :"
+                  << "价差区间被触碰: 下单价格:"
                   << maybe_input_price << "LAST TICK:" << order.instrument
                   << ":"
                   << " Last:" << tick->last_price << "(" << tick->qty << ")"
@@ -311,7 +311,10 @@ void DelayedOpenStrategyEx::HandleCloseing(
 void DelayedOpenStrategyEx::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  BOOST_LOG(log_) << "加入等待开仓对列:" << rtn_order->instrument_id
+  BOOST_LOG(log_)  << 
+    boost::log::add_value("quant_timestamp",
+                           TimeStampToPtime(last_timestamp_))
+    << "加入等待开仓对列:" << rtn_order->instrument_id
     << "价格:" << rtn_order->trading_price << "数量:" << rtn_order->trading_qty;
   pending_delayed_open_order_.push_back(InputOrder{
       rtn_order->instrument_id, "",PositionEffect::kOpen,
@@ -385,10 +388,28 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
             if (order.direction == OrderDirection::kBuy &&
                 tick->tick->last_price > maybe_input_price &&
                 tick->tick->last_price < order.price) {
+            BOOST_LOG(log_)
+                << boost::log::add_value("quant_timestamp",
+                                         TimeStampToPtime(last_timestamp_))
+                << "延迟开仓订单到期但在价差范围内:"
+                << " 产品 :" << *(tick->instrument) << ":"
+                 << " 方向:" << (order.direction == OrderDirection::kBuy ? "买" : "卖")
+                 << " 开仓价:" << order.price
+                << " 最新价:" << tick->tick->last_price
+                << " 价差:" << price_offset;
               return false;
             } else if (order.direction == OrderDirection::kSell &&
                        tick->tick->last_price < maybe_input_price &&
                        tick->tick->last_price > order.price) {
+              BOOST_LOG(log_)
+                  << boost::log::add_value("quant_timestamp",
+                                           TimeStampToPtime(last_timestamp_))
+                  << "延迟开仓订单到期但在价差范围内:"
+                  << " 产品 :" << *(tick->instrument) << ":"
+                  << " 方向:" << (order.direction == OrderDirection::kBuy ? "买" : "卖")
+                  << " 开仓价:" << order.price
+                  << " 最新价:" << tick->tick->last_price
+                  << " 价差:" << price_offset;
               return false;
             } else {
             }
