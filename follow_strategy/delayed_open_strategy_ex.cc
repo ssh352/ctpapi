@@ -175,22 +175,26 @@ bool DelayedOpenStrategyEx::ImmediateOpenOrderIfPriceArrive(
   } else {
   }
 
+
+   //signal_dispatch_->OpenOrder(
+   //   order.instrument, GenerateOrderId(), order.position_effect_direction,
+   //   maybe_input_price, order.qty);
+  std::string order_id = GenerateOrderId();
   BOOST_LOG(*log_) << boost::log::add_value("quant_timestamp",
                                            TimeStampToPtime(last_timestamp_))
-                  << "价差区间被触碰: 下单价格:"
-                  << maybe_input_price << "LAST TICK:" << order.instrument
-                  << ":"
+                  << "价差区间被触碰: "
+                  << "订单:" << order_id
+                  << " 下单价格:" << maybe_input_price 
+                  << " LAST TICK:" << order.instrument
                   << " Last:" << tick->last_price << "(" << tick->qty << ")"
                   << " Bid1:" << tick->bid_price1 << "(" << tick->bid_qty1
                   << ")"
                   << " Ask1:" << tick->ask_price1 << "(" << tick->ask_qty1
                   << ")";
-
-   //signal_dispatch_->OpenOrder(
-   //   order.instrument, GenerateOrderId(), order.position_effect_direction,
-   //   maybe_input_price, order.qty);
-  delegate_->HandleEnterOrder(InputOrder{order.instrument, GenerateOrderId(),PositionEffect::kOpen, order.direction,
-  maybe_input_price, order.qty, 0}, order.direction);
+  delegate_->HandleEnterOrder(
+    InputOrder{order.instrument, std::move(order_id),
+    PositionEffect::kOpen, order.direction,
+    maybe_input_price, order.qty, 0}, order.direction);
   return true;
 }
 
@@ -297,6 +301,14 @@ void DelayedOpenStrategyEx::HandleCloseing(
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
+
+    BOOST_LOG(*log_)  << 
+      boost::log::add_value("quant_timestamp",
+                             TimeStampToPtime(last_timestamp_))
+      << "CTA全部清仓,发出平仓指令:" 
+      << " 订单:" << order_id
+      << " 价格:" << rtn_order->input_price
+      << " 数量:" << rtn_order->qty;
     delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
@@ -305,6 +317,13 @@ void DelayedOpenStrategyEx::HandleCloseing(
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
+    BOOST_LOG(*log_)  << 
+      boost::log::add_value("quant_timestamp",
+                             TimeStampToPtime(last_timestamp_))
+      << "CTA平仓并且数量小于等于策略可平仓量,发出平仓指令:" 
+      << " 订单:" << order_id
+      << " 价格:" << rtn_order->input_price
+      << " 数量:" << rtn_order->qty;
     delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
@@ -313,6 +332,13 @@ void DelayedOpenStrategyEx::HandleCloseing(
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
         std::make_pair(rtn_order->order_id, order_id));
+    BOOST_LOG(*log_)  << 
+      boost::log::add_value("quant_timestamp",
+                             TimeStampToPtime(last_timestamp_))
+      << "CTA平仓并且数量大于策略可平仓量,发出清仓指令:" 
+      << " 订单:" << order_id
+      << " 价格:" << rtn_order->input_price
+      << " 数量:" << closeable_qty;
     delegate_->HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, std::move(order_id),
                    PositionEffect::kClose, rtn_order->direction,
@@ -377,6 +403,14 @@ void DelayedOpenStrategyEx::HandleCTARtnOrderSignal(
 
 void DelayedOpenStrategyEx::HandleRtnOrder(
     const std::shared_ptr<OrderField>& rtn_order) {
+  if (rtn_order->trading_qty != 0) {
+    BOOST_LOG(*log_)
+        << boost::log::add_value("quant_timestamp",
+                                 TimeStampToPtime(last_timestamp_))
+      << "收到订单成交:" << rtn_order->order_id 
+      << " 成交数量:" << rtn_order->trading_qty
+      << (rtn_order->leaves_qty == 0 ? "全部成交" : " 部份成交");
+  }
   portfolio_.HandleOrder(rtn_order);
 }
 

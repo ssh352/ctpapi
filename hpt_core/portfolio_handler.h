@@ -65,10 +65,6 @@ class PortfolioHandler {
   }
 
   void HandleDaySettleAtom(const DaySettleAtom&) {
-    if (_finite(portfolio_.total_value()) == 0) {
-      int i = 0;
-    }
-// last_tick_->timestamp == 1490885999000
     csv_ << last_tick_->timestamp << ","
          << str(boost::format("%0.2f") % portfolio_.total_value()) << ","
          << str(boost::format("%0.2f") % portfolio_.realised_pnl()) << ","

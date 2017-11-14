@@ -35,7 +35,7 @@ void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
     auto it_find = position_container_.find(
         std::make_pair(*tick->instrument, OrderDirection::kBuy), HashPosition(),
         ComparePosition());
-    if (it_find != position_container_.end()) {
+    if (it_find != position_container_.end() && (*it_find)->qty() > 0) {
       double update_pnl_ = 0.0;
       (*it_find)->UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
       unrealised_pnl_ += update_pnl_;
@@ -45,7 +45,7 @@ void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
     auto it_find = position_container_.find(
         std::make_pair(*tick->instrument, OrderDirection::kSell),
         HashPosition(), ComparePosition());
-    if (it_find != position_container_.end()) {
+    if (it_find != position_container_.end() && (*it_find)->qty() >0) {
       double update_pnl_ = 0.0;
       (*it_find)->UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
       unrealised_pnl_ += update_pnl_;
@@ -60,7 +60,7 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);
-    int last_traded_qty = previous_order->leaves_qty - order->leaves_qty;
+    int last_traded_qty = order->trading_qty;
     switch (order->status) {
       case OrderStatus::kActive:
         if (last_traded_qty == 0 &&
@@ -364,11 +364,11 @@ void Portfolio::HandleCancelOrder(const std::shared_ptr<OrderField>& order) {
     } else {
       // Close
       auto it_find = position_container_.find(
-          std::make_pair(order->instrument_id, order->direction),
+          std::make_pair(order->instrument_id, order->position_effect_direction),
           HashPosition(), ComparePosition());
       BOOST_ASSERT(it_find != position_container_.end());
       if (it_find != position_container_.end()) {
-        (*it_find)->InputClose(order->qty - order->leaves_qty);
+        (*it_find)->CancelCloseOrder(order->leaves_qty);
       }
     }
   } else {

@@ -7,7 +7,7 @@ void SimplyPortfolio::AddPosition(const std::string& instrument,
 }
 
 void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
-  if (order->trading_qty == 0 && order->status == OrderStatus::kActive) {
+  if (order_container_.find(order->order_id) == order_container_.end()) {
     // New Order
     if (order->position_effect == PositionEffect::kOpen) {
       auto it = positions_.find(
@@ -26,10 +26,37 @@ void SimplyPortfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
       }
     }
 
-    BOOST_ASSERT(order_container_.find(order->order_id) ==
-                 order_container_.end() || order_container_.at(order->order_id)->qty != 
-    order->qty || order_container_.at(order->order_id)->input_price != 
-    order->input_price);
+    order_container_.insert({order->order_id, order});
+  } else if (order->trading_qty == 0 && order->status == OrderStatus::kActive) {
+    const auto& previous_order = order_container_.at(order->order_id);
+    if (order->position_effect == PositionEffect::kOpen) {
+      auto it = positions_.find(
+          PositionKey{order->instrument_id, order->position_effect_direction});
+      if (it == positions_.end()) {
+        positions_.insert({PositionKey{order->instrument_id,
+                                       order->position_effect_direction},
+                           JustQtyPosition()});
+      }
+    } else {
+      if (order->position_effect == PositionEffect::kClose) {
+        auto it_pos = positions_.find(PositionKey{
+            order->instrument_id, order->position_effect_direction});
+        BOOST_ASSERT(it_pos != positions_.end());
+        it_pos->second.Unfreeze(previous_order->leaves_qty);
+      }
+
+      auto it = positions_.find(
+          PositionKey{order->instrument_id, order->position_effect_direction});
+      BOOST_ASSERT(it != positions_.end());
+      if (it != positions_.end()) {
+        it->second.Freeze(order->qty);
+      }
+    }
+
+    BOOST_ASSERT(order_container_.at(order->order_id)->qty != order->qty ||
+                 order_container_.at(order->order_id)->input_price !=
+                     order->input_price);
+    order_container_.erase(order->order_id);
     order_container_.insert({order->order_id, order});
   } else {
     switch (order->status) {
