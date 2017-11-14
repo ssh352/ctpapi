@@ -266,10 +266,10 @@ void CTPTraderApi::Connect(const std::string& server,
   char fron_server[255] = {0};
   strcpy(fron_server, server.c_str());
   api_->RegisterFront(fron_server);
-  // api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  // api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-  api_->SubscribePublicTopic(THOST_TERT_QUICK);
-  api_->SubscribePrivateTopic(THOST_TERT_QUICK);
+   api_->SubscribePublicTopic(THOST_TERT_RESUME);
+   api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+  //api_->SubscribePublicTopic(THOST_TERT_QUICK);
+  //api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
 }
 

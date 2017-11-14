@@ -3,6 +3,7 @@
 #include <boost/assert.hpp>
 #include "portfolio.h"
 #include "unittest_helper.h"
+#include "order_util.h"
 
 static std::unordered_map<std::string, std::shared_ptr<OrderField>>
     g_order_containter;
@@ -20,7 +21,9 @@ std::shared_ptr<OrderField> MakeOrderField(const std::string& order_id,
   auto order = std::make_shared<OrderField>();
   order->order_id = order_id;
   order->position_effect = position_effect;
-  order->position_effect_direction = direction;
+  order->direction = direction;
+  order->position_effect_direction =
+      AdjustDirectionByPositionEffect(position_effect, direction);
   order->status = status;
   order->instrument_id = instrument;
   order->input_price = price;
@@ -314,5 +317,28 @@ TEST(TestPortflioTest, ErasePositionItem) {
   portflio.HandleOrder(MakeTradedOrder("A003", 10));
 
   EXPECT_NO_THROW(portflio.HandleOrder(MakeTradedOrder("A001", 20)));
+}
+
+TEST(TestPortflioTest, CancelCloseOrder) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  Portfolio portflio(init_cash);
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
+  portflio.InitInstrumentDetail("S1", 1.0, 1, cost_basis);
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kBuy, 180.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A001", 10));
+
+  portflio.HandleNewInputCloseOrder("S1", OrderDirection::kBuy, 10);
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A002", "S1", OrderDirection::kSell, 183.0, 10));
+  portflio.HandleOrder(MakeCanceledOrder("A002"));
+
+  EXPECT_EQ(0, portflio.GetFrozenQty("S1", OrderDirection::kBuy));
 }
 }  // namespace

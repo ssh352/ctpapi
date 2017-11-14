@@ -193,6 +193,9 @@ void DelayedOpenStrategyEx::HandleCanceled(
   auto it = cta_to_strategy_closing_order_id_.find(rtn_order->order_id);
   if (it != cta_to_strategy_closing_order_id_.end()) {
     auto order = portfolio_.GetOrder(it->second);
+    BOOST_LOG(log_)  << boost::log::add_value("quant_timestamp",
+                           TimeStampToPtime(last_timestamp_))
+    << "´¦Àí³·ÉÓ¶©µ¥:" << order->instrument_id;
     delegate_->HandleCancelOrder(
         order->instrument_id, order->order_id, order->position_effect_direction);
     cta_to_strategy_closing_order_id_.erase(it);
@@ -373,6 +376,9 @@ void DelayedOpenStrategyEx::HandleTick(const std::shared_ptr<TickData>& tick) {
     auto it_end = std::remove_if(
         pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
         [=](const auto& order) -> bool {
+          if (*tick->instrument != order.instrument) {
+            return false;
+          }
           int delayed_open_after_seconds = GetStrategyParamDealyOpenAfterSeconds(order.instrument);
           double price_offset = GetStrategyParamPriceOffset(order.instrument);
           // is expire

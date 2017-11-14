@@ -24,11 +24,11 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
         auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
                                     CompareCTPOrderField());
         if (it == ctp_orders_.end()) {
-          signal_subscriber_.HandleSyncHistoryRtnOrder(
+          signal_subscriber_.HandleRtnOrder(
               CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.insert(ctp_order);
         } else if (ctp_order->status == OrderStatus::kCanceled) {
-          signal_subscriber_.HandleSyncHistoryRtnOrder(
+          signal_subscriber_.HandleRtnOrder(
               CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.erase(it);
           ctp_orders_.insert(ctp_order);
@@ -44,7 +44,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                                    CompareCTPOrderField());
         if (it != ctp_orders_.end()) {
           (*it)->leaves_qty -= trading_qty;
-          signal_subscriber_.HandleSyncHistoryRtnOrder(
+          signal_subscriber_.HandleRtnOrder(
               CTASignalAtom::value,
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
@@ -83,7 +83,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
       },
-      [=](CheckHistoryRtnOrderIsDoneAtom, size_t last_check_size) {
+      [=](CheckHistoryRtnOrderIsDoneAtom, int last_check_size) {
         if (last_check_size != sync_rtn_order_count_) {
           // maybe still on receive
           delayed_send(this, std::chrono::milliseconds(500),
@@ -108,10 +108,10 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
       [=](const std::vector<OrderPosition>& quantitys) {
         signal_subscriber_.HandleSyncYesterdayPosition(CTASignalAtom::value,
                                                        quantitys);
+        become(sync_order_behaivor);
         delayed_send(this, std::chrono::milliseconds(500),
                      CheckHistoryRtnOrderIsDoneAtom::value,
                      0);
-        become(sync_order_behaivor);
       },
   };
 }

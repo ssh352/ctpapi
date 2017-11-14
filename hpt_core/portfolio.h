@@ -23,6 +23,7 @@ class Portfolio {
 
   void HandleOrder(const std::shared_ptr<OrderField>& order);
 
+
   void HandleNewInputCloseOrder(const std::string& instrument,
                                 OrderDirection direction,
                                 int qty);
@@ -85,6 +86,13 @@ class Portfolio {
                         const CostBasis& cost_basis);
 
   std::vector<std::string> InstrumentList() const;
+
+private:
+  void HandleTradedQty(const std::shared_ptr<OrderField>& order, int last_traded_qty);
+
+  void HandleNewOrder(const std::shared_ptr<OrderField>& order);
+
+  void HandleCancelOrder(const std::shared_ptr<OrderField>& order);
 
   struct HashPosition {
     using is_transparent = void;

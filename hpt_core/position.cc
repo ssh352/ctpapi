@@ -34,6 +34,10 @@ void Position::CancelOpenOrder(int leave_qty) {
   frozen_open_qty_ -= leave_qty;
 }
 
+void Position::CancelCloseOrder(int qty) {
+  frozen_qty_ -= qty;
+}
+
 void Position::TradedClose(double traded_price,
                            int last_traded_qty,
                            double* pnl,

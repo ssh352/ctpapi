@@ -8,7 +8,7 @@ SupportSubAccountBroker::SupportSubAccountBroker(
     LiveTradeMailBox* mail_box,
     const std::vector<std::pair<std::string, caf::actor> >& sub_accounts)
     : caf::event_based_actor(cfg),
-      trader_api_(this, "./foo"),
+      trader_api_(this, ".\\foo\\"),
       mail_box_(mail_box) {
   mail_box_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>), this);
   mail_box_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>), this);

@@ -17,6 +17,8 @@ class Position {
 
   void CancelOpenOrder(int leave_qty);
 
+  void CancelCloseOrder(int qty);
+
   void TradedClose(double traded_price,
                    int last_traded_qty,
                    double* pnl,

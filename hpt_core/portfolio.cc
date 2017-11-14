@@ -54,106 +54,29 @@ void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
 }
 
 void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
+  BOOST_ASSERT(order->leaves_qty <= order->qty);
   if (order_container_.find(order->order_id) == order_container_.end()) {
-    // New Order
-    if (IsOpenPositionEffect(order->position_effect)) {
-      BOOST_ASSERT(order->trading_qty == 0);
-      BOOST_ASSERT_MSG(instrument_info_container_.find(order->instrument_id) !=
-                           instrument_info_container_.end(),
-                       "The Instrument info must be found!");
-      double margin_rate = 0.0;
-      int constract_multiple = 0;
-      CostBasis cost_basis;
-      memset(&cost_basis, 0, sizeof(CostBasis));
-      std::tie(margin_rate, constract_multiple, cost_basis) =
-          instrument_info_container_.at(order->instrument_id);
-      auto it_pos = position_container_.find(
-          std::make_pair(order->instrument_id, order->position_effect_direction),
-          HashPosition(), ComparePosition());
-      if (it_pos == position_container_.end()) {
-        // Position position(margin_rate, constract_multiple, cost_basis);
-        position_container_.insert(std::make_shared<Position>(
-            order->instrument_id, order->position_effect_direction, margin_rate,
-            constract_multiple, cost_basis));
-        it_pos = position_container_.find(
-            std::make_pair(order->instrument_id, order->position_effect_direction),
-            HashPosition(), ComparePosition());
-      }
-      (*it_pos)->OpenOrder(order->qty);
-      double frozen_cash =
-          order->input_price * order->qty * margin_rate * constract_multiple +
-          CalcCommission(PositionEffect::kOpen, order->input_price, order->qty,
-                         constract_multiple, cost_basis);
-      frozen_cash_ += frozen_cash;
-      cash_ -= frozen_cash;
-    } else {
-      if (frozen_close_qty_by_rtn_order_) {
-        HandleNewInputCloseOrder(order->instrument_id, order->position_effect_direction,
-                                 order->qty);
-      }
-    }
+    HandleNewOrder(order);
     order_container_.insert({order->order_id, order});
   } else {
     const auto& previous_order = order_container_.at(order->order_id);
     int last_traded_qty = previous_order->leaves_qty - order->leaves_qty;
     switch (order->status) {
       case OrderStatus::kActive:
+        if (last_traded_qty == 0 &&
+            (previous_order->qty != order->qty ||
+             previous_order->input_price != order->input_price)) {
+          // Modify qty and or price
+          HandleCancelOrder(previous_order);
+          HandleNewOrder(order);
+        } else if (last_traded_qty > 0) {
+          HandleTradedQty(order, last_traded_qty);
+        } else {
+          BOOST_ASSERT(false);
+        }
+        break;
       case OrderStatus::kAllFilled: {
-        if (IsOpenPositionEffect(order->position_effect)) {  // Open
-          auto it_pos = position_container_.find(
-              std::make_pair(order->instrument_id, order->position_effect_direction),
-              HashPosition(), ComparePosition());
-          BOOST_VERIFY(it_pos != position_container_.end());
-
-          double add_margin = 0.0;
-          (*it_pos)->TradedOpen(order->input_price, last_traded_qty,
-                                &add_margin);
-          frozen_cash_ -= add_margin;
-          margin_ += add_margin;
-        } else {  // Close
-          auto it_pos = position_container_.find(
-              std::make_pair(order->instrument_id,
-                             order->position_effect_direction),
-              HashPosition(), ComparePosition());
-          BOOST_VERIFY(it_pos != position_container_.end());
-          double pnl = 0.0;
-          double add_cash = 0.0;
-          double release_margin = 0.0;
-          double update_unrealised_pnl = 0.0;
-          (*it_pos)->TradedClose(order->input_price, last_traded_qty, &pnl,
-                                 &add_cash, &release_margin,
-                                 &update_unrealised_pnl);
-          margin_ -= release_margin;
-          cash_ += add_cash + pnl;
-          realised_pnl_ += pnl;
-          unrealised_pnl_ += update_unrealised_pnl;
-          if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
-            position_container_.erase(it_pos);
-          }
-        }
-
-        if (order->status == OrderStatus::kAllFilled) {
-          BOOST_ASSERT(instrument_info_container_.find(order->instrument_id) !=
-                       instrument_info_container_.end());
-          if (instrument_info_container_.find(order->instrument_id) !=
-              instrument_info_container_.end()) {
-            double margin_rate = 0;
-            int constract_mutiple = 0;
-            CostBasis cost_basis;
-            std::tie(margin_rate, constract_mutiple, cost_basis) =
-                instrument_info_container_.at(order->instrument_id);
-            double commission =
-                UpdateCostBasis(order->position_effect, order->input_price,
-                                order->qty, constract_mutiple, cost_basis);
-            if (IsOpenPositionEffect(order->position_effect)) {
-              frozen_cash_ -= commission;
-            } else {
-              cash_ -= commission;
-            }
-          }
-        }
-      } break;
-      case OrderStatus::kCanceled: {
+        HandleTradedQty(order, last_traded_qty);
         BOOST_ASSERT(instrument_info_container_.find(order->instrument_id) !=
                      instrument_info_container_.end());
         if (instrument_info_container_.find(order->instrument_id) !=
@@ -163,34 +86,28 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
           CostBasis cost_basis;
           std::tie(margin_rate, constract_mutiple, cost_basis) =
               instrument_info_container_.at(order->instrument_id);
-          (void)UpdateCostBasis(order->position_effect, order->input_price,
-                                order->qty - order->leaves_qty,
-                                constract_mutiple, cost_basis);
+          double commission =
+              UpdateCostBasis(order->position_effect, order->input_price,
+                              order->qty, constract_mutiple, cost_basis);
           if (IsOpenPositionEffect(order->position_effect)) {
-            double unfrozen_margin = order->leaves_qty * order->input_price *
-                                     margin_rate * constract_mutiple;
-            double unfrozen_cash =
-                unfrozen_margin + CalcCommission(order->position_effect,
-                                                 order->input_price, order->qty,
-                                                 constract_mutiple, cost_basis);
-            frozen_cash_ -= unfrozen_cash;
-            cash_ += unfrozen_margin +
-                     CalcCommission(order->position_effect, order->input_price,
-                                    order->leaves_qty, constract_mutiple,
-                                    cost_basis);
-            auto it_pos = position_container_.find(
-                std::make_pair(order->instrument_id,
-                               IsOpenPositionEffect(order->position_effect)
-                                   ? order->position_effect_direction
-                                   : OppositeOrderDirection(order->position_effect_direction)),
-                HashPosition(), ComparePosition());
-            BOOST_VERIFY(it_pos != position_container_.end());
-            (*it_pos)->CancelOpenOrder(order->leaves_qty);
-            if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
-              position_container_.erase(it_pos);
-            }
+            frozen_cash_ -= commission;
+          } else {
+            cash_ -= commission;
           }
         }
+      } break;
+      case OrderStatus::kCanceled: {
+        HandleCancelOrder(order);
+        auto it_pos = position_container_.find(
+            std::make_pair(order->instrument_id,
+                           order->position_effect_direction),
+            HashPosition(), ComparePosition());
+        BOOST_VERIFY(it_pos != position_container_.end());
+        (*it_pos)->CancelOpenOrder(order->leaves_qty);
+        if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
+          position_container_.erase(it_pos);
+        }
+
       } break;
       case OrderStatus::kInputRejected:
         break;
@@ -206,9 +123,8 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
 void Portfolio::HandleNewInputCloseOrder(const std::string& instrument,
                                          OrderDirection direction,
                                          int qty) {
-  auto it_find = position_container_.find(
-      std::make_pair(instrument, direction),
-      HashPosition(), ComparePosition());
+  auto it_find = position_container_.find(std::make_pair(instrument, direction),
+                                          HashPosition(), ComparePosition());
   BOOST_ASSERT(it_find != position_container_.end());
   if (it_find != position_container_.end()) {
     (*it_find)->InputClose(qty);
@@ -275,7 +191,7 @@ double Portfolio::CalcCommission(PositionEffect position_effect,
     case PositionEffect::kClose:
       commission_param = cost_basis.close_commission;
       break;
-    //case PositionEffect::kCloseToday:
+    // case PositionEffect::kCloseToday:
     //  commission_param = cost_basis.close_today_commission;
     //  break;
     default:
@@ -377,7 +293,8 @@ std::vector<std::shared_ptr<const Position>> Portfolio::GetPositionList()
   return ret;
 }
 
-std::shared_ptr<OrderField> Portfolio::GetOrder(const std::string& order_id) const {
+std::shared_ptr<OrderField> Portfolio::GetOrder(
+    const std::string& order_id) const {
   BOOST_ASSERT(order_container_.find(order_id) != order_container_.end());
   auto it = order_container_.find(order_id);
   if (it == order_container_.end()) {
@@ -385,4 +302,117 @@ std::shared_ptr<OrderField> Portfolio::GetOrder(const std::string& order_id) con
   }
 
   return it->second;
+}
+
+void Portfolio::HandleTradedQty(const std::shared_ptr<OrderField>& order,
+                                int last_traded_qty) {
+  if (IsOpenPositionEffect(order->position_effect)) {  // Open
+    auto it_pos = position_container_.find(
+        std::make_pair(order->instrument_id, order->position_effect_direction),
+        HashPosition(), ComparePosition());
+    BOOST_VERIFY(it_pos != position_container_.end());
+
+    double add_margin = 0.0;
+    (*it_pos)->TradedOpen(order->input_price, last_traded_qty, &add_margin);
+    frozen_cash_ -= add_margin;
+    margin_ += add_margin;
+  } else {  // Close
+    auto it_pos = position_container_.find(
+        std::make_pair(order->instrument_id, order->position_effect_direction),
+        HashPosition(), ComparePosition());
+    BOOST_VERIFY(it_pos != position_container_.end());
+    double pnl = 0.0;
+    double add_cash = 0.0;
+    double release_margin = 0.0;
+    double update_unrealised_pnl = 0.0;
+    (*it_pos)->TradedClose(order->input_price, last_traded_qty, &pnl, &add_cash,
+                           &release_margin, &update_unrealised_pnl);
+    margin_ -= release_margin;
+    cash_ += add_cash + pnl;
+    realised_pnl_ += pnl;
+    unrealised_pnl_ += update_unrealised_pnl;
+    if ((*it_pos)->qty() == 0 && (*it_pos)->frozen_open_qty() == 0) {
+      position_container_.erase(it_pos);
+    }
+  }
+}
+
+void Portfolio::HandleCancelOrder(const std::shared_ptr<OrderField>& order) {
+  BOOST_ASSERT(instrument_info_container_.find(order->instrument_id) !=
+               instrument_info_container_.end());
+  if (instrument_info_container_.find(order->instrument_id) !=
+      instrument_info_container_.end()) {
+    double margin_rate = 0;
+    int constract_mutiple = 0;
+    CostBasis cost_basis;
+    std::tie(margin_rate, constract_mutiple, cost_basis) =
+        instrument_info_container_.at(order->instrument_id);
+    (void)UpdateCostBasis(order->position_effect, order->input_price,
+                          order->qty - order->leaves_qty, constract_mutiple,
+                          cost_basis);
+    if (IsOpenPositionEffect(order->position_effect)) {
+      double unfrozen_margin = order->leaves_qty * order->input_price *
+                               margin_rate * constract_mutiple;
+      double unfrozen_cash =
+          unfrozen_margin + CalcCommission(order->position_effect,
+                                           order->input_price, order->qty,
+                                           constract_mutiple, cost_basis);
+      frozen_cash_ -= unfrozen_cash;
+      cash_ += unfrozen_margin +
+               CalcCommission(order->position_effect, order->input_price,
+                              order->leaves_qty, constract_mutiple, cost_basis);
+    } else {
+      // Close
+      auto it_find = position_container_.find(
+          std::make_pair(order->instrument_id, order->direction),
+          HashPosition(), ComparePosition());
+      BOOST_ASSERT(it_find != position_container_.end());
+      if (it_find != position_container_.end()) {
+        (*it_find)->InputClose(order->qty - order->leaves_qty);
+      }
+    }
+  } else {
+    BOOST_ASSERT(false);
+  }
+}
+
+void Portfolio::HandleNewOrder(const std::shared_ptr<OrderField>& order) {
+  // New Order
+  if (IsOpenPositionEffect(order->position_effect)) {
+    BOOST_ASSERT(order->trading_qty == 0);
+    BOOST_ASSERT_MSG(instrument_info_container_.find(order->instrument_id) !=
+                         instrument_info_container_.end(),
+                     "The Instrument info must be found!");
+    double margin_rate = 0.0;
+    int constract_multiple = 0;
+    CostBasis cost_basis;
+    memset(&cost_basis, 0, sizeof(CostBasis));
+    std::tie(margin_rate, constract_multiple, cost_basis) =
+        instrument_info_container_.at(order->instrument_id);
+    auto it_pos = position_container_.find(
+        std::make_pair(order->instrument_id, order->position_effect_direction),
+        HashPosition(), ComparePosition());
+    if (it_pos == position_container_.end()) {
+      // Position position(margin_rate, constract_multiple, cost_basis);
+      position_container_.insert(std::make_shared<Position>(
+          order->instrument_id, order->position_effect_direction, margin_rate,
+          constract_multiple, cost_basis));
+      it_pos = position_container_.find(
+          std::make_pair(order->instrument_id,
+                         order->position_effect_direction),
+          HashPosition(), ComparePosition());
+    }
+    (*it_pos)->OpenOrder(order->qty);
+    double frozen_cash =
+        order->input_price * order->qty * margin_rate * constract_multiple +
+        CalcCommission(PositionEffect::kOpen, order->input_price, order->qty,
+                       constract_multiple, cost_basis);
+    frozen_cash_ += frozen_cash;
+    cash_ -= frozen_cash;
+  } else {
+    if (frozen_close_qty_by_rtn_order_) {
+      HandleNewInputCloseOrder(order->instrument_id,
+                               order->position_effect_direction, order->qty);
+    }
+  }
 }

@@ -280,16 +280,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
-  // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-  //               "tcp://180.168.146.187:10001", "9999", "099344",
-  //               "a12345678");
+   //caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+   //              "tcp://180.168.146.187:10001", "9999", "099344",
+   //              "a12345678");
+  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+  //               "9999", "053867", "8661188");
 
   caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
                  "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
                  "140616");
 
-  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-  //               "9999", "053867
   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
                  "8888", "181006", "140616");
 

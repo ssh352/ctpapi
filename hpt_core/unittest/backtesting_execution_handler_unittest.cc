@@ -60,7 +60,7 @@ auto MakeInputOrder(std::string instrument,
                     double price,
                     int qty,
                     TimeStamp timestamp) {
-  return InputOrder{instrument, "A1",position_effect,
+  return InputOrderSignal{instrument, "A1",position_effect,
                     direction,  price, qty,  timestamp};
 }
 
@@ -74,7 +74,7 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   {
     auto order = event_factory.PopupRntOrder();
 
-    EXPECT_EQ(true, order != nullptr);
+    ASSERT_TRUE(order);
     EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
     EXPECT_EQ(OrderStatus::kActive, order->status);
     EXPECT_EQ(0, order->trading_qty);
