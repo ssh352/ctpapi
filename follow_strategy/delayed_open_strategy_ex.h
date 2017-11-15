@@ -42,7 +42,8 @@ class DelayedOpenStrategyEx {
                                const CTAPositionQty& position_qty);
 
   void HandleNearCloseMarket();
-
+  
+  void InitPosition(const std::vector<OrderPosition>& positions);
   /*void HandleCTACloseing(auto order) {
     int qty = context_->GetCloseableQty(order->instrument, order->direction);
     if (qty > 0) {

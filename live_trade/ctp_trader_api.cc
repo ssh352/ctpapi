@@ -1,4 +1,5 @@
 #include "ctp_trader_api.h"
+#include <thread>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "hpt_core/order_util.h"
 #include "hpt_core/time_util.h"
@@ -184,7 +185,9 @@ void CTPTraderApi::SettlementInfoConfirm() {
   CThostFtdcQrySettlementInfoConfirmField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
-  api_->ReqQrySettlementInfoConfirm(&field, 0);
+  if (api_->ReqQrySettlementInfoConfirm(&field, 0) != 0) {
+    int i = 0;
+  }
 }
 
 void CTPTraderApi::OnRspQrySettlementInfoConfirm(
@@ -314,7 +317,9 @@ void CTPTraderApi::RequestYesterdayPosition() {
   CThostFtdcQryInvestorPositionField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
-  api_->ReqQryInvestorPosition(&field, 0);
+  while (api_->ReqQryInvestorPosition(&field, 0) != 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  }
   // std::cout << "ReqQryInvestorPosition:"
   //           << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
 }

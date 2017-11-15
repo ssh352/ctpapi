@@ -539,3 +539,9 @@ int DelayedOpenStrategyEx::GetStrategyParamDealyOpenAfterSeconds(const std::stri
 
   return strategy_params_.at(instrument_code).delayed_open_after_seconds;
 }
+
+void DelayedOpenStrategyEx::InitPosition(const std::vector<OrderPosition>& positions) {
+  for (const auto& pos : positions) {
+    portfolio_.AddPosition(pos.instrument, pos.order_direction, pos.quantity);
+  }
+}

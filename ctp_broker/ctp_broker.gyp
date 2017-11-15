@@ -20,6 +20,8 @@
       'ctp_position_effect_flag_strategy.h',
       'ctp_position_effect_strategy.cc',
       'ctp_position_effect_strategy.h',
+      'ctp_position_restorer.h',
+      'ctp_position_restorer.cc',
     ],
     'dependencies' : [
       # '<(DEPTH)/testing/gtest.gyp:gtest',

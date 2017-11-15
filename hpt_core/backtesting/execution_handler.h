@@ -65,6 +65,7 @@ class SimulatedExecutionHandler {
 
     if (!long_limit_orders_.empty()) {
       auto end_it = long_limit_orders_.upper_bound(tick->tick->last_price);
+      //auto end_it = long_limit_orders_.upper_bound(tick->tick->ask_price1);
       std::for_each(
           long_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
             EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,
@@ -76,6 +77,7 @@ class SimulatedExecutionHandler {
 
     if (!short_limit_orders_.empty()) {
       auto end_it = short_limit_orders_.upper_bound(tick->tick->last_price);
+      //auto end_it = short_limit_orders_.upper_bound(tick->tick->bid_price1);
       std::for_each(
           short_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
             EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,

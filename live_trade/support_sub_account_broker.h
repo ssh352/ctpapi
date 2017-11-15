@@ -7,6 +7,7 @@
 #include "ctp_trader_api.h"
 #include "common/api_struct.h"
 #include "live_trade_mail_box.h"
+#include "ctp_broker/ctp_position_restorer.h"
 
 class SupportSubAccountBroker : public caf::event_based_actor,
                                 public CTPTraderApi::Delegate {
@@ -27,13 +28,12 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
 
-
   virtual void HandleLogon() override;
 
+  virtual void HandleRspYesterdayPosition(
+      std::vector<OrderPosition> yesterday_positions) override;
 
-  virtual void HandleRspYesterdayPosition(std::vector<OrderPosition> yesterday_positions) override;
-
-private:
+ private:
   struct SubAccountOrderId {
     std::string sub_account_id;
     std::string order_id;
@@ -61,7 +61,9 @@ private:
   OrderIdBimap order_id_bimap_;
   std::unordered_map<std::string, caf::actor> sub_actors_;
   LiveTradeMailBox* mail_box_;
-  CTPTraderApi trader_api_;
+  std::unique_ptr<CTPTraderApi> trader_api_;
+  CtpPositionRestorer position_restorer_;
   int order_seq_ = 0;
+  int sync_history_rtn_order_count_ = 0;
 };
 #endif  // LIVE_TRADE_SUPPORT_SUB_ACCOUNT_BROKER_H

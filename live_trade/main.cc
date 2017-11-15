@@ -86,6 +86,17 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
         });
   }
 
+  template <typename CLASS>
+  void Subscribe(void (CLASS::*pfn)(const std::vector<OrderPosition>&),
+                 CLASS* ptr) {
+    inner_mail_box_->Subscribe(typeid(std::tuple<std::vector<OrderPosition>>),
+                               this);
+    message_handler_ = message_handler_.or_else(
+        [ptr, pfn](const std::vector<OrderPosition>& order) {
+          (ptr->*pfn)(order);
+        });
+  }
+
  private:
   boost::log::sources::logger log_;
   LiveTradeMailBox* inner_mail_box_;
@@ -113,6 +124,21 @@ class CAFSubAccountBroker : public caf::event_based_actor,
 
   virtual caf::behavior make_behavior() override {
     return {
+        [=](const std::vector<CTPPositionField>& positions) {
+          for (const auto& pos : positions) {
+            MakeCtpInstrumentBrokerIfNeed(pos.instrument);
+            instrument_brokers_.at(pos.instrument)
+                ->InitPosition(pos.direction, {pos.yesterday, pos.today});
+          }
+
+          std::vector<OrderPosition> strategy_positions;
+          for (const auto& item : instrument_brokers_) {
+            if (auto pos = item.second->GetPosition()) {
+              strategy_positions.push_back(*pos);
+            }
+          }
+          inner_mail_box_->Send(std::move(strategy_positions));
+        },
         [=](const std::shared_ptr<CTPOrderField>& order) {
           auto it = instrument_brokers_.find(order->instrument);
           BOOST_ASSERT(it != instrument_brokers_.end());
@@ -130,51 +156,8 @@ class CAFSubAccountBroker : public caf::event_based_actor,
           }
         },
         [=](const InputOrder& order) {
-          auto it = instrument_brokers_.find(order.instrument);
-          if (it != instrument_brokers_.end()) {
-            it->second->HandleInputOrder(order);
-          } else {
-            auto broker = std::make_unique<CTPInstrumentBroker>(
-                this, order.instrument, false,
-                std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
-            std::string instrument_code = order.instrument.substr(
-                0, order.instrument.find_first_of("0123456789"));
-            boost::algorithm::to_lower(instrument_code);
-            bool close_today_cost = false;
-            bool close_today_aware = false;
-            if (g_instrument_exchange_set.find(instrument_code) !=
-                    g_instrument_exchange_set.end() &&
-                g_instrument_exchange_set.at(instrument_code) == "sc") {
-              close_today_aware = true;
-            } else {
-            }
-
-            if (g_close_today_cost_instrument_codes.find(instrument_code) !=
-                g_close_today_cost_instrument_codes.end()) {
-              close_today_cost = true;
-            }
-
-            if (close_today_cost && close_today_aware) {
-              broker->SetPositionEffectStrategy<
-                  CloseTodayCostCTPPositionEffectStrategy,
-                  CloseTodayAwareCTPPositionEffectFlagStrategy>();
-            } else if (!close_today_cost && close_today_aware) {
-              broker->SetPositionEffectStrategy<
-                  GenericCTPPositionEffectStrategy,
-                  CloseTodayAwareCTPPositionEffectFlagStrategy>();
-            } else if (close_today_cost && !close_today_aware) {
-              broker->SetPositionEffectStrategy<
-                  CloseTodayCostCTPPositionEffectStrategy,
-                  GenericCTPPositionEffectFlagStrategy>();
-            } else {
-              broker->SetPositionEffectStrategy<
-                  GenericCTPPositionEffectStrategy,
-                  GenericCTPPositionEffectFlagStrategy>();
-            }
-
-            broker->HandleInputOrder(order);
-            instrument_brokers_.insert({order.instrument, std::move(broker)});
-          }
+          MakeCtpInstrumentBrokerIfNeed(order.instrument);
+          instrument_brokers_.at(order.instrument)->HandleInputOrder(order);
         },
         [=](const CancelOrder& cancel) {
           auto it = instrument_brokers_.find(cancel.instrument);
@@ -184,6 +167,48 @@ class CAFSubAccountBroker : public caf::event_based_actor,
           }
         },
     };
+  }
+
+  void MakeCtpInstrumentBrokerIfNeed(const std::string& instrument) {
+    if (instrument_brokers_.find(instrument) != instrument_brokers_.end()) {
+      return;
+    }
+    auto broker = std::make_unique<CTPInstrumentBroker>(
+        this, instrument, false,
+        std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
+    std::string instrument_code =
+        instrument.substr(0, instrument.find_first_of("0123456789"));
+    boost::algorithm::to_lower(instrument_code);
+    bool close_today_cost = false;
+    bool close_today_aware = false;
+    if (g_instrument_exchange_set.find(instrument_code) !=
+            g_instrument_exchange_set.end() &&
+        g_instrument_exchange_set.at(instrument_code) == "sc") {
+      close_today_aware = true;
+    } else {
+    }
+
+    if (g_close_today_cost_instrument_codes.find(instrument_code) !=
+        g_close_today_cost_instrument_codes.end()) {
+      close_today_cost = true;
+    }
+
+    if (close_today_cost && close_today_aware) {
+      broker->SetPositionEffectStrategy<
+          CloseTodayCostCTPPositionEffectStrategy,
+          CloseTodayAwareCTPPositionEffectFlagStrategy>();
+    } else if (!close_today_cost && close_today_aware) {
+      broker->SetPositionEffectStrategy<
+          GenericCTPPositionEffectStrategy,
+          CloseTodayAwareCTPPositionEffectFlagStrategy>();
+    } else if (close_today_cost && !close_today_aware) {
+      broker->SetPositionEffectStrategy<CloseTodayCostCTPPositionEffectStrategy,
+                                        GenericCTPPositionEffectFlagStrategy>();
+    } else {
+      broker->SetPositionEffectStrategy<GenericCTPPositionEffectStrategy,
+                                        GenericCTPPositionEffectFlagStrategy>();
+    }
+    instrument_brokers_.insert({instrument, std::move(broker)});
   }
 
   virtual void HandleEnterOrder(const CTPEnterOrder& enter_order) override {
@@ -283,10 +308,10 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
    //caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-   //              "tcp://180.168.146.187:10001", "9999", "099344",
-   //              "a12345678");
-  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-  //               "9999", "053867", "8661188");
+   //             "tcp://180.168.146.187:10001", "9999", "099344",
+   //             "a12345678");
+   //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+   //              "9999", "053867", "8661188");
 
   caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
                  "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
@@ -294,7 +319,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
                  "8888", "181006", "140616");
-
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
                  "4200", "15500011", "Yunqizhi2_");

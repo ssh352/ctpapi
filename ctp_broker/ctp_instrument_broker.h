@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <boost/unordered_set.hpp>
+#include <boost/optional.hpp>
 #include <set>
 #include "common/api_struct.h"
 #include "ctp_broker/ctp_order_delegate.h"
@@ -17,6 +18,13 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
                       std::string instrument,
                       bool close_today_aware,
                       std::function<std::string(void)> generate_order_id_func);
+
+  void InitPosition(std::pair<int, int> long_pos,
+                    std::pair<int, int> short_pos);
+
+  void InitPosition(OrderDirection direction, std::pair<int, int> pos);
+
+  boost::optional<OrderPosition> GetPosition() const;
 
   void HandleRtnOrder(const std::shared_ptr<CTPOrderField>& order);
 
@@ -31,8 +39,6 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   void HandleOrderAction(const OrderAction& action);
 
-  void InitPosition(std::pair<int, int> long_pos,
-                    std::pair<int, int> short_pos);
 
   virtual void PosstionEffectStrategyHandleInputOrder(
       const std::string& input_order_id,

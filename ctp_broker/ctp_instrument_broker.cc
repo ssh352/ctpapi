@@ -8,13 +8,13 @@ CTPInstrumentBroker::CTPInstrumentBroker(
     : order_delegate_(delegate),
       instrument_(std::move(instrument)),
       generate_order_id_func_(generate_order_id_func) {
-  if (close_today_aware) {
-    long_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
-    short_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
-  } else {
-    long_ = std::make_unique<CTPPositionAmount>();
-    short_ = std::make_unique<CTPPositionAmount>();
-  }
+  // if (close_today_aware) {
+  //  long_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
+  //  short_ = std::make_unique<CloseTodayAwareCTPPositionAmount>();
+  //} else {
+  long_ = std::make_unique<CTPPositionAmount>();
+  short_ = std::make_unique<CTPPositionAmount>();
+  //}
 }
 
 void CTPInstrumentBroker::HandleRtnOrder(
@@ -142,7 +142,7 @@ void CTPInstrumentBroker::HandleCancel(const CancelOrder& cancel) {
   auto range = order_id_to_ctp_order_id_.equal_range(cancel.order_id);
   for (auto it = range.first; it != range.second; ++it) {
     auto ctp_order_it = ctp_orders_.find(it->second, HashCTPOrderField(),
-                                   CompareCTPOrderField());
+                                         CompareCTPOrderField());
     BOOST_ASSERT(ctp_order_it != ctp_orders_.end());
     if (ctp_order_it == ctp_orders_.end() ||
         (*ctp_order_it)->status != OrderStatus::kActive) {
@@ -223,6 +223,15 @@ void CTPInstrumentBroker::InitPosition(std::pair<int, int> long_pos,
   short_->Init(short_pos.first, 0, short_pos.second, 0);
 }
 
+void CTPInstrumentBroker::InitPosition(OrderDirection direction,
+                                       std::pair<int, int> pos) {
+  if (direction == OrderDirection::kBuy) {
+    long_->Init(pos.first, 0, pos.second, 0);
+  } else {
+    short_->Init(pos.first, 0, pos.second, 0);
+  }
+}
+
 bool CTPInstrumentBroker::IsCtpOpenPositionEffect(
     CTPPositionEffect position_effect) const {
   return position_effect == CTPPositionEffect::kOpen;
@@ -271,4 +280,19 @@ void CTPInstrumentBroker::UnfrozenByCancelCloseOrder(
       (*ctp_order_it)->status != OrderStatus::kActive) {
     return;
   }
+}
+
+boost::optional<OrderPosition> CTPInstrumentBroker::GetPosition() const {
+  BOOST_ASSERT(long_->Closeable() == long_->Total());
+  BOOST_ASSERT(short_->Closeable() == short_->Total());
+
+  if (long_->Closeable() == short_->Closeable()) {
+    return boost::optional<OrderPosition>();
+  }
+
+  return OrderPosition{instrument_,
+                       long_->Closeable() > short_->Closeable()
+                           ? OrderDirection::kBuy
+                           : OrderDirection::kSell,
+                       abs(long_->Closeable() - short_->Closeable())};
 }

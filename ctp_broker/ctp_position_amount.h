@@ -16,27 +16,28 @@ class CTPPositionAmount {
 
   void OpenTraded(int qty);
 
-  virtual void CloseTraded(int qty, CTPPositionEffect position_effect);
+  void CloseTraded(int qty, CTPPositionEffect position_effect);
 
-  virtual void Frozen(int qty, CTPPositionEffect position_effect);
+  void Frozen(int qty, CTPPositionEffect position_effect);
 
-  virtual void Unfrozen(int qty, CTPPositionEffect position_effect);
+  void Unfrozen(int qty, CTPPositionEffect position_effect);
 
  protected:
   int yesterday_ = 0;
   int today_ = 0;
   int frozen_today_ = 0;
-  int frozen_yesterday_;
+  int frozen_yesterday_ = 0;
   int opening = 0;
 };
 
-class CloseTodayAwareCTPPositionAmount : public CTPPositionAmount {
- public:
-  virtual void CloseTraded(int qty, CTPPositionEffect position_effect) override;
-
-  virtual void Frozen(int qty, CTPPositionEffect position_effect) override;
-
-  virtual void Unfrozen(int qty, CTPPositionEffect position_effect) override;
-};
+// class CloseTodayAwareCTPPositionAmount : public CTPPositionAmount {
+// public:
+//  virtual void CloseTraded(int qty, CTPPositionEffect position_effect)
+//  override;
+//
+//  virtual void Frozen(int qty, CTPPositionEffect position_effect) override;
+//
+//  virtual void Unfrozen(int qty, CTPPositionEffect position_effect) override;
+//};
 
 #endif  // CTP_BROKER_CTP_POSITION_AMOUNT_H

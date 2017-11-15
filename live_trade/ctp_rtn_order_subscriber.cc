@@ -1,11 +1,14 @@
 #include "ctp_rtn_order_subscriber.h"
+#include "util.h"
 
 CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
                                                  LiveTradeMailBox* mail_box)
     : caf::event_based_actor(cfg),
-      trade_api_(this, ".\\cta\\"),
       mail_box_(mail_box),
       signal_subscriber_(this) {
+
+  ClearUpCTPFolwDirectory(".\\cta\\");
+  trade_api_ = std::make_unique<CTPTraderApi>(this, ".\\cta\\");
   // TODO:tempare hard code
   // signal_subscriber_.AddPosition("MA801", OrderDirection::kBuy, 9);
   // signal_subscriber_.AddPosition("c1801", OrderDirection::kBuy, 12);
@@ -90,9 +93,9 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                        CheckHistoryRtnOrderIsDoneAtom::value,
                        sync_rtn_order_count_);
         } else {
-          // auto& lg = g_logger::get();
-          // BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
-          caf::aout(this) << "";
+          //auto& lg = g_logger::get();
+          //BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
+          std::cout << "sync history sccuess";
           become(work_behavior);
           set_default_handler(caf::print_and_drop);
         }
@@ -103,7 +106,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
       [=](CtpConnectAtom, const std::string& server,
           const std::string& broker_id, const std::string& user_id,
           const std::string& password) {
-        trade_api_.Connect(server, broker_id, user_id, password);
+        trade_api_->Connect(server, broker_id, user_id, password);
       },
       [=](const std::vector<OrderPosition>& quantitys) {
         signal_subscriber_.HandleSyncYesterdayPosition(CTASignalAtom::value,
@@ -125,7 +128,7 @@ void CAFCTAOrderSignalBroker::Connect(const std::string& server,
                                       const std::string& broker_id,
                                       const std::string& user_id,
                                       const std::string& password) {
-  trade_api_.Connect(server, broker_id, user_id, password);
+  trade_api_->Connect(server, broker_id, user_id, password);
 }
 
 std::shared_ptr<OrderField> CAFCTAOrderSignalBroker::MakeOrderField(
@@ -172,10 +175,12 @@ void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
 }
 
 void CAFCTAOrderSignalBroker::HandleLogon() {
-  trade_api_.RequestYesterdayPosition();
+  std::cout << "long\n";
+  trade_api_->RequestYesterdayPosition();
 }
 
 void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
+  std::cout << "request yesterday position\n";
   send(this, std::move(yesterday_positions));
 }

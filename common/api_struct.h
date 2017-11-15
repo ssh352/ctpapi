@@ -33,26 +33,6 @@ struct OrderField {
   std::string raw_error_message;
 };
 
-struct CTAOrderSignalField {
-  int long_qty;
-  int short_qty;
-  int opening_long_qty;
-  int opening_short_qty;
-  int closeing_long_qty;
-  int closeing_short_qty;
-  std::string instrument;
-  PositionEffect position_effect;
-  OrderDirection direction;
-  OrderStatus order_status;
-  int qty;
-  int leaves_qty;
-  int trading_qty;
-  double input_price;
-  double avg_price;
-  double trading_price;
-  TimeStamp timestamp;
-};
-
 struct InvestorPositionField {
   int qty;
   OrderDirection direction;
@@ -60,11 +40,6 @@ struct InvestorPositionField {
   std::string instrument_id;
 };
 
-struct CorrOrderQuantity {
-  std::string order_id;
-  int quantity;
-  int corr_quantity;
-};
 
 struct OrderPosition {
   std::string instrument;
@@ -72,27 +47,6 @@ struct OrderPosition {
   int quantity;
 };
 
-struct OrderQuantity {
-  std::string order_id;
-  OrderDirection direction;
-  bool is_today_quantity;
-  int quantity;
-  int closeable_quantity;
-};
-
-struct AccountPortfolio {
-  std::string instrument;
-  OrderDirection direction;
-  int closeable;
-  int open;
-  int close;
-};
-
-struct AccountPosition {
-  std::string instrument;
-  OrderDirection direction;
-  int closeable;
-};
 
 struct Tick {
   int64_t timestamp;
@@ -120,13 +74,6 @@ struct CTATransaction {
   int32_t traded_qty;
 };
 
-struct OpenOrder {
-  std::string instrument;
-  TimeStamp open_timestamp;
-  OrderDirection direction;
-  double opne_price;
-  int qty;
-};
 
 struct CostBasis {
   CommissionType type;
@@ -172,6 +119,13 @@ struct OrderAction {
 struct CTAPositionQty {
   int position;
   int frozen;
+};
+
+struct CTPPositionField {
+  std::string instrument;
+  OrderDirection direction;
+  int today;
+  int yesterday;
 };
 
 struct CTPOrderField {
