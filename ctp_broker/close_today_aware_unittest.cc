@@ -98,3 +98,16 @@ TEST_F(CloseTodayAwareTest, CloseOrderNoEnoughYesterdayQtyThenRecv) {
     EXPECT_EQ(0, (*order)->leaves_qty);
   }
 }
+
+TEST_F(CloseTodayAwareTest, OpenHasOppositionPositionOrder) {
+  broker_.InitPosition(std::make_pair(0, 0), std::make_pair(5, 0));
+  MakeOpenOrderRequest("abc", OrderDirection::kBuy, 1.2, 5);
+  {
+    auto enter_order = PopupOrder<CTPEnterOrder>();
+    ASSERT_TRUE(enter_order);
+    EXPECT_EQ(CTPPositionEffect::kClose, enter_order->position_effect);
+    EXPECT_EQ(OrderDirection::kBuy, enter_order->direction);
+    EXPECT_EQ(5, enter_order->qty);
+    EXPECT_EQ("0", enter_order->order_id);
+  }
+}

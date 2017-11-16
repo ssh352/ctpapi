@@ -159,7 +159,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderButComplteLockRightNow) {
   ASSERT_TRUE(enter_order);
   EXPECT_EQ("0", enter_order->order_id);
   EXPECT_EQ(CTPPositionEffect::kClose, enter_order->position_effect);
-  EXPECT_EQ(OrderDirection::kSell, enter_order->direction);
+  EXPECT_EQ(OrderDirection::kBuy, enter_order->direction);
   EXPECT_EQ(10, enter_order->qty);
   EXPECT_EQ(1.3, enter_order->price);
 }
@@ -173,7 +173,7 @@ TEST_F(GenericPositionEffectTest, OpenOrderButPartiallyLockRightNow) {
     ASSERT_TRUE(enter_order);
     EXPECT_EQ("0", enter_order->order_id);
     EXPECT_EQ(CTPPositionEffect::kClose, enter_order->position_effect);
-    EXPECT_EQ(OrderDirection::kSell, enter_order->direction);
+    EXPECT_EQ(OrderDirection::kBuy, enter_order->direction);
     EXPECT_EQ(4, enter_order->qty);
     EXPECT_EQ(1.3, enter_order->price);
   }
