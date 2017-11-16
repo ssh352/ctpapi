@@ -41,6 +41,7 @@ auto MakeNewOrder(const std::string& order_id,
                   double qty) {
   auto order = MakeOrderField(order_id, instrument, position_effect, direction,
                               OrderStatus::kActive, price, qty, 0, qty);
+  g_order_containter.erase(order_id);
   g_order_containter.insert({order_id, order});
   return std::move(order);
 }
@@ -340,5 +341,30 @@ TEST(TestPortflioTest, CancelCloseOrder) {
   portflio.HandleOrder(MakeCanceledOrder("A002"));
 
   EXPECT_EQ(0, portflio.GetFrozenQty("S1", OrderDirection::kBuy));
+}
+
+TEST(TestPortflioTest, ActionCloseOrderPrice) {
+  g_order_containter.clear();
+  double init_cash = 100000;
+  Portfolio portflio(init_cash, false);
+  CostBasis cost_basis;
+  cost_basis.type = CommissionType::kFixed;
+  cost_basis.open_commission = 0;
+  cost_basis.close_commission = 0;
+  cost_basis.close_today_commission = 0;
+  portflio.InitInstrumentDetail("S1", 1.0, 1, cost_basis);
+  portflio.HandleOrder(
+      MakeNewOpenOrder("A001", "S1", OrderDirection::kBuy, 180.0, 10));
+  portflio.HandleOrder(MakeTradedOrder("A001", 10));
+
+  portflio.HandleNewInputCloseOrder("S1", OrderDirection::kBuy, 10);
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A002", "S1", OrderDirection::kSell, 183.0, 10));
+
+  portflio.HandleOrder(
+      MakeNewCloseOrder("A002", "S1", OrderDirection::kSell, 182.0, 10));
+
+  EXPECT_EQ(10, portflio.GetFrozenQty("S1", OrderDirection::kBuy));
 }
 }  // namespace
