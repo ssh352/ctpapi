@@ -45,7 +45,7 @@ void Portfolio::UpdateTick(const std::shared_ptr<TickData>& tick) {
     auto it_find = position_container_.find(
         std::make_pair(*tick->instrument, OrderDirection::kSell),
         HashPosition(), ComparePosition());
-    if (it_find != position_container_.end() && (*it_find)->qty() >0) {
+    if (it_find != position_container_.end() && (*it_find)->qty() > 0) {
       double update_pnl_ = 0.0;
       (*it_find)->UpdateMarketPrice(tick->tick->last_price, &update_pnl_);
       unrealised_pnl_ += update_pnl_;
@@ -68,7 +68,10 @@ void Portfolio::HandleOrder(const std::shared_ptr<OrderField>& order) {
              previous_order->input_price != order->input_price)) {
           // Modify qty and or price
           HandleCancelOrder(previous_order);
+          bool old = frozen_close_qty_by_rtn_order_;
+          frozen_close_qty_by_rtn_order_ = true;
           HandleNewOrder(order);
+          frozen_close_qty_by_rtn_order_ = old;
         } else if (last_traded_qty > 0) {
           HandleTradedQty(order, last_traded_qty);
         } else {
@@ -364,7 +367,8 @@ void Portfolio::HandleCancelOrder(const std::shared_ptr<OrderField>& order) {
     } else {
       // Close
       auto it_find = position_container_.find(
-          std::make_pair(order->instrument_id, order->position_effect_direction),
+          std::make_pair(order->instrument_id,
+                         order->position_effect_direction),
           HashPosition(), ComparePosition());
       BOOST_ASSERT(it_find != position_container_.end());
       if (it_find != position_container_.end()) {
