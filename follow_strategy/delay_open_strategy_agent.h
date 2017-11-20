@@ -2,19 +2,19 @@
 #define FOLLOW_STRATEGY_DELAY_OPEN_STRATEGY_AGENT_H
 #include "delayed_open_strategy_ex.h"
 
-template <typename MailBox>
-class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
+template <typename MailBox, typename Strategy>
+class DelayOpenStrategyAgent : public Strategy::Delegate {
  public:
   DelayOpenStrategyAgent(
       MailBox* mail_box,
-      std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+      std::unordered_map<std::string, typename Strategy::StrategyParam>
           params,
     boost::log::sources::logger* log)
       : mail_box_(mail_box), strategy_(this, std::move(params), log) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
-    mail_box_->Subscribe(&DelayedOpenStrategyEx::HandleTick, &strategy_);
-    mail_box_->Subscribe(&DelayedOpenStrategyEx::InitPosition, &strategy_);
+    mail_box_->Subscribe(&Strategy::HandleTick, &strategy_);
+    mail_box_->Subscribe(&Strategy::InitPosition, &strategy_);
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleNearCloseMarket, this);
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleRtnOrder, this);
   }
@@ -116,7 +116,7 @@ class DelayOpenStrategyAgent : public DelayedOpenStrategyEx::Delegate {
   };
 
   MailBox* mail_box_;
-  DelayedOpenStrategyEx strategy_;
+  Strategy strategy_;
 
   std::vector<OutstandingRequest> waiting_reply_order_;
   std::list<std::pair<std::shared_ptr<OrderField>, CTAPositionQty> >

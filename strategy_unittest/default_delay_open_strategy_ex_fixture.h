@@ -79,6 +79,10 @@ class DefaultDelayedOpenStrategyExFixture : public StrategyFixture {
                          trading_qty));
   }
 
+  void CancelOrderWithOrderNo(const std::string& order_id) {
+    Send(MakeCanceledOrder(slave_account_id_, order_id));
+  }
+
  private:
   std::string slave_account_id_;
   std::string master_account_id_;
