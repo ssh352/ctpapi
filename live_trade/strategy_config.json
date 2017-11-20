@@ -1,118 +1,122 @@
-﻿{
-  "a": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 4
-  },
-  "al": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 20
-  },
-  "bu": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 4
-  },
-  "c": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "cf": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 20
-  },
-  "cs": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "cu": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 30
-  },
-  "fg": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "i": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "j": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "jd": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 4
-  },
-  "jm": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "l": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 10
-  },
-  "m": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "ma": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 4
-  },
-  "ni": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 50
-  },
-  "oi": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 6
-  },
-  "p": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 6
-  },
-  "pp": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 10
-  },
-  "rb": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 5
-  },
-  "rm": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
-  },
-  "ru": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 20
-  },
-  "sm": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 10
-  },
-  "sr": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 4
-  },
-  "ta": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 6
-  },
-  "v": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 10
-  },
-  "y": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 6
-  },
-  "zc": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 1
-  },
-  "zn": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 30
-  }
+{
+    "a":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "al":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "bu":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "c":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "cf":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "cs":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "cu":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":10
+    },
+    "fg":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "i":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":0.5
+    },
+    "j":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":0.5
+    },
+    "jd":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "jm":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":0.5
+    },
+    "l":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "m":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "ma":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "ni":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":10
+    },
+    "oi":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "p":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "pp":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "rb":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "rm":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "ru":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "sm":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "sr":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":1
+    },
+    "ta":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "v":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "y":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":2
+    },
+    "zc":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":0.2
+    },
+    "zn":{
+        "DelayOpenOrderAfterSeconds":300,
+        "PriceOffset":5
+    },
+    "hc":{
+      "DelayOpenOrderAfterSeconds":300,
+      "PriceOffset":1
+    }
 }

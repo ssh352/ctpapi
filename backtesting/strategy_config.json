@@ -1,6 +1,6 @@
 ﻿{
   "backtesting" : [
-    "ta709"
+    "m1709"
   ],
   "a": {
       "DelayOpenOrderAfterSeconds": 60,
@@ -55,8 +55,8 @@
       "PriceOffset": 10
   },
   "m": {
-      "DelayOpenOrderAfterSeconds": 60,
-      "PriceOffset": 2
+      "DelayOpenOrderAfterSeconds": 30,
+      "PriceOffset": 1
   },
   "ma": {
       "DelayOpenOrderAfterSeconds": 60,
