@@ -17,10 +17,10 @@ template <typename MailBox>
 class CTAOrderSignalSubscriber {
  public:
   CTAOrderSignalSubscriber(MailBox* mail_box) : mail_box_(mail_box) {
-    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncYesterdayPosition,
-                         this);
-    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder,
-                         this);
+    //mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncYesterdayPosition,
+    //                     this);
+    //mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder,
+    //                     this);
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleRtnOrder, this);
   }
   // CTASignal

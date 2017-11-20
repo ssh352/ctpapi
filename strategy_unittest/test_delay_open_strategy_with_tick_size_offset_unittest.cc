@@ -28,7 +28,8 @@ class TestDelayOpenStrategyWithTickSizeOffset
     params.insert(
         {defalut_instrument_id, DelayedOpenStrategyEx::StrategyParam{
                                     delayed_open_after_seconds, 5.0}});
-    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(params);
+    CreateStrategy<DelayOpenStrategyAgent<UnittestMailBox> >(std::move(params), 
+      &log_);
   }
 };
 

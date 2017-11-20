@@ -5,6 +5,7 @@
 #include <typeindex>
 #include <boost/any.hpp>
 #include <boost/optional.hpp>
+#include <boost/log/sources/logger.hpp>
 #include "gtest/gtest.h"
 #include "common/api_struct.h"
 
@@ -157,6 +158,7 @@ class StrategyFixture : public testing::Test {
   bool auto_reply_new_rtn_order = true;
   std::list<std::shared_ptr<OrderField>> pending_reply_new_rtn_orders_;
   std::string account_id_;
+  boost::log::sources::logger log_;
 };
 
 #endif  // STRATEGY_UNITTEST_STRATEGY_FIXTURE_H
