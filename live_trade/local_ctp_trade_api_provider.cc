@@ -10,7 +10,7 @@ void LocalCtpTradeApiProvider::Init(CtpTradeApiProvider::Delegate* delegate) {
 
 void LocalCtpTradeApiProvider::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
-  throw std::logic_error("The method or operation is not implemented.");
+  delegate_->HandleRspYesterdayPosition(std::move(yesterday_positions));
 }
 
 void LocalCtpTradeApiProvider::HandleCTPTradeOrder(
@@ -19,16 +19,17 @@ void LocalCtpTradeApiProvider::HandleCTPTradeOrder(
     double trading_price,
     int trading_qty,
     TimeStamp timestamp) {
-  throw std::logic_error("The method or operation is not implemented.");
+  delegate_->HandleCTPTradeOrder(instrument, order_id, trading_price,
+                                 trading_qty, timestamp);
 }
 
 void LocalCtpTradeApiProvider::HandleCTPRtnOrder(
     const std::shared_ptr<CTPOrderField>& order) {
-  throw std::logic_error("The method or operation is not implemented.");
+  delegate_->HandleCTPRtnOrder(order);
 }
 
 void LocalCtpTradeApiProvider::HandleLogon() {
-  throw std::logic_error("The method or operation is not implemented.");
+  delegate_->HandleLogon();
 }
 
 void LocalCtpTradeApiProvider::Connect(const std::string& server,
@@ -40,13 +41,13 @@ void LocalCtpTradeApiProvider::Connect(const std::string& server,
 
 void LocalCtpTradeApiProvider::InputOrder(const CTPEnterOrder& input_order,
                                           const std::string& ctp_order_ref) {
-  trade_api_->InputOrder;
+  trade_api_->InputOrder(input_order, ctp_order_ref);
 }
 
 void LocalCtpTradeApiProvider::CancelOrder(const CTPCancelOrder& cancel_order) {
-  throw std::logic_error("The method or operation is not implemented.");
+  trade_api_->CancelOrder(cancel_order);
 }
 
 void LocalCtpTradeApiProvider::RequestYesterdayPosition() {
-  throw std::logic_error("The method or operation is not implemented.");
+  trade_api_->RequestYesterdayPosition();
 }

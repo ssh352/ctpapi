@@ -13,6 +13,8 @@ using CTASignalContainer =
 using CheckHistoryRtnOrderIsDoneAtom =
     caf::atom_constant<caf::atom("checksync")>;
 
+using ReqYesterdayPositionAtom = caf::atom_constant<caf::atom("reqyespos")>;
+
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
 // CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrder)

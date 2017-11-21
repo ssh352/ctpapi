@@ -252,11 +252,18 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
   }
 }
 
-void CTPTraderApi::CancelOrder(CThostFtdcInputOrderActionField order) {
-  strcpy(order.BrokerID, broker_id_.c_str());
-  strcpy(order.UserID, user_id_.c_str());
-  strcpy(order.InvestorID, user_id_.c_str());
-  api_->ReqOrderAction(&order, 1);
+void CTPTraderApi::CancelOrder(const CTPCancelOrder& ctp_cancel) {
+  CThostFtdcInputOrderActionField action_field = {0};
+  action_field.ActionFlag = THOST_FTDC_AF_Delete;
+  action_field.FrontID = ctp_cancel.front_id;
+  action_field.SessionID = ctp_cancel.session_id;
+  strcpy(action_field.OrderRef, ctp_cancel.order_ref.c_str());
+  strcpy(action_field.ExchangeID, ctp_cancel.exchange_id.c_str());
+  strcpy(action_field.OrderSysID, ctp_cancel.order_sys_id.c_str());
+  strcpy(action_field.BrokerID, broker_id_.c_str());
+  strcpy(action_field.UserID, user_id_.c_str());
+  strcpy(action_field.InvestorID, user_id_.c_str());
+  api_->ReqOrderAction(&action_field, 1);
 }
 
 void CTPTraderApi::Connect(const std::string& server,

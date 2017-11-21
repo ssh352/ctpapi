@@ -7,7 +7,8 @@ class LocalCtpTradeApiProvider : public CtpTradeApiProvider,
                                  public CTPTraderApi::Delegate {
  public:
   LocalCtpTradeApiProvider();
-  void Init(CtpTradeApiProvider::Delegate* delegate);
+
+  virtual void Init(CtpTradeApiProvider::Delegate* delegate) override;
 
   virtual void HandleLogon() override;
 

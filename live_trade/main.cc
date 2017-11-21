@@ -34,6 +34,8 @@
 #include "live_trade_mail_box.h"
 #include "ctp_rtn_order_subscriber.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
+#include "local_ctp_trade_api_provider.h"
+#include "remote_ctp_trade_api_provider.h"
 
 std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
@@ -238,6 +240,23 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   int order_seq_ = 0;
 };
 
+caf::behavior RemoteTradeApiHandler(caf::event_based_actor* self,
+                                    RemoteCtpApiTradeApiProvider* provider) {
+  return {
+      [=](std::vector<OrderPosition> yesterday_positions) {
+        provider->HandleRspYesterdayPosition(std::move(yesterday_positions));
+      },
+      [=](const std::shared_ptr<CTPOrderField>& order) {
+        provider->HandleCTPRtnOrder(order);
+      },
+      [=](const std::string& instrument, const std::string& order_id,
+          double trading_price, int trading_qty, TimeStamp timestamp) {
+        provider->HandleCTPTradeOrder(instrument, order_id, trading_price,
+                                      trading_qty, timestamp);
+      },
+  };
+}
+
 class config : public caf::actor_system_config {
  public:
   int delayed_close_minutes = 10;
@@ -303,9 +322,17 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     inner_mail_boxs.push_back(std::move(inner_mail_box));
   }
 
-  auto support_sub_account_broker =
-      system.spawn<SupportSubAccountBroker>(&common_mail_box, sub_actors);
+  // LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
 
+  RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
+
+  auto remote_trade_api_handler = 
+    system.spawn(RemoteTradeApiHandler,&remote_ctp_trade_api_provider);
+
+  remote_ctp_trade_api_provider.SetRemotetradeApi(remote_trade_api_handler);
+
+  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
+      &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 

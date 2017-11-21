@@ -33,7 +33,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
   void InputOrder(const CTPEnterOrder& order, const std::string& order_id);
 
-  void CancelOrder(CThostFtdcInputOrderActionField order);
+  void CancelOrder(const CTPCancelOrder& ctp_cancel);
 
   void RequestYesterdayPosition();
 
