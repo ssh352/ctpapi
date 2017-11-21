@@ -67,5 +67,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
   CtpPositionRestorer position_restorer_;
   int order_seq_ = 0;
   int sync_history_rtn_order_count_ = 0;
+  int front_id_ = -1;
+  int session_id_ = -1;
 };
 #endif  // LIVE_TRADE_SUPPORT_SUB_ACCOUNT_BROKER_H

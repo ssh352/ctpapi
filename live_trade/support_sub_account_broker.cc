@@ -49,24 +49,16 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
       },
       [=](const std::string& account_id, const CTPEnterOrder& enter_order) {
         std::string order_ref = GenerateOrderRef();
-        // TODO: implmenetate MakeCtpUniqueOrderId
-        BOOST_ASSERT(false);
-        // order_id_bimap_.insert(OrderIdBimap::value_type(
-        //    SubAccountOrderId{account_id, enter_order.order_id},
-        //    trader_api_->MakeCtpUniqueOrderId(order_ref)));
+        order_id_bimap_.insert(OrderIdBimap::value_type(
+            SubAccountOrderId{account_id, enter_order.order_id},
+            str(boost::format("%d:%d:%s") % front_id_ % session_id_ %
+                order_ref)));
         trader_api_->InputOrder(enter_order, order_ref);
       },
       [=](const std::string& account_id, const CTPCancelOrder& cancel) {
         auto it = order_id_bimap_.left.find(
             SubAccountOrderId{account_id, cancel.order_id});
         BOOST_ASSERT(it != order_id_bimap_.left.end());
-        // CThostFtdcInputOrderActionField order = {0};
-        // order.ActionFlag = THOST_FTDC_AF_Delete;
-        // order.FrontID = cancel.front_id;
-        // order.SessionID = cancel.session_id;
-        // strcpy(order.OrderRef, cancel.order_ref.c_str());
-        // strcpy(order.ExchangeID, cancel.exchange_id.c_str());
-        // strcpy(order.OrderSysID, cancel.order_sys_id.c_str());
         trader_api_->CancelOrder(cancel);
       },
   };
@@ -123,11 +115,11 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
       }};
 
   set_default_handler(caf::skip());
-  return {/*[=](CtpConnectAtom, const std::string& server,
-              const std::string& broker_id, const std::string& user_id,
-              const std::string& password) {
-            trader_api_->Connect(server, broker_id, user_id, password);
-          },*/
+  return {[=](int front_id, int session_id) {
+            front_id_ = front_id;
+            session_id_ = session_id;
+            trader_api_->RequestYesterdayPosition();
+          },
           [=](std::vector<OrderPosition> yesterday_positions) {
             for (auto pos : yesterday_positions) {
               position_restorer_.AddYesterdayPosition(
@@ -158,7 +150,7 @@ void SupportSubAccountBroker::HandleCTPTradeOrder(const std::string& instrument,
 }
 
 void SupportSubAccountBroker::HandleCtpLogon(int front_id, int session_id) {
-  trader_api_->RequestYesterdayPosition();
+  send(this, front_id, session_id);
 }
 
 void SupportSubAccountBroker::HandleRspYesterdayPosition(
