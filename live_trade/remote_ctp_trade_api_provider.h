@@ -5,7 +5,9 @@
 
 class RemoteCtpApiTradeApiProvider : public CtpTradeApiProvider {
  public:
-  void SetRemotetradeApi(caf::actor actor);
+  void SetRemoteHandler(caf::actor actor);
+
+  void SetRemoteTradeApi(caf::actor actor);
 
   virtual void Init(Delegate* delegate) override;
 

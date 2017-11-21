@@ -36,6 +36,7 @@
 #include "follow_strategy/delay_open_strategy_agent.h"
 #include "local_ctp_trade_api_provider.h"
 #include "remote_ctp_trade_api_provider.h"
+#include "caf/io/all.hpp"
 
 std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
@@ -329,7 +330,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto remote_trade_api_handler = 
     system.spawn(RemoteTradeApiHandler,&remote_ctp_trade_api_provider);
 
-  remote_ctp_trade_api_provider.SetRemotetradeApi(remote_trade_api_handler);
+  remote_ctp_trade_api_provider.SetRemoteHandler(remote_trade_api_handler);
+
+  auto remote_trade_api = system.middleman().remote_actor("127.0.0.1", 4242);
+  if (!remote_trade_api) {
+    BOOST_ASSERT(false);
+    return 0;
+  } else {
+    remote_ctp_trade_api_provider.SetRemoteTradeApi(*remote_trade_api);
+  }
+
 
   auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
       &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
@@ -369,4 +379,4 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   return 0;
 }
 
-CAF_MAIN()
+CAF_MAIN(caf::io::middleman)

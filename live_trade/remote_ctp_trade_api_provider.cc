@@ -19,7 +19,7 @@ void RemoteCtpApiTradeApiProvider::Init(Delegate* delegate) {
   delegate_ = delegate;
 }
 
-void RemoteCtpApiTradeApiProvider::SetRemotetradeApi(caf::actor actor) {
+void RemoteCtpApiTradeApiProvider::SetRemoteTradeApi(caf::actor actor) {
   remote_trade_api_ = actor;
 }
 
@@ -41,4 +41,8 @@ void RemoteCtpApiTradeApiProvider::HandleCTPTradeOrder(
 void RemoteCtpApiTradeApiProvider::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
   delegate_->HandleRspYesterdayPosition(std::move(yesterday_positions));
+}
+
+void RemoteCtpApiTradeApiProvider::SetRemoteHandler(caf::actor actor) {
+  handler_ = actor;
 }
