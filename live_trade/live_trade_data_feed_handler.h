@@ -4,9 +4,9 @@
 #include "caf/all.hpp"
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "hpt_core/time_util.h"
-#include "live_trade_mail_box.h"
+#include "caf_ctp/live_trade_mail_box.h"
 #include "common/api_struct.h"
-#include "caf_atom_defines.h"
+#include "caf_ctp/caf_atom_defines.h"
 
 class LiveTradeDataFeedHandler : public caf::event_based_actor,
                                  public CThostFtdcMdSpi {

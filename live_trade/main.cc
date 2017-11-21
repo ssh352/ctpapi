@@ -12,7 +12,7 @@
 #include <boost/algorithm/string.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
-#include "live_trade/caf_atom_defines.h"
+#include "caf_ctp/caf_atom_defines.h"
 // #include "hpt_core/backtesting/execution_handler.h"
 // #include "hpt_core/backtesting/price_handler.h"
 // #include "hpt_core/backtesting/backtesting_mail_box.h"
@@ -21,17 +21,17 @@
 //#include "hpt_core/portfolio_handler.h"
 //#include "strategies/strategy.h"
 //#include "strategies/wr_strategy.h"
-#include "caf_mail_box.h"
+// #include "caf_ctp/caf_mail_box.h"
 #include "live_trade_data_feed_handler.h"
 //#include "strategies/key_input_strategy.h"
 #include "follow_strategy/delayed_open_strategy_ex.h"
-#include "support_sub_account_broker.h"
+#include "caf_ctp/support_sub_account_broker.h"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "ctp_broker/ctp_instrument_broker.h"
-#include "caf_atom_defines.h"
+#include "caf_ctp/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "live_trade_broker_handler.h"
-#include "live_trade_mail_box.h"
+#include "caf_ctp/live_trade_mail_box.h"
 #include "ctp_rtn_order_subscriber.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
 
@@ -102,7 +102,8 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
   LiveTradeMailBox* inner_mail_box_;
   LiveTradeMailBox* common_mail_box_;
   caf::message_handler message_handler_;
-  DelayOpenStrategyAgent<CAFDelayOpenStrategyAgent> agent_;
+  DelayOpenStrategyAgent<CAFDelayOpenStrategyAgent, DelayedOpenStrategyEx>
+      agent_;
 };
 
 class CAFSubAccountBroker : public caf::event_based_actor,
@@ -307,11 +308,11 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
-   //caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-   //             "tcp://180.168.146.187:10001", "9999", "099344",
-   //             "a12345678");
-   //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-   //              "9999", "053867", "8661188");
+  // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+  //             "tcp://180.168.146.187:10001", "9999", "099344",
+  //             "a12345678");
+  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+  //              "9999", "053867", "8661188");
 
   caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
                  "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
