@@ -10,7 +10,7 @@ class LocalCtpTradeApiProvider : public CtpTradeApiProvider,
 
   virtual void Init(CtpTradeApiProvider::Delegate* delegate) override;
 
-  virtual void HandleLogon() override;
+  virtual void HandleCtpLogon(int front_id, int session_id) override;
 
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override;

@@ -30,7 +30,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
 
-  virtual void HandleLogon() override;
+  virtual void HandleCtpLogon(int front_id, int session_id) override;
 
   virtual void HandleRspYesterdayPosition(
       std::vector<OrderPosition> yesterday_positions) override;

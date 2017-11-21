@@ -49,6 +49,8 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
       },
       [=](const std::string& account_id, const CTPEnterOrder& enter_order) {
         std::string order_ref = GenerateOrderRef();
+        // TODO: implmenetate MakeCtpUniqueOrderId
+        BOOST_ASSERT(false);
         // order_id_bimap_.insert(OrderIdBimap::value_type(
         //    SubAccountOrderId{account_id, enter_order.order_id},
         //    trader_api_->MakeCtpUniqueOrderId(order_ref)));
@@ -121,12 +123,11 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
       }};
 
   set_default_handler(caf::skip());
-  return {[=](CtpConnectAtom, const std::string& server,
+  return {/*[=](CtpConnectAtom, const std::string& server,
               const std::string& broker_id, const std::string& user_id,
               const std::string& password) {
             trader_api_->Connect(server, broker_id, user_id, password);
-          },
-
+          },*/
           [=](std::vector<OrderPosition> yesterday_positions) {
             for (auto pos : yesterday_positions) {
               position_restorer_.AddYesterdayPosition(
@@ -156,7 +157,7 @@ void SupportSubAccountBroker::HandleCTPTradeOrder(const std::string& instrument,
   send(this, instrument, order_id, trading_price, trading_qty, timestamp);
 }
 
-void SupportSubAccountBroker::HandleLogon() {
+void SupportSubAccountBroker::HandleCtpLogon(int front_id, int session_id) {
   trader_api_->RequestYesterdayPosition();
 }
 

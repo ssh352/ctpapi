@@ -202,7 +202,7 @@ void CTPTraderApi::OnRspQrySettlementInfoConfirm(
     api_->ReqSettlementInfoConfirm(&field, 0);
   } else {
     // delegate_->OnSettlementInfoConfirm();
-    delegate_->HandleLogon();
+    delegate_->HandleCtpLogon(front_id_, session_id_);
   }
 }
 
@@ -212,7 +212,7 @@ void CTPTraderApi::OnRspSettlementInfoConfirm(
     int nRequestID,
     bool bIsLast) {
   if (pSettlementInfoConfirm != NULL) {
-    delegate_->HandleLogon();
+    delegate_->HandleCtpLogon(front_id_, session_id_);
   } else {
     // Except
   }
@@ -276,10 +276,10 @@ void CTPTraderApi::Connect(const std::string& server,
   char fron_server[255] = {0};
   strcpy(fron_server, server.c_str());
   api_->RegisterFront(fron_server);
-   api_->SubscribePublicTopic(THOST_TERT_RESUME);
-   api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-  //api_->SubscribePublicTopic(THOST_TERT_QUICK);
-  //api_->SubscribePrivateTopic(THOST_TERT_QUICK);
+  api_->SubscribePublicTopic(THOST_TERT_RESUME);
+  api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+  // api_->SubscribePublicTopic(THOST_TERT_QUICK);
+  // api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
 }
 

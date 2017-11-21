@@ -8,7 +8,8 @@ class CtpTradeApiProvider {
   class Delegate {
    public:
    public:
-    virtual void HandleLogon() = 0;
+    virtual void HandleCtpLogon(int front_id, int session_id) = 0;
+
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
 

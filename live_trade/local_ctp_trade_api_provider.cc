@@ -28,8 +28,8 @@ void LocalCtpTradeApiProvider::HandleCTPRtnOrder(
   delegate_->HandleCTPRtnOrder(order);
 }
 
-void LocalCtpTradeApiProvider::HandleLogon() {
-  delegate_->HandleLogon();
+void LocalCtpTradeApiProvider::HandleCtpLogon(int front_id, int session_id) {
+  delegate_->HandleCtpLogon(front_id, session_id);
 }
 
 void LocalCtpTradeApiProvider::Connect(const std::string& server,
