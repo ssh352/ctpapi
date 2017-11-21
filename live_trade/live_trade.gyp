@@ -24,7 +24,6 @@
         '../strategies/strategies.gyp:strategies',
         '../follow_strategy/follow_strategy.gyp:follow_strategy',
         '../ctp_broker/ctp_broker.gyp:ctp_broker',
-        '../caf_ctp/caf_ctp.gyp:*',
       ],
       'defines' : [
       ],

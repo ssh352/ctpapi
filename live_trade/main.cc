@@ -12,7 +12,7 @@
 #include <boost/algorithm/string.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
-#include "caf_ctp/caf_atom_defines.h"
+#include "caf_atom_defines.h"
 // #include "hpt_core/backtesting/execution_handler.h"
 // #include "hpt_core/backtesting/price_handler.h"
 // #include "hpt_core/backtesting/backtesting_mail_box.h"
@@ -21,17 +21,17 @@
 //#include "hpt_core/portfolio_handler.h"
 //#include "strategies/strategy.h"
 //#include "strategies/wr_strategy.h"
-// #include "caf_ctp/caf_mail_box.h"
+// #include "caf_mail_box.h"
 #include "live_trade_data_feed_handler.h"
 //#include "strategies/key_input_strategy.h"
 #include "follow_strategy/delayed_open_strategy_ex.h"
-#include "caf_ctp/support_sub_account_broker.h"
+#include "support_sub_account_broker.h"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "ctp_broker/ctp_instrument_broker.h"
-#include "caf_ctp/caf_atom_defines.h"
+#include "caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "live_trade_broker_handler.h"
-#include "caf_ctp/live_trade_mail_box.h"
+#include "live_trade_mail_box.h"
 #include "ctp_rtn_order_subscriber.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
 
@@ -305,6 +305,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   auto support_sub_account_broker =
       system.spawn<SupportSubAccountBroker>(&common_mail_box, sub_actors);
+
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
