@@ -3,6 +3,7 @@
 #include "atom_defines.h"
 #include "common/api_struct.h"
 #include "hpt_core/time_series_reader.h"
+#include "backtesting_defines.h"
 
 auto ReadTickTimeSeries(const char* hdf_file,
                         const std::string& market,
@@ -84,16 +85,6 @@ caf::behavior Coordinator(caf::event_based_actor* self,
   std::string datetime_to = cfg->backtesting_to_datetime;
   int force_close_before_close_market = cfg->force_close_before_close_market;
   std::string out_dir = cfg->out_dir;
-  struct StrategyParam {
-    std::string instrument;
-    std::string market;
-    double margin_rate;
-    int constract_multiple;
-    CostBasis cost_basis;
-    int delay_open_order_after_seconds;
-    int wait_optimal_open_price_fill_seconds;
-    double price_offset;
-  };
 
   auto instrument_strategy_params =
       std::make_shared<std::list<StrategyParam>>();
@@ -151,13 +142,8 @@ caf::behavior Coordinator(caf::event_based_actor* self,
     std::string market = instrument_with_market.market;
     std::string instrument = instrument_with_market.instrument;
     self->send(
-        work, market, instrument, out_dir,
-        instrument_with_market.delay_open_order_after_seconds,
-        instrument_with_market.wait_optimal_open_price_fill_seconds,
-        force_close_before_close_market, instrument_with_market.price_offset,
-        instrument_with_market.margin_rate,
-        instrument_with_market.constract_multiple,
-        instrument_with_market.cost_basis,
+        work, market, instrument, out_dir, instrument_with_market,
+        force_close_before_close_market,
         ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
                            datetime_from, datetime_to),
         ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,

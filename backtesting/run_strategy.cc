@@ -12,16 +12,14 @@
 #include "follow_strategy/delay_open_strategy_agent.h"
 #include "follow_strategy/optimal_open_price_strategy.h"
 #include "hpt_core/backtesting/execution_handler.h"
+#include "backtesting_defines.h"
 
 caf::behavior RunStrategy(caf::event_based_actor* self,
                           caf::actor coor,
                           bool cancel_limit_order_when_switch_trade_date) {
   return {[=](const std::string& market, const std::string& instrument,
-              const std::string& out_dir, int delay_open_after_seconds,
-              int wait_optimal_open_price_fill_seconds,
-              int cancel_order_after_minute, double price_offset_rate,
-              double margin_rate, int constract_multiple, CostBasis cost_basis,
-              TickContainer tick_container,
+              const std::string& out_dir, const StrategyParam& strategy_param,
+              int cancel_order_after_minute, TickContainer tick_container,
               CTASignalContainer cta_signal_container) {
     caf::aout(self) << market << ":" << instrument << "\n";
     boost::log::sources::logger log;
@@ -60,8 +58,9 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
     strategy_params.insert(
         {instrument_code,
          OptimalOpenPriceStrategy::StrategyParam{
-             delay_open_after_seconds, wait_optimal_open_price_fill_seconds,
-             price_offset_rate}});
+             strategy_param.delay_open_order_after_seconds,
+             strategy_param.wait_optimal_open_price_fill_seconds,
+             strategy_param.price_offset}});
     DelayOpenStrategyAgent<BacktestingMailBox, OptimalOpenPriceStrategy>
         strategy(&mail_box, std::move(strategy_params), &log);
 
@@ -70,7 +69,8 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
-        margin_rate, constract_multiple, cost_basis, true);
+        strategy_param.margin_rate, strategy_param.constract_multiple,
+        strategy_param.cost_basis, true);
 
     PriceHandler<BacktestingMailBox> price_handler(
         instrument, &running, &mail_box, std::move(tick_container),
