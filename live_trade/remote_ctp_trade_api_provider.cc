@@ -15,11 +15,6 @@ void RemoteCtpApiTradeApiProvider::InputOrder(const CTPEnterOrder& input_order,
   caf::send_as(handler_, remote_trade_api_, input_order, order_id);
 }
 
-void RemoteCtpApiTradeApiProvider::Connect(const std::string& server,
-                                           const std::string& broker_id,
-                                           const std::string& user_id,
-                                           const std::string& password) {}
-
 void RemoteCtpApiTradeApiProvider::Init(Delegate* delegate) {
   delegate_ = delegate;
 }

@@ -25,11 +25,6 @@ class CtpTradeApiProvider {
 
   virtual void Init(Delegate* delegate) = 0;
 
-  virtual void Connect(const std::string& server,
-                       const std::string& broker_id,
-                       const std::string& user_id,
-                       const std::string& password) = 0;
-
   virtual void InputOrder(const CTPEnterOrder& input_order,
                           const std::string& order_id) = 0;
 
