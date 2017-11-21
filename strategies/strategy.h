@@ -48,7 +48,7 @@ class MyStrategy {
       if (end_it != delay_input_order_.begin()) {
         std::for_each(delay_input_order_.begin(), end_it,
                       [=](const std::shared_ptr<CTATransaction>& tran) {
-                        mail_box_->Send(InputOrderSignal{
+                        mail_box_->Send(InputOrderBacktesting{
                             *tick->instrument,
                             tran->position_effect == 0 ? PositionEffect::kOpen
                                                        : PositionEffect::kClose,
@@ -70,7 +70,7 @@ class MyStrategy {
       if ((*i)->position_effect == backtesting_position_effect_) {
         delay_input_order_.push_back((*i));
       } else {
-        mail_box_->Send(InputOrderSignal{
+        mail_box_->Send(InputOrderBacktesting{
             *tick->instrument,
             (*i)->position_effect == 0 ? PositionEffect::kOpen
                                        : PositionEffect::kClose,

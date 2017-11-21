@@ -3,6 +3,8 @@
 #include <list>
 
 using BeforeTradingAtom = int;
+using BacktestingAtom = int;
+
 #include "backtesting/execution_handler.h"
 #include "backtesting/backtesting_mail_box.h"
 #include "unittest_helper.h"
@@ -60,7 +62,7 @@ auto MakeInputOrder(std::string instrument,
                     double price,
                     int qty,
                     TimeStamp timestamp) {
-  return InputOrderSignal{instrument, "A1",position_effect,
+  return InputOrderBacktesting{instrument, "A1",position_effect,
                     direction,  price, qty,  timestamp};
 }
 

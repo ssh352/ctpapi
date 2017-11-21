@@ -31,7 +31,7 @@
 
 namespace pt = boost::property_tree;
 
-//std::map<std::string, std::string> g_instrument_market_set = {
+// std::map<std::string, std::string> g_instrument_market_set = {
 //    {"a1705", "dc"},  {"a1709", "dc"},  {"a1801", "dc"},  {"al1705", "sc"},
 //    {"bu1705", "sc"}, {"bu1706", "sc"}, {"bu1709", "sc"}, {"c1705", "dc"},
 //    {"c1709", "dc"},  {"c1801", "dc"},  {"cf705", "zc"},  {"cf709", "zc"},
@@ -53,9 +53,7 @@ namespace pt = boost::property_tree;
 //    {"zn1703", "sc"}, {"zn1704", "sc"}, {"zn1705", "sc"}, {"zn1706", "sc"},
 //    {"zn1707", "sc"}, {"zn1708", "sc"}, {"zn1709", "sc"}};
 
-
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(config*)
-
 
 void InitLogging(bool enable_logging) {
   namespace logging = boost::log;
@@ -85,8 +83,7 @@ void InitLogging(bool enable_logging) {
       //                    << "]: " << expr::smessage);
 
       // core->add_sink(sink);
-  }
-  {
+  } {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern
@@ -153,7 +150,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
       auto actor = system.spawn(RunBenchmark, coor);
       caf::anon_send(coor, IdleAtom::value, actor);
     } else {
-      auto actor = system.spawn(RunStrategy, coor);
+      auto actor = system.spawn(RunStrategy, coor,
+                                cfg.cancel_limit_order_when_switch_trade_date);
       caf::anon_send(coor, IdleAtom::value, actor);
     }
   }

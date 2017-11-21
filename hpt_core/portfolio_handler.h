@@ -26,32 +26,34 @@ class PortfolioHandler {
     mail_box_->Subscribe(&PortfolioHandler::HandleOrder, this);
     mail_box_->Subscribe(&PortfolioHandler::HandleDaySettleAtom, this);
     mail_box_->Subscribe(&PortfolioHandler::HandlerInputOrder, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandlerActionOrder, this);
+    mail_box_->Subscribe(&PortfolioHandler::HandlerCancelOrder, this);
     mail_box_->Subscribe(&PortfolioHandler::BeforeTrading, this);
   }
 
   void BeforeTrading(const BeforeTradingAtom&,
                      const TradingTime& trading_time) {
-    if (trading_time == TradingTime::kDay) {
-      mail_box_->Send(quantitys_);
-      mail_box_->Send(histor_orders_);
-    } else if (trading_time == TradingTime::kNight) {
-      // new trade day for cta
-      histor_orders_.clear();
-      quantitys_.clear();
+    //if (trading_time == TradingTime::kDay) {
+    //  mail_box_->Send(quantitys_);
+    //  mail_box_->Send(histor_orders_);
+    //} else if (trading_time == TradingTime::kNight) {
+    //  // new trade day for cta
+    //  histor_orders_.clear();
+    //  quantitys_.clear();
 
-      for (const auto& pos : portfolio_.GetPositionList()) {
-        if (pos->qty() > 0) {
-          quantitys_.push_back(
-              OrderPosition{instrument_, pos->direction(), pos->qty()});
-        }
-      }
+    //  for (const auto& pos : portfolio_.GetPositionList()) {
+    //    if (pos->qty() > 0) {
+    //      quantitys_.push_back(
+    //          OrderPosition{instrument_, pos->direction(), pos->qty()});
+    //    }
+    //  }
 
-      portfolio_.ResetByNewTradingDate();
-      mail_box_->Send(quantitys_);
-      mail_box_->Send(histor_orders_);
-    } else {
-      BOOST_ASSERT(false);
-    }
+    //  portfolio_.ResetByNewTradingDate();
+    //  mail_box_->Send(quantitys_);
+    //  mail_box_->Send(histor_orders_);
+    //} else {
+    //  BOOST_ASSERT(false);
+    //}
   }
 
   void HandleTick(const std::shared_ptr<TickData>& tick) {
@@ -91,11 +93,18 @@ class PortfolioHandler {
           input_order.qty);
     }
 
-    mail_box_->Send(InputOrderSignal{
-        input_order.instrument, input_order.order_id,
-        input_order.position_effect, input_order.direction, input_order.price,
-        input_order.qty, input_order.timestamp});
+    mail_box_->Send(BacktestingAtom::value, input_order);
   }
+
+  void HandlerActionOrder(const OrderAction& action_order) {
+    mail_box_->Send(BacktestingAtom::value, std::move(action_order));
+  }
+
+  void HandlerCancelOrder(const CancelOrder& action_order) {
+    mail_box_->Send(BacktestingAtom::value, std::move(action_order));
+  }
+
+
 
  private:
   Portfolio portfolio_;

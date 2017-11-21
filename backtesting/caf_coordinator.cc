@@ -91,6 +91,7 @@ caf::behavior Coordinator(caf::event_based_actor* self,
     int constract_multiple;
     CostBasis cost_basis;
     int delay_open_order_after_seconds;
+    int wait_optimal_open_price_fill_seconds;
     double price_offset;
   };
 
@@ -110,8 +111,8 @@ caf::behavior Coordinator(caf::event_based_actor* self,
           instrument_infos_pt->get<std::string>(param.instrument + ".Market");
       param.margin_rate =
           instrument_infos_pt->get<double>(param.instrument + ".MarginRate");
-      param.constract_multiple =
-          instrument_infos_pt->get<int>(param.instrument + ".ConstractMultiple");
+      param.constract_multiple = instrument_infos_pt->get<int>(
+          param.instrument + ".ConstractMultiple");
       param.cost_basis.type =
           instrument_infos_pt->get<std::string>(
               param.instrument + ".CostBasis.CommissionType") == "fix"
@@ -127,6 +128,8 @@ caf::behavior Coordinator(caf::event_based_actor* self,
                                            ".CostBasis.CloseTodayCommission");
       param.delay_open_order_after_seconds = strategy_config_pt->get<int>(
           instrument_code + ".DelayOpenOrderAfterSeconds");
+      param.wait_optimal_open_price_fill_seconds = strategy_config_pt->get<int>(
+          instrument_code + ".WaitOptimalOpenPriceFillSeconds");
       param.price_offset =
           strategy_config_pt->get<double>(instrument_code + ".PriceOffset");
       instrument_strategy_params->push_back(std::move(param));
@@ -150,6 +153,7 @@ caf::behavior Coordinator(caf::event_based_actor* self,
     self->send(
         work, market, instrument, out_dir,
         instrument_with_market.delay_open_order_after_seconds,
+        instrument_with_market.wait_optimal_open_price_fill_seconds,
         force_close_before_close_market, instrument_with_market.price_offset,
         instrument_with_market.margin_rate,
         instrument_with_market.constract_multiple,

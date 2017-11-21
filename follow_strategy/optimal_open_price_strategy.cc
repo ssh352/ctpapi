@@ -393,7 +393,7 @@ void OptimalOpenPriceStrategy::HandleTick(const std::shared_ptr<TickData>& tick)
   last_timestamp_ = tick->tick->timestamp;
   int delayed_open_after_seconds = GetStrategyParamDealyOpenAfterSeconds(
       *tick->instrument);
-  if (delayed_open_after_seconds > 0 && pending_delayed_open_order_.empty()) {
+  if (delayed_open_after_seconds > 0 && !pending_delayed_open_order_.empty()) {
     auto it_end = std::remove_if(
         pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
         [=](const auto& order) -> bool {

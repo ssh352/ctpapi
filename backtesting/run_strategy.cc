@@ -10,11 +10,15 @@
 #include "type_defines.h"
 #include "follow_strategy/delayed_open_strategy_ex.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
+#include "follow_strategy/optimal_open_price_strategy.h"
 #include "hpt_core/backtesting/execution_handler.h"
 
-caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
+caf::behavior RunStrategy(caf::event_based_actor* self,
+                          caf::actor coor,
+                          bool cancel_limit_order_when_switch_trade_date) {
   return {[=](const std::string& market, const std::string& instrument,
               const std::string& out_dir, int delay_open_after_seconds,
+              int wait_optimal_open_price_fill_seconds,
               int cancel_order_after_minute, double price_offset_rate,
               double margin_rate, int constract_multiple, CostBasis cost_basis,
               TickContainer tick_container,
@@ -42,15 +46,27 @@ caf::behavior RunStrategy(caf::event_based_actor* self, caf::actor coor) {
         instrument.substr(0, instrument.find_first_of("0123456789"));
     boost::algorithm::to_lower(instrument_code);
 
-    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+    // std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+    //    strategy_params;
+    // strategy_params.insert(
+    //    {instrument_code, DelayedOpenStrategyEx::StrategyParam{
+    //                          delay_open_after_seconds, price_offset_rate}});
+    // DelayOpenStrategyAgent<BacktestingMailBox, DelayedOpenStrategyEx>
+    // strategy(
+    //    &mail_box, std::move(strategy_params), &log);
+
+    std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
         strategy_params;
     strategy_params.insert(
-        {instrument_code, DelayedOpenStrategyEx::StrategyParam{
-                              delay_open_after_seconds, price_offset_rate}});
-    DelayOpenStrategyAgent<BacktestingMailBox> strategy(
-        &mail_box, std::move(strategy_params), &log);
+        {instrument_code,
+         OptimalOpenPriceStrategy::StrategyParam{
+             delay_open_after_seconds, wait_optimal_open_price_fill_seconds,
+             price_offset_rate}});
+    DelayOpenStrategyAgent<BacktestingMailBox, OptimalOpenPriceStrategy>
+        strategy(&mail_box, std::move(strategy_params), &log);
 
-    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(&mail_box);
+    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(
+        &mail_box, cancel_limit_order_when_switch_trade_date);
 
     PortfolioHandler<BacktestingMailBox> portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,

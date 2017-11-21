@@ -42,9 +42,13 @@ class ComparePrice {
 template <class MailBox>
 class SimulatedExecutionHandler {
  public:
-  SimulatedExecutionHandler(MailBox* mail_box) : mail_box_(mail_box) {
-    mail_box_->Subscribe(&SimulatedExecutionHandler::HandlerInputOrder, this);
+  SimulatedExecutionHandler(MailBox* mail_box,
+                            bool cancel_limit_order_when_switch_trade_date)
+      : mail_box_(mail_box),
+        cancel_limit_order_when_switch_trade_date_(
+            cancel_limit_order_when_switch_trade_date) {
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandleTick, this);
+    mail_box_->Subscribe(&SimulatedExecutionHandler::HandlerInputOrder, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandleCancelOrder, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::HandleActionOrder, this);
     mail_box_->Subscribe(&SimulatedExecutionHandler::BeforeTrading, this);
@@ -52,6 +56,9 @@ class SimulatedExecutionHandler {
 
   void BeforeTrading(const BeforeTradingAtom&,
                      const TradingTime& trading_time) {
+    if (!cancel_limit_order_when_switch_trade_date_) {
+      return;
+    }
     // TODO:Debug
     if (!long_limit_orders_.empty() || !short_limit_orders_.empty()) {
       int i = 0;
@@ -65,7 +72,7 @@ class SimulatedExecutionHandler {
 
     if (!long_limit_orders_.empty()) {
       auto end_it = long_limit_orders_.upper_bound(tick->tick->last_price);
-      //auto end_it = long_limit_orders_.upper_bound(tick->tick->ask_price1);
+      // auto end_it = long_limit_orders_.upper_bound(tick->tick->ask_price1);
       std::for_each(
           long_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
             EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,
@@ -77,7 +84,7 @@ class SimulatedExecutionHandler {
 
     if (!short_limit_orders_.empty()) {
       auto end_it = short_limit_orders_.upper_bound(tick->tick->last_price);
-      //auto end_it = short_limit_orders_.upper_bound(tick->tick->bid_price1);
+      // auto end_it = short_limit_orders_.upper_bound(tick->tick->bid_price1);
       std::for_each(
           short_limit_orders_.begin(), end_it, [=](const LimitOrder& lo) {
             EnqueueRtnOrderEvent(lo, OrderStatus::kAllFilled,
@@ -88,7 +95,8 @@ class SimulatedExecutionHandler {
     }
   }
 
-  void HandlerInputOrder(const InputOrderSignal& input_order) {
+  void HandlerInputOrder(const BacktestingAtom&,
+                         const InputOrder& input_order) {
     std::string order_id = input_order.order_id;
     if (input_order.direction == OrderDirection::kBuy) {
       long_limit_orders_.insert(
@@ -126,7 +134,8 @@ class SimulatedExecutionHandler {
     mail_box_->Send(std::move(order));
   }
 
-  void HandleCancelOrder(const CancelOrder& cancel_order) {
+  void HandleCancelOrder(const BacktestingAtom&,
+                         const CancelOrder& cancel_order) {
     const std::string& order_id = cancel_order.order_id;
     auto find_it =
         std::find_if(long_limit_orders_.begin(), long_limit_orders_.end(),
@@ -176,6 +185,7 @@ class SimulatedExecutionHandler {
   }
 
   void SimulatedExecutionHandler::HandleActionOrder(
+      const BacktestingAtom&,
       const OrderAction& action_order) {
     const std::string& order_id = action_order.order_id;
     auto find_it =
@@ -299,6 +309,7 @@ class SimulatedExecutionHandler {
                        OrderFieldHask,
                        OrderFieldEqualTo>
       orders_;
+  bool cancel_limit_order_when_switch_trade_date_;
 };
 
 #endif  // BACKTESTING_EXECUTION_HANDLER_H

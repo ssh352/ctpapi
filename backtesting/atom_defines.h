@@ -7,6 +7,7 @@
 
 using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using BeforeTradingAtom = caf::atom_constant<caf::atom("bt")>;
+using BacktestingAtom = caf::atom_constant<caf::atom("backtest")>;
 using BeforeCloseMarketAtom = caf::atom_constant<caf::atom("bcm")>;
 using CloseMarketNearAtom = caf::atom_constant<caf::atom("cmn")>;
 using DaySettleAtom = caf::atom_constant<caf::atom("daysetl")>;

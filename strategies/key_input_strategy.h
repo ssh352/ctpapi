@@ -18,7 +18,7 @@ class KeyInputStrategy {
       return;
     }
 
-    mail_box_->Send(InputOrderSignal{
+    mail_box_->Send(InputOrderBacktesting{
         instrument_, (qty > 0 ? PositionEffect::kOpen : PositionEffect::kClose),
         (qty > 0 ? OrderDirection::kBuy : OrderDirection::kSell),
         last_tick_->tick->last_price, std::abs(qty),
