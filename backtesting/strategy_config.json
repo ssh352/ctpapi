@@ -1,6 +1,6 @@
 {
   "backtesting" : [
-    "ta705"
+    "m1705"
   ],
   "a": {
     "DelayOpenOrderAfterSeconds": 1,
@@ -124,7 +124,7 @@
   },
   "ta": {
     "DelayOpenOrderAfterSeconds": 1,
-    "WaitOptimalOpenPriceFillSeconds": 65,
+    "WaitOptimalOpenPriceFillSeconds": 120,
     "PriceOffset": 6
   },
   "v": {

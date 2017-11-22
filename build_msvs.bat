@@ -28,4 +28,5 @@ REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi s
 REM  python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_broker\ctp_broker.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi all.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi all_unittest.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi rong_hang_trader\rong_hang_trader.gyp
 pause

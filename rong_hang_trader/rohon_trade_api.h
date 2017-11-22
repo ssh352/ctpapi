@@ -3,15 +3,15 @@
 
 #include <unordered_map>
 #include <boost/format.hpp>
-#include "ctpapi/ThostFtdcTraderApi.h"
+#include "rohon/ThostFtdcTraderApi.h"
 #include "common/api_struct.h"
 #include <boost/functional/hash.hpp>
 
-class CTPTraderApi : public CThostFtdcTraderSpi {
+class RohonTradeApi : public CThostFtdcTraderSpi {
  public:
   class Delegate {
    public:
-    virtual void HandleCtpLogon(int front_id, int session_id) = 0;
+    virtual void HandleLogon(int, int) = 0;
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
 
@@ -24,7 +24,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
     virtual void HandleRspYesterdayPosition(
         std::vector<OrderPosition> yesterday_positions) = 0;
   };
-  CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path);
+  RohonTradeApi(Delegate* delegate, const std::string& ctp_flow_path);
 
   void Connect(const std::string& server,
                std::string broker_id,
@@ -33,7 +33,7 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
   void InputOrder(const CTPEnterOrder& order, const std::string& order_id);
 
-  void CancelOrder(const CTPCancelOrder& ctp_cancel);
+  void CancelOrder(const CTPCancelOrder& order);
 
   void RequestYesterdayPosition();
 

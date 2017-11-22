@@ -6,7 +6,6 @@ CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
     : caf::event_based_actor(cfg),
       mail_box_(mail_box),
       signal_subscriber_(this) {
-
   ClearUpCTPFolwDirectory(".\\cta\\");
   trade_api_ = std::make_unique<CTPTraderApi>(this, ".\\cta\\");
   // TODO:tempare hard code
@@ -27,12 +26,12 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
         auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
                                     CompareCTPOrderField());
         if (it == ctp_orders_.end()) {
-          signal_subscriber_.HandleRtnOrder(
-              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
+                                            MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.insert(ctp_order);
         } else if (ctp_order->status == OrderStatus::kCanceled) {
-          signal_subscriber_.HandleRtnOrder(
-              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+          signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
+                                            MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.erase(it);
           ctp_orders_.insert(ctp_order);
         } else {
@@ -93,8 +92,8 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                        CheckHistoryRtnOrderIsDoneAtom::value,
                        sync_rtn_order_count_);
         } else {
-          //auto& lg = g_logger::get();
-          //BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
+          // auto& lg = g_logger::get();
+          // BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
           std::cout << "sync history sccuess";
           become(work_behavior);
           set_default_handler(caf::print_and_drop);
@@ -113,8 +112,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                                                        quantitys);
         become(sync_order_behaivor);
         delayed_send(this, std::chrono::milliseconds(500),
-                     CheckHistoryRtnOrderIsDoneAtom::value,
-                     0);
+                     CheckHistoryRtnOrderIsDoneAtom::value, 0);
       },
   };
 }
@@ -174,7 +172,7 @@ void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
   send(this, instrument, order_id, trading_price, trading_qty, timestamp);
 }
 
-void CAFCTAOrderSignalBroker::HandleLogon() {
+void CAFCTAOrderSignalBroker::HandleCtpLogon(int front_id, int session_id) {
   std::cout << "long\n";
   trade_api_->RequestYesterdayPosition();
 }

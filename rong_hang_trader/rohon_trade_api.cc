@@ -1,16 +1,17 @@
-#include "ctp_trader_api.h"
+#include "rohon_trade_api.h"
 #include <thread>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "hpt_core/order_util.h"
 #include "hpt_core/time_util.h"
 
-CTPTraderApi::CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path)
+RohonTradeApi::RohonTradeApi(Delegate* delegate,
+                             const std::string& ctp_flow_path)
     : delegate_(delegate) {
   api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(ctp_flow_path.c_str());
   api_->RegisterSpi(this);
 }
 
-TThostFtdcOffsetFlagType CTPTraderApi::PositionEffectToTThostOffsetFlag(
+TThostFtdcOffsetFlagType RohonTradeApi::PositionEffectToTThostOffsetFlag(
     CTPPositionEffect position_effect) {
   return position_effect == CTPPositionEffect::kOpen
              ? THOST_FTDC_OF_Open
@@ -19,13 +20,13 @@ TThostFtdcOffsetFlagType CTPTraderApi::PositionEffectToTThostOffsetFlag(
                     : THOST_FTDC_OF_Close);
 }
 
-TThostFtdcDirectionType CTPTraderApi::OrderDirectionToTThostOrderDireciton(
+TThostFtdcDirectionType RohonTradeApi::OrderDirectionToTThostOrderDireciton(
     OrderDirection direction) {
   return direction == OrderDirection::kBuy ? THOST_FTDC_D_Buy
                                            : THOST_FTDC_D_Sell;
 }
 
-OrderStatus CTPTraderApi::ParseTThostFtdcOrderStatus(
+OrderStatus RohonTradeApi::ParseTThostFtdcOrderStatus(
     CThostFtdcOrderField* order) const {
   OrderStatus os = OrderStatus::kActive;
   switch (order->OrderStatus) {
@@ -41,7 +42,7 @@ OrderStatus CTPTraderApi::ParseTThostFtdcOrderStatus(
   return os;
 }
 
-CTPPositionEffect CTPTraderApi::ParseTThostFtdcPositionEffect(
+CTPPositionEffect RohonTradeApi::ParseTThostFtdcPositionEffect(
     TThostFtdcOffsetFlagType flag) {
   CTPPositionEffect ps = CTPPositionEffect::kUndefine;
   switch (flag) {
@@ -62,34 +63,34 @@ CTPPositionEffect CTPTraderApi::ParseTThostFtdcPositionEffect(
   return ps;
 }
 
-std::string CTPTraderApi::MakeCtpUniqueOrderId(
+std::string RohonTradeApi::MakeCtpUniqueOrderId(
     int front_id,
     int session_id,
     const std::string& order_ref) const {
   return str(boost::format("%d:%d:%s") % front_id % session_id % order_ref);
 }
 
-std::string CTPTraderApi::MakeCtpUniqueOrderId(
+std::string RohonTradeApi::MakeCtpUniqueOrderId(
     const std::string& order_ref) const {
   return MakeCtpUniqueOrderId(front_id_, session_id_, order_ref);
 }
 
-void CTPTraderApi::OnRspOrderAction(
+void RohonTradeApi::OnRspOrderAction(
     CThostFtdcInputOrderActionField* pInputOrderAction,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
     bool bIsLast) {}
 
-void CTPTraderApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
-                                    CThostFtdcRspInfoField* pRspInfo,
-                                    int nRequestID,
-                                    bool bIsLast) {}
+void RohonTradeApi::OnRspOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                     CThostFtdcRspInfoField* pRspInfo,
+                                     int nRequestID,
+                                     bool bIsLast) {}
 
-void CTPTraderApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,
-                              int nRequestID,
-                              bool bIsLast) {}
+void RohonTradeApi::OnRspError(CThostFtdcRspInfoField* pRspInfo,
+                               int nRequestID,
+                               bool bIsLast) {}
 
-void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
+void RohonTradeApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   if (strlen(pOrder->OrderSysID) == 0) {
     return;
   }
@@ -144,10 +145,10 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   delegate_->HandleCTPRtnOrder(std::move(order_field));
 }
 
-void CTPTraderApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
+void RohonTradeApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
   auto it =
       order_sys_id_to_order_id_.find({pTrade->ExchangeID, pTrade->OrderSysID});
-  BOOST_ASSERT(it != order_sys_id_to_order_id_.end());
+  // BOOST_ASSERT(it != order_sys_id_to_order_id_.end());
   if (it != order_sys_id_to_order_id_.end()) {
     delegate_->HandleCTPTradeOrder(
         pTrade->InstrumentID, it->second, pTrade->Price, pTrade->Volume,
@@ -155,15 +156,15 @@ void CTPTraderApi::OnRtnTrade(CThostFtdcTradeField* pTrade) {
   }
 }
 
-void CTPTraderApi::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
+void RohonTradeApi::OnRspUserLogout(CThostFtdcUserLogoutField* pUserLogout,
+                                    CThostFtdcRspInfoField* pRspInfo,
+                                    int nRequestID,
+                                    bool bIsLast) {}
+
+void RohonTradeApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
                                    CThostFtdcRspInfoField* pRspInfo,
                                    int nRequestID,
-                                   bool bIsLast) {}
-
-void CTPTraderApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
-                                  CThostFtdcRspInfoField* pRspInfo,
-                                  int nRequestID,
-                                  bool bIsLast) {
+                                   bool bIsLast) {
   if (pRspInfo == NULL || pRspInfo->ErrorID != 0) {
     // TODO: Logon Fail
   } else {
@@ -173,7 +174,7 @@ void CTPTraderApi::OnRspUserLogin(CThostFtdcRspUserLoginField* pRspUserLogin,
   }
 }
 
-void CTPTraderApi::OnFrontConnected() {
+void RohonTradeApi::OnFrontConnected() {
   CThostFtdcReqUserLoginField field{0};
   strcpy(field.UserID, user_id_.c_str());
   strcpy(field.Password, password_.c_str());
@@ -181,7 +182,7 @@ void CTPTraderApi::OnFrontConnected() {
   api_->ReqUserLogin(&field, 0);
 }
 
-void CTPTraderApi::SettlementInfoConfirm() {
+void RohonTradeApi::SettlementInfoConfirm() {
   CThostFtdcQrySettlementInfoConfirmField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());
@@ -190,7 +191,7 @@ void CTPTraderApi::SettlementInfoConfirm() {
   }
 }
 
-void CTPTraderApi::OnRspQrySettlementInfoConfirm(
+void RohonTradeApi::OnRspQrySettlementInfoConfirm(
     CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
@@ -202,24 +203,24 @@ void CTPTraderApi::OnRspQrySettlementInfoConfirm(
     api_->ReqSettlementInfoConfirm(&field, 0);
   } else {
     // delegate_->OnSettlementInfoConfirm();
-    delegate_->HandleCtpLogon(front_id_, session_id_);
+    delegate_->HandleLogon(front_id_, session_id_);
   }
 }
 
-void CTPTraderApi::OnRspSettlementInfoConfirm(
+void RohonTradeApi::OnRspSettlementInfoConfirm(
     CThostFtdcSettlementInfoConfirmField* pSettlementInfoConfirm,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
     bool bIsLast) {
   if (pSettlementInfoConfirm != NULL) {
-    delegate_->HandleCtpLogon(front_id_, session_id_);
+    delegate_->HandleLogon(front_id_, session_id_);
   } else {
     // Except
   }
 }
 
-void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
-                              const std::string& order_id) {
+void RohonTradeApi::InputOrder(const CTPEnterOrder& input_order,
+                               const std::string& order_id) {
   CThostFtdcInputOrderField field = {0};
   strcpy(field.InstrumentID, input_order.instrument.c_str());
   strcpy(field.OrderRef, order_id.c_str());
@@ -252,7 +253,7 @@ void CTPTraderApi::InputOrder(const CTPEnterOrder& input_order,
   }
 }
 
-void CTPTraderApi::CancelOrder(const CTPCancelOrder& ctp_cancel) {
+void RohonTradeApi::CancelOrder(const CTPCancelOrder& ctp_cancel) {
   CThostFtdcInputOrderActionField action_field = {0};
   action_field.ActionFlag = THOST_FTDC_AF_Delete;
   action_field.FrontID = ctp_cancel.front_id;
@@ -266,34 +267,35 @@ void CTPTraderApi::CancelOrder(const CTPCancelOrder& ctp_cancel) {
   api_->ReqOrderAction(&action_field, 1);
 }
 
-void CTPTraderApi::Connect(const std::string& server,
-                           std::string broker_id,
-                           std::string user_id,
-                           std::string password) {
+void RohonTradeApi::Connect(const std::string& server,
+                            std::string broker_id,
+                            std::string user_id,
+                            std::string password) {
   broker_id_ = std::move(broker_id);
   user_id_ = std::move(user_id);
   password_ = std::move(password);
   char fron_server[255] = {0};
   strcpy(fron_server, server.c_str());
   api_->RegisterFront(fron_server);
-  api_->SubscribePublicTopic(THOST_TERT_RESUME);
-  api_->SubscribePrivateTopic(THOST_TERT_RESUME);
-  // api_->SubscribePublicTopic(THOST_TERT_QUICK);
-  // api_->SubscribePrivateTopic(THOST_TERT_QUICK);
+  //api_->SubscribePublicTopic(THOST_TERT_RESUME);
+  //api_->SubscribePrivateTopic(THOST_TERT_RESUME);
+   api_->SubscribePublicTopic(THOST_TERT_QUICK);
+   api_->SubscribePrivateTopic(THOST_TERT_QUICK);
   api_->Init();
 }
 
-void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
-                                       CThostFtdcRspInfoField* pRspInfo) {
+void RohonTradeApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
+                                        CThostFtdcRspInfoField* pRspInfo) {
   int i = 0;
 }
 
-void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
-                                       CThostFtdcRspInfoField* pRspInfo) {
+void RohonTradeApi::OnErrRtnOrderAction(
+    CThostFtdcOrderActionField* pOrderAction,
+    CThostFtdcRspInfoField* pRspInfo) {
   int i = 0;
 }
 
-void CTPTraderApi::OnRspQryInvestorPosition(
+void RohonTradeApi::OnRspQryInvestorPosition(
     CThostFtdcInvestorPositionField* pInvestorPosition,
     CThostFtdcRspInfoField* pRspInfo,
     int nRequestID,
@@ -320,7 +322,7 @@ void CTPTraderApi::OnRspQryInvestorPosition(
   }
 }
 
-void CTPTraderApi::RequestYesterdayPosition() {
+void RohonTradeApi::RequestYesterdayPosition() {
   CThostFtdcQryInvestorPositionField field{0};
   strcpy(field.BrokerID, broker_id_.c_str());
   strcpy(field.InvestorID, user_id_.c_str());

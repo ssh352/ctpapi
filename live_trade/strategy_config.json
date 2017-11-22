@@ -52,7 +52,7 @@
         "PriceOffset":5
     },
     "m":{
-        "DelayOpenOrderAfterSeconds":300,
+        "DelayOpenOrderAfterSeconds":5,
         "PriceOffset":1
     },
     "ma":{

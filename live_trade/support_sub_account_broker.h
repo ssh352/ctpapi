@@ -8,13 +8,15 @@
 #include "common/api_struct.h"
 #include "live_trade_mail_box.h"
 #include "ctp_broker/ctp_position_restorer.h"
+#include "ctp_trade_api_provider.h"
 
 class SupportSubAccountBroker : public caf::event_based_actor,
-                                public CTPTraderApi::Delegate {
+                                public CtpTradeApiProvider::Delegate {
  public:
   SupportSubAccountBroker(
       caf::actor_config& cfg,
       LiveTradeMailBox* mail_box,
+      CtpTradeApiProvider* ctp_trade_api_provider,
       const std::vector<std::pair<std::string, caf::actor> >& sub_accounts);
 
   virtual caf::behavior make_behavior() override;
@@ -28,7 +30,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
 
-  virtual void HandleLogon() override;
+  virtual void HandleCtpLogon(int front_id, int session_id) override;
 
   virtual void HandleRspYesterdayPosition(
       std::vector<OrderPosition> yesterday_positions) override;
@@ -61,9 +63,11 @@ class SupportSubAccountBroker : public caf::event_based_actor,
   OrderIdBimap order_id_bimap_;
   std::unordered_map<std::string, caf::actor> sub_actors_;
   LiveTradeMailBox* mail_box_;
-  std::unique_ptr<CTPTraderApi> trader_api_;
+  CtpTradeApiProvider* trader_api_;
   CtpPositionRestorer position_restorer_;
   int order_seq_ = 0;
   int sync_history_rtn_order_count_ = 0;
+  int front_id_ = -1;
+  int session_id_ = -1;
 };
 #endif  // LIVE_TRADE_SUPPORT_SUB_ACCOUNT_BROKER_H
