@@ -3,7 +3,7 @@
 #include "caf/all.hpp"
 #include "ctp_trader_api.h"
 #include "live_trade_mail_box.h"
-#include "caf_atom_defines.h"
+#include "caf_common/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 
 class CAFCTAOrderSignalBroker : public caf::event_based_actor,

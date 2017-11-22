@@ -18,6 +18,8 @@ class RemoteCtpApiTradeApiProvider : public CtpTradeApiProvider {
 
   virtual void RequestYesterdayPosition() override;
 
+  void HandleCTPLogon(int front_id, int session_id);
+
   void HandleCTPRtnOrder(const std::shared_ptr<CTPOrderField>& order);
 
   void HandleCTPTradeOrder(const std::string& instrument,

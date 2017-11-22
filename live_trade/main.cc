@@ -12,7 +12,7 @@
 #include <boost/algorithm/string.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
-#include "caf_atom_defines.h"
+#include "caf_common/caf_atom_defines.h"
 // #include "hpt_core/backtesting/execution_handler.h"
 // #include "hpt_core/backtesting/price_handler.h"
 // #include "hpt_core/backtesting/backtesting_mail_box.h"
@@ -28,7 +28,7 @@
 #include "support_sub_account_broker.h"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "ctp_broker/ctp_instrument_broker.h"
-#include "caf_atom_defines.h"
+#include "caf_common/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "live_trade_broker_handler.h"
 #include "live_trade_mail_box.h"
@@ -247,15 +247,17 @@ caf::behavior RemoteTradeApiHandler(caf::event_based_actor* self,
       [=](std::vector<OrderPosition> yesterday_positions) {
         provider->HandleRspYesterdayPosition(std::move(yesterday_positions));
       },
-      [=](const std::shared_ptr<CTPOrderField>& order) {
-        provider->HandleCTPRtnOrder(order);
+      [=](CTPOrderField order) {
+        provider->HandleCTPRtnOrder(std::make_shared<CTPOrderField>(std::move(order)));
       },
       [=](const std::string& instrument, const std::string& order_id,
           double trading_price, int trading_qty, TimeStamp timestamp) {
         provider->HandleCTPTradeOrder(instrument, order_id, trading_price,
                                       trading_qty, timestamp);
       },
-  };
+      [=](int front_id, int session_id) {
+        provider->HandleCTPLogon(front_id, session_id);
+      }};
 }
 
 class config : public caf::actor_system_config {
@@ -265,6 +267,10 @@ class config : public caf::actor_system_config {
   int position_effect = 0;
 
   config() {
+    add_message_type<std::vector<OrderPosition>>("order_position_list");
+    add_message_type<CTPEnterOrder>("ctp_enter_order");
+    add_message_type<CTPCancelOrder>("ctp_cancel_order");
+    add_message_type<CTPOrderField>("ctp_order");
     opt_group{custom_options_, "global"}
         .add(delayed_close_minutes, "delayed,d", "set delayed close minutes")
         .add(cancel_after_minutes, "cancel,c", "set cancel after minutes")
@@ -327,19 +333,21 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
 
-  auto remote_trade_api_handler = 
-    system.spawn(RemoteTradeApiHandler,&remote_ctp_trade_api_provider);
+  auto remote_trade_api_handler =
+      system.spawn(RemoteTradeApiHandler, &remote_ctp_trade_api_provider);
 
   remote_ctp_trade_api_provider.SetRemoteHandler(remote_trade_api_handler);
 
   auto remote_trade_api = system.middleman().remote_actor("127.0.0.1", 4242);
   if (!remote_trade_api) {
-    BOOST_ASSERT(false);
+    std::cerr << "unable to connect to rohon:"
+              << system.render(remote_trade_api.error()) << std::endl;
     return 0;
   } else {
+    caf::send_as(remote_trade_api_handler, *remote_trade_api,
+                 RemoteCTPConnectAtom::value);
     remote_ctp_trade_api_provider.SetRemoteTradeApi(*remote_trade_api);
   }
-
 
   auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
       &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
@@ -349,15 +357,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
-  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-  //              "9999", "053867", "8661188");
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
+                 "9999", "053867", "8661188");
 
-  caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-                 "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
-                 "140616");
+  // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+  //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
+  //               "140616");
 
-  caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
-                 "8888", "181006", "140616");
+  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+  //               "8888", "181006", "140616");
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
                  "4200", "15500011", "Yunqizhi2_");

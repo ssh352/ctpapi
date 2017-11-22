@@ -11,7 +11,7 @@ class RohonTradeApi : public CThostFtdcTraderSpi {
  public:
   class Delegate {
    public:
-    virtual void HandleLogon() = 0;
+    virtual void HandleLogon(int, int) = 0;
     virtual void HandleCTPRtnOrder(
         const std::shared_ptr<CTPOrderField>& order) = 0;
 

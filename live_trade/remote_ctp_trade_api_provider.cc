@@ -1,8 +1,9 @@
 #include "remote_ctp_trade_api_provider.h"
-#include "caf_atom_defines.h"
+#include "caf_common/caf_atom_defines.h"
 
 void RemoteCtpApiTradeApiProvider::RequestYesterdayPosition() {
-  caf::send_as(handler_, remote_trade_api_, ReqYesterdayPositionAtom::value);
+  caf::send_as(handler_, remote_trade_api_,
+               ReqYesterdayPositionAtom::value);
 }
 
 void RemoteCtpApiTradeApiProvider::CancelOrder(
@@ -45,4 +46,8 @@ void RemoteCtpApiTradeApiProvider::HandleRspYesterdayPosition(
 
 void RemoteCtpApiTradeApiProvider::SetRemoteHandler(caf::actor actor) {
   handler_ = actor;
+}
+
+void RemoteCtpApiTradeApiProvider::HandleCTPLogon(int front_id, int session_id) {
+  delegate_->HandleCtpLogon(front_id, session_id);
 }
