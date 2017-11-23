@@ -286,13 +286,13 @@ void RohonTradeApi::Connect(const std::string& server,
 
 void RohonTradeApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                         CThostFtdcRspInfoField* pRspInfo) {
-  int i = 0;
+  std::cout << "Err Order Insert:" << pRspInfo->ErrorMsg << "\n";
 }
 
 void RohonTradeApi::OnErrRtnOrderAction(
     CThostFtdcOrderActionField* pOrderAction,
     CThostFtdcRspInfoField* pRspInfo) {
-  int i = 0;
+  std::cout << "Err Order Action:" << pRspInfo->ErrorMsg << "\n";
 }
 
 void RohonTradeApi::OnRspQryInvestorPosition(

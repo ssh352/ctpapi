@@ -25,22 +25,26 @@ class RohonTradeApiActor : public caf::event_based_actor,
                          "888888");
     return {
         [=](const CTPEnterOrder& order, const std::string& order_id) {
-          std::cout << "Input Order\n";
+          std::cout << "Input Order:" << order.instrument << " "
+                    << (order.direction == OrderDirection::kBuy ? "B"
+                                                                : "S") <<
+              " " << (order.position_effect == CTPPositionEffect::kOpen ? "O"
+                                                                        : "C")
+                  << "\n";
           trader_api_->InputOrder(order, order_id);
         },
-        [=](const CTPCancelOrder& cancel) { 
+        [=](const CTPCancelOrder& cancel) {
           std::cout << "Cancel Order\n";
-          trader_api_->CancelOrder(cancel); 
+          trader_api_->CancelOrder(cancel);
         },
-        [=](ReqYesterdayPositionAtom) {
-          return std::vector<OrderPosition>(); 
-        },
+        [=](ReqYesterdayPositionAtom) { return std::vector<OrderPosition>(); },
         [=](const std::shared_ptr<CTPOrderField>& order) {
           send(handler_, *order);
         },
         [=](const std::string& instrument, const std::string& order_id,
             double trading_price, int trading_qty, TimeStamp timestamp) {
-          send(handler_, instrument, order_id, trading_price, trading_qty, timestamp);
+          send(handler_, instrument, order_id, trading_price, trading_qty,
+               timestamp);
         },
         [=](RemoteCTPConnectAtom) {
           std::cout << "Connected\n";

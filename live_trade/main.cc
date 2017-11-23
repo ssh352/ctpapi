@@ -44,7 +44,8 @@ std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"jd", "dc"}, {"jm", "dc"}, {"l", "dc"},  {"m", "dc"},  {"ma", "zc"},
     {"ni", "sc"}, {"p", "dc"},  {"pp", "dc"}, {"rb", "sc"}, {"rm", "zc"},
     {"ru", "sc"}, {"sm", "zc"}, {"sr", "zc"}, {"ta", "zc"}, {"v", "dc"},
-    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}};
+    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"},
+    {"au", "sc"}};
 
 std::unordered_set<std::string> g_close_today_cost_instrument_codes = {
     "fg", "hc", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
@@ -293,7 +294,10 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   auto beg = hrc::now();
   bool running = true;
 
-  auto sub_acconts = {"foo", "bar"};
+  std::vector<std::string> sub_acconts;
+  for (int i = 0; i < 10; ++i) {
+    sub_acconts.push_back(str(boost::format("a%d") % i));
+  }
   // auto sub_acconts = {"foo"};
   LiveTradeMailBox common_mail_box;
 
@@ -357,15 +361,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
-  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
-                 "9999", "053867", "8661188");
+  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
+  //               "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
   //               "140616");
 
-  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
-  //               "8888", "181006", "140616");
+   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+                 "8888", "181006", "140616");
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
                  "4200", "15500011", "Yunqizhi2_");
