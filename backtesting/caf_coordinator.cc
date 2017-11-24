@@ -1,4 +1,5 @@
 #include "caf_coordinator.h"
+#include <chrono>
 #include "hdf5.h"
 #include "atom_defines.h"
 #include "common/api_struct.h"
@@ -32,6 +33,7 @@ auto ReadTickTimeSeries(const char* hdf_file,
       ts_db.ReadRange(str(boost::format("/%s/%s") % market % instrument),
                       boost::posix_time::time_from_string(datetime_from),
                       boost::posix_time::time_from_string(datetime_to));
+  H5Tclose(tick_compound);
   herr_t ret = H5Fclose(file);
   return std::move(ts_ret);
 }
@@ -142,8 +144,15 @@ caf::behavior Coordinator(caf::event_based_actor* self,
       std::string market = instrument_with_market.market;
       std::string instrument = instrument_with_market.instrument;
 
+      using hrc = std::chrono::high_resolution_clock;
+      auto beg = hrc::now();
       auto tick_container = ReadTickTimeSeries(
           ts_tick_path.c_str(), market, instrument, datetime_from, datetime_to);
+      std::cout << "espces:"
+                << std::chrono::duration_cast<std::chrono::milliseconds>(
+                       hrc::now() - beg)
+                       .count()
+                << "\n";
       if (tick_container.empty()) {
         std::cout << instrument
                   << " can't find tick data from:" << datetime_from

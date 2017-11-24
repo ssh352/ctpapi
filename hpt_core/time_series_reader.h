@@ -45,14 +45,15 @@ class TimeSeriesReader {
     }
 
     hid_t dataset = H5Dopen2(file_, path.c_str(), H5P_DEFAULT);
-
+    std::pair<std::shared_ptr<T>, int64_t> ret = {std::shared_ptr<T>(), 0};
+    hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
+    int64_t rows = 0;
+    err = H5Aread(attr, H5T_NATIVE_INT64, &rows);
+    H5Aclose(attr);
     if (date == start_dt.date() && date == end_dt.date()) {
-      hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
-      int64_t rows = 0;
-      herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
       std::shared_ptr<T> pre_ticks(new T[rows], std::default_delete<T[]>());
-      ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                    pre_ticks.get());
+      herr_t err = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL,
+                           H5P_DEFAULT, pre_ticks.get());
 
       T start_tick{0};
       start_tick.timestamp = ptime_to_timestamp(start_dt);
@@ -69,14 +70,11 @@ class TimeSeriesReader {
       auto request_row = end_it - start_it;
       std::shared_ptr<T> ticks(new T[request_row], std::default_delete<T[]>());
       memcpy(ticks.get(), start_it, sizeof(T) * (request_row));
-      return {std::move(ticks), request_row};
+      ret = {std::move(ticks), request_row};
     } else if (date == start_dt.date()) {
-      hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
-      int64_t rows = 0;
-      herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
       std::shared_ptr<T> pre_ticks(new T[rows], std::default_delete<T[]>());
-      ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                    pre_ticks.get());
+      herr_t err = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL,
+                           H5P_DEFAULT, pre_ticks.get());
 
       T start_tick{0};
       start_tick.timestamp = ptime_to_timestamp(start_dt);
@@ -87,15 +85,11 @@ class TimeSeriesReader {
       auto request_row = pre_ticks.get() + rows - start_it;
       std::shared_ptr<T> ticks(new T[request_row], std::default_delete<T[]>());
       memcpy(ticks.get(), start_it, sizeof(T) * (request_row));
-      return {std::move(ticks), request_row};
-
+      ret = {std::move(ticks), request_row};
     } else if (date == end_dt.date()) {
-      hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
-      int64_t rows = 0;
-      herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
       std::shared_ptr<T> pre_ticks(new T[rows], std::default_delete<T[]>());
-      ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                    pre_ticks.get());
+      herr_t err = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL,
+                           H5P_DEFAULT, pre_ticks.get());
 
       T end_tick{0};
       end_tick.timestamp = ptime_to_timestamp(end_dt);
@@ -106,19 +100,16 @@ class TimeSeriesReader {
       auto request_row = end_it - pre_ticks.get();
       std::shared_ptr<T> ticks(new T[request_row], std::default_delete<T[]>());
       memcpy(ticks.get(), pre_ticks.get(), sizeof(T) * (request_row));
-      return {std::move(ticks), request_row};
+      ret = {std::move(ticks), request_row};
     } else {
-      hid_t attr = H5Aopen(dataset, "NROWS", H5P_DEFAULT);
-      int64_t rows = 0;
-      herr_t ret = H5Aread(attr, H5T_NATIVE_INT64, &rows);
       std::shared_ptr<T> ticks(new T[rows], std::default_delete<T[]>());
-      ret = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL, H5P_DEFAULT,
-                    ticks.get());
-      return {std::move(ticks), rows};
+      herr_t err = H5Dread(dataset, tick_compound_, H5S_ALL, H5S_ALL,
+                           H5P_DEFAULT, ticks.get());
+      ret = {std::move(ticks), rows};
     }
 
-    herr_t ret = H5Dclose(dataset);
-    return {std::shared_ptr<T>(), 0};
+    herr_t h5_ret = H5Dclose(dataset);
+    return ret;
   }
 
  private:
