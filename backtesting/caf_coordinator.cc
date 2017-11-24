@@ -99,23 +99,23 @@ caf::behavior Coordinator(caf::event_based_actor* self,
       boost::algorithm::to_lower(instrument_code);
 
       param.market =
-          instrument_infos_pt->get<std::string>(param.instrument + ".Market");
+          instrument_infos_pt->get<std::string>(instrument_code + ".Market");
       param.margin_rate =
-          instrument_infos_pt->get<double>(param.instrument + ".MarginRate");
+          instrument_infos_pt->get<double>(instrument_code + ".MarginRate");
       param.constract_multiple = instrument_infos_pt->get<int>(
-          param.instrument + ".ConstractMultiple");
+          instrument_code + ".ConstractMultiple");
       param.cost_basis.type =
           instrument_infos_pt->get<std::string>(
-              param.instrument + ".CostBasis.CommissionType") == "fix"
+              instrument_code + ".CostBasis.CommissionType") == "fix"
               ? CommissionType::kFixed
               : CommissionType::kRate;
 
       param.cost_basis.open_commission = instrument_infos_pt->get<double>(
-          param.instrument + ".CostBasis.OpenCommission");
+          instrument_code + ".CostBasis.OpenCommission");
       param.cost_basis.close_commission = instrument_infos_pt->get<double>(
-          param.instrument + ".CostBasis.CloseCommission");
+          instrument_code + ".CostBasis.CloseCommission");
       param.cost_basis.close_today_commission =
-          instrument_infos_pt->get<double>(param.instrument +
+          instrument_infos_pt->get<double>(instrument_code +
                                            ".CostBasis.CloseTodayCommission");
       param.delay_open_order_after_seconds = strategy_config_pt->get<int>(
           instrument_code + ".DelayOpenOrderAfterSeconds");
