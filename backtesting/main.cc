@@ -83,7 +83,8 @@ void InitLogging(bool enable_logging) {
       //                    << "]: " << expr::smessage);
 
       // core->add_sink(sink);
-  } {
+  } 
+  {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern
@@ -115,8 +116,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     std::cout << "Read Confirg File Error:" << err.what() << "\n";
     return 1;
   }
-
-  double margin_rate = ins_infos_pt.get<double>("a1705.MarginRate");
 
   pt::ptree strategy_config_pt;
   try {

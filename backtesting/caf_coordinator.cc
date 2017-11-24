@@ -102,8 +102,8 @@ caf::behavior Coordinator(caf::event_based_actor* self,
           instrument_infos_pt->get<std::string>(instrument_code + ".Market");
       param.margin_rate =
           instrument_infos_pt->get<double>(instrument_code + ".MarginRate");
-      param.constract_multiple = instrument_infos_pt->get<int>(
-          instrument_code + ".ConstractMultiple");
+      param.constract_multiple =
+          instrument_infos_pt->get<int>(instrument_code + ".ConstractMultiple");
       param.cost_basis.type =
           instrument_infos_pt->get<std::string>(
               instrument_code + ".CostBasis.CommissionType") == "fix"
@@ -133,21 +133,30 @@ caf::behavior Coordinator(caf::event_based_actor* self,
   }
 
   return {[=](IdleAtom, caf::actor work) {
-    // std::string ts_tick_path = "d:/ts_futures.h5";
-    // std::string ts_cta_signal_path =
-    //    "d:/WorkSpace/backtesing_cta/cta_tstable.h5";
+    do {
+      if (instrument_strategy_params->empty()) {
+        break;
+      }
+      auto instrument_with_market = instrument_strategy_params->front();
+      instrument_strategy_params->pop_front();
+      std::string market = instrument_with_market.market;
+      std::string instrument = instrument_with_market.instrument;
 
-    auto instrument_with_market = instrument_strategy_params->front();
-    instrument_strategy_params->pop_front();
-    std::string market = instrument_with_market.market;
-    std::string instrument = instrument_with_market.instrument;
-    self->send(
-        work, market, instrument, out_dir, instrument_with_market,
-        force_close_before_close_market,
-        ReadTickTimeSeries(ts_tick_path.c_str(), market, instrument,
-                           datetime_from, datetime_to),
-        ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
-                                     datetime_from, datetime_to));
+      auto tick_container = ReadTickTimeSeries(
+          ts_tick_path.c_str(), market, instrument, datetime_from, datetime_to);
+      if (tick_container.empty()) {
+        std::cout << instrument
+                  << " can't find tick data from:" << datetime_from
+                  << " to:" << datetime_to << "\n";
+        continue;
+      }
+      self->send(
+          work, market, instrument, out_dir, instrument_with_market,
+          force_close_before_close_market, std::move(tick_container),
+          ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
+                                       datetime_from, datetime_to));
+      break;
+    } while (true);
 
     if (instrument_strategy_params->empty()) {
       self->quit();

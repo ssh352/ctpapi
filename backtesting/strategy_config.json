@@ -1,6 +1,6 @@
 {
   "backtesting" : [
-    "m1705"
+      "m1705"
   ],
   "a": {
     "DelayOpenOrderAfterSeconds": 1,

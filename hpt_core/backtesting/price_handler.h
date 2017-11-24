@@ -24,6 +24,7 @@ class PriceHandler {
         event_before_close_market_near_seconds_(
             event_before_close_market_near_seconds) {
     it_ = tick_containter_.begin();
+    *running = !tick_containter_.empty();
   }
 
   void StreamNext() {
