@@ -513,9 +513,17 @@ double OptimalOpenPriceStrategy::GetStrategyParamPriceOffset(const std::string& 
 
 int OptimalOpenPriceStrategy::GetStrategyParamDealyOpenAfterSeconds(const std::string& instrument) const
 {
-  std::string instrument_code = instrument.substr(
-      0, instrument.find_first_of("0123456789"));
-  boost::algorithm::to_lower(instrument_code);
+  std::string instrument_code;
+  auto it = instrument_code_cache_.find(instrument);
+  if (it == instrument_code_cache_.end()) {
+      instrument_code = instrument.substr(
+          0, instrument.find_first_of("0123456789"));
+      boost::algorithm::to_lower(instrument_code);
+      instrument_code_cache_.insert({instrument, instrument_code});
+  } else {
+    instrument_code = it->second;
+  }
+
   if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
     BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
     return 0.0;

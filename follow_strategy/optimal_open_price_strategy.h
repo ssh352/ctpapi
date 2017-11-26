@@ -103,7 +103,9 @@ class OptimalOpenPriceStrategy {
       const std::string& instrument,
       OrderDirection direction);
 
-  void RemoveSpecificPendingOpenOrders(const std::string& instrument, OrderDirection position_effect_direction);
+  void RemoveSpecificPendingOpenOrders(
+      const std::string& instrument,
+      OrderDirection position_effect_direction);
   std::string GenerateOrderId();
   std::list<InputOrder> pending_delayed_open_order_;
   std::list<OptimalOpenOrder> optimal_open_price_orders_;
@@ -115,6 +117,7 @@ class OptimalOpenPriceStrategy {
   boost::log::sources::logger* log_;
   TimeStamp last_timestamp_ = 0;
   Delegate* delegate_;
+  mutable std::unordered_map<std::string, std::string> instrument_code_cache_;
 };
 
 #endif  // FOLLOW_STRATEGY_OPTIMAL_OPEN_PRICE_STRATEGY_H

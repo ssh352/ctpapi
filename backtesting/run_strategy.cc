@@ -21,7 +21,8 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
               const std::string& out_dir, const StrategyParam& strategy_param,
               int cancel_order_after_minute, TickContainer tick_container,
               CTASignalContainer cta_signal_container) {
-    caf::aout(self) << market << ":" << instrument << "\n";
+    using hrc = std::chrono::high_resolution_clock;
+    auto beg = hrc::now();
     boost::log::sources::logger log;
     log.add_attribute(
         "instrument",
@@ -86,5 +87,10 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
       }
     }
     self->send(coor, IdleAtom::value, self);
+    caf::aout(self) << market << ":" << instrument << " espces:"
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(
+                           hrc::now() - beg)
+                           .count()
+                    << "\n";
   }};
 }
