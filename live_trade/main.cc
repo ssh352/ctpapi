@@ -38,6 +38,7 @@
 #include "remote_ctp_trade_api_provider.h"
 #include "caf/io/all.hpp"
 #include "follow_strategy/optimal_open_price_strategy.h"
+#include "serialization_rtn_order.h"
 
 std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
@@ -299,6 +300,14 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     std::cout << "Read Confirg File Error:" << err.what() << "\n";
     return 1;
   }
+
+  system.registry().put(SerializeCtaAtom::value,
+                        caf::actor_cast<caf::strong_actor_ptr>(
+                            system.spawn<SerializationCtaRtnOrder>()));
+  system.registry().put(SerializeStrategyAtom::value,
+                        caf::actor_cast<caf::strong_actor_ptr>(
+                            system.spawn<SerializationStrategyRtnOrder>()));
+
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   bool running = true;
@@ -380,14 +389,14 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
 
-  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
   //               "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
   //               "140616");
 
-   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
                  "8888", "181006", "140616");
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
