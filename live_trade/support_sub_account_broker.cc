@@ -13,7 +13,6 @@ SupportSubAccountBroker::SupportSubAccountBroker(
       mail_box_(mail_box),
       trader_api_(ctp_trade_api_provider) {
   trader_api_->Init(this);
-  ClearUpCTPFolwDirectory(".\\follow_account\\");
   // trader_api_ = std::make_unique<CTPTraderApi>(this, ".\\follow_account\\");
   mail_box_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>), this);
   mail_box_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>), this);

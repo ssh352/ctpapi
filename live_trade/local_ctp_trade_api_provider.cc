@@ -1,6 +1,8 @@
 #include "local_ctp_trade_api_provider.h"
+#include "util.h"
 
 LocalCtpTradeApiProvider::LocalCtpTradeApiProvider() {
+  ClearUpCTPFolwDirectory(".\\follow_account\\");
   trade_api_ = std::make_unique<CTPTraderApi>(this, ".\\follow_account\\");
 }
 

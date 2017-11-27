@@ -37,6 +37,7 @@
 #include "local_ctp_trade_api_provider.h"
 #include "remote_ctp_trade_api_provider.h"
 #include "caf/io/all.hpp"
+#include "follow_strategy/optimal_open_price_strategy.h"
 
 std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
@@ -44,11 +45,10 @@ std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"jd", "dc"}, {"jm", "dc"}, {"l", "dc"},  {"m", "dc"},  {"ma", "zc"},
     {"ni", "sc"}, {"p", "dc"},  {"pp", "dc"}, {"rb", "sc"}, {"rm", "zc"},
     {"ru", "sc"}, {"sm", "zc"}, {"sr", "zc"}, {"ta", "zc"}, {"v", "dc"},
-    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"},
-    {"au", "sc"}};
+    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}, {"au", "sc"}};
 
 std::unordered_set<std::string> g_close_today_cost_instrument_codes = {
-    "fg", "hc", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
+    "fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
 
@@ -56,7 +56,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
  public:
   CAFDelayOpenStrategyAgent(
       caf::actor_config& cfg,
-      std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+      std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
           params,
       LiveTradeMailBox* inner_mail_box,
       LiveTradeMailBox* common_mail_box)
@@ -106,7 +106,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
   LiveTradeMailBox* inner_mail_box_;
   LiveTradeMailBox* common_mail_box_;
   caf::message_handler message_handler_;
-  DelayOpenStrategyAgent<CAFDelayOpenStrategyAgent, DelayedOpenStrategyEx>
+  DelayOpenStrategyAgent<CAFDelayOpenStrategyAgent, OptimalOpenPriceStrategy>
       agent_;
 };
 
@@ -125,6 +125,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
     //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
     inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrder>), this);
+    inner_mail_box_->Subscribe(typeid(std::tuple<OrderAction>), this);
   };
 
   virtual caf::behavior make_behavior() override {
@@ -163,6 +164,13 @@ class CAFSubAccountBroker : public caf::event_based_actor,
         [=](const InputOrder& order) {
           MakeCtpInstrumentBrokerIfNeed(order.instrument);
           instrument_brokers_.at(order.instrument)->HandleInputOrder(order);
+        },
+        [=](const OrderAction& action_order) {
+          auto it = instrument_brokers_.find(action_order.instrument);
+          BOOST_ASSERT(it != instrument_brokers_.end());
+          if (it != instrument_brokers_.end()) {
+            it->second->HandleOrderAction(action_order);
+          }
         },
         [=](const CancelOrder& cancel) {
           auto it = instrument_brokers_.find(cancel.instrument);
@@ -249,7 +257,8 @@ caf::behavior RemoteTradeApiHandler(caf::event_based_actor* self,
         provider->HandleRspYesterdayPosition(std::move(yesterday_positions));
       },
       [=](CTPOrderField order) {
-        provider->HandleCTPRtnOrder(std::make_shared<CTPOrderField>(std::move(order)));
+        provider->HandleCTPRtnOrder(
+            std::make_shared<CTPOrderField>(std::move(order)));
       },
       [=](const std::string& instrument, const std::string& order_id,
           double trading_price, int trading_qty, TimeStamp timestamp) {
@@ -295,7 +304,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   bool running = true;
 
   std::vector<std::string> sub_acconts;
-  for (int i = 0; i < 10; ++i) {
+  for (int i = 0; i < 2; ++i) {
     sub_acconts.push_back(str(boost::format("a%d") % i));
   }
   // auto sub_acconts = {"foo"};
@@ -309,13 +318,17 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     // DelayedOpenStrategyEx::StrategyParam param;
     // param.delayed_open_after_seconds = 5;
     // param.price_offset = 0;
-    std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
+    std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
         params;
     for (const auto& pt : strategy_config_pt) {
       try {
-        DelayedOpenStrategyEx::StrategyParam param;
+        if (pt.first == "backtesting")
+          continue;
+        OptimalOpenPriceStrategy::StrategyParam param;
         param.delayed_open_after_seconds =
             pt.second.get<int>("DelayOpenOrderAfterSeconds");
+        param.wait_optimal_open_price_fill_seconds =
+            pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
         param.price_offset = pt.second.get<double>("PriceOffset");
         params.insert({pt.first, std::move(param)});
 
@@ -333,8 +346,12 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     inner_mail_boxs.push_back(std::move(inner_mail_box));
   }
 
+  //////////////////////////////////////////////////////////////////////////
   // LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
+  // auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
+  //    &common_mail_box, &local_ctcp_trade_api_provider, sub_actors);
 
+  //////////////////////////////////////////////////////////////////////////
   RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
 
   auto remote_trade_api_handler =
@@ -355,13 +372,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
       &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
+  //////////////////////////////////////////////////////////////////////////
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
-  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10000",
+
+  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
   //               "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
