@@ -10,7 +10,19 @@ class config : public caf::actor_system_config {
     add_message_type<CTPEnterOrder>("ctp_enter_order");
     add_message_type<CTPCancelOrder>("ctp_cancel_order");
     add_message_type<CTPOrderField>("ctp_order");
+    opt_group{custom_options_, "global"}
+        .add(port, "port,p", "listen port")
+        .add(server, "server", "rohon server tcp")
+        .add(broker_id, "broker_id", "rohon broker id")
+        .add(user_id, "user_id", "rohon user_id")
+        .add(password, "password", "rohon password");
   }
+
+  int port;
+  std::string server;
+  std::string broker_id;
+  std::string user_id;
+  std::string password;
 };
 
 class RohonTradeApiActor : public caf::event_based_actor,
@@ -26,11 +38,11 @@ class RohonTradeApiActor : public caf::event_based_actor,
     return {
         [=](const CTPEnterOrder& order, const std::string& order_id) {
           std::cout << "Input Order:" << order.instrument << " "
-                    << (order.direction == OrderDirection::kBuy ? "B"
-                                                                : "S") <<
-              " " << (order.position_effect == CTPPositionEffect::kOpen ? "O"
-                                                                        : "C")
-                  << "\n";
+                    << (order.direction == OrderDirection::kBuy ? "B" : "S")
+                    << " "
+                    << (order.position_effect == CTPPositionEffect::kOpen ? "O"
+                                                                          : "C")
+                    << "\n";
           trader_api_->InputOrder(order, order_id);
         },
         [=](const CTPCancelOrder& cancel) {
@@ -61,7 +73,9 @@ class RohonTradeApiActor : public caf::event_based_actor,
 
   virtual void HandleCTPRtnOrder(
       const std::shared_ptr<CTPOrderField>& order) override {
-    send(handler_, *order);
+    if (handler_ != nullptr) {
+      send(handler_, *order);
+    }
   }
 
   virtual void HandleCTPTradeOrder(const std::string& instrument,
@@ -69,7 +83,9 @@ class RohonTradeApiActor : public caf::event_based_actor,
                                    double trading_price,
                                    int trading_qty,
                                    TimeStamp timestamp) override {
-    send(this, instrument, order_id, trading_price, trading_qty, timestamp);
+    if (handler_ != nullptr) {
+      send(this, instrument, order_id, trading_price, trading_qty, timestamp);
+    }
   }
 
   virtual void HandleRspYesterdayPosition(
@@ -83,8 +99,17 @@ class RohonTradeApiActor : public caf::event_based_actor,
 };
 
 int caf_main(caf::actor_system& system, const config& cfg) {
-  auto ping = system.spawn<RohonTradeApiActor>();
-  system.middleman().publish(ping, 4242);
+  auto trade_api = system.spawn<RohonTradeApiActor>();
+  system.middleman().publish(trade_api, 4242);
+  std::string input;
+
+  while (std::cin >> input) {
+    if (input == "exit") {
+      anon_send_exit(trade_api, caf::exit_reason::kill);
+      system.middleman().unpublish(trade_api, 0);
+      break;
+    }
+  }
   return 0;
 }
 
