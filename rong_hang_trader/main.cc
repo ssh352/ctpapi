@@ -28,13 +28,23 @@ class config : public caf::actor_system_config {
 class RohonTradeApiActor : public caf::event_based_actor,
                            public RohonTradeApi::Delegate {
  public:
-  RohonTradeApiActor(caf::actor_config& cfg) : event_based_actor(cfg) {
+  RohonTradeApiActor(caf::actor_config& cfg,
+                     std::string server,
+                     std::string broker_id,
+                     std::string user_id,
+                     std::string password)
+      : event_based_actor(cfg),
+        server_(std::move(server)),
+        broker_id_(std::move(broker_id)),
+        user_id_(std::move(user_id)),
+        password_(std::move(password)) {
     trader_api_ = std::make_unique<RohonTradeApi>(this, "");
   }
 
   caf::behavior make_behavior() override {
-    trader_api_->Connect("tcp://210.22.96.58:7001", "RohonDemo", "zjqhy01",
-                         "888888");
+    // trader_api_->Connect("tcp://210.22.96.58:7001", "RohonDemo", "zjqhy01",
+    //                     "888888");
+    trader_api_->Connect(server_, broker_id_, user_id_, password_);
     return {
         [=](const CTPEnterOrder& order, const std::string& order_id) {
           std::cout << "Input Order:" << order.instrument << " "
@@ -96,11 +106,16 @@ class RohonTradeApiActor : public caf::event_based_actor,
   caf::actor handler_;
   int front_id_ = -1;
   int session_id_ = -1;
+  std::string server_;
+  std::string broker_id_;
+  std::string user_id_;
+  std::string password_;
 };
 
 int caf_main(caf::actor_system& system, const config& cfg) {
-  auto trade_api = system.spawn<RohonTradeApiActor>();
-  system.middleman().publish(trade_api, 4242);
+  auto trade_api = system.spawn<RohonTradeApiActor>(cfg.server, cfg.broker_id,
+                                                    cfg.user_id, cfg.password);
+  system.middleman().publish(trade_api, cfg.port);
   std::string input;
 
   while (std::cin >> input) {
