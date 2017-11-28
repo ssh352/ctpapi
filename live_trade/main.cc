@@ -41,7 +41,6 @@
 #include "serialization_rtn_order.h"
 #include "caf_strategy_agent.h"
 #include "sub_account_broker.h"
-#include "init_instrument_list.h"
 
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
@@ -88,10 +87,7 @@ class config : public caf::actor_system_config {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
-  InitInstrumenList(system, "tcp://ctp1-front3.citicsf.com:41205", "66666",
-                    "120301760", "140616");
-
-      pt::ptree strategy_config_pt;
+  pt::ptree strategy_config_pt;
   try {
     pt::read_json("strategy_config.json", strategy_config_pt);
   } catch (pt::ptree_error& err) {
