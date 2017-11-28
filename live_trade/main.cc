@@ -45,7 +45,8 @@ std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"jd", "dc"}, {"jm", "dc"}, {"l", "dc"},  {"m", "dc"},  {"ma", "zc"},
     {"ni", "sc"}, {"p", "dc"},  {"pp", "dc"}, {"rb", "sc"}, {"rm", "zc"},
     {"ru", "sc"}, {"sm", "zc"}, {"sr", "zc"}, {"ta", "zc"}, {"v", "dc"},
-    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}, {"au", "sc"}};
+    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}, {"au", "sc"},
+    {"hc", "sc"}};
 
 std::unordered_set<std::string> g_close_today_cost_instrument_codes = {
     "fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
@@ -347,31 +348,33 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   }
 
   //////////////////////////////////////////////////////////////////////////
-  // LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
-  // auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
-  //    &common_mail_box, &local_ctcp_trade_api_provider, sub_actors);
+  LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
+  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
+      &common_mail_box, &local_ctcp_trade_api_provider, sub_actors);
+  local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
+                                        "66666", "120301760", "140616");
 
   //////////////////////////////////////////////////////////////////////////
-  RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
+  // RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
 
-  auto remote_trade_api_handler =
-      system.spawn(RemoteTradeApiHandler, &remote_ctp_trade_api_provider);
+  // auto remote_trade_api_handler =
+  //    system.spawn(RemoteTradeApiHandler, &remote_ctp_trade_api_provider);
 
-  remote_ctp_trade_api_provider.SetRemoteHandler(remote_trade_api_handler);
+  // remote_ctp_trade_api_provider.SetRemoteHandler(remote_trade_api_handler);
 
-  auto remote_trade_api = system.middleman().remote_actor("127.0.0.1", 4242);
-  if (!remote_trade_api) {
-    std::cerr << "unable to connect to rohon:"
-              << system.render(remote_trade_api.error()) << std::endl;
-    return 0;
-  } else {
-    caf::send_as(remote_trade_api_handler, *remote_trade_api,
-                 RemoteCTPConnectAtom::value);
-    remote_ctp_trade_api_provider.SetRemoteTradeApi(*remote_trade_api);
-  }
+  // auto remote_trade_api = system.middleman().remote_actor("127.0.0.1", 4242);
+  // if (!remote_trade_api) {
+  //  std::cerr << "unable to connect to rohon:"
+  //            << system.render(remote_trade_api.error()) << std::endl;
+  //  return 0;
+  //} else {
+  //  caf::send_as(remote_trade_api_handler, *remote_trade_api,
+  //               RemoteCTPConnectAtom::value);
+  //  remote_ctp_trade_api_provider.SetRemoteTradeApi(*remote_trade_api);
+  //}
 
-  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
-      &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
+  // auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
+  //    &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
   //////////////////////////////////////////////////////////////////////////
 
   auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
@@ -380,14 +383,14 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
 
-  //caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
   //               "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
   //               "140616");
 
-   caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
                  "8888", "181006", "140616");
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
