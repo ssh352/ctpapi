@@ -37,8 +37,4 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   int order_seq_ = 0;
 };
 
-
 #endif // LIVE_TRADE_SUB_ACCOUNT_BROKER_H
-
-
-

@@ -41,7 +41,7 @@
 #include "serialization_rtn_order.h"
 #include "caf_strategy_agent.h"
 #include "sub_account_broker.h"
-
+#include "init_instrument_list.h"
 
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
@@ -88,7 +88,10 @@ class config : public caf::actor_system_config {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
-  pt::ptree strategy_config_pt;
+  InitInstrumenList(system, "tcp://ctp1-front3.citicsf.com:41205", "66666",
+                    "120301760", "140616");
+
+      pt::ptree strategy_config_pt;
   try {
     pt::read_json("strategy_config.json", strategy_config_pt);
   } catch (pt::ptree_error& err) {
@@ -96,10 +99,10 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     return 1;
   }
 
-  //system.registry().put(SerializeCtaAtom::value,
+  // system.registry().put(SerializeCtaAtom::value,
   //                      caf::actor_cast<caf::strong_actor_ptr>(
   //                          system.spawn<SerializationCtaRtnOrder>()));
-  //system.registry().put(SerializeStrategyAtom::value,
+  // system.registry().put(SerializeStrategyAtom::value,
   //                      caf::actor_cast<caf::strong_actor_ptr>(
   //                          system.spawn<SerializationStrategyRtnOrder>()));
 
@@ -146,7 +149,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
       }
     }
     system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(), account);
-    //system.spawn<SerializationCtaRtnOrder>();
+    // system.spawn<SerializationCtaRtnOrder>();
     system.spawn<CAFDelayOpenStrategyAgent>(
         std::move(params), inner_mail_box.get(), &common_mail_box);
     sub_actors.push_back(std::make_pair(

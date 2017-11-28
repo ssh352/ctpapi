@@ -20,6 +20,7 @@
       'dependencies' : [
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
+        '<(DEPTH)/third_party/sqlite/sqlite.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
         '../strategies/strategies.gyp:strategies',
         '../follow_strategy/follow_strategy.gyp:follow_strategy',

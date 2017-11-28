@@ -37,6 +37,12 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
   void RequestYesterdayPosition();
 
+  void RequestInstrumentList();
+
+	void ReqQryInstrumentMarginRateList();
+
+	void ReqQryInstrumentCommissionRateList();
+
   virtual void OnRspQryInvestorPosition(
       CThostFtdcInvestorPositionField* pInvestorPosition,
       CThostFtdcRspInfoField* pRspInfo,
@@ -108,6 +114,17 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField* pRspInfo,
       int nRequestID,
       bool bIsLast);
+
+  virtual void OnRspQryInstrument(CThostFtdcInstrumentField* pInstrument,
+                                  CThostFtdcRspInfoField* pRspInfo,
+                                  int nRequestID,
+                                  bool bIsLast) override;
+
+
+  virtual void OnRspQryInstrumentMarginRate(CThostFtdcInstrumentMarginRateField *pInstrumentMarginRate, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) override;
+
+
+  virtual void OnRspQryInstrumentCommissionRate(CThostFtdcInstrumentCommissionRateField *pInstrumentCommissionRate, CThostFtdcRspInfoField *pRspInfo, int nRequestID, bool bIsLast) override;
 
  private:
   void SettlementInfoConfirm();
