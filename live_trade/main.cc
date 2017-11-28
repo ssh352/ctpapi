@@ -38,6 +38,7 @@
 #include "remote_ctp_trade_api_provider.h"
 #include "caf/io/all.hpp"
 #include "follow_strategy/optimal_open_price_strategy.h"
+#include "serialization_rtn_order.h"
 
 std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
     {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
@@ -300,6 +301,14 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     std::cout << "Read Confirg File Error:" << err.what() << "\n";
     return 1;
   }
+
+  //system.registry().put(SerializeCtaAtom::value,
+  //                      caf::actor_cast<caf::strong_actor_ptr>(
+  //                          system.spawn<SerializationCtaRtnOrder>()));
+  //system.registry().put(SerializeStrategyAtom::value,
+  //                      caf::actor_cast<caf::strong_actor_ptr>(
+  //                          system.spawn<SerializationStrategyRtnOrder>()));
+
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   bool running = true;
@@ -314,6 +323,9 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
   std::vector<std::pair<std::string, caf::actor>> sub_actors;
   auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
+
+  system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
+
   for (const auto& account : sub_acconts) {
     auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
     // DelayedOpenStrategyEx::StrategyParam param;
@@ -339,6 +351,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         return {};
       }
     }
+    system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(), account);
+    //system.spawn<SerializationCtaRtnOrder>();
     system.spawn<CAFDelayOpenStrategyAgent>(
         std::move(params), inner_mail_box.get(), &common_mail_box);
     sub_actors.push_back(std::make_pair(

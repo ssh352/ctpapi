@@ -17,6 +17,10 @@ using ReqYesterdayPositionAtom = caf::atom_constant<caf::atom("reqyespos")>;
 
 using RemoteCTPConnectAtom = caf::atom_constant<caf::atom("rectpcon")>;
 
+using SerializeCtaAtom = caf::atom_constant<caf::atom("ser_cta")>;
+using SerializeStrategyAtom = caf::atom_constant<caf::atom("ser_stg")>;
+
+
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTASignalContainer)
 // CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrder)
