@@ -1,6 +1,6 @@
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
-#include "rong_hang_trader/rohon_trade_api.h"
+#include "rohon/rohon_trade_api.h"
 #include "caf_common/caf_atom_defines.h"
 
 class config : public caf::actor_system_config {

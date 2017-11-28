@@ -4,7 +4,7 @@
   ],
   'targets' : [
   {
-    'target_name' : 'rong_hang_trader',
+    'target_name' : 'rohon',
     'type' : 'executable',
     'variables' : {
     },
