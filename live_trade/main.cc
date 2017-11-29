@@ -158,8 +158,11 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
   auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
       &common_mail_box, &local_ctcp_trade_api_provider, sub_actors);
-  local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
-                                        "66666", "120301760", "140616");
+  // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
+  //                                      "66666", "120301760", "140616");
+
+  local_ctcp_trade_api_provider.Connect("tcp://180.168.146.187:10001", "9999",
+                                        "099344", "a12345678");
 
   //////////////////////////////////////////////////////////////////////////
   // RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
@@ -190,25 +193,31 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
 
-  // caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-  //               "9999", "053867", "8661188");
+   caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+                 "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
   //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
   //               "140616");
 
-  caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
-                 "8888", "181006", "140616");
+  /*caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+                 "8888", "181006", "140616");*/
 
   caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
                  "4200", "15500011", "Yunqizhi2_");
 
   // live_trade_borker_handler.Connect();
 
-  // int qty;
-  // while (std::cin >> qty) {
-  //  mail_box.Send(qty);
-  //}
+  std::string input;
+  while (std::cin >> input) {
+    if (input == "flush") {
+      common_mail_box.Send(SerializationFlushAtom::value);
+      std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
+                    [](const auto& mail_box) {
+                      mail_box->Send(SerializationFlushAtom::value);
+                    });
+    }
+  }
 
   system.await_all_actors_done();
 

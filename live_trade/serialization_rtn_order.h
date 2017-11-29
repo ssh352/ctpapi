@@ -15,7 +15,7 @@ class SerializationCtaRtnOrder : public caf::event_based_actor {
 
  private:
   LiveTradeMailBox* mail_box_;
-  std::fstream file_;
+  std::ofstream file_;
   boost::archive::binary_oarchive oa_;
 };
 
@@ -29,7 +29,7 @@ class SerializationStrategyRtnOrder : public caf::event_based_actor {
 
  private:
   std::string account_id_;
-  std::fstream file_;
+  std::ofstream file_;
   LiveTradeMailBox* mail_box_;
   boost::archive::binary_oarchive oa_;
 };

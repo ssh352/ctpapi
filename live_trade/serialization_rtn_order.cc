@@ -1,4 +1,5 @@
 #include "serialization_rtn_order.h"
+#include "caf_common/caf_atom_defines.h"
 
 namespace boost {
 namespace serialization {
@@ -64,12 +65,16 @@ SerializationCtaRtnOrder::SerializationCtaRtnOrder(caf::actor_config& cfg,
       oa_(file_) {
   mail_box_->Subscribe(
       typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>), this);
+  mail_box_->Subscribe(typeid(std::tuple<SerializationFlushAtom>), this);
 }
 
 caf::behavior SerializationCtaRtnOrder::make_behavior() {
-  return {[=](const std::shared_ptr<OrderField>& rtn_order,
-              const CTAPositionQty& position_qty) { oa_ << *rtn_order; }
-
+  return {
+      [=](const std::shared_ptr<OrderField>& rtn_order,
+          const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
+      [=](SerializationFlushAtom) { 
+    file_.flush(); 
+  },
   };
 }
 
@@ -82,10 +87,15 @@ SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
       account_id_(std::move(account_id)),
       file_(account_id_ + ".bin", std::ios_base::binary),
       oa_(file_) {
-  mail_box_->Subscribe(typeid(std::tuple<std::shared_ptr<CTPOrderField> >),
-                       this);
+  mail_box_->Subscribe(typeid(std::tuple<std::shared_ptr<OrderField> >), this);
+  mail_box_->Subscribe(typeid(std::tuple<SerializationFlushAtom>), this);
 }
 
 caf::behavior SerializationStrategyRtnOrder::make_behavior() {
-  return {[=](const std::shared_ptr<CTPOrderField>& order) { oa_ << *order; }};
+  return {
+      [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
+      [=](SerializationFlushAtom) { 
+    file_.flush(); 
+  },
+  };
 }

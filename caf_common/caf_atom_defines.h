@@ -19,6 +19,7 @@ using RemoteCTPConnectAtom = caf::atom_constant<caf::atom("rectpcon")>;
 
 using SerializeCtaAtom = caf::atom_constant<caf::atom("ser_cta")>;
 using SerializeStrategyAtom = caf::atom_constant<caf::atom("ser_stg")>;
+using SerializationFlushAtom = caf::atom_constant<caf::atom("seflush")>;
 
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)
