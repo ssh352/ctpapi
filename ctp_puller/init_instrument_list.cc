@@ -1,6 +1,27 @@
 #include "init_instrument_list.h"
+#include <locale>
+#include <codecvt>
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "sqlite/sqlite3.h"
+#include "build/build_config.h"
+
+std::string MBCSToUtf8(const std::string& input) {
+  // int nLength = MultiByteToWideChar(CP_ACP, 0, input.c_str(), -1, NULL,
+  // NULL);  WCHAR* tch = new WCHAR[nLength];  nLength =
+  // MultiByteToWideChar(CP_ACP, 0, input.c_str(), -1, tch, nLength);  int
+  // nUTF8len = WideCharToMultiByte(CP_UTF8, 0, tch, nLength, 0, 0, 0, 0); char*
+  // utf8_string = new char[nUTF8len];  WideCharToMultiByte(CP_UTF8, 0, tch,
+  // nLength, utf8_string, nUTF8len, 0, 0);  delete tch;  std::string
+  // out_string(utf8_string, nUTF8len);  delete utf8_string;  return out_string;
+
+#if defined(OS_WIN)
+  std::wstring_convert<std::codecvt_byname<wchar_t, char, mbstate_t>> wide_cv(
+      new std::codecvt_byname<wchar_t, char, mbstate_t>(".936"));
+  std::wstring w = wide_cv.from_bytes(input);
+  std::wstring_convert<std::codecvt_utf8<wchar_t>> utf8_cv;
+  return utf8_cv.to_bytes(w);
+#endif
+}
 
 static int callback(void* NotUsed, int argc, char** argv, char** azColName) {
   int i;
@@ -32,11 +53,15 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
     api_->SubscribePrivateTopic(THOST_TERT_QUICK);
     api_->Init();
 
-    sqlite3_open("test.db", &db_);
+    sqlite3_open((user_id_ + ".db").c_str(), &db_);
     CreateInstrumentTableIfNotExist();
     CreateMarginRateTableIfNotExist();
     CreateInstrumentCommissionRateTableIfNotExist();
     // sqlite3_close(db_);
+  }
+
+  ~CtpInitActor() {
+    sqlite3_close(db_);
   }
   virtual void OnFrontConnected() override {
     CThostFtdcReqUserLoginField field{0};
@@ -59,13 +84,13 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
 
  private:
   void RequestInstrumentList() {
-    sqlite3_exec(db_, "begin;", 0, 0, 0);
+    int rc = sqlite3_exec(db_, "begin;", 0, 0, 0);
     const char* sql = R"(
       INSERT INTO instrument VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                                     ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                                     ?)
     )";
-    sqlite3_prepare_v2(db_, sql, static_cast<int>(strlen(sql)), &stmt_, 0);
+    rc = sqlite3_prepare_v2(db_, sql, static_cast<int>(strlen(sql)), &stmt_, 0);
 
     CThostFtdcQryInstrumentField req;
     memset(&req, 0, sizeof(req));
@@ -73,16 +98,20 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
   }
 
   void ReqQryInstrumentMarginRate(const std::string& instrument_id) {
+    std::cout << "Request Margin Rate:" << instrument_id << "\n";
     CThostFtdcQryInstrumentMarginRateField req;
     memset(&req, 0, sizeof(req));
     strcpy(req.InstrumentID, instrument_id.c_str());
     strcpy(req.InvestorID, user_id_.c_str());
     strcpy(req.BrokerID, broker_id_.c_str());
     req.HedgeFlag = THOST_FTDC_HF_Speculation;
-    int result = api_->ReqQryInstrumentMarginRate(&req, 0);
+    while (api_->ReqQryInstrumentMarginRate(&req, 0) != 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
   }
 
   void ReqQryInstrumentCommissionRate(const std::string& instrument_id) {
+    std::cout << "Request Commission Rate:" << instrument_id << "\n";
     CThostFtdcQryInstrumentCommissionRateField req;
     memset(&req, 0, sizeof(req));
     strcpy(req.BrokerID, broker_id_.c_str());
@@ -98,49 +127,67 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
     sqlite3_reset(stmt_);
     sqlite3_bind_text(stmt_, 1, pInstrument->InstrumentID,
                       sizeof(TThostFtdcInstrumentIDType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->ExchangeID,
+    sqlite3_bind_text(stmt_, 2, pInstrument->ExchangeID,
                       sizeof(TThostFtdcExchangeIDType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->InstrumentName,
-                      sizeof(TThostFtdcInstrumentNameType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->ExchangeInstID,
+    std::string instrument_name = MBCSToUtf8(pInstrument->InstrumentName);
+    sqlite3_bind_text(stmt_, 3, instrument_name.c_str(),
+                      static_cast<int>(instrument_name.length()), NULL);
+    sqlite3_bind_text(stmt_, 4, pInstrument->ExchangeInstID,
                       sizeof(TThostFtdcExchangeInstIDType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->ProductID,
+    sqlite3_bind_text(stmt_, 5, pInstrument->ProductID,
                       sizeof(TThostFtdcInstrumentIDType), NULL);
-    sqlite3_bind_int(stmt_, 1, pInstrument->ProductClass);
-    sqlite3_bind_int(stmt_, 1, pInstrument->DeliveryYear);
-    sqlite3_bind_int(stmt_, 1, pInstrument->DeliveryMonth);
-    sqlite3_bind_int(stmt_, 1, pInstrument->MaxMarketOrderVolume);
-    sqlite3_bind_int(stmt_, 1, pInstrument->MinMarketOrderVolume);
-    sqlite3_bind_int(stmt_, 1, pInstrument->MaxLimitOrderVolume);
-    sqlite3_bind_int(stmt_, 1, pInstrument->MinLimitOrderVolume);
-    sqlite3_bind_int(stmt_, 1, pInstrument->VolumeMultiple);
-    sqlite3_bind_double(stmt_, 1, pInstrument->PriceTick);
-    sqlite3_bind_text(stmt_, 1, pInstrument->CreateDate,
+    sqlite3_bind_int(stmt_, 6, pInstrument->ProductClass);
+    sqlite3_bind_int(stmt_, 7, pInstrument->DeliveryYear);
+    sqlite3_bind_int(stmt_, 8, pInstrument->DeliveryMonth);
+    sqlite3_bind_int(stmt_, 9, pInstrument->MaxMarketOrderVolume);
+    sqlite3_bind_int(stmt_, 10, pInstrument->MinMarketOrderVolume);
+    sqlite3_bind_int(stmt_, 11, pInstrument->MaxLimitOrderVolume);
+    sqlite3_bind_int(stmt_, 12, pInstrument->MinLimitOrderVolume);
+    sqlite3_bind_int(stmt_, 13, pInstrument->VolumeMultiple);
+    sqlite3_bind_double(stmt_, 14, pInstrument->PriceTick);
+    sqlite3_bind_text(stmt_, 15, pInstrument->CreateDate,
                       sizeof(TThostFtdcDateType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->OpenDate,
+    sqlite3_bind_text(stmt_, 16, pInstrument->OpenDate,
                       sizeof(TThostFtdcDateType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->ExpireDate,
+    sqlite3_bind_text(stmt_, 17, pInstrument->ExpireDate,
                       sizeof(TThostFtdcDateType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->StartDelivDate,
+    sqlite3_bind_text(stmt_, 18, pInstrument->StartDelivDate,
                       sizeof(TThostFtdcDateType), NULL);
-    sqlite3_bind_text(stmt_, 1, pInstrument->EndDelivDate,
+    sqlite3_bind_text(stmt_, 19, pInstrument->EndDelivDate,
                       sizeof(TThostFtdcDateType), NULL);
-    sqlite3_bind_int(stmt_, 1, pInstrument->InstLifePhase);
-    sqlite3_bind_int(stmt_, 1, pInstrument->IsTrading);
-    sqlite3_bind_int(stmt_, 1, pInstrument->PositionType);
-    sqlite3_bind_int(stmt_, 1, pInstrument->PositionDateType);
-    sqlite3_bind_double(stmt_, 1, pInstrument->LongMarginRatio);
-    sqlite3_bind_double(stmt_, 1, pInstrument->ShortMarginRatio);
-    sqlite3_bind_int(stmt_, 1, pInstrument->MaxMarginSideAlgorithm);
-    sqlite3_bind_text(stmt_, 1, pInstrument->UnderlyingInstrID,
+    sqlite3_bind_int(stmt_, 20, pInstrument->InstLifePhase);
+    sqlite3_bind_int(stmt_, 21, pInstrument->IsTrading);
+    sqlite3_bind_int(stmt_, 22, pInstrument->PositionType);
+    sqlite3_bind_int(stmt_, 23, pInstrument->PositionDateType);
+    sqlite3_bind_double(stmt_, 24, pInstrument->LongMarginRatio);
+    sqlite3_bind_double(stmt_, 25, pInstrument->ShortMarginRatio);
+    sqlite3_bind_int(stmt_, 26, pInstrument->MaxMarginSideAlgorithm);
+    sqlite3_bind_text(stmt_, 27, pInstrument->UnderlyingInstrID,
                       sizeof(TThostFtdcInstrumentIDType), NULL);
-    sqlite3_bind_double(stmt_, 1, pInstrument->StrikePrice);
-    sqlite3_bind_int(stmt_, 1, pInstrument->OptionsType);
-    sqlite3_bind_double(stmt_, 1, pInstrument->UnderlyingMultiple);
-    sqlite3_bind_int(stmt_, 1, pInstrument->CombinationType);
+    sqlite3_bind_double(stmt_, 28, pInstrument->StrikePrice);
+    sqlite3_bind_int(stmt_, 29, pInstrument->OptionsType);
+    sqlite3_bind_double(stmt_, 30, pInstrument->UnderlyingMultiple);
+    sqlite3_bind_int(stmt_, 31, pInstrument->CombinationType);
+    sqlite3_step(stmt_);
+
+    if (pInstrument->ProductClass == THOST_FTDC_PC_Futures) {
+      pending_request_margin_rate_instruments_.push_back(
+          pInstrument->InstrumentID);
+      pending_request_commission_instruments_.push_back(
+          pInstrument->InstrumentID);
+    }
     if (bIsLast) {
       sqlite3_finalize(stmt_);
       sqlite3_exec(db_, "commit;", 0, 0, 0);
+
+      int rc = sqlite3_exec(db_, "begin;", 0, 0, 0);
+      const char* sql = R"(
+        INSERT INTO margin_rate VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      )";
+      rc = sqlite3_prepare_v2(db_, sql, static_cast<int>(strlen(sql)), &stmt_,
+                              0);
+
+      RequestNextInstrumentMarginRate();
     } else {
     }
   }
@@ -150,7 +197,33 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField* pRspInfo,
       int nRequestID,
       bool bIsLast) {
-    std::cout << pInstrumentMarginRate->InstrumentID << "\n";
+    if (pInstrumentMarginRate != NULL &&
+        (pRspInfo == NULL || pRspInfo->ErrorID == 0)) {
+      sqlite3_reset(stmt_);
+      sqlite3_bind_text(stmt_, 1, pInstrumentMarginRate->InstrumentID,
+                        sizeof(TThostFtdcInstrumentIDType), NULL);
+      sqlite3_bind_int(stmt_, 2, pInstrumentMarginRate->InvestorRange);
+      sqlite3_bind_text(stmt_, 3, pInstrumentMarginRate->BrokerID,
+                        sizeof(TThostFtdcBrokerIDType), NULL);
+      sqlite3_bind_text(stmt_, 4, pInstrumentMarginRate->InvestorID,
+                        sizeof(TThostFtdcInvestorIDType), NULL);
+      sqlite3_bind_int(stmt_, 5, pInstrumentMarginRate->HedgeFlag);
+      sqlite3_bind_double(stmt_, 6,
+                          pInstrumentMarginRate->LongMarginRatioByMoney);
+      sqlite3_bind_double(stmt_, 7,
+                          pInstrumentMarginRate->LongMarginRatioByVolume);
+      sqlite3_bind_double(stmt_, 8,
+                          pInstrumentMarginRate->ShortMarginRatioByMoney);
+      sqlite3_bind_double(stmt_, 9,
+                          pInstrumentMarginRate->ShortMarginRatioByVolume);
+      sqlite3_bind_int(stmt_, 10, pInstrumentMarginRate->IsRelative);
+      sqlite3_step(stmt_);
+
+    } else {
+      std::cout << "ReqQryInstrument Margin Rate Error"
+                << "\n";
+    }
+    RequestNextInstrumentMarginRate();
   }
 
   void OnRspQryInstrumentCommissionRate(
@@ -158,7 +231,32 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField* pRspInfo,
       int nRequestID,
       bool bIsLast) {
-    std::cout << pInstrumentCommissionRate->InstrumentID << "\n";
+    if (pInstrumentCommissionRate != NULL &&
+        (pRspInfo == NULL || pRspInfo->ErrorID == 0)) {
+      sqlite3_reset(stmt_);
+      sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->InstrumentID,
+                        sizeof(TThostFtdcInstrumentIDType), NULL);
+      sqlite3_bind_int(stmt_, 1, pInstrumentCommissionRate->InvestorRange);
+      sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->BrokerID,
+                        sizeof(TThostFtdcBrokerIDType), NULL);
+      sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->InvestorID,
+                        sizeof(TThostFtdcInvestorIDType), NULL);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->OpenRatioByMoney);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->OpenRatioByVolume);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->CloseRatioByMoney);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->CloseRatioByVolume);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->CloseTodayRatioByMoney);
+      sqlite3_bind_double(stmt_, 1,
+                          pInstrumentCommissionRate->CloseTodayRatioByVolume);
+      sqlite3_step(stmt_);
+
+      RequestNextInstrumentCommisstion();
+    }
   }
 
   void CreateInstrumentTableIfNotExist() {
@@ -166,7 +264,7 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
       CREATE TABLE IF NOT EXISTS instrument(
         instrument_id CHAR(31) PRIMARY KEY NOT NULL,
         exchange_id CHAR(9),
-        instrument_name NCHAR(21),
+        instrument_name CHAR(21),
         exchange_inst_id CHAR(31),
         product_id CHAR(31),
         product_class INT,
@@ -215,8 +313,8 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
         instrument_id CHAR(31) PRIMARY KEY NOT NULL,
         investor_range INT,
         broker_id CHAR(11),
+        investor_id CHAR(13),
         hedge_flag INT,
-        exchange_id CHAR(9),
         long_margin_ratio_by_money DOUBLE,
         long_margin_ratio_by_volume DOUBLE,
         short_margin_ratio_by_money DOUBLE,
@@ -267,6 +365,40 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
   std::string password_;
   sqlite3* db_;
   sqlite3_stmt* stmt_;
+  std::list<std::string> pending_request_margin_rate_instruments_;
+  std::list<std::string> pending_request_commission_instruments_;
+
+  void RequestNextInstrumentMarginRate() {
+    if (pending_request_margin_rate_instruments_.empty()) {
+      sqlite3_finalize(stmt_);
+      sqlite3_exec(db_, "commit;", 0, 0, 0);
+
+      // perpare request commisstion
+      int rc = sqlite3_exec(db_, "begin;", 0, 0, 0);
+      const char* sql = R"(
+        INSERT INTO instrument_commission_rate VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      )";
+      rc = sqlite3_prepare_v2(db_, sql, static_cast<int>(strlen(sql)), &stmt_,
+                              0);
+      RequestNextInstrumentCommisstion();
+      return;
+    }
+    ReqQryInstrumentMarginRate(
+        pending_request_margin_rate_instruments_.front());
+    pending_request_margin_rate_instruments_.pop_front();
+  }
+
+  void RequestNextInstrumentCommisstion() {
+    if (pending_request_commission_instruments_.empty()) {
+      sqlite3_finalize(stmt_);
+      sqlite3_exec(db_, "commit;", 0, 0, 0);
+      return;
+    }
+
+    ReqQryInstrumentCommissionRate(
+        pending_request_commission_instruments_.front());
+    pending_request_commission_instruments_.pop_front();
+  }
 };
 
 bool InitInstrumenList(caf::actor_system& system,
