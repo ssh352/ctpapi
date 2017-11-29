@@ -82,7 +82,7 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
 
   virtual caf::behavior make_behavior() override { return {}; }
 
- private:
+private:
   void RequestInstrumentList() {
     int rc = sqlite3_exec(db_, "begin;", 0, 0, 0);
     const char* sql = R"(
@@ -238,22 +238,22 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
       sqlite3_reset(stmt_);
       sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->InstrumentID,
                         sizeof(TThostFtdcInstrumentIDType), NULL);
-      sqlite3_bind_int(stmt_, 1, pInstrumentCommissionRate->InvestorRange);
-      sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->BrokerID,
+      sqlite3_bind_int(stmt_, 2, pInstrumentCommissionRate->InvestorRange);
+      sqlite3_bind_text(stmt_, 3, pInstrumentCommissionRate->BrokerID,
                         sizeof(TThostFtdcBrokerIDType), NULL);
-      sqlite3_bind_text(stmt_, 1, pInstrumentCommissionRate->InvestorID,
+      sqlite3_bind_text(stmt_, 4, pInstrumentCommissionRate->InvestorID,
                         sizeof(TThostFtdcInvestorIDType), NULL);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 5,
                           pInstrumentCommissionRate->OpenRatioByMoney);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 6,
                           pInstrumentCommissionRate->OpenRatioByVolume);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 7,
                           pInstrumentCommissionRate->CloseRatioByMoney);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 8,
                           pInstrumentCommissionRate->CloseRatioByVolume);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 9,
                           pInstrumentCommissionRate->CloseTodayRatioByMoney);
-      sqlite3_bind_double(stmt_, 1,
+      sqlite3_bind_double(stmt_, 10,
                           pInstrumentCommissionRate->CloseTodayRatioByVolume);
       sqlite3_step(stmt_);
 
