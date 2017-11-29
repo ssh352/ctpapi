@@ -117,7 +117,9 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
     strcpy(req.BrokerID, broker_id_.c_str());
     strcpy(req.InvestorID, user_id_.c_str());
     strcpy(req.InstrumentID, instrument_id.c_str());
-    int result = api_->ReqQryInstrumentCommissionRate(&req, 0);
+    while (api_->ReqQryInstrumentCommissionRate(&req, 0) !=0 ) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
   }
 
   virtual void OnRspQryInstrument(CThostFtdcInstrumentField* pInstrument,
@@ -255,8 +257,11 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
                           pInstrumentCommissionRate->CloseTodayRatioByVolume);
       sqlite3_step(stmt_);
 
-      RequestNextInstrumentCommisstion();
+    } else {
+      std::cout << "ReqQryInstrument Commission Error"
+                << "\n";
     }
+    RequestNextInstrumentCommission();
   }
 
   void CreateInstrumentTableIfNotExist() {
@@ -380,7 +385,7 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
       )";
       rc = sqlite3_prepare_v2(db_, sql, static_cast<int>(strlen(sql)), &stmt_,
                               0);
-      RequestNextInstrumentCommisstion();
+      RequestNextInstrumentCommission();
       return;
     }
     ReqQryInstrumentMarginRate(
@@ -388,7 +393,7 @@ class CtpInitActor : public caf::event_based_actor, public CThostFtdcTraderSpi {
     pending_request_margin_rate_instruments_.pop_front();
   }
 
-  void RequestNextInstrumentCommisstion() {
+  void RequestNextInstrumentCommission() {
     if (pending_request_commission_instruments_.empty()) {
       sqlite3_finalize(stmt_);
       sqlite3_exec(db_, "commit;", 0, 0, 0);
