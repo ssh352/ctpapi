@@ -69,6 +69,8 @@ BOOST_FUSION_ADAPT_STRUCT(CThostFtdcOrderField,
                           IPAddress,
                           MacAddress)
 
+
+
 BOOST_FUSION_ADAPT_STRUCT(CThostFtdcTradeField,
                           BrokerID,
                           InvestorID,

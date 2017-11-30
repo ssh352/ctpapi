@@ -3,21 +3,36 @@
 #include <boost/serialization/variant.hpp>
 #include "thost_field_fusion_adapt.h"
 
+using IncreaseFlowCounterAtom = caf::atom_constant<caf::atom("inc")>;
+using CheckFlowFeedIsDoneAtom = caf::atom_constant<caf::atom("check")>;
 
 void CtpOrderSerialization::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   boost::variant<CThostFtdcOrderField, CThostFtdcTradeField> v(*pOrder);
   boost::serialization::save(oa_, v, 0);
-  std::cout << "fuck\n";
+  send(this, IncreaseFlowCounterAtom::value);
 }
 
 void CtpOrderSerialization::OnRtnTrade(CThostFtdcTradeField* pTrade) {
   boost::variant<CThostFtdcOrderField, CThostFtdcTradeField> v(*pTrade);
   boost::serialization::save(oa_, v, 0);
-  std::cout << "fuck\n";
+  send(this, IncreaseFlowCounterAtom::value);
 }
 
 caf::behavior CtpOrderSerialization::make_behavior() {
-  return {};
+  return {[=](RequestTodayFlowAtom) {
+            req_flow_promise_ = make_response_promise<void>();
+            delayed_send(this, std::chrono::milliseconds(500),
+                         CheckFlowFeedIsDoneAtom::value, flow_counter_);
+          },
+          [=](IncreaseFlowCounterAtom) { ++flow_counter_; },
+          [=](CheckFlowFeedIsDoneAtom, int last_counter) {
+            if (last_counter == flow_counter_) {
+              req_flow_promise_.deliver(caf::error());
+            } else {
+              delayed_send(this, std::chrono::milliseconds(500),
+                           CheckFlowFeedIsDoneAtom::value, flow_counter_);
+            }
+          }};
 }
 
 void CtpOrderSerialization::OnRspUserLogin(
@@ -26,6 +41,9 @@ void CtpOrderSerialization::OnRspUserLogin(
     int nRequestID,
     bool bIsLast) {
   if (pRspInfo != NULL && pRspInfo->ErrorID == 0) {
+    std::cout << "Logon:" << pRspInfo->ErrorMsg << "\n";
+  } else {
+    std::cout << "Logon:" << pRspInfo->ErrorMsg << "\n";
   }
 }
 
@@ -45,7 +63,7 @@ CtpOrderSerialization::CtpOrderSerialization(caf::actor_config& cfg,
                                              std::string user_id,
                                              std::string password)
     : event_based_actor(cfg),
-      file_("test.bin", std::ios_base::binary),
+      file_(user_id + ".bin", std::ios_base::binary | std::ios_base::trunc),
       oa_(file_),
       broker_id_(std::move(broker_id)),
       user_id_(std::move(user_id)),
