@@ -3,6 +3,7 @@
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <boost/fusion/include/for_each.hpp>
+#include "ctpapi/ThostFtdcUserApiStruct.h"
 
 BOOST_FUSION_ADAPT_STRUCT(CThostFtdcOrderField,
                           BrokerID,

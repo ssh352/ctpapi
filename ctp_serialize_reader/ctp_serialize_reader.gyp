@@ -4,7 +4,7 @@
   ],
   'targets' : [
     {
-      'target_name' : 'ctp_order_serialize',
+      'target_name' : 'ctp_serialize_reader',
       'type' : 'executable',
       'variables' : {
       },
@@ -12,7 +12,6 @@
         '<!@(python ../build/glob_files.py . *.h *.cc *.cpp)',
       ],
       'dependencies' : [
-        '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
       ],
       'defines' : [
