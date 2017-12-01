@@ -31,4 +31,5 @@ python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi all_un
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi rohon\rohon.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_puller\ctp_puller.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_order_serialize\ctp_order_serialize.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_order_recorder\ctp_order_recorder.gyp
 pause
