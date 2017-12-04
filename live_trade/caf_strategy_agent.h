@@ -8,12 +8,10 @@
 #include "follow_strategy/delay_open_strategy_agent.h"
 class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
  public:
-  CAFDelayOpenStrategyAgent(
-      caf::actor_config& cfg,
-      std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
-          params,
-      LiveTradeMailBox* inner_mail_box,
-      LiveTradeMailBox* common_mail_box);
+  CAFDelayOpenStrategyAgent(caf::actor_config& cfg,
+                            boost::property_tree::ptree* strategy_config,
+                            LiveTradeMailBox* inner_mail_box,
+                            LiveTradeMailBox* common_mail_box);
 
   virtual caf::behavior make_behavior() override;
 

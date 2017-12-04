@@ -1,14 +1,36 @@
 #include "optimal_open_price_strategy.h"
+#include <boost/property_tree/json_parser.hpp>
 #include <boost/algorithm/string.hpp>
 
-
 OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
-    OptimalOpenPriceStrategy::Delegate* delegate,
-    std::unordered_map<std::string, StrategyParam> strategy_params,
-    boost::log::sources::logger* log)
-    : delegate_(delegate),
-      strategy_params_(std::move(strategy_params)),
-      log_(log) {
+  Delegate* delegate,
+  boost::property_tree::ptree* strategy_config,
+  boost::log::sources::logger* log) : delegate_(delegate),
+  log_(log) {
+   for (const auto& pt : *strategy_config) {
+      try {
+        if (pt.first == "default") {
+        default_param_.delayed_open_after_seconds =
+            pt.second.get<int>("DelayOpenOrderAfterSeconds");
+        default_param_.wait_optimal_open_price_fill_seconds =
+            pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
+        default_param_.price_offset = pt.second.get<double>("PriceOffset");
+
+        } else {
+        OptimalOpenPriceStrategy::StrategyParam param;
+        param.delayed_open_after_seconds =
+            pt.second.get<int>("DelayOpenOrderAfterSeconds");
+        param.wait_optimal_open_price_fill_seconds =
+            pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
+        param.price_offset = pt.second.get<double>("PriceOffset");
+        instrument_params_.insert({pt.first, std::move(param)});
+        }
+
+      } catch (boost::property_tree::ptree_error& err) {
+        std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what()
+                  << "\n";
+      }
+    }
 }
 
 std::string OptimalOpenPriceStrategy::GenerateOrderId() {
@@ -306,7 +328,8 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 void OptimalOpenPriceStrategy::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  if (GetStrategyParamDealyOpenAfterSeconds(rtn_order->instrument_id) > 0) {
+  if (GetStrategyParamDealyOpenAfterSeconds(rtn_order->instrument_id,
+    ParseProductCodeWithInstrument(rtn_order->instrument_id)) > 0) {
     BOOST_LOG(*log_)  << 
       boost::log::add_value("quant_timestamp",
                              TimeStampToPtime(last_timestamp_))
@@ -392,7 +415,8 @@ void OptimalOpenPriceStrategy::HandleRtnOrder(
 void OptimalOpenPriceStrategy::HandleTick(const std::shared_ptr<TickData>& tick) {
   last_timestamp_ = tick->tick->timestamp;
   int delayed_open_after_seconds = GetStrategyParamDealyOpenAfterSeconds(
-      *tick->instrument);
+      *tick->instrument,
+    ParseProductCodeWithInstrument(*tick->instrument));
   if (delayed_open_after_seconds > 0 && !pending_delayed_open_order_.empty()) {
     auto it_end = std::remove_if(
         pending_delayed_open_order_.begin(), pending_delayed_open_order_.end(),
@@ -400,7 +424,8 @@ void OptimalOpenPriceStrategy::HandleTick(const std::shared_ptr<TickData>& tick)
           if (*tick->instrument != order.instrument) {
             return false;
           }
-          double price_offset = GetStrategyParamPriceOffset(order.instrument);
+          double price_offset = GetStrategyParamPriceOffset(order.instrument,
+            ParseProductCodeWithInstrument(order.instrument));
           // is expire
           if (tick->tick->timestamp >=
               order.timestamp +
@@ -441,8 +466,10 @@ void OptimalOpenPriceStrategy::HandleTick(const std::shared_ptr<TickData>& tick)
           if (*tick->instrument != order.instrument) {
             return false;
           }
-          double price_offset = GetStrategyParamPriceOffset(order.instrument);
-          int delayed_open_after_seconds = GetStrategyParamWaitOptimalOpenPriceFillSeconds(order.instrument);
+          double price_offset = GetStrategyParamPriceOffset(order.instrument,
+            ParseProductCodeWithInstrument(order.instrument));
+          int delayed_open_after_seconds = GetStrategyParamWaitOptimalOpenPriceFillSeconds(order.instrument,
+            ParseProductCodeWithInstrument(order.instrument));
           // is expire
           if (tick->tick->timestamp >=
               order.timestamp +
@@ -498,39 +525,7 @@ void OptimalOpenPriceStrategy::HandleNearCloseMarket() {
   }
 }
 
-double OptimalOpenPriceStrategy::GetStrategyParamPriceOffset(const std::string& instrument) const
-{
-  std::string instrument_code = instrument.substr(
-      0, instrument.find_first_of("0123456789"));
-  boost::algorithm::to_lower(instrument_code);
-  if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
-    BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
-    return 0.0;
-  }
 
-  return strategy_params_.at(instrument_code).price_offset;
-}
-
-int OptimalOpenPriceStrategy::GetStrategyParamDealyOpenAfterSeconds(const std::string& instrument) const
-{
-  std::string instrument_code;
-  auto it = instrument_code_cache_.find(instrument);
-  if (it == instrument_code_cache_.end()) {
-      instrument_code = instrument.substr(
-          0, instrument.find_first_of("0123456789"));
-      boost::algorithm::to_lower(instrument_code);
-      instrument_code_cache_.insert({instrument, instrument_code});
-  } else {
-    instrument_code = it->second;
-  }
-
-  if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
-    BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
-    return 0.0;
-  }
-
-  return strategy_params_.at(instrument_code).delayed_open_after_seconds;
-}
 
 void OptimalOpenPriceStrategy::InitPosition(const std::vector<OrderPosition>& positions) {
   for (const auto& pos : positions) {
@@ -542,7 +537,8 @@ void OptimalOpenPriceStrategy::OpenOptimalPriceOrder(InputOrder input_order)
 {
   input_order.order_id = GenerateOrderId();
   double optimal_price = GetOptimalOpenPrice(input_order.price,
-    GetStrategyParamPriceOffset(input_order.instrument),
+    GetStrategyParamPriceOffset(input_order.instrument,
+      ParseProductCodeWithInstrument(input_order.instrument)),
     input_order.direction);
   double old_price = input_order.price;
   input_order.price = optimal_price;
@@ -563,21 +559,86 @@ void OptimalOpenPriceStrategy::OpenOptimalPriceOrder(InputOrder input_order)
     << optimal_price;
 }
 
-int OptimalOpenPriceStrategy::GetStrategyParamWaitOptimalOpenPriceFillSeconds(const std::string& instrument) const
-{
-  std::string instrument_code = instrument.substr(
-      0, instrument.find_first_of("0123456789"));
-  boost::algorithm::to_lower(instrument_code);
-  if (strategy_params_.find(instrument_code) == strategy_params_.end()) {
-    BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
-    return 0.0;
-  }
-
-  return strategy_params_.at(instrument_code).wait_optimal_open_price_fill_seconds;
-}
 
 double OptimalOpenPriceStrategy::GetOptimalOpenPrice(double price, double price_offset, OrderDirection direction) const
 {
   return direction == OrderDirection::kBuy ? price - price_offset
          : price + price_offset;
+}
+
+double OptimalOpenPriceStrategy::GetStrategyParamPriceOffset(
+    const std::string& instrument,
+  const std::string& product_code) const
+{
+  if (instrument_params_.find(instrument) != instrument_params_.end()) {
+    return instrument_params_.at(instrument).price_offset;
+  }
+
+  if (instrument_params_.find(product_code) != instrument_params_.end()) {
+    return instrument_params_.at(product_code).price_offset;
+  }
+
+
+  return default_param_.price_offset;
+
+  //std::string instrument_code = instrument.substr(
+  //    0, instrument.find_first_of("0123456789"));
+  //boost::algorithm::to_lower(instrument_code);
+  //if (instrument_params_.find(instrument_code) == instrument_params_.end()) {
+  //  BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
+  //  return 0.0;
+  //}
+
+  //return instrument_params_.at(instrument_code).price_offset;
+}
+
+int OptimalOpenPriceStrategy::GetStrategyParamDealyOpenAfterSeconds(
+  const std::string& instrument,
+  const std::string& product_code) const {
+  if (instrument_params_.find(instrument) != instrument_params_.end()) {
+    return instrument_params_.at(instrument).delayed_open_after_seconds;
+  }
+
+  if (instrument_params_.find(product_code) != instrument_params_.end()) {
+    return instrument_params_.at(product_code).delayed_open_after_seconds;
+  }
+
+  return default_param_.delayed_open_after_seconds;
+}
+
+int OptimalOpenPriceStrategy::GetStrategyParamWaitOptimalOpenPriceFillSeconds(
+  const std::string& instrument,
+  const std::string& product_code) const {
+
+  if (instrument_params_.find(instrument) != instrument_params_.end()) {
+    return instrument_params_.at(instrument).wait_optimal_open_price_fill_seconds;
+  }
+
+  if (instrument_params_.find(product_code) != instrument_params_.end()) {
+    return instrument_params_.at(product_code).wait_optimal_open_price_fill_seconds;
+  }
+
+  return default_param_.wait_optimal_open_price_fill_seconds;
+
+  //std::string instrument_code = instrument.substr(
+  //    0, instrument.find_first_of("0123456789"));
+  //boost::algorithm::to_lower(instrument_code);
+  //if (instrument_params_.find(instrument_code) == instrument_params_.end()) {
+  //  BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
+  //  return 0.0;
+  //}
+}
+
+std::string OptimalOpenPriceStrategy::ParseProductCodeWithInstrument(const std::string& instrument) {
+  std::string product_code;
+  auto it = instrument_code_cache_.find(instrument);
+  if (it == instrument_code_cache_.end()) {
+      product_code = instrument.substr(
+          0, instrument.find_first_of("0123456789"));
+      boost::algorithm::to_lower(product_code);
+      instrument_code_cache_.insert({instrument, product_code});
+  } else {
+    product_code = it->second;
+  }
+  return product_code;
 }

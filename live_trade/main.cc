@@ -12,6 +12,7 @@
 #include <boost/algorithm/string.hpp>
 #include "caf/all.hpp"
 #include "common/api_struct.h"
+#include "yaml-cpp/yaml.h"
 #include "caf_common/caf_atom_defines.h"
 // #include "hpt_core/backtesting/execution_handler.h"
 // #include "hpt_core/backtesting/price_handler.h"
@@ -85,30 +86,35 @@ class config : public caf::actor_system_config {
   }
 };
 
+struct SubAccount {
+  std::string name;
+  std::string strategy_config;
+  std::string broker;
+};
+
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
-  pt::ptree strategy_config_pt;
-  try {
-    pt::read_json("strategy_config.json", strategy_config_pt);
-  } catch (pt::ptree_error& err) {
-    std::cout << "Read Confirg File Error:" << err.what() << "\n";
-    return 1;
-  }
+  YAML::Node config = YAML::Load(R"(
+- Account: ShunWuKong
+  Strategy: wukong.yaml
+  Broker: ZX_10007
+- Account: ZhuBaJie
+  Strategy: zhubajie.yaml
+  Broker: ZX_1270001
+- Account: ShaHeShang
+  Strategy: shaheshang.yaml
+  Broker: ZX_1270001
+- Account: TangSheng
+  Strategy: tangsheng.yaml
+  Broker: Rohong_simualate
+)");
 
-  // system.registry().put(SerializeCtaAtom::value,
-  //                      caf::actor_cast<caf::strong_actor_ptr>(
-  //                          system.spawn<SerializationCtaRtnOrder>()));
-  // system.registry().put(SerializeStrategyAtom::value,
-  //                      caf::actor_cast<caf::strong_actor_ptr>(
-  //                          system.spawn<SerializationStrategyRtnOrder>()));
-
-  using hrc = std::chrono::high_resolution_clock;
-  auto beg = hrc::now();
-  bool running = true;
-
-  std::vector<std::string> sub_acconts;
-  for (int i = 0; i < 2; ++i) {
-    sub_acconts.push_back(str(boost::format("a%d") % i));
+  std::vector<SubAccount> sub_acconts;
+  for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
+    auto node = it->as<YAML::Node>();
+    SubAccount account;
+    account.name = node["Account"].as<std::string>();
+    sub_acconts.push_back(account);
   }
   // auto sub_acconts = {"foo"};
   LiveTradeMailBox common_mail_box;
@@ -121,36 +127,21 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
   for (const auto& account : sub_acconts) {
     auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
-    // DelayedOpenStrategyEx::StrategyParam param;
-    // param.delayed_open_after_seconds = 5;
-    // param.price_offset = 0;
-    std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
-        params;
-    for (const auto& pt : strategy_config_pt) {
-      try {
-        if (pt.first == "backtesting")
-          continue;
-        OptimalOpenPriceStrategy::StrategyParam param;
-        param.delayed_open_after_seconds =
-            pt.second.get<int>("DelayOpenOrderAfterSeconds");
-        param.wait_optimal_open_price_fill_seconds =
-            pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
-        param.price_offset = pt.second.get<double>("PriceOffset");
-        params.insert({pt.first, std::move(param)});
-
-      } catch (pt::ptree_error& err) {
-        std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what()
-                  << "\n";
-        return {};
-      }
+    pt::ptree strategy_config_pt;
+    try {
+      pt::read_json(account.strategy_config, strategy_config_pt);
+    } catch (pt::ptree_error& err) {
+      std::cout << "Read Confirg File Error:" << err.what() << "\n";
+      return 1;
     }
-    system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(), account);
+
+    system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(), account.name);
     // system.spawn<SerializationCtaRtnOrder>();
     system.spawn<CAFDelayOpenStrategyAgent>(
-        std::move(params), inner_mail_box.get(), &common_mail_box);
+        &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
     sub_actors.push_back(std::make_pair(
-        account, system.spawn<CAFSubAccountBroker>(inner_mail_box.get(),
-                                                   &common_mail_box, account)));
+        account.name, system.spawn<CAFSubAccountBroker>(
+                     inner_mail_box.get(), &common_mail_box, account.name)));
     inner_mail_boxs.push_back(std::move(inner_mail_box));
   }
 
@@ -193,7 +184,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   //             "tcp://180.168.146.187:10001", "9999", "099344",
   //             "a12345678");
 
-   caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
+  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
                  "9999", "053867", "8661188");
 
   // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
@@ -220,12 +211,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
   }
 
   system.await_all_actors_done();
-
-  std::cout << "espces:"
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   hrc::now() - beg)
-                   .count()
-            << "\n";
   return 0;
 }
 

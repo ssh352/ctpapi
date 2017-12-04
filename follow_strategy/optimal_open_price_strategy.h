@@ -3,6 +3,7 @@
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/common.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include "follow_strategy/logging_defines.h"
 #include "follow_strategy/string_util.h"
 #include "follow_strategy/logging_defines.h"
@@ -32,7 +33,7 @@ class OptimalOpenPriceStrategy {
   };
   OptimalOpenPriceStrategy(
       Delegate* delegate,
-      std::unordered_map<std::string, StrategyParam> strategy_params,
+      boost::property_tree::ptree* strategy_config,
       boost::log::sources::logger* log);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
@@ -80,13 +81,16 @@ class OptimalOpenPriceStrategy {
                                  OrderDirection direciton,
                                  int leaves_cancel_qty);
 
-  double GetStrategyParamPriceOffset(const std::string& instrument) const;
+  double GetStrategyParamPriceOffset(const std::string& instrument,
+                                     const std::string& product_code) const;
 
   int GetStrategyParamDealyOpenAfterSeconds(
-      const std::string& instrument) const;
+      const std::string& instrument,
+      const std::string& product_code) const;
 
   int GetStrategyParamWaitOptimalOpenPriceFillSeconds(
-      const std::string& instrument) const;
+      const std::string& instrument,
+      const std::string& product_code) const;
 
   double GetOptimalOpenPrice(double price,
                              double price_offset,
@@ -107,11 +111,15 @@ class OptimalOpenPriceStrategy {
       const std::string& instrument,
       OrderDirection position_effect_direction);
   std::string GenerateOrderId();
+
+  std::string ParseProductCodeWithInstrument(const std::string& instrument);
+
   std::list<InputOrder> pending_delayed_open_order_;
   std::list<OptimalOpenOrder> optimal_open_price_orders_;
   std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
   SimplyPortfolio portfolio_;
-  std::unordered_map<std::string, StrategyParam> strategy_params_;
+  StrategyParam default_param_;
+  std::unordered_map<std::string, StrategyParam> instrument_params_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
   boost::log::sources::logger* log_;
