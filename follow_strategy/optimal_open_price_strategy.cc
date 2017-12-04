@@ -14,15 +14,14 @@ OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
             pt.second.get<int>("DelayOpenOrderAfterSeconds");
         default_param_.wait_optimal_open_price_fill_seconds =
             pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
-        default_param_.price_offset = pt.second.get<double>("PriceOffset");
-
+        default_param_.price_offset = pt.second.get<double>("OptimizeTickSize");
         } else {
         OptimalOpenPriceStrategy::StrategyParam param;
         param.delayed_open_after_seconds =
             pt.second.get<int>("DelayOpenOrderAfterSeconds");
         param.wait_optimal_open_price_fill_seconds =
             pt.second.get<int>("WaitOptimalOpenPriceFillSeconds");
-        param.price_offset = pt.second.get<double>("PriceOffset");
+        param.price_offset = pt.second.get<double>("OptimizeTickSize");
         instrument_params_.insert({pt.first, std::move(param)});
         }
 

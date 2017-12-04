@@ -46,8 +46,9 @@
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
 
-caf::behavior RemoteTradeApiHandler(caf::event_based_actor* self,
-                                    RemoteCtpApiTradeApiProvider* provider) {
+caf::behavior RemoteTradeApiHandler(
+    caf::event_based_actor* self,
+    std::shared_ptr<RemoteCtpApiTradeApiProvider> provider) {
   return {
       [=](std::vector<OrderPosition> yesterday_positions) {
         provider->HandleRspYesterdayPosition(std::move(yesterday_positions));
@@ -94,120 +95,139 @@ struct SubAccount {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
-  YAML::Node config = YAML::Load(R"(
-- Account: ShunWuKong
-  Strategy: wukong.yaml
-  Broker: ZX_10007
-- Account: ZhuBaJie
-  Strategy: zhubajie.yaml
-  Broker: ZX_1270001
-- Account: ShaHeShang
-  Strategy: shaheshang.yaml
-  Broker: ZX_1270001
-- Account: TangSheng
-  Strategy: tangsheng.yaml
-  Broker: Rohong_simualate
-)");
+  try {
+    YAML::Node config = YAML::LoadFile("accounts.yaml");
+    std::vector<SubAccount> sub_acconts;
+    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
+      auto node = it->as<YAML::Node>();
+      SubAccount account;
+      account.name = node["Account"].as<std::string>();
+      account.strategy_config = node["Strategy"].as<std::string>();
+      account.broker = node["Broker"].as<std::string>();
+      sub_acconts.push_back(account);
+    }
+    // auto sub_acconts = {"foo"};
+    LiveTradeMailBox common_mail_box;
 
-  std::vector<SubAccount> sub_acconts;
-  for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
-    auto node = it->as<YAML::Node>();
-    SubAccount account;
-    account.name = node["Account"].as<std::string>();
-    sub_acconts.push_back(account);
-  }
-  // auto sub_acconts = {"foo"};
-  LiveTradeMailBox common_mail_box;
+    std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
+    std::vector<std::pair<std::string, caf::actor>> sub_actors;
+    auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
-  std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
-  std::vector<std::pair<std::string, caf::actor>> sub_actors;
-  auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
+    system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
 
-  system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
+    for (const auto& account : sub_acconts) {
+      auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
+      pt::ptree strategy_config_pt;
+      try {
+        pt::read_json(account.strategy_config, strategy_config_pt);
+      } catch (pt::ptree_error& err) {
+        std::cout << "Read Confirg File Error:" << err.what() << "\n";
+        return 1;
+      }
 
-  for (const auto& account : sub_acconts) {
-    auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
-    pt::ptree strategy_config_pt;
-    try {
-      pt::read_json(account.strategy_config, strategy_config_pt);
-    } catch (pt::ptree_error& err) {
-      std::cout << "Read Confirg File Error:" << err.what() << "\n";
-      return 1;
+      system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(),
+                                                  account.name);
+      // system.spawn<SerializationCtaRtnOrder>();
+      system.spawn<CAFDelayOpenStrategyAgent>(
+          &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
+      sub_actors.push_back(std::make_pair(
+          account.name,
+          system.spawn<CAFSubAccountBroker>(inner_mail_box.get(),
+                                            &common_mail_box, account.name)));
+      inner_mail_boxs.push_back(std::move(inner_mail_box));
     }
 
-    system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(), account.name);
-    // system.spawn<SerializationCtaRtnOrder>();
-    system.spawn<CAFDelayOpenStrategyAgent>(
-        &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
-    sub_actors.push_back(std::make_pair(
-        account.name, system.spawn<CAFSubAccountBroker>(
-                     inner_mail_box.get(), &common_mail_box, account.name)));
-    inner_mail_boxs.push_back(std::move(inner_mail_box));
-  }
+    YAML::Node broker_config = YAML::LoadFile("brokers.yaml");
+    std::vector<caf::actor> brokers;
+    for (YAML::const_iterator it = broker_config.begin();
+         it != broker_config.end(); ++it) {
+      auto item = it->as<YAML::Node>();
+      std::string type = item["Type"].as<std::string>();
+      if (type == "Local") {
+        //////////////////////////////////////////////////////////////////////////
+        auto local_ctcp_trade_api_provider =
+            std::make_shared<LocalCtpTradeApiProvider>();
+        brokers.push_back(system.spawn<SupportSubAccountBroker>(
+            &common_mail_box, local_ctcp_trade_api_provider, sub_actors));
+        // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
+        //                                      "66666", "120301760", "140616");
+        local_ctcp_trade_api_provider->Connect(
+            item["Server"].as<std::string>(),
+            item["BrokerId"].as<std::string>(),
+            item["UserId"].as<std::string>(),
+            item["Password"].as<std::string>());
+      } else if (type == "Remote") {
+        auto remote_ctp_trade_api_provider =
+            std::make_shared<RemoteCtpApiTradeApiProvider>();
 
-  //////////////////////////////////////////////////////////////////////////
-  LocalCtpTradeApiProvider local_ctcp_trade_api_provider;
-  auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
-      &common_mail_box, &local_ctcp_trade_api_provider, sub_actors);
-  // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
-  //                                      "66666", "120301760", "140616");
+        auto remote_trade_api_handler =
+            system.spawn(RemoteTradeApiHandler, remote_ctp_trade_api_provider);
 
-  local_ctcp_trade_api_provider.Connect("tcp://180.168.146.187:10001", "9999",
-                                        "099344", "a12345678");
+        remote_ctp_trade_api_provider->SetRemoteHandler(
+            remote_trade_api_handler);
 
-  //////////////////////////////////////////////////////////////////////////
-  // RemoteCtpApiTradeApiProvider remote_ctp_trade_api_provider;
+        auto remote_trade_api = system.middleman().remote_actor(
+            item["RemoteServer"].as<std::string>(),
+            item["RemotePort"].as<int>());
+        if (!remote_trade_api) {
+          std::cerr << "unable to connect to rohon:"
+                    << system.render(remote_trade_api.error()) << std::endl;
+          return 0;
+        } else {
+          caf::send_as(remote_trade_api_handler, *remote_trade_api,
+                       RemoteCTPConnectAtom::value);
+          remote_ctp_trade_api_provider->SetRemoteTradeApi(*remote_trade_api);
+        }
 
-  // auto remote_trade_api_handler =
-  //    system.spawn(RemoteTradeApiHandler, &remote_ctp_trade_api_provider);
-
-  // remote_ctp_trade_api_provider.SetRemoteHandler(remote_trade_api_handler);
-
-  // auto remote_trade_api = system.middleman().remote_actor("127.0.0.1", 4242);
-  // if (!remote_trade_api) {
-  //  std::cerr << "unable to connect to rohon:"
-  //            << system.render(remote_trade_api.error()) << std::endl;
-  //  return 0;
-  //} else {
-  //  caf::send_as(remote_trade_api_handler, *remote_trade_api,
-  //               RemoteCTPConnectAtom::value);
-  //  remote_ctp_trade_api_provider.SetRemoteTradeApi(*remote_trade_api);
-  //}
-
-  // auto support_sub_account_broker = system.spawn<SupportSubAccountBroker>(
-  //    &common_mail_box, &remote_ctp_trade_api_provider, sub_actors);
-  //////////////////////////////////////////////////////////////////////////
-
-  auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
-
-  // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-  //             "tcp://180.168.146.187:10001", "9999", "099344",
-  //             "a12345678");
-
-  caf::anon_send(cta, CtpConnectAtom::value, "tcp://180.168.146.187:10001",
-                 "9999", "053867", "8661188");
-
-  // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
-  //               "tcp://ctp1-front3.citicsf.com:41205", "66666", "120301760",
-  //               "140616");
-
-  /*caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
-                 "8888", "181006", "140616");*/
-
-  caf::anon_send(data_feed, CtpConnectAtom::value, "tcp://180.166.11.33:41213",
-                 "4200", "15500011", "Yunqizhi2_");
-
-  // live_trade_borker_handler.Connect();
-
-  std::string input;
-  while (std::cin >> input) {
-    if (input == "flush") {
-      common_mail_box.Send(SerializationFlushAtom::value);
-      std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
-                    [](const auto& mail_box) {
-                      mail_box->Send(SerializationFlushAtom::value);
-                    });
+        brokers.push_back(system.spawn<SupportSubAccountBroker>(
+            &common_mail_box, remote_ctp_trade_api_provider, sub_actors));
+      } else {
+        BOOST_ASSERT(false);
+      }
     }
+
+    YAML::Node live_config = YAML::LoadFile("live_trade.yaml");
+
+    //////////////////////////////////////////////////////////////////////////
+    auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
+    // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+    //             "tcp://180.168.146.187:10001", "9999", "099344",
+    //             "a12345678");
+
+    caf::anon_send(cta, CtpConnectAtom::value,
+                   live_config["CtaBroker"]["Server"].as<std::string>(),
+                   live_config["CtaBroker"]["BrokerId"].as<std::string>(),
+                   live_config["CtaBroker"]["UserId"].as<std::string>(),
+                   live_config["CtaBroker"]["Password"].as<std::string>());
+
+    // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
+    //               "tcp://ctp1-front3.citicsf.com:41205", "66666",
+    //               "120301760", "140616");
+
+    /*caf::anon_send(cta, CtpConnectAtom::value, "tcp://101.231.3.125:41205",
+                   "8888", "181006", "140616");*/
+
+    caf::anon_send(data_feed, CtpConnectAtom::value,
+                   live_config["DataFeed"]["Server"].as<std::string>(),
+                   live_config["DataFeed"]["BrokerId"].as<std::string>(),
+                   live_config["DataFeed"]["UserId"].as<std::string>(),
+                   live_config["DataFeed"]["Password"].as<std::string>());
+
+    // live_trade_borker_handler.Connect();
+
+    std::string input;
+    while (std::cin >> input) {
+      if (input == "flush") {
+        common_mail_box.Send(SerializationFlushAtom::value);
+        std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
+                      [](const auto& mail_box) {
+                        mail_box->Send(SerializationFlushAtom::value);
+                      });
+      }
+    }
+
+  } catch (YAML::Exception& err) {
+    std::cout << err.what();
   }
 
   system.await_all_actors_done();

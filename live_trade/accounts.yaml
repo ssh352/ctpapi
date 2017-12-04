@@ -1,0 +1,12 @@
+- Account: ShunWuKong
+  Strategy: wukong.json
+  Broker: ZX_10007
+- Account: ZhuBaJie
+  Strategy: zhubajie.json
+  Broker: ZX_1270001
+- Account: ShaHeShang
+  Strategy: shaheshang.json
+  Broker: ZX_1270001
+- Account: TangSheng
+  Strategy: tangsheng.json
+  Broker: Rohong_simualate

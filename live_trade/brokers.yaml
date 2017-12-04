@@ -1,0 +1,14 @@
+- Name: SimNow_099344
+  Type: Local
+  Server: tcp://180.168.146.187:10001
+  BrokerId: 9999
+  UserId: 099344
+  Password: a12345678
+- Name: Rohon_test
+  Type: Remote
+  RemoteServer: 127.0.0.1
+  RemotePort: 4444
+  Server: tcp://180.168.146.187:10001
+  BrokerId: 9999
+  UserId: 099344
+  Password: a12345678

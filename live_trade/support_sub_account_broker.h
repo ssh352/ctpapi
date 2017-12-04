@@ -16,7 +16,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
   SupportSubAccountBroker(
       caf::actor_config& cfg,
       LiveTradeMailBox* mail_box,
-      CtpTradeApiProvider* ctp_trade_api_provider,
+      std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider,
       const std::vector<std::pair<std::string, caf::actor> >& sub_accounts);
 
   virtual caf::behavior make_behavior() override;
@@ -63,7 +63,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
   OrderIdBimap order_id_bimap_;
   std::unordered_map<std::string, caf::actor> sub_actors_;
   LiveTradeMailBox* mail_box_;
-  CtpTradeApiProvider* trader_api_;
+  std::shared_ptr<CtpTradeApiProvider> trader_api_;
   CtpPositionRestorer position_restorer_;
   int order_seq_ = 0;
   int sync_history_rtn_order_count_ = 0;

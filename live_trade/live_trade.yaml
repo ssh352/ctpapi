@@ -1,0 +1,10 @@
+CtaBroker:
+  Server: tcp://180.168.146.187:10001
+  BrokerId: 9999
+  UserId: 053867
+  Password: 8661188
+DataFeed:
+  Server: tcp://180.166.11.33:41213
+  BrokerId: 4200
+  UserId: 15500011
+  Password: Yunqizhi2_

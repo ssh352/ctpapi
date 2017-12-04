@@ -7,10 +7,9 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
  public:
   DelayOpenStrategyAgent(
       MailBox* mail_box,
-      std::unordered_map<std::string, typename Strategy::StrategyParam>
-          params,
+    boost::property_tree::ptree* strategy_config,
     boost::log::sources::logger* log)
-      : mail_box_(mail_box), strategy_(this, std::move(params), log) {
+      : mail_box_(mail_box), strategy_(this, strategy_config, log) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&Strategy::HandleTick, &strategy_);

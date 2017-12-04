@@ -1,0 +1,17 @@
+{
+  "default": {
+    "DelayOpenOrderAfterSeconds": 1,
+    "WaitOptimalOpenPriceFillSeconds": 60,
+    "OptimizeTickSize": 1
+  },
+  "a": {
+    "DelayOpenOrderAfterSeconds": 1,
+    "WaitOptimalOpenPriceFillSeconds": 290,
+    "OptimizeTickSize": 1
+  },
+  "al": {
+    "DelayOpenOrderAfterSeconds": 1,
+    "WaitOptimalOpenPriceFillSeconds": 700,
+    "OptimizeTickSize": 1
+  }
+}

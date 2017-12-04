@@ -7,7 +7,7 @@
 SupportSubAccountBroker::SupportSubAccountBroker(
     caf::actor_config& cfg,
     LiveTradeMailBox* mail_box,
-    CtpTradeApiProvider* ctp_trade_api_provider,
+    std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider,
     const std::vector<std::pair<std::string, caf::actor>>& sub_accounts)
     : caf::event_based_actor(cfg),
       mail_box_(mail_box),
