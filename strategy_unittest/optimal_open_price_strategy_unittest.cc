@@ -1,4 +1,6 @@
 #include "gtest/gtest.h"
+//#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include "follow_strategy/optimal_open_price_strategy.h"
 #include "unittest_helper.h"
@@ -9,7 +11,8 @@ const static std::string master_account_id = "master";
 const static std::string slave_account_id = "slave";
 const static int delayed_open_after_seconds = 0;
 const static int wait_optimal_open_price_order_fill_seconds = 60;
-const static std::string defalut_instrument_id = "I1";
+const static std::string defalut_instrument_id = "ut1001";
+const static std::string default_product_code = "ut";
 const static int default_market_tick_qty = 10;
 
 class TestOptimalOpenPriceWithOutDelayOpenSeconds
@@ -26,10 +29,28 @@ class TestOptimalOpenPriceWithOutDelayOpenSeconds
     params.insert(
         {"i", OptimalOpenPriceStrategy::StrategyParam{
                   0, wait_optimal_open_price_order_fill_seconds, 0.1}});
+    boost::property_tree::ptree child;
+    child.put("DelayOpenOrderAfterSeconds", 0);
+    child.put("WaitOptimalOpenPriceFillSeconds",
+              wait_optimal_open_price_order_fill_seconds);
+    child.put("OptimizeTickSize", 1);
+    pt_.add_child("default", child);
+    boost::property_tree::ptree product_info_pt;
+    {
+      boost::property_tree::ptree child;
+      child.put("TickSize", 0.1);
+      child.put("Exchange", "test");
+      product_info_pt.add_child(default_product_code, child);
+    }
+    product_info_mananger_.Load(product_info_pt);
     CreateStrategy<
         DelayOpenStrategyAgent<UnittestMailBox, OptimalOpenPriceStrategy> >(
-        std::move(params), &log_);
+        &pt_, &product_info_mananger_, &log_);
   }
+
+ private:
+  boost::property_tree::ptree pt_;
+  ProductInfoMananger product_info_mananger_;
 };
 
 TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, Open_Order) {
@@ -45,7 +66,8 @@ TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, Open_Order) {
   EXPECT_EQ("0", input_order->order_id);
 }
 
-TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, DontActionOrderBecauseAllFill) {
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds,
+       DontActionOrderBecauseAllFill) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
   MasterTradedOrder("0", 10, 10, 0);
@@ -66,13 +88,12 @@ TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, CancelOrderOptimalOrder) {
 
   auto cancel_order = PopupRntOrder<CancelOrder>();
   EXPECT_EQ("0", cancel_order->order_id);
-  
+
   CancelOrderWithOrderNo("0");
   ElapseSeconds(wait_optimal_open_price_order_fill_seconds);
   MarketTick(1.0);
   ASSERT_FALSE(PopupRntOrder<OrderAction>());
 }
-
 
 TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, ActionOrder) {
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);

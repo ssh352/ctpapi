@@ -3,13 +3,18 @@
 #include <unordered_map>
 #include <boost/optional.hpp>
 #include <boost/container/detail/singleton.hpp>
+#include <boost/property_tree/ptree.hpp>
 #include "common/api_struct.h"
 
 class ProductInfoMananger {
  public:
   ProductInfoMananger();
-  static const ProductInfoMananger* GetInstance();
 
+  
+  void LoadFile(const std::string& file);
+
+  void Load(const boost::property_tree::ptree& pt);
+  
   boost::optional<ProductInfo> GetProductInfo(
       const std::string& product_code) const;
 

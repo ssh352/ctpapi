@@ -10,6 +10,7 @@
 #include "hpt_core/time_util.h"
 #include "hpt_core/order_util.h"
 #include "hpt_core/simply_portfolio.h"
+#include "follow_strategy/product_info_manager.h"
 
 class OptimalOpenPriceStrategy {
  public:
@@ -31,10 +32,11 @@ class OptimalOpenPriceStrategy {
     int wait_optimal_open_price_fill_seconds;
     double price_offset;
   };
-  OptimalOpenPriceStrategy(
-      Delegate* delegate,
-      boost::property_tree::ptree* strategy_config,
-      boost::log::sources::logger* log);
+
+  OptimalOpenPriceStrategy(Delegate* delegate,
+                           boost::property_tree::ptree* strategy_config,
+                           ProductInfoMananger* product_info_mananger,
+                           boost::log::sources::logger* log);
 
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
@@ -126,6 +128,7 @@ class OptimalOpenPriceStrategy {
   TimeStamp last_timestamp_ = 0;
   Delegate* delegate_;
   mutable std::unordered_map<std::string, std::string> instrument_code_cache_;
+  ProductInfoMananger* product_info_mananger_;
 };
 
 #endif  // FOLLOW_STRATEGY_OPTIMAL_OPEN_PRICE_STRATEGY_H

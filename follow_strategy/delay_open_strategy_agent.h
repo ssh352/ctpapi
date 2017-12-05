@@ -1,15 +1,18 @@
 #ifndef FOLLOW_STRATEGY_DELAY_OPEN_STRATEGY_AGENT_H
 #define FOLLOW_STRATEGY_DELAY_OPEN_STRATEGY_AGENT_H
+#include <boost/property_tree/ptree.hpp>
 #include "delayed_open_strategy_ex.h"
+#include "product_info_manager.h"
 
 template <typename MailBox, typename Strategy>
 class DelayOpenStrategyAgent : public Strategy::Delegate {
  public:
-  DelayOpenStrategyAgent(
-      MailBox* mail_box,
-    boost::property_tree::ptree* strategy_config,
-    boost::log::sources::logger* log)
-      : mail_box_(mail_box), strategy_(this, strategy_config, log) {
+  DelayOpenStrategyAgent(MailBox* mail_box,
+                         boost::property_tree::ptree* strategy_config,
+                         ProductInfoMananger* product_info_mananger,
+                         boost::log::sources::logger* log)
+      : mail_box_(mail_box),
+        strategy_(this, strategy_config, product_info_mananger, log) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
     mail_box_->Subscribe(&Strategy::HandleTick, &strategy_);

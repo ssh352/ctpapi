@@ -62,16 +62,17 @@ auto MakeInputOrder(std::string instrument,
                     double price,
                     int qty,
                     TimeStamp timestamp) {
-  return InputOrderBacktesting{instrument, "A1",position_effect,
-                    direction,  price, qty,  timestamp};
+  return InputOrder{instrument, "A1", position_effect, direction,
+                    price,      qty,  timestamp};
 }
 
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
 
-  mail_box.Send(MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),
+                MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kBuy, 1.1, 10, 0));
   {
     auto order = event_factory.PopupRntOrder();
@@ -82,7 +83,8 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
     EXPECT_EQ(0, order->trading_qty);
   }
 
-  mail_box.Send(MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),
+                MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kBuy, 0.9, 10, 0));
 
   {
@@ -129,9 +131,9 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
 TEST(BacktestingExecutionHandler, OpenSellOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
 
-  mail_box.Send(MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kSell, 1.1, 10, 0));
   {
     auto order = event_factory.PopupRntOrder();
@@ -142,7 +144,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(0, order->trading_qty);
   }
 
-  mail_box.Send(MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(), MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kSell, 0.9, 10, 0));
 
   {
@@ -189,12 +191,14 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
 TEST(BacktestingExecutionHandler, CancelOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box);
+  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
 
-  mail_box.Send(MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),
+                MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kSell, 1.1, 10, 0));
 
   auto order = event_factory.PopupRntOrder();
+  ASSERT_TRUE(order);
   EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
   EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
   EXPECT_EQ(OrderStatus::kActive, order->status);
@@ -203,9 +207,10 @@ TEST(BacktestingExecutionHandler, CancelOrder) {
   execution_handler.HandleTick(MakeTick("S1", 0.9, 100));
   EXPECT_EQ(true, event_factory.PopupRntOrder() == nullptr);
 
-  mail_box.Send(CancelOrder{order->order_id});
+  mail_box.Send(BacktestingAtom(), CancelOrder{order->order_id});
   {
     auto order = event_factory.PopupRntOrder();
+    ASSERT_TRUE(order);
     EXPECT_EQ(true, order != nullptr);
     EXPECT_EQ(OrderStatus::kCanceled, order->status);
     EXPECT_EQ(10, order->qty);

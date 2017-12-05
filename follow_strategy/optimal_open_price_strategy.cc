@@ -1,12 +1,13 @@
 #include "optimal_open_price_strategy.h"
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/algorithm/string.hpp>
-#include "product_info_manager.h"
 
 OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
   Delegate* delegate,
   boost::property_tree::ptree* strategy_config,
+  ProductInfoMananger* product_info_mananger,
   boost::log::sources::logger* log) : delegate_(delegate),
+  product_info_mananger_(product_info_mananger),
   log_(log) {
    for (const auto& pt : *strategy_config) {
       try {
@@ -569,7 +570,7 @@ double OptimalOpenPriceStrategy::GetOptimalOpenPrice(double price, double price_
 double OptimalOpenPriceStrategy::GetStrategyParamPriceOffset(
     const std::string& instrument,
   const std::string& product_code) const {
-  auto product_info = ProductInfoMananger::GetInstance()->GetProductInfo(product_code);
+  auto product_info = product_info_mananger_->GetProductInfo(product_code);
   if (!product_info) {
     return 0.0;
   }
