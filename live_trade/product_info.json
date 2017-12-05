@@ -1,0 +1,210 @@
+{
+    "a": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "ag": {
+        "Exchange": "sc",
+        "TickSize": 1.0
+    },
+    "al": {
+        "Exchange": "sc",
+        "TickSize": 5.0
+    },
+    "au": {
+        "Exchange": "sc",
+        "TickSize": 0.05
+    },
+    "b": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "bb": {
+        "Exchange": "dc",
+        "TickSize": 0.05
+    },
+    "bu": {
+        "Exchange": "sc",
+        "TickSize": 2.0
+    },
+    "c": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "cf": {
+        "Exchange": "zc",
+        "TickSize": 5.0
+    },
+    "cs": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "cu": {
+        "Exchange": "sc",
+        "TickSize": 10.0
+    },
+    "cy": {
+        "Exchange": "zc",
+        "TickSize": 5.0
+    },
+    "fb": {
+        "Exchange": "dc",
+        "TickSize": 0.05
+    },
+    "fg": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "fu": {
+        "Exchange": "sc",
+        "TickSize": 1.0
+    },
+    "hc": {
+        "Exchange": "sc",
+        "TickSize": 1.0
+    },
+    "i": {
+        "Exchange": "dc",
+        "TickSize": 0.5
+    },
+    "ic": {
+        "Exchange": "zj",
+        "TickSize": 0.2
+    },
+    "if": {
+        "Exchange": "zj",
+        "TickSize": 0.2
+    },
+    "ih": {
+        "Exchange": "zj",
+        "TickSize": 0.2
+    },
+    "j": {
+        "Exchange": "dc",
+        "TickSize": 0.5
+    },
+    "jd": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "jm": {
+        "Exchange": "dc",
+        "TickSize": 0.5
+    },
+    "jr": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "l": {
+        "Exchange": "dc",
+        "TickSize": 5.0
+    },
+    "lr": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "m": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "ma": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "ni": {
+        "Exchange": "sc",
+        "TickSize": 10.0
+    },
+    "oi": {
+        "Exchange": "zc",
+        "TickSize": 2.0
+    },
+    "p": {
+        "Exchange": "dc",
+        "TickSize": 2.0
+    },
+    "pb": {
+        "Exchange": "sc",
+        "TickSize": 5.0
+    },
+    "pm": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "pp": {
+        "Exchange": "dc",
+        "TickSize": 1.0
+    },
+    "rb": {
+        "Exchange": "sc",
+        "TickSize": 1.0
+    },
+    "ri": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "rm": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "rs": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "ru": {
+        "Exchange": "sc",
+        "TickSize": 5.0
+    },
+    "sf": {
+        "Exchange": "zc",
+        "TickSize": 2.0
+    },
+    "sm": {
+        "Exchange": "zc",
+        "TickSize": 2.0
+    },
+    "sn": {
+        "Exchange": "sc",
+        "TickSize": 10.0
+    },
+    "sr": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "t": {
+        "Exchange": "zj",
+        "TickSize": 0.005
+    },
+    "ta": {
+        "Exchange": "zc",
+        "TickSize": 2.0
+    },
+    "tf": {
+        "Exchange": "zj",
+        "TickSize": 0.005
+    },
+    "v": {
+        "Exchange": "dc",
+        "TickSize": 5.0
+    },
+    "wh": {
+        "Exchange": "zc",
+        "TickSize": 1.0
+    },
+    "wr": {
+        "Exchange": "sc",
+        "TickSize": 1.0
+    },
+    "y": {
+        "Exchange": "dc",
+        "TickSize": 2.0
+    },
+    "zc": {
+        "Exchange": "zc",
+        "TickSize": 0.2
+    },
+    "zn": {
+        "Exchange": "sc",
+        "TickSize": 5.0
+    }
+}

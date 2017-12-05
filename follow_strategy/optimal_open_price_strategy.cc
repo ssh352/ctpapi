@@ -1,6 +1,7 @@
 #include "optimal_open_price_strategy.h"
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/algorithm/string.hpp>
+#include "product_info_manager.h"
 
 OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
   Delegate* delegate,
@@ -567,28 +568,20 @@ double OptimalOpenPriceStrategy::GetOptimalOpenPrice(double price, double price_
 
 double OptimalOpenPriceStrategy::GetStrategyParamPriceOffset(
     const std::string& instrument,
-  const std::string& product_code) const
-{
+  const std::string& product_code) const {
+  auto product_info = ProductInfoMananger::GetInstance()->GetProductInfo(product_code);
+  if (!product_info) {
+    return 0.0;
+  }
   if (instrument_params_.find(instrument) != instrument_params_.end()) {
-    return instrument_params_.at(instrument).price_offset;
+    return instrument_params_.at(instrument).price_offset * product_info->tick_size;
   }
 
   if (instrument_params_.find(product_code) != instrument_params_.end()) {
-    return instrument_params_.at(product_code).price_offset;
+    return instrument_params_.at(product_code).price_offset * product_info->tick_size;
   }
 
-
-  return default_param_.price_offset;
-
-  //std::string instrument_code = instrument.substr(
-  //    0, instrument.find_first_of("0123456789"));
-  //boost::algorithm::to_lower(instrument_code);
-  //if (instrument_params_.find(instrument_code) == instrument_params_.end()) {
-  //  BOOST_LOG(*log_) << "没有找到产品配置:" << instrument;
-  //  return 0.0;
-  //}
-
-  //return instrument_params_.at(instrument_code).price_offset;
+  return default_param_.price_offset * product_info->tick_size;
 }
 
 int OptimalOpenPriceStrategy::GetStrategyParamDealyOpenAfterSeconds(

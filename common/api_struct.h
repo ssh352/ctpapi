@@ -173,4 +173,9 @@ struct CTPCancelOrder {
   std::string exchange_id;
 };
 
+struct ProductInfo {
+  double tick_size;
+  std::string exchange;
+};
+
 #endif  // COMMON_API_STRUCT_H

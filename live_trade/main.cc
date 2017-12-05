@@ -115,6 +115,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
     system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
 
+    std::unordered_set<std::string> close_today_cost_of_product_codes;
+    // = {
+        //"fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
+    YAML::Node live_config = YAML::LoadFile("live_trade.yaml");
+    YAML::Node sub_config = live_config["CostTodayProductCodes"].as<YAML::Node>();
+    for (YAML::const_iterator it = sub_config.begin(); it != sub_config.end(); ++it) {
+      close_today_cost_of_product_codes.insert(it->as<std::string>());
+    }
+    
     for (const auto& account : sub_acconts) {
       auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
       pt::ptree strategy_config_pt;
@@ -132,8 +141,9 @@ int caf_main(caf::actor_system& system, const config& cfg) {
           &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
       sub_actors.push_back(std::make_pair(
           account.name,
-          system.spawn<CAFSubAccountBroker>(inner_mail_box.get(),
-                                            &common_mail_box, account.name)));
+          system.spawn<CAFSubAccountBroker>(
+              inner_mail_box.get(), &common_mail_box,
+              close_today_cost_of_product_codes, account.name)));
       inner_mail_boxs.push_back(std::move(inner_mail_box));
     }
 
@@ -186,9 +196,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
       }
     }
 
-    YAML::Node live_config = YAML::LoadFile("live_trade.yaml");
-
-    //////////////////////////////////////////////////////////////////////////
+     //////////////////////////////////////////////////////////////////////////
     auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
     // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
     //             "tcp://180.168.146.187:10001", "9999", "099344",

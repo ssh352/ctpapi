@@ -13,7 +13,8 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   CAFSubAccountBroker(caf::actor_config& cfg,
                       LiveTradeMailBox* inner_mail_box,
                       LiveTradeMailBox* common_mail_box,
-                      std::string account_id);;
+    std::unordered_set<std::string> close_today_cost_of_product_codes,
+                      std::string account_id);
 
   virtual caf::behavior make_behavior() override;
 
@@ -33,8 +34,9 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   LiveTradeMailBox* common_mail_box_;
   std::unordered_map<std::string, std::unique_ptr<CTPInstrumentBroker>>
       instrument_brokers_;
+  std::unordered_set<std::string> close_today_cost_of_product_codes_;
   std::string account_id_;
   int order_seq_ = 0;
 };
 
-#endif // LIVE_TRADE_SUB_ACCOUNT_BROKER_H
+#endif  // LIVE_TRADE_SUB_ACCOUNT_BROKER_H

@@ -2,18 +2,27 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "caf_common/caf_atom_defines.h"
+#include "follow_strategy/product_info_manager.h"
 
-std::unordered_map<std::string, std::string> g_instrument_exchange_set = {
-    {"a", "dc"},  {"al", "sc"}, {"bu", "sc"}, {"c", "dc"},  {"cf", "zc"},
-    {"cs", "dc"}, {"cu", "sc"}, {"fg", "zc"}, {"i", "dc"},  {"j", "dc"},
-    {"jd", "dc"}, {"jm", "dc"}, {"l", "dc"},  {"m", "dc"},  {"ma", "zc"},
-    {"ni", "sc"}, {"p", "dc"},  {"pp", "dc"}, {"rb", "sc"}, {"rm", "zc"},
-    {"ru", "sc"}, {"sm", "zc"}, {"sr", "zc"}, {"ta", "zc"}, {"v", "dc"},
-    {"y", "dc"},  {"zc", "zc"}, {"zn", "sc"}, {"zn", "sc"}, {"au", "sc"},
-    {"hc", "sc"}};
 
-std::unordered_set<std::string> g_close_today_cost_instrument_codes = {
-    "fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
+CAFSubAccountBroker::CAFSubAccountBroker(
+    caf::actor_config& cfg,
+    LiveTradeMailBox* inner_mail_box,
+    LiveTradeMailBox* common_mail_box,
+
+    std::unordered_set<std::string> close_today_cost_of_product_codes,
+    std::string account_id)
+    : caf::event_based_actor(cfg),
+      inner_mail_box_(inner_mail_box),
+      common_mail_box_(common_mail_box),
+      close_today_cost_of_product_codes_(close_today_cost_of_product_codes),
+      account_id_(std::move(account_id)) {
+  // inner_mail_box_->Subscrdibe(
+  //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
+  inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
+  inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrder>), this);
+  inner_mail_box_->Subscribe(typeid(std::tuple<OrderAction>), this);
+}
 
 std::string CAFSubAccountBroker::GenerateOrderId() {
   return boost::lexical_cast<std::string>(order_seq_++);
@@ -46,15 +55,14 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
   boost::algorithm::to_lower(instrument_code);
   bool close_today_cost = false;
   bool close_today_aware = false;
-  if (g_instrument_exchange_set.find(instrument_code) !=
-          g_instrument_exchange_set.end() &&
-      g_instrument_exchange_set.at(instrument_code) == "sc") {
+  auto product_info =
+      ProductInfoMananger::GetInstance()->GetProductInfo(instrument_code);
+  if (product_info && product_info->exchange == "sc") {
     close_today_aware = true;
-  } else {
   }
 
-  if (g_close_today_cost_instrument_codes.find(instrument_code) !=
-      g_close_today_cost_instrument_codes.end()) {
+  if (close_today_cost_of_product_codes_.find(instrument_code) !=
+      close_today_cost_of_product_codes_.end()) {
     close_today_cost = true;
   }
 
@@ -128,19 +136,4 @@ caf::behavior CAFSubAccountBroker::make_behavior() {
         }
       },
   };
-}
-
-CAFSubAccountBroker::CAFSubAccountBroker(caf::actor_config& cfg,
-                                         LiveTradeMailBox* inner_mail_box,
-                                         LiveTradeMailBox* common_mail_box,
-                                         std::string account_id)
-    : caf::event_based_actor(cfg),
-      inner_mail_box_(inner_mail_box),
-      common_mail_box_(common_mail_box),
-      account_id_(std::move(account_id)) {
-  // inner_mail_box_->Subscrdibe(
-  //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrder>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<OrderAction>), this);
 }
