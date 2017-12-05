@@ -27,13 +27,23 @@ void CTPInstrumentBroker::HandleRtnOrder(
     auto it_find = orders_.find(it->second, HashInnerOrderField(),
                                 CompareInnerOrderField());
     BOOST_ASSERT(it_find != orders_.end());
-    (*it_find)->trading_price = order->trading_price;
-    (*it_find)->trading_qty = order->trading_qty;
-    (*it_find)->status = order->status;
-    (*it_find)->leaves_qty -= order->trading_qty;
-    BOOST_ASSERT((*it_find)->leaves_qty >= 0);
-    order_delegate_->ReturnOrderField(
-        std::make_shared<OrderField>(*(*it_find)));
+    auto bimap_it = waiting_reply_input_orders_.left.find(order->order_id);
+    waiting_reply_input_orders_.left.erase(bimap_it);
+    if (0 == waiting_reply_input_orders_.right.count((*it_find)->order_id)) {
+      /*   (*it_find)->input_price = order->input_price;
+          (*it_find)->qty = order->qty;
+          (*it_find)->trading_price = order->trading_price;
+          (*it_find)->trading_qty = order->trading_qty;
+      */
+      if (order->input_price != (*it_find)->input_price) {
+        (*it_find)->input_price = order->input_price;
+      }
+      (*it_find)->status = order->status;
+      (*it_find)->leaves_qty -= order->trading_qty;
+      BOOST_ASSERT((*it_find)->leaves_qty >= 0);
+      order_delegate_->ReturnOrderField(
+          std::make_shared<OrderField>(*(*it_find)));
+    }
   } else if (order->status == OrderStatus::kCanceled) {
     if (!IsCtpOpenPositionEffect((*ctp_it)->position_effect)) {
       if ((*ctp_it)->position_effect_direction == OrderDirection::kBuy) {
@@ -213,6 +223,7 @@ void CTPInstrumentBroker::InsertOrderField(const std::string& instrument,
 
 void CTPInstrumentBroker::BindOrderId(const std::string& order_id,
                                       const std::string& ctp_order_id) {
+  waiting_reply_input_orders_.insert(Bimap::value_type(ctp_order_id, order_id));
   ctp_order_id_to_order_id_.insert({ctp_order_id, order_id});
   order_id_to_ctp_order_id_.insert({order_id, ctp_order_id});
 }

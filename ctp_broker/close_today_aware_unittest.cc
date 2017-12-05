@@ -62,6 +62,28 @@ TEST_F(CloseTodayAwareTest, CloseOrderNoEnoughYesterdayQty) {
   }
 }
 
+TEST_F(CloseTodayAwareTest,
+       CloseOrderNoEnoughYesterdayQtyShouldOnlyOneRtnOrder) {
+  broker_.InitPosition(std::make_pair(5, 10), std::make_pair(0, 0));
+  MakeCloseOrderRequest("abc", OrderDirection::kSell, 1.2, 10);
+  Clear();
+  SimulateCTPNewCloseOrderField("0", OrderDirection::kSell, 1.2, 5);
+
+  EXPECT_FALSE(PopupOrder<std::shared_ptr<OrderField>>());
+  SimulateCTPNewCloseOrderField("1", OrderDirection::kSell, 1.2, 5);
+  auto order = PopupOrder<std::shared_ptr<OrderField>>();
+  ASSERT_TRUE(order);
+  EXPECT_EQ("abc", (*order)->order_id);
+  EXPECT_EQ(PositionEffect::kClose, (*order)->position_effect);
+  EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
+  EXPECT_EQ(OrderDirection::kSell, (*order)->direction);
+  EXPECT_EQ(OrderStatus::kActive, (*order)->status);
+  EXPECT_EQ(10, (*order)->qty);
+  EXPECT_EQ(10, (*order)->leaves_qty);
+  EXPECT_EQ(0.0, (*order)->trading_price);
+  EXPECT_EQ(0, (*order)->trading_qty);
+}
+
 TEST_F(CloseTodayAwareTest, CloseOrderNoEnoughYesterdayQtyThenRecv) {
   broker_.InitPosition(std::make_pair(5, 10), std::make_pair(0, 0));
   MakeCloseOrderRequest("abc", OrderDirection::kSell, 1.2, 10);

@@ -257,3 +257,20 @@ TEST_F(GenericPositionEffectTest, ModifyOrderPriceAndQty) {
   
   SimulateCTPNewOpenOrderField("1", OrderDirection::kBuy, 1.5, 6);
 }
+
+TEST_F(GenericPositionEffectTest, ModifyOrderPriceAndCheckReply) {
+  MakeOpenOrderRequest("xx", OrderDirection::kBuy, 1.3, 10);
+  SimulateCTPNewOpenOrderField("0", OrderDirection::kBuy, 1.3, 10);
+  MakeOrderAction("xx", 1.3, 1.5);
+  SimulateCTPCancelOrderField("0");
+  Clear();
+  SimulateCTPNewOpenOrderField("1", OrderDirection::kBuy, 1.5, 10);
+
+  auto order = PopupOrder<std::shared_ptr<OrderField>>();
+  EXPECT_EQ("I1", (*order)->instrument_id);
+  EXPECT_EQ(PositionEffect::kOpen, (*order)->position_effect);
+  EXPECT_EQ(OrderDirection::kBuy, (*order)->position_effect_direction);
+  EXPECT_EQ(1.5, (*order)->input_price);
+  EXPECT_EQ(10, (*order)->qty);
+  EXPECT_EQ("xx", (*order)->order_id);
+}

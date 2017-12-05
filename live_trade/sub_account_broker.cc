@@ -2,8 +2,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
 #include "caf_common/caf_atom_defines.h"
-#include "follow_strategy/product_info_manager.h"
-
 
 CAFSubAccountBroker::CAFSubAccountBroker(
     caf::actor_config& cfg,
@@ -55,8 +53,7 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
   boost::algorithm::to_lower(instrument_code);
   bool close_today_cost = false;
   bool close_today_aware = false;
-  auto product_info =
-      ProductInfoMananger::GetInstance()->GetProductInfo(instrument_code);
+  auto product_info = product_info_mananger_->GetProductInfo(instrument_code);
   if (product_info && product_info->exchange == "sc") {
     close_today_aware = true;
   }

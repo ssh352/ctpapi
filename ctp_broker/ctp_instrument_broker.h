@@ -2,6 +2,7 @@
 #define CTP_BROKER_CTP_INSTRUMENT_BROKER_H
 #include <memory>
 #include <boost/bimap.hpp>
+#include <boost/bimap/multiset_of.hpp>
 #include <unordered_set>
 #include <unordered_map>
 #include <boost/unordered_set.hpp>
@@ -38,7 +39,6 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
   void HandleCancel(const CancelOrder& cancel);
 
   void HandleOrderAction(const OrderAction& action);
-
 
   virtual void PosstionEffectStrategyHandleInputOrder(
       const std::string& input_order_id,
@@ -126,6 +126,10 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
   std::unique_ptr<CTPPositionAmount> short_;
   std::string instrument_;
   std::unique_ptr<CTPPositionEffectStrategy> position_effect_strategy_;
+
+  using Bimap =
+      boost::bimap<std::string, boost::bimaps::multiset_of<std::string>>;
+  Bimap waiting_reply_input_orders_;
   std::list<PendingOrderAction> pending_order_action_queue_;
 };
 
