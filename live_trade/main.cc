@@ -95,6 +95,8 @@ struct SubAccount {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
+  ProductInfoMananger product_info_mananger;
+  product_info_mananger.LoadFile("product_info.json");
   try {
     YAML::Node config = YAML::LoadFile("accounts.yaml");
     std::vector<SubAccount> sub_acconts;
@@ -110,20 +112,23 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     LiveTradeMailBox common_mail_box;
 
     std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
-    std::map<std::string, std::vector<std::pair<std::string, caf::actor>>> sub_actors;
+    std::map<std::string, std::vector<std::pair<std::string, caf::actor>>>
+        sub_actors;
     auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
     system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
 
     std::unordered_set<std::string> close_today_cost_of_product_codes;
     // = {
-        //"fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
+    //"fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
     YAML::Node live_config = YAML::LoadFile("live_trade.yaml");
-    YAML::Node sub_config = live_config["CostTodayProductCodes"].as<YAML::Node>();
-    for (YAML::const_iterator it = sub_config.begin(); it != sub_config.end(); ++it) {
+    YAML::Node sub_config =
+        live_config["CostTodayProductCodes"].as<YAML::Node>();
+    for (YAML::const_iterator it = sub_config.begin(); it != sub_config.end();
+         ++it) {
       close_today_cost_of_product_codes.insert(it->as<std::string>());
     }
-    
+
     for (const auto& account : sub_acconts) {
       auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
       pt::ptree strategy_config_pt;
@@ -138,12 +143,12 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                                                   account.name);
       // system.spawn<SerializationCtaRtnOrder>();
       system.spawn<CAFDelayOpenStrategyAgent>(
-          &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
+          &strategy_config_pt, &product_info_mananger, inner_mail_box.get(),
+          &common_mail_box);
       sub_actors[account.broker].push_back(std::make_pair(
-          account.name,
-          system.spawn<CAFSubAccountBroker>(
-              inner_mail_box.get(), &common_mail_box,
-              close_today_cost_of_product_codes, account.name)));
+          account.name, system.spawn<CAFSubAccountBroker>(
+                            inner_mail_box.get(), &common_mail_box,
+                            close_today_cost_of_product_codes, account.name)));
       inner_mail_boxs.push_back(std::move(inner_mail_box));
     }
 
@@ -162,7 +167,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         auto local_ctcp_trade_api_provider =
             std::make_shared<LocalCtpTradeApiProvider>();
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, local_ctcp_trade_api_provider, sub_actors[broker]));
+            &common_mail_box, local_ctcp_trade_api_provider,
+            sub_actors[broker]));
         // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
         //                                      "66666", "120301760", "140616");
         local_ctcp_trade_api_provider->Connect(
@@ -194,13 +200,14 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         }
 
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, remote_ctp_trade_api_provider, sub_actors[broker]));
+            &common_mail_box, remote_ctp_trade_api_provider,
+            sub_actors[broker]));
       } else {
         BOOST_ASSERT(false);
       }
     }
 
-     //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
     // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
     //             "tcp://180.168.146.187:10001", "9999", "099344",

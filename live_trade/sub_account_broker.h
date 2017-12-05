@@ -6,6 +6,7 @@
 #include "ctp_broker/ctp_order_delegate.h"
 #include "live_trade_mail_box.h"
 #include "ctp_broker/ctp_instrument_broker.h"
+#include "follow_strategy/product_info_manager.h"
 
 class CAFSubAccountBroker : public caf::event_based_actor,
                             public CTPOrderDelegate {
@@ -37,6 +38,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   std::unordered_set<std::string> close_today_cost_of_product_codes_;
   std::string account_id_;
   int order_seq_ = 0;
+  ProductInfoMananger* product_info_mananger_;
 };
 
 #endif  // LIVE_TRADE_SUB_ACCOUNT_BROKER_H
