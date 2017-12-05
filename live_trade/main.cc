@@ -110,7 +110,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     LiveTradeMailBox common_mail_box;
 
     std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
-    std::vector<std::pair<std::string, caf::actor>> sub_actors;
+    std::map<std::string, std::vector<std::pair<std::string, caf::actor>>> sub_actors;
     auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
 
     system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
@@ -139,7 +139,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
       // system.spawn<SerializationCtaRtnOrder>();
       system.spawn<CAFDelayOpenStrategyAgent>(
           &strategy_config_pt, inner_mail_box.get(), &common_mail_box);
-      sub_actors.push_back(std::make_pair(
+      sub_actors[account.broker].push_back(std::make_pair(
           account.name,
           system.spawn<CAFSubAccountBroker>(
               inner_mail_box.get(), &common_mail_box,
@@ -152,13 +152,17 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     for (YAML::const_iterator it = broker_config.begin();
          it != broker_config.end(); ++it) {
       auto item = it->as<YAML::Node>();
+      std::string broker = item["Name"].as<std::string>();
+      if (sub_actors.find(broker) == sub_actors.end()) {
+        continue;
+      }
       std::string type = item["Type"].as<std::string>();
       if (type == "Local") {
         //////////////////////////////////////////////////////////////////////////
         auto local_ctcp_trade_api_provider =
             std::make_shared<LocalCtpTradeApiProvider>();
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, local_ctcp_trade_api_provider, sub_actors));
+            &common_mail_box, local_ctcp_trade_api_provider, sub_actors[broker]));
         // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
         //                                      "66666", "120301760", "140616");
         local_ctcp_trade_api_provider->Connect(
@@ -190,7 +194,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         }
 
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, remote_ctp_trade_api_provider, sub_actors));
+            &common_mail_box, remote_ctp_trade_api_provider, sub_actors[broker]));
       } else {
         BOOST_ASSERT(false);
       }
