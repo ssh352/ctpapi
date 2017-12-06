@@ -1,8 +1,10 @@
 #include "ctp_trader_api.h"
 #include <thread>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/log/common.hpp>
 #include "hpt_core/order_util.h"
 #include "hpt_core/time_util.h"
+#include "live_trade_logging.h"
 
 CTPTraderApi::CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path)
     : delegate_(delegate) {
@@ -285,12 +287,22 @@ void CTPTraderApi::Connect(const std::string& server,
 
 void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                        CThostFtdcRspInfoField* pRspInfo) {
-  int i = 0;
-}
+  auto& log = BLog::get();
+  BOOST_LOG_SEV(log, SeverityLevel::kInfo) << "[ErrRtnORderInsert]" << "(A)" << pInputOrder->InvestorID
+    << ", (I)" << pInputOrder->InstrumentID
+    << ", (BS)" << pInputOrder->Direction
+    << ", (OC)" << pInputOrder->CombOffsetFlag[0]
+    << ", (P)" << pInputOrder->LimitPrice
+    << ", (Q)" << pInputOrder->VolumeTotalOriginal
+    << ", (M)" << pRspInfo->ErrorMsg;
+} 
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {
-  int i = 0;
+  auto& log = BLog::get();
+  BOOST_LOG_SEV(log, SeverityLevel::kError) << "[ErrRtnOrderAction]" << "(O)" << pOrderAction->OrderRef
+    << ", (Sys)" << pOrderAction->OrderSysID
+    << ", (M)" << pRspInfo->ErrorMsg;
 }
 
 void CTPTraderApi::OnRspQryInvestorPosition(

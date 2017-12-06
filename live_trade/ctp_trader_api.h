@@ -3,9 +3,10 @@
 
 #include <unordered_map>
 #include <boost/format.hpp>
+#include <boost/log/sources/logger.hpp>
+#include <boost/functional/hash.hpp>
 #include "ctpapi/ThostFtdcTraderApi.h"
 #include "common/api_struct.h"
-#include <boost/functional/hash.hpp>
 
 class CTPTraderApi : public CThostFtdcTraderSpi {
  public:
