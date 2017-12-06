@@ -3,6 +3,7 @@
 #include <boost/log/sources/logger.hpp>
 #include <boost/log/common.hpp>
 #include <boost/log/utility/manipulators/add_value.hpp>
+#include <boost/log/attributes/mutable_constant.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include "follow_strategy/logging_defines.h"
 #include "follow_strategy/string_util.h"
@@ -116,6 +117,16 @@ class OptimalOpenPriceStrategy {
 
   std::string ParseProductCodeWithInstrument(const std::string& instrument);
 
+  void HandleEnterOrder(InputOrder input_order,
+                        OrderDirection position_effect_direction);
+
+  void HandleActionOrder(OrderAction action_order,
+                         OrderDirection position_effect_direction);
+
+  void HandleCancelOrder(const std::string& instrument_id,
+                         const std::string& order_id,
+                         OrderDirection position_effect_direction);
+
   std::list<InputOrder> pending_delayed_open_order_;
   std::list<OptimalOpenOrder> optimal_open_price_orders_;
   std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
@@ -124,11 +135,15 @@ class OptimalOpenPriceStrategy {
   std::unordered_map<std::string, StrategyParam> instrument_params_;
   int order_id_seq_ = 0;
   std::shared_ptr<TickData> last_tick_;
-  boost::log::sources::logger* log_;
-  TimeStamp last_timestamp_ = 0;
   Delegate* delegate_;
   mutable std::unordered_map<std::string, std::string> instrument_code_cache_;
   ProductInfoMananger* product_info_mananger_;
+  boost::log::sources::logger* log_;
+  boost::log::attributes::mutable_constant<boost::posix_time::ptime>
+      last_timestamp_;
+
+  void LoggingBindOrderId(const std::string& ctp_order_id,
+                          const std::string& order_id);
 };
 
 #endif  // FOLLOW_STRATEGY_OPTIMAL_OPEN_PRICE_STRATEGY_H

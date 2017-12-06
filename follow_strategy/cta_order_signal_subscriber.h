@@ -76,9 +76,7 @@ class CTAOrderSignalSubscriber {
         close_order->leaves_qty = opposite_closeable_qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, close_order));
         inner_size_portfolio_.HandleOrder(close_order);
-        BOOST_LOG(log_) << "Bind OrderId:"
-                        << "(CTP)" << rtn_order->order_id << ", (V)"
-                        << close_order->order_id;
+        LoggingBindOrderId(rtn_order->order_id, close_order->order_id);
         Send(std::move(close_order),
              GetCTAPositionQty(close_order->instrument_id,
                                close_order->position_effect_direction));
@@ -89,9 +87,8 @@ class CTAOrderSignalSubscriber {
         open_order->leaves_qty = open_order->qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, open_order));
         inner_size_portfolio_.HandleOrder(open_order);
-        BOOST_LOG(log_) << "Bind OrderId:"
-                        << "(CTP)" << rtn_order->order_id << ", (V)"
-                        << open_order->order_id;
+
+        LoggingBindOrderId(rtn_order->order_id, open_order->order_id);
       } else {
         auto order = std::make_shared<OrderField>(*rtn_order);
         order->order_id = GenerateOrderId();
@@ -100,9 +97,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect = PositionEffect::kClose;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        BOOST_LOG(log_) << "Bind OrderId:"
-                        << "(CTP)" << rtn_order->order_id << ", (V)"
-                        << order->order_id;
+        LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
              GetCTAPositionQty(order->instrument_id,
                                order->position_effect_direction));
@@ -112,9 +107,7 @@ class CTAOrderSignalSubscriber {
       order->order_id = GenerateOrderId();
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       inner_size_portfolio_.HandleOrder(std::move(order));
-      BOOST_LOG(log_) << "Bind OrderId:"
-                      << "(CTP)" << rtn_order->order_id << ", (V)"
-                      << order->order_id;
+      LoggingBindOrderId(rtn_order->order_id, order->order_id);
     }
   }
 
@@ -128,12 +121,7 @@ class CTAOrderSignalSubscriber {
       order->position_effect = PositionEffect::kOpen;
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       inner_size_portfolio_.HandleOrder(order);
-      // Send(std::move(order),
-      //                GetCTAPositionQty(order->instrument_id,
-      //                                  order->position_effect_direction));
-      BOOST_LOG(log_) << "Bind OrderId:"
-                      << "(CTP)" << rtn_order->order_id << ", (V)"
-                      << order->order_id;
+      LoggingBindOrderId(rtn_order->order_id, order->order_id);
     } else {
       int close = rtn_order->qty - opposition_closeable;
       if (close > 0) {
@@ -143,9 +131,7 @@ class CTAOrderSignalSubscriber {
         order->leaves_qty = close;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        BOOST_LOG(log_) << "Bind OrderId:"
-                        << "(CTP)" << rtn_order->order_id << ", (V)"
-                        << order->order_id;
+        LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
              GetCTAPositionQty(order->instrument_id,
                                order->position_effect_direction));
@@ -160,9 +146,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect = PositionEffect::kOpen;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
-        BOOST_LOG(log_) << "Bind OrderId:"
-                        << "(CTP)" << rtn_order->order_id << ", (V)"
-                        << order->order_id;
+        LoggingBindOrderId(rtn_order->order_id, order->order_id);
         // Send(std::move(order),
         //                GetCTAPositionQty(order->instrument_id,
         //                                  order->position_effect_direction));
@@ -379,6 +363,15 @@ class CTAOrderSignalSubscriber {
 
   std::string GenerateOrderId() {
     return boost::lexical_cast<std::string>(order_id_seq_++);
+  }
+
+  void LoggingBindOrderId(const std::string& ctp_order_id,
+                          const std::string& order_id) {
+    if (on_process_sync_order_) {
+      return;
+    }
+    BOOST_LOG(log_) << "[Bind OrderId]"
+                    << "(CTP)" << ctp_order_id << ", (V)" << order_id;
   }
 
   SimplyPortfolio master_portfolio_;

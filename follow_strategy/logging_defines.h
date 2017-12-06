@@ -24,5 +24,6 @@ BOOST_LOG_ATTRIBUTE_KEYWORD(strategy_id, "strategy_id", std::string)
 BOOST_LOG_ATTRIBUTE_KEYWORD(account_id, "account_id", std::string)
 BOOST_LOG_ATTRIBUTE_KEYWORD(quant_timestamp, "quant_timestamp", boost::posix_time::ptime)
 BOOST_LOG_ATTRIBUTE_KEYWORD(instrument, "instrument", std::string)
+BOOST_LOG_ATTRIBUTE_KEYWORD(log_tag, "log_tag", std::string)
 
 #endif  // follow_strategy_LOGGING_DEFINES_H
