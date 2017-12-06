@@ -49,9 +49,10 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
   auto broker = std::make_unique<CTPInstrumentBroker>(
       this, instrument, false,
       std::bind(&CAFSubAccountBroker::GenerateOrderId, this));
+  std::string instrument_lower = instrument;
+  boost::algorithm::to_lower(instrument_lower);
   std::string instrument_code =
-      instrument.substr(0, instrument.find_first_of("0123456789"));
-  boost::algorithm::to_lower(instrument_code);
+      instrument_lower.substr(0, instrument_lower.find_first_of("0123456789"));
   bool close_today_cost = false;
   bool close_today_aware = false;
   auto product_info = product_info_mananger_->GetProductInfo(instrument_code);
@@ -59,7 +60,7 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
     close_today_aware = true;
   }
 
-  if (close_today_cost_of_product_codes_.find(instrument_code) !=
+  if (close_today_cost_of_product_codes_.find(instrument_lower) !=
       close_today_cost_of_product_codes_.end()) {
     close_today_cost = true;
   }
