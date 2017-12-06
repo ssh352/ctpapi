@@ -7,12 +7,13 @@ CAFSubAccountBroker::CAFSubAccountBroker(
     caf::actor_config& cfg,
     LiveTradeMailBox* inner_mail_box,
     LiveTradeMailBox* common_mail_box,
-
+    ProductInfoMananger* product_info_mananger,
     std::unordered_set<std::string> close_today_cost_of_product_codes,
     std::string account_id)
     : caf::event_based_actor(cfg),
       inner_mail_box_(inner_mail_box),
       common_mail_box_(common_mail_box),
+      product_info_mananger_(product_info_mananger),
       close_today_cost_of_product_codes_(close_today_cost_of_product_codes),
       account_id_(std::move(account_id)) {
   // inner_mail_box_->Subscrdibe(

@@ -146,9 +146,10 @@ int caf_main(caf::actor_system& system, const config& cfg) {
           &strategy_config_pt, &product_info_mananger, inner_mail_box.get(),
           &common_mail_box);
       sub_actors[account.broker].push_back(std::make_pair(
-          account.name, system.spawn<CAFSubAccountBroker>(
-                            inner_mail_box.get(), &common_mail_box,
-                            close_today_cost_of_product_codes, account.name)));
+          account.name,
+          system.spawn<CAFSubAccountBroker>(
+              inner_mail_box.get(), &common_mail_box, &product_info_mananger,
+              close_today_cost_of_product_codes, account.name)));
       inner_mail_boxs.push_back(std::move(inner_mail_box));
     }
 

@@ -14,6 +14,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   CAFSubAccountBroker(caf::actor_config& cfg,
                       LiveTradeMailBox* inner_mail_box,
                       LiveTradeMailBox* common_mail_box,
+    ProductInfoMananger* product_info_mananger,
     std::unordered_set<std::string> close_today_cost_of_product_codes,
                       std::string account_id);
 
