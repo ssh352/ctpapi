@@ -39,6 +39,8 @@ class OptimalOpenPriceStrategy {
                            ProductInfoMananger* product_info_mananger,
                            boost::log::sources::logger* log);
 
+  void HandleExchangeStatus(ExchangeStatus exchange_status);
+
   void HandleTick(const std::shared_ptr<TickData>& tick);
 
   void HandleRtnOrder(const std::shared_ptr<OrderField>& rtn_order);
@@ -127,6 +129,9 @@ class OptimalOpenPriceStrategy {
                          const std::string& order_id,
                          OrderDirection position_effect_direction);
 
+  void LoggingBindOrderId(const std::string& ctp_order_id,
+                          const std::string& order_id);
+
   std::list<InputOrder> pending_delayed_open_order_;
   std::list<OptimalOpenOrder> optimal_open_price_orders_;
   std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
@@ -141,9 +146,7 @@ class OptimalOpenPriceStrategy {
   boost::log::sources::logger* log_;
   boost::log::attributes::mutable_constant<boost::posix_time::ptime>
       last_timestamp_;
-
-  void LoggingBindOrderId(const std::string& ctp_order_id,
-                          const std::string& order_id);
+  ExchangeStatus exchange_status_;
 };
 
 #endif  // FOLLOW_STRATEGY_OPTIMAL_OPEN_PRICE_STRATEGY_H

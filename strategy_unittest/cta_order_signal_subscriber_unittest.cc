@@ -74,6 +74,7 @@ class CTAOrderSignalScriberFixture : public StrategyFixture {
 
   virtual void SetUp() override {
     CreateStrategy<CTAOrderSignalSubscriber<UnittestMailBox> >();
+    Send(ExchangeStatus::kContinous);
   }
 };
 
@@ -322,22 +323,22 @@ TEST_F(CTAOrderSignalScriberFixture, CloseingRealAndVirtualBothLockPosition) {
   Clear();
   MasterNewCloseOrder("2", OrderDirection::kSell, 81.2, 1);
   auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
-  //ASSERT_TRUE(params);
-  //const auto& order = std::get<0>(*params);
-  //const auto& position_qty = std::get<1>(*params);
+  // ASSERT_TRUE(params);
+  // const auto& order = std::get<0>(*params);
+  // const auto& position_qty = std::get<1>(*params);
 
-  //EXPECT_EQ(0, order->trading_qty);
-  //EXPECT_EQ(1, order->leaves_qty);
-  //EXPECT_EQ(1, order->qty);
-  //EXPECT_EQ(81.2, order->input_price);
-  //EXPECT_EQ(0.0, order->trading_price);
-  //EXPECT_EQ(OrderStatus::kActive, order->status);
-  //EXPECT_EQ(OrderDirection::kSell, order->direction);
-  //EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
-  //EXPECT_EQ(PositionEffect::kClose, order->position_effect);
+  // EXPECT_EQ(0, order->trading_qty);
+  // EXPECT_EQ(1, order->leaves_qty);
+  // EXPECT_EQ(1, order->qty);
+  // EXPECT_EQ(81.2, order->input_price);
+  // EXPECT_EQ(0.0, order->trading_price);
+  // EXPECT_EQ(OrderStatus::kActive, order->status);
+  // EXPECT_EQ(OrderDirection::kSell, order->direction);
+  // EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
+  // EXPECT_EQ(PositionEffect::kClose, order->position_effect);
 
-  //EXPECT_EQ(1, position_qty.position);
-  //EXPECT_EQ(1, position_qty.frozen);
+  // EXPECT_EQ(1, position_qty.position);
+  // EXPECT_EQ(1, position_qty.frozen);
 }
 
 TEST_F(CTAOrderSignalScriberFixture,
@@ -748,4 +749,102 @@ TEST_F(CTAOrderSignalScriberFixture, CancelCloseOrder) {
 
   EXPECT_EQ(10, position_qty.position);
   EXPECT_EQ(0, position_qty.frozen);
+}
+
+TEST_F(CTAOrderSignalScriberFixture, AuctionDuringNewOpen) {
+  Send(ExchangeStatus::kNoTrading);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 88.8, 10);
+
+  auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+
+  ASSERT_TRUE(params);
+  const auto& order = std::get<0>(*params);
+  const auto& position_qty = std::get<1>(*params);
+
+  EXPECT_EQ(10, order->leaves_qty);
+  EXPECT_EQ(10, order->qty);
+  EXPECT_EQ(0, order->trading_qty);
+  EXPECT_EQ(0, order->trading_price);
+  EXPECT_EQ(88.8, order->input_price);
+  EXPECT_EQ(OrderStatus::kActive, order->status);
+  EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
+  EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
+
+  EXPECT_EQ(0, position_qty.position);
+  EXPECT_EQ(0, position_qty.frozen);
+}
+
+TEST_F(CTAOrderSignalScriberFixture, AuctionDuringOverOppositionNewOpen) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 5, 5);
+  Clear();
+  Send(ExchangeStatus::kNoTrading);
+  MasterNewOpenOrder("1", OrderDirection::kSell, 80.1, 8);
+
+  {
+    auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+
+    ASSERT_TRUE(params);
+    const auto& order = std::get<0>(*params);
+    const auto& position_qty = std::get<1>(*params);
+
+    EXPECT_EQ(5, order->leaves_qty);
+    EXPECT_EQ(5, order->qty);
+    EXPECT_EQ(0, order->trading_qty);
+    EXPECT_EQ(0, order->trading_price);
+    EXPECT_EQ(80.1, order->input_price);
+    EXPECT_EQ(OrderStatus::kActive, order->status);
+    EXPECT_EQ(OrderDirection::kBuy, order->position_effect_direction);
+    EXPECT_EQ(PositionEffect::kClose, order->position_effect);
+
+    EXPECT_EQ(5, position_qty.position);
+    EXPECT_EQ(5, position_qty.frozen);
+  }
+
+  {
+    auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+
+    ASSERT_TRUE(params);
+    const auto& order = std::get<0>(*params);
+    const auto& position_qty = std::get<1>(*params);
+
+    EXPECT_EQ(3, order->leaves_qty);
+    EXPECT_EQ(3, order->qty);
+    EXPECT_EQ(0, order->trading_qty);
+    EXPECT_EQ(0, order->trading_price);
+    EXPECT_EQ(80.1, order->input_price);
+    EXPECT_EQ(OrderStatus::kActive, order->status);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
+    EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
+
+    EXPECT_EQ(0, position_qty.position);
+    EXPECT_EQ(0, position_qty.frozen);
+  }
+}
+
+TEST_F(CTAOrderSignalScriberFixture, AuctionDuringCloseLockOrder) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 5, 5);
+  MasterNewOpenAndFill("1", OrderDirection::kSell, 78.1, 5, 5);
+  Clear();
+  Send(ExchangeStatus::kNoTrading);
+  MasterNewCloseOrder("2", OrderDirection::kSell, 80.1, 5);
+
+  {
+    auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+
+    ASSERT_TRUE(params);
+    const auto& order = std::get<0>(*params);
+    const auto& position_qty = std::get<1>(*params);
+
+    EXPECT_EQ(5, order->leaves_qty);
+    EXPECT_EQ(5, order->qty);
+    EXPECT_EQ(0, order->trading_qty);
+    EXPECT_EQ(0, order->trading_price);
+    EXPECT_EQ(80.1, order->input_price);
+    EXPECT_EQ(OrderStatus::kActive, order->status);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
+    EXPECT_EQ(PositionEffect::kOpen, order->position_effect);
+
+    EXPECT_EQ(0, position_qty.position);
+    EXPECT_EQ(0, position_qty.frozen);
+  }
 }

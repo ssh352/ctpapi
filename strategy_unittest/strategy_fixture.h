@@ -28,15 +28,16 @@ class UnittestMailBox {
   UnittestMailBox() {}
   template <typename CLASS, typename... ARG>
   void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
-    std::function<void(ARG...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
-    subscribers_.insert({typeid(std::tuple<ARG...>), std::move(fn)});
+    std::function<void(std::decay_t<ARG>...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
+    subscribers_.insert({typeid(std::tuple<std::decay_t<ARG>...>), std::move(fn)});
   }
 
   template <typename... ARG>
-  void Send(const ARG&... arg) {
-    auto range = subscribers_.equal_range(typeid(std::tuple<const ARG&...>));
+  void Send(ARG&&... arg) {
+    auto range = subscribers_.equal_range(
+        typeid(std::tuple<std::decay_t<ARG>...>));
     for (auto it = range.first; it != range.second; ++it) {
-      boost::any_cast<std::function<void(const ARG&...)>>(it->second)(arg...);
+      boost::any_cast<std::function<void(std::decay_t<ARG>...)>>(it->second)(arg...);
     }
   }
 
@@ -61,8 +62,8 @@ class StrategyFixture : public testing::Test {
   }
 
   template <typename... Args>
-  void Send(const Args&... args) {
-    mail_box_.Send(args...);
+  void Send(Args&&... args) {
+    mail_box_.Send(std::forward<Args>(args)...);
   }
 
   void Clear() { event_queues_.clear(); }

@@ -46,6 +46,7 @@ class TestOptimalOpenPriceWithOutDelayOpenSeconds
     CreateStrategy<
         DelayOpenStrategyAgent<UnittestMailBox, OptimalOpenPriceStrategy> >(
         &pt_, &product_info_mananger_, &log_);
+    Send(ExchangeStatus::kContinous);
   }
 
  private:

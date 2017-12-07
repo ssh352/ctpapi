@@ -13,9 +13,9 @@ enum class OrderEventType {
 
 enum class OrderDirection { kUndefine, kBuy, kSell };
 
-enum class PositionEffect { kUndefine, kOpen, kClose};
+enum class PositionEffect { kUndefine, kOpen, kClose };
 
-enum class CTPPositionEffect { kUndefine, kOpen, kClose, kCloseToday};
+enum class CTPPositionEffect { kUndefine, kOpen, kClose, kCloseToday };
 
 enum class OrderStatus {
   kActive,
@@ -40,5 +40,7 @@ typedef char OrderIDType[21];
 enum class CommissionType { kFixed, kRate };
 
 enum class TradingTime { kUndefined, kDay, kNight };
+
+enum class ExchangeStatus { kNoTrading, kContinous };
 
 #endif  // COMMON_API_DATA_TYPE_H

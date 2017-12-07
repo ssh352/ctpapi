@@ -16,10 +16,8 @@ template <typename MailBox>
 class CTAOrderSignalSubscriber {
  public:
   CTAOrderSignalSubscriber(MailBox* mail_box) : mail_box_(mail_box) {
-    // mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncYesterdayPosition,
-    //                     this);
-    // mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder,
-    //                     this);
+    exchange_status_ = ExchangeStatus::kNoTrading;
+    mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleExchangeStatus, this);
     mail_box_->Subscribe(&CTAOrderSignalSubscriber::HandleRtnOrder, this);
   }
   // CTASignal
@@ -40,6 +38,10 @@ class CTAOrderSignalSubscriber {
     master_portfolio_.HandleOrder(order);
     DoHandleRtnOrder(order);
     on_process_sync_order_ = false;
+  }
+
+  void HandleExchangeStatus(ExchangeStatus exchange_status) {
+    exchange_status_ = exchange_status;
   }
 
   void HandleRtnOrder(const CTASignalAtom& cta_signal_atom,
@@ -78,8 +80,7 @@ class CTAOrderSignalSubscriber {
         inner_size_portfolio_.HandleOrder(close_order);
         LoggingBindOrderId(rtn_order->order_id, close_order->order_id);
         Send(std::move(close_order),
-             GetCTAPositionQty(close_order->instrument_id,
-                               close_order->position_effect_direction));
+             GetCTAPositionQty(rtn_order->instrument_id, opposite_direction));
 
         auto open_order = std::make_shared<OrderField>(*rtn_order);
         open_order->order_id = GenerateOrderId();
@@ -87,8 +88,13 @@ class CTAOrderSignalSubscriber {
         open_order->leaves_qty = open_order->qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, open_order));
         inner_size_portfolio_.HandleOrder(open_order);
-
         LoggingBindOrderId(rtn_order->order_id, open_order->order_id);
+        if (exchange_status_ == ExchangeStatus::kNoTrading) {
+          Send(std::move(open_order),
+               GetCTAPositionQty(rtn_order->instrument_id,
+                                 rtn_order->direction));
+        }
+
       } else {
         auto order = std::make_shared<OrderField>(*rtn_order);
         order->order_id = GenerateOrderId();
@@ -99,15 +105,19 @@ class CTAOrderSignalSubscriber {
         inner_size_portfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
-             GetCTAPositionQty(order->instrument_id,
-                               order->position_effect_direction));
+             GetCTAPositionQty(rtn_order->instrument_id, opposite_direction));
       }
     } else {
       auto order = std::make_shared<OrderField>(*rtn_order);
       order->order_id = GenerateOrderId();
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-      inner_size_portfolio_.HandleOrder(std::move(order));
+      inner_size_portfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
+      if (exchange_status_ == ExchangeStatus::kNoTrading) {
+        Send(std::move(order),
+             GetCTAPositionQty(rtn_order->instrument_id,
+                               rtn_order->position_effect_direction));
+      }
     }
   }
 
@@ -122,6 +132,10 @@ class CTAOrderSignalSubscriber {
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       inner_size_portfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
+      if (exchange_status_ == ExchangeStatus::kNoTrading) {
+        Send(std::move(order),
+             GetCTAPositionQty(rtn_order->instrument_id, rtn_order->direction));
+      }
     } else {
       int close = rtn_order->qty - opposition_closeable;
       if (close > 0) {
@@ -133,8 +147,8 @@ class CTAOrderSignalSubscriber {
         inner_size_portfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
-             GetCTAPositionQty(order->instrument_id,
-                               order->position_effect_direction));
+             GetCTAPositionQty(rtn_order->instrument_id,
+                               rtn_order->position_effect_direction));
       }
       int open = rtn_order->qty - std::max<int>(close, 0);
       if (open > 0) {
@@ -147,9 +161,11 @@ class CTAOrderSignalSubscriber {
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
         inner_size_portfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
-        // Send(std::move(order),
-        //                GetCTAPositionQty(order->instrument_id,
-        //                                  order->position_effect_direction));
+        if (exchange_status_ == ExchangeStatus::kNoTrading) {
+          Send(std::move(order),
+               GetCTAPositionQty(rtn_order->instrument_id,
+                                 rtn_order->position_effect_direction));
+        }
       }
     }
   }
@@ -386,6 +402,7 @@ class CTAOrderSignalSubscriber {
   std::multimap<std::string, std::shared_ptr<const OrderField>> map_order_ids_;
   bool on_process_sync_order_ = false;
   boost::log::sources::logger log_;
+  ExchangeStatus exchange_status_;
 };
 
 #endif

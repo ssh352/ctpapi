@@ -15,6 +15,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
         strategy_(this, strategy_config, product_info_mananger, log) {
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
                          this);
+    mail_box_->Subscribe(&Strategy::HandleExchangeStatus, &strategy_);
     mail_box_->Subscribe(&Strategy::HandleTick, &strategy_);
     mail_box_->Subscribe(&Strategy::InitPosition, &strategy_);
     mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleNearCloseMarket, this);

@@ -11,6 +11,7 @@ OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
       product_info_mananger_(product_info_mananger),
       log_(log),
       last_timestamp_(TimeStampToPtime(0)) {
+  exchange_status_ = ExchangeStatus::kNoTrading;
   log_->add_attribute("UniformTimeStamp", last_timestamp_);
   for (const auto& pt : *strategy_config) {
     try {
@@ -297,11 +298,10 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 
     LoggingBindOrderId(rtn_order->order_id, order_id);
 
-    HandleEnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->direction,
-                   rtn_order->input_price, closeable_qty, 0},
-        rtn_order->position_effect_direction);
+    HandleEnterOrder(InputOrder{rtn_order->instrument_id, std::move(order_id),
+                                PositionEffect::kClose, rtn_order->direction,
+                                rtn_order->input_price, closeable_qty, 0},
+                     rtn_order->position_effect_direction);
   } else if (rtn_order->qty <= closeable_qty) {
     std::string order_id = GenerateOrderId();
     cta_to_strategy_closing_order_id_.insert(
@@ -311,11 +311,10 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 
     LoggingBindOrderId(rtn_order->order_id, order_id);
 
-    HandleEnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->direction,
-                   rtn_order->input_price, rtn_order->qty, 0},
-        rtn_order->position_effect_direction);
+    HandleEnterOrder(InputOrder{rtn_order->instrument_id, std::move(order_id),
+                                PositionEffect::kClose, rtn_order->direction,
+                                rtn_order->input_price, rtn_order->qty, 0},
+                     rtn_order->position_effect_direction);
 
   } else if (closeable_qty > 0) {
     std::string order_id = GenerateOrderId();
@@ -324,11 +323,10 @@ void OptimalOpenPriceStrategy::HandleCloseing(
     BOOST_LOG(*log_) << "[CTA close and > closeable]"
                      << "(I)" << rtn_order->instrument_id;
     LoggingBindOrderId(rtn_order->order_id, order_id);
-    HandleEnterOrder(
-        InputOrder{rtn_order->instrument_id, std::move(order_id),
-                   PositionEffect::kClose, rtn_order->direction,
-                   rtn_order->input_price, closeable_qty, 0},
-        rtn_order->position_effect_direction);
+    HandleEnterOrder(InputOrder{rtn_order->instrument_id, std::move(order_id),
+                                PositionEffect::kClose, rtn_order->direction,
+                                rtn_order->input_price, closeable_qty, 0},
+                     rtn_order->position_effect_direction);
   } else {
   }
 }
@@ -336,6 +334,9 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 void OptimalOpenPriceStrategy::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
+  if (exchange_status_ == ExchangeStatus::kNoTrading) {
+    return;
+  }
   BOOST_LOG(*log_) << "[RECV CTA Opened]"
                    << "(I)" << rtn_order->instrument_id << ",(BS)"
                    << static_cast<int>(rtn_order->direction) << ",(OC)"
@@ -368,6 +369,17 @@ void OptimalOpenPriceStrategy::HandleOpened(
 void OptimalOpenPriceStrategy::HandleOpening(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
+  if (exchange_status_ == ExchangeStatus::kNoTrading) {
+    // Auction during
+    std::string order_id = GenerateOrderId();
+    HandleEnterOrder(
+        InputOrder{rtn_order->instrument_id, order_id, PositionEffect::kOpen,
+                   rtn_order->position_effect_direction,
+                   rtn_order->input_price, rtn_order->qty,
+                   rtn_order->update_timestamp},
+        rtn_order->position_effect_direction);
+    LoggingBindOrderId(rtn_order->order_id, order_id);
+  }
   BOOST_LOG(*log_) << "[RECV CTA Opening]"
                    << "(I)" << rtn_order->instrument_id << ",(BS)"
                    << static_cast<int>(rtn_order->direction) << ",(OC)"
@@ -636,13 +648,12 @@ void OptimalOpenPriceStrategy::LoggingBindOrderId(
 void OptimalOpenPriceStrategy::HandleActionOrder(
     OrderAction action_order,
     OrderDirection position_effect_direction) {
-  BOOST_LOG(*log_) << "[SEND Action Order]" 
-    << "(Id)" << action_order.order_id
-    << ",(I)" << action_order.instrument
-    << ",(NewP)" << action_order.new_price
-    << ",(OldP)" << action_order.old_price
-    << ",(NewQ)" << action_order.new_qty
-    << ",(OldQ)" << action_order.old_qty;
+  BOOST_LOG(*log_) << "[SEND Action Order]"
+                   << "(Id)" << action_order.order_id << ",(I)"
+                   << action_order.instrument << ",(NewP)"
+                   << action_order.new_price << ",(OldP)"
+                   << action_order.old_price << ",(NewQ)"
+                   << action_order.new_qty << ",(OldQ)" << action_order.old_qty;
   delegate_->HandleActionOrder(std::move(action_order),
                                position_effect_direction);
 }
@@ -651,9 +662,8 @@ void OptimalOpenPriceStrategy::HandleCancelOrder(
     const std::string& instrument_id,
     const std::string& order_id,
     OrderDirection position_effect_direction) {
-  BOOST_LOG(*log_) << "[SEND Cancel Order]" 
-    << "(Id)" << order_id
-    << ",(I)" << instrument_id;
+  BOOST_LOG(*log_) << "[SEND Cancel Order]"
+                   << "(Id)" << order_id << ",(I)" << instrument_id;
   delegate_->HandleCancelOrder(instrument_id, order_id,
                                position_effect_direction);
 }
@@ -661,13 +671,17 @@ void OptimalOpenPriceStrategy::HandleCancelOrder(
 void OptimalOpenPriceStrategy::HandleEnterOrder(
     InputOrder input_order,
     OrderDirection position_effect_direction) {
-  BOOST_LOG(*log_) << "[SEND Input Order]" 
-    << "(Id)" << input_order.order_id
-    << ",(I)" << input_order.instrument
-    << ",(BS)" << static_cast<int>(input_order.direction)
-    << ",(OC)" << static_cast<int>(input_order.position_effect)
-    << ",(P)" << input_order.price
-    << ",(Q)" << input_order.qty;
+  BOOST_LOG(*log_) << "[SEND Input Order]"
+                   << "(Id)" << input_order.order_id << ",(I)"
+                   << input_order.instrument << ",(BS)"
+                   << static_cast<int>(input_order.direction) << ",(OC)"
+                   << static_cast<int>(input_order.position_effect) << ",(P)"
+                   << input_order.price << ",(Q)" << input_order.qty;
   delegate_->HandleEnterOrder(std::move(input_order),
                               position_effect_direction);
+}
+
+void OptimalOpenPriceStrategy::HandleExchangeStatus(
+    ExchangeStatus exchange_status) {
+  exchange_status_ = exchange_status;
 }

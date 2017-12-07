@@ -97,8 +97,8 @@ CtpOrderRecorder::CtpOrderRecorder(caf::actor_config& cfg,
       password_(std::move(password)) {
   boost::filesystem::path dir{boost::filesystem::current_path()};
   dir /= user_id_;
-  api_ = CThostFtdcTraderApi::CreateFtdcTraderApi(
-      (dir.string() + "\\").c_str());
+  api_ =
+      CThostFtdcTraderApi::CreateFtdcTraderApi((dir.string() + "\\").c_str());
   api_->RegisterSpi(this);
 
   char fron_server[255] = {0};
@@ -111,6 +111,9 @@ CtpOrderRecorder::CtpOrderRecorder(caf::actor_config& cfg,
 
 void CtpOrderRecorder::OnRtnInstrumentStatus(
     CThostFtdcInstrumentStatusField* pInstrumentStatus) {
+  std::cout << "(I)" << pInstrumentStatus->InstrumentID << ",(S)"
+            << pInstrumentStatus->InstrumentStatus << ",(Reason)"
+            << pInstrumentStatus->EnterReason << "\n";
   if (pInstrumentStatus->InstrumentStatus == THOST_FTDC_IS_Closed) {
     file_.flush();
   }
