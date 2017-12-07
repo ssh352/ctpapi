@@ -114,7 +114,5 @@ void CtpOrderRecorder::OnRtnInstrumentStatus(
   std::cout << "(I)" << pInstrumentStatus->InstrumentID << ",(S)"
             << pInstrumentStatus->InstrumentStatus << ",(Reason)"
             << pInstrumentStatus->EnterReason << "\n";
-  if (pInstrumentStatus->InstrumentStatus == THOST_FTDC_IS_Closed) {
-    file_.flush();
-  }
+  file_.flush();
 }

@@ -1,6 +1,6 @@
 #include "ctp_rtn_order_subscriber.h"
-#include "util.h"
 #include "live_trade_logging.h"
+#include "common_util.h"
 
 CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
                                                  LiveTradeMailBox* mail_box)

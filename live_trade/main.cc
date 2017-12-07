@@ -240,12 +240,13 @@ int caf_main(caf::actor_system& system, const config& cfg) {
 
     std::string input;
     while (std::cin >> input) {
-      if (input == "flush") {
+      if (input == "exit") {
         common_mail_box.Send(SerializationFlushAtom::value);
         std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
                       [](const auto& mail_box) {
                         mail_box->Send(SerializationFlushAtom::value);
                       });
+        break;
       }
     }
 
