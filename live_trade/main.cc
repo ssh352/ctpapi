@@ -4,7 +4,6 @@
 #include <boost/date_time/gregorian/gregorian.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <boost/log/sources/logger.hpp>
 #include <fstream>
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
@@ -42,6 +41,7 @@
 #include "serialization_rtn_order.h"
 #include "caf_strategy_agent.h"
 #include "sub_account_broker.h"
+#include "live_trade_logging.h"
 
 //#include "live_trade_broker_handler.h"
 class AbstractExecutionHandler;
@@ -93,41 +93,9 @@ struct SubAccount {
   std::string broker;
 };
 
-
-void InitLogging() {
-  namespace logging = boost::log;
-  namespace attrs = boost::log::attributes;
-  namespace src = boost::log::sources;
-  namespace sinks = boost::log::sinks;
-  namespace expr = boost::log::expressions;
-  namespace keywords = boost::log::keywords;
-  boost::shared_ptr<logging::core> core = logging::core::get();
-
-  {
-    boost::shared_ptr<sinks::text_multifile_backend> backend =
-        boost::make_shared<sinks::text_multifile_backend>();
-    // Set up the file naming pattern
-    backend->set_file_name_composer(sinks::file::as_file_name_composer(
-        expr::stream << "logs/" << expr::attr<std::string>("log_tag")
-                     << ".log"));
-
-    // Wrap it into the frontend and register in the core.
-    // The backend requires synchronization in the frontend.
-    typedef sinks::asynchronous_sink<sinks::text_multifile_backend> sink_t;
-    boost::shared_ptr<sink_t> sink(new sink_t(backend));
-    sink->set_formatter(
-        expr::format("[%1%] %2%") %
-        expr::attr<boost::posix_time::ptime>("quant_timestamp") %
-        expr::smessage);
-    core->add_sink(sink);
-  }
-
-  boost::log::add_common_attributes();
-  //core->set_logging_enabled(enable_logging);
-}
-
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
+  InitLogging();
   ProductInfoMananger product_info_mananger;
   product_info_mananger.LoadFile("product_info.json");
   try {
@@ -176,7 +144,9 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                                                   account.name);
       // system.spawn<SerializationCtaRtnOrder>();
       system.spawn<CAFDelayOpenStrategyAgent>(
-          &strategy_config_pt, &product_info_mananger, inner_mail_box.get(),
+          &strategy_config_pt, &product_info_mananger, 
+          account.name,
+          inner_mail_box.get(),
           &common_mail_box);
       sub_actors[account.broker].push_back(std::make_pair(
           account.name,

@@ -1,6 +1,8 @@
 #include "sub_account_broker.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/log/common.hpp>
+#include <boost/log/attributes.hpp>
 #include "caf_common/caf_atom_defines.h"
 
 CAFSubAccountBroker::CAFSubAccountBroker(
@@ -16,6 +18,8 @@ CAFSubAccountBroker::CAFSubAccountBroker(
       product_info_mananger_(product_info_mananger),
       close_today_cost_of_product_codes_(close_today_cost_of_product_codes),
       account_id_(std::move(account_id)) {
+  log_.add_attribute(
+      "log_tag", boost::log::attributes::constant<std::string>(account_id_));
   // inner_mail_box_->Subscrdibe(
   //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
   inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
@@ -35,10 +39,19 @@ void CAFSubAccountBroker::ReturnOrderField(
 void CAFSubAccountBroker::HandleCancelOrder(
     const CTPCancelOrder& cancel_order) {
   common_mail_box_->Send(account_id_, cancel_order);
+  BOOST_LOG(log_) << "[SEND Cancel Order]"
+                  << "(Id)" << cancel_order.order_id << ", (SysId)"
+                  << cancel_order.order_sys_id;
 }
 
 void CAFSubAccountBroker::HandleEnterOrder(const CTPEnterOrder& enter_order) {
   common_mail_box_->Send(account_id_, enter_order);
+  BOOST_LOG(log_) << "[SEND Enter Order]"
+                  << "(Id)" << enter_order.order_id << ", (I)"
+                  << enter_order.instrument << ", (BS)"
+                  << static_cast<int>(enter_order.direction) << ", (OC)"
+                  << static_cast<int>(enter_order.position_effect) << ", (P)"
+                  << enter_order.price << ", (Q)" << enter_order.qty;
 }
 
 void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
@@ -119,8 +132,21 @@ caf::behavior CAFSubAccountBroker::make_behavior() {
       [=](const InputOrder& order) {
         MakeCtpInstrumentBrokerIfNeed(order.instrument);
         instrument_brokers_.at(order.instrument)->HandleInputOrder(order);
+        BOOST_LOG(log_) << "[RECV Input Order]"
+                        << "(Id)" << order.order_id << ",(I)"
+                        << order.instrument << ", (BS)"
+                        << static_cast<int>(order.direction) << ", (OC)"
+                        << static_cast<int>(order.position_effect) << ", (P)"
+                        << order.price << ", (Q)" << order.qty;
       },
       [=](const OrderAction& action_order) {
+        BOOST_LOG(log_) << "[RECV Action Order]"
+                        << "(Id)" << action_order.order_id << ", (I)"
+                        << action_order.instrument << ", (NewP)"
+                        << action_order.new_price << ", (OldP)"
+                        << action_order.old_price << ", (NewQ)"
+                        << action_order.new_qty << ", (OldQ)"
+                        << action_order.old_qty;
         auto it = instrument_brokers_.find(action_order.instrument);
         BOOST_ASSERT(it != instrument_brokers_.end());
         if (it != instrument_brokers_.end()) {
@@ -128,6 +154,9 @@ caf::behavior CAFSubAccountBroker::make_behavior() {
         }
       },
       [=](const CancelOrder& cancel) {
+        BOOST_LOG(log_) << "[RECV Cancel Order]"
+                        << "(Id)" << cancel.order_id << ", (I)"
+                        << cancel.instrument;
         auto it = instrument_brokers_.find(cancel.instrument);
         BOOST_ASSERT(it != instrument_brokers_.end());
         if (it != instrument_brokers_.end()) {

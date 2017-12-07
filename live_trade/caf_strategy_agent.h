@@ -11,6 +11,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor {
   CAFDelayOpenStrategyAgent(caf::actor_config& cfg,
                             boost::property_tree::ptree* strategy_config,
                             ProductInfoMananger* product_info_mananger,
+                            const std::string& account_id,
                             LiveTradeMailBox* inner_mail_box,
                             LiveTradeMailBox* common_mail_box);
 

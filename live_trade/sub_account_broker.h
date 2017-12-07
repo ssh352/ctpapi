@@ -1,7 +1,8 @@
 #ifndef LIVE_TRADE_SUB_ACCOUNT_BROKER_H
 #define LIVE_TRADE_SUB_ACCOUNT_BROKER_H
-#include <boost/assert.hpp>
 #include <memory>
+#include <boost/assert.hpp>
+#include <boost/log/sources/logger.hpp>
 #include "caf/all.hpp"
 #include "ctp_broker/ctp_order_delegate.h"
 #include "live_trade_mail_box.h"
@@ -40,6 +41,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   std::string account_id_;
   int order_seq_ = 0;
   ProductInfoMananger* product_info_mananger_;
+  boost::log::sources::logger log_;
 };
 
 #endif  // LIVE_TRADE_SUB_ACCOUNT_BROKER_H

@@ -11,7 +11,7 @@ OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
       product_info_mananger_(product_info_mananger),
       log_(log),
       last_timestamp_(TimeStampToPtime(0)) {
-  log_->add_attribute("TimeStamp", last_timestamp_);
+  log_->add_attribute("UniformTimeStamp", last_timestamp_);
   for (const auto& pt : *strategy_config) {
     try {
       if (pt.first == "default") {

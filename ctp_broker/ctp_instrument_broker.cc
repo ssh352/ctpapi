@@ -1,5 +1,4 @@
 #include "ctp_instrument_broker.h"
-#include <boost/log/common.hpp>
 #include "hpt_core/order_util.h"
 CTPInstrumentBroker::CTPInstrumentBroker(
     CTPOrderDelegate* delegate,
