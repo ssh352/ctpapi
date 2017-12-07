@@ -74,7 +74,9 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
   }
 
   if (close_today_cost_of_product_codes_.find(instrument_lower) !=
-      close_today_cost_of_product_codes_.end()) {
+          close_today_cost_of_product_codes_.end() ||
+      close_today_cost_of_product_codes_.find(instrument_code) !=
+          close_today_cost_of_product_codes_.end()) {
     close_today_cost = true;
   }
 
@@ -99,6 +101,27 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
 caf::behavior CAFSubAccountBroker::make_behavior() {
   return {
       [=](const std::vector<CTPPositionField>& positions) {
+        // BOOST_LOG(log_) << "[Init Pos]" <<
+        boost::log::record rec = log_.open_record();
+        if (rec) {
+          boost::log::record_ostream s(rec);
+          s << "[Init Pos]";
+          bool comma = false;
+          for (const auto& pos : positions) {
+            if (comma) {
+              s << ",";
+            }
+            s << "{"
+              << "(I)" << pos.instrument << ", (BS)"
+              << static_cast<int>(pos.direction) << ", (Y)" << pos.yesterday
+              << "}"
+              << ", (T)" << pos.today << "}";
+            comma = true;
+          }
+          s.flush();
+          log_.push_record(std::move(rec));
+        }
+
         for (const auto& pos : positions) {
           MakeCtpInstrumentBrokerIfNeed(pos.instrument);
           instrument_brokers_.at(pos.instrument)

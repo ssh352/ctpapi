@@ -13,7 +13,6 @@ CAFDelayOpenStrategyAgent::CAFDelayOpenStrategyAgent(
       common_mail_box_(common_mail_box) {
   log_.add_attribute("log_tag",
                      boost::log::attributes::constant<std::string>(account_id));
-  BOOST_LOG(log_) << "fdlksajfkldsaj";
 }
 
 caf::behavior CAFDelayOpenStrategyAgent::make_behavior() {

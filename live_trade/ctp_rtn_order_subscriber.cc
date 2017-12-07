@@ -1,5 +1,6 @@
 #include "ctp_rtn_order_subscriber.h"
 #include "util.h"
+#include "live_trade_logging.h"
 
 CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
                                                  LiveTradeMailBox* mail_box)
@@ -92,9 +93,9 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                        CheckHistoryRtnOrderIsDoneAtom::value,
                        sync_rtn_order_count_);
         } else {
-          // auto& lg = g_logger::get();
-          // BOOST_LOG(lg) << "CTAwRtnOrder:" << sequence_orders_.size();
-          std::cout << "sync history sccuess";
+          auto& log = BLog::get();
+          BOOST_LOG_SEV(log, SeverityLevel::kInfo)
+              << "[CTA Sync History Order Sccuess]";
           become(work_behavior);
           set_default_handler(caf::print_and_drop);
         }
@@ -173,12 +174,33 @@ void CAFCTAOrderSignalBroker::HandleCTPTradeOrder(const std::string& instrument,
 }
 
 void CAFCTAOrderSignalBroker::HandleCtpLogon(int front_id, int session_id) {
-  std::cout << "long\n";
+  auto& log = BLog::get();
+  BOOST_LOG_SEV(log, SeverityLevel::kInfo)
+      << "[CTA Log Sccuess]"
+      << "(Front)" << front_id << "(Session)" << session_id;
   trade_api_->RequestYesterdayPosition();
 }
 
 void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
-  std::cout << "request yesterday position\n";
+  auto& log = BLog::get();
+  boost::log::record rec = log.open_record();
+  if (rec) {
+    boost::log::record_ostream s(rec);
+    s << "[Sync CTA Yesterday Pos]";
+    bool comma = false;
+    for (const auto& pos : yesterday_positions) {
+      if (comma) {
+        s << ",";
+      }
+      s << "{"
+        << "(I)" << pos.instrument << ",(BS)"
+        << static_cast<int>(pos.order_direction) << ", (Q)" << pos.quantity
+        << "}";
+      comma = true;
+    }
+    s.flush();
+    log.push_record(boost::move(rec));
+  }
   send(this, std::move(yesterday_positions));
 }

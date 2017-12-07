@@ -1,27 +1,30 @@
 CtaBroker:
-  Server: tcp://ctp1-front3.citicsf.com:41205
-  BrokerId: 66666
-  UserId: 120301760
-  Password: 140616
-  # Server: tcp://180.168.146.187:10001
-  # BrokerId: 9999
-  # UserId: 053867
-  # Password: 8661188
+  # Server: tcp://ctp1-front3.citicsf.com:41205
+  # BrokerId: 66666
+  # UserId: 120301760
+  # Password: 140616
+  Server: tcp://180.168.146.187:10001
+  BrokerId: 9999
+  UserId: 053867
+  Password: 8661188
 DataFeed:
   Server: tcp://180.166.11.33:41213
   BrokerId: 4200
   UserId: 15500011
   Password: Yunqizhi2_
 CostTodayProductCodes:
+  - zc
+  - sf
+  - ma
+  - sm
   - fg
+  - jm
   - i
   - j
-  - jm
-  - ma
-  - ni
-  - pb
-  - rb
-  - sf
-  - sm
-  - zc
-  - zn
+  - if
+  - ic
+  - ih
+  - rb1801
+  - hc1801
+  - ni1801
+  - zn1712

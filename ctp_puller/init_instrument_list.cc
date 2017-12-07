@@ -94,7 +94,9 @@ private:
 
     CThostFtdcQryInstrumentField req;
     memset(&req, 0, sizeof(req));
-    int result = api_->ReqQryInstrument(&req, 0);
+    while (api_->ReqQryInstrument(&req, 0) != 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
   }
 
   void ReqQryInstrumentMarginRate(const std::string& instrument_id) {
@@ -397,6 +399,7 @@ private:
     if (pending_request_commission_instruments_.empty()) {
       sqlite3_finalize(stmt_);
       sqlite3_exec(db_, "commit;", 0, 0, 0);
+      std::cout << "done\n";
       return;
     }
 
