@@ -128,3 +128,23 @@ TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, PartiallyActionOrder) {
   EXPECT_EQ(0, action_order->new_qty);
   EXPECT_EQ("0", action_order->order_id);
 }
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AuctionDuringNewOpen) {
+  Send(ExchangeStatus::kNoTrading);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  auto input_order = PopupRntOrder<InputOrder>();
+  ASSERT_TRUE(input_order);
+  EXPECT_EQ(OrderDirection::kBuy, input_order->direction);
+  EXPECT_EQ(PositionEffect::kOpen, input_order->position_effect);
+  EXPECT_EQ(1.1, input_order->price);
+  EXPECT_EQ(10, input_order->qty);
+  EXPECT_EQ("0", input_order->order_id);
+}
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AuctionDuringOpened) {
+  Send(ExchangeStatus::kNoTrading);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  Clear();
+  MasterTradedOrder("0", 10, 10, 0);
+  ASSERT_FALSE(PopupRntOrder<InputOrder>());
+}
