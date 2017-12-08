@@ -236,7 +236,9 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                    live_config["DataFeed"]["UserId"].as<std::string>(),
                    live_config["DataFeed"]["Password"].as<std::string>());
 
-    // live_trade_borker_handler.Connect();
+
+
+    // TODO: Release TradeAPI & MDAPI when exit 
 
     std::string input;
     while (std::cin >> input) {

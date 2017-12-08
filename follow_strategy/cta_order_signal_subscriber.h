@@ -24,11 +24,25 @@ class CTAOrderSignalSubscriber {
   void HandleSyncYesterdayPosition(
       const CTASignalAtom&,
       const std::vector<OrderPosition>& positions) {
+    std::set<std::string> instruments;
     for (const auto& position : positions) {
       master_portfolio_.AddPosition(
           position.instrument, position.order_direction, position.quantity);
-      inner_size_portfolio_.AddPosition(
-          position.instrument, position.order_direction, position.quantity);
+      instruments.insert(position.instrument);
+    }
+
+    for (const auto& ins : instruments) {
+      int long_pos =
+          master_portfolio_.GetPositionQty(ins, OrderDirection::kBuy);
+      int short_pos =
+          master_portfolio_.GetPositionQty(ins, OrderDirection::kSell);
+      if ((long_pos == 0 && short_pos == 0) && (long_pos == short_pos)) {
+        continue;
+      }
+      virtual_porfolio_.AddPosition(
+          ins,
+          long_pos > short_pos ? OrderDirection::kBuy : OrderDirection::kSell,
+          abs(long_pos - short_pos));
     }
   }
 
@@ -59,7 +73,7 @@ class CTAOrderSignalSubscriber {
   }
 
   std::vector<OrderPosition> GetVirtualPositions() const {
-    return inner_size_portfolio_.GetPositions();
+    return virtual_porfolio_.GetPositions();
   }
 
  private:
@@ -81,7 +95,7 @@ class CTAOrderSignalSubscriber {
         close_order->qty = opposite_closeable_qty;
         close_order->leaves_qty = opposite_closeable_qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, close_order));
-        inner_size_portfolio_.HandleOrder(close_order);
+        virtual_porfolio_.HandleOrder(close_order);
         LoggingBindOrderId(rtn_order->order_id, close_order->order_id);
         Send(std::move(close_order),
              GetCTAPositionQty(rtn_order->instrument_id, opposite_direction));
@@ -91,7 +105,7 @@ class CTAOrderSignalSubscriber {
         open_order->qty = rtn_order->qty - opposite_closeable_qty;
         open_order->leaves_qty = open_order->qty;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, open_order));
-        inner_size_portfolio_.HandleOrder(open_order);
+        virtual_porfolio_.HandleOrder(open_order);
         LoggingBindOrderId(rtn_order->order_id, open_order->order_id);
         if (exchange_status_ == ExchangeStatus::kNoTrading) {
           Send(std::move(open_order),
@@ -106,7 +120,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect_direction = opposite_direction;
         order->position_effect = PositionEffect::kClose;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-        inner_size_portfolio_.HandleOrder(order);
+        virtual_porfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
              GetCTAPositionQty(rtn_order->instrument_id, opposite_direction));
@@ -115,7 +129,7 @@ class CTAOrderSignalSubscriber {
       auto order = std::make_shared<OrderField>(*rtn_order);
       order->order_id = GenerateOrderId();
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-      inner_size_portfolio_.HandleOrder(order);
+      virtual_porfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
       if (exchange_status_ == ExchangeStatus::kNoTrading) {
         Send(std::move(order),
@@ -134,7 +148,7 @@ class CTAOrderSignalSubscriber {
       order->position_effect_direction = rtn_order->direction;
       order->position_effect = PositionEffect::kOpen;
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-      inner_size_portfolio_.HandleOrder(order);
+      virtual_porfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
       if (exchange_status_ == ExchangeStatus::kNoTrading) {
         Send(std::move(order),
@@ -148,7 +162,7 @@ class CTAOrderSignalSubscriber {
         order->qty = close;
         order->leaves_qty = close;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-        inner_size_portfolio_.HandleOrder(order);
+        virtual_porfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
         Send(std::move(order),
              GetCTAPositionQty(rtn_order->instrument_id,
@@ -163,7 +177,7 @@ class CTAOrderSignalSubscriber {
         order->position_effect_direction = rtn_order->direction;
         order->position_effect = PositionEffect::kOpen;
         map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-        inner_size_portfolio_.HandleOrder(order);
+        virtual_porfolio_.HandleOrder(order);
         LoggingBindOrderId(rtn_order->order_id, order->order_id);
         if (exchange_status_ == ExchangeStatus::kNoTrading) {
           Send(std::move(order),
@@ -189,7 +203,7 @@ class CTAOrderSignalSubscriber {
       auto order_copy = std::make_shared<OrderField>(*it->second);
       order_copy->trading_price = rtn_order->trading_price;
       order_copy->status = OrderStatus::kCanceled;
-      inner_size_portfolio_.HandleOrder(order_copy);
+      virtual_porfolio_.HandleOrder(order_copy);
       it->second = order_copy;
       Send(std::move(order_copy),
            GetCTAPositionQty(order_copy->instrument_id,
@@ -304,8 +318,8 @@ class CTAOrderSignalSubscriber {
   CTAPositionQty GetCTAPositionQty(std::string instrument_id,
                                    OrderDirection direction) {
     return CTAPositionQty{
-        inner_size_portfolio_.GetPositionQty(instrument_id, direction),
-        inner_size_portfolio_.GetFrozenQty(instrument_id, direction)};
+        virtual_porfolio_.GetPositionQty(instrument_id, direction),
+        virtual_porfolio_.GetFrozenQty(instrument_id, direction)};
   }
 
   void HandleTradedOrder(const std::shared_ptr<OrderField>& rtn_order) {
@@ -322,7 +336,8 @@ class CTAOrderSignalSubscriber {
       order_copy->leaves_qty -= trading_qty;
       order_copy->status = order_copy->leaves_qty == 0 ? OrderStatus::kAllFilled
                                                        : order_copy->status;
-      inner_size_portfolio_.HandleOrder(order_copy);
+      order_copy->update_timestamp = rtn_order->update_timestamp;
+      virtual_porfolio_.HandleOrder(order_copy);
       it->second = order_copy;
       Send(std::move(order_copy),
            GetCTAPositionQty(order_copy->instrument_id,
@@ -395,7 +410,7 @@ class CTAOrderSignalSubscriber {
   }
 
   SimplyPortfolio master_portfolio_;
-  SimplyPortfolio inner_size_portfolio_;
+  SimplyPortfolio virtual_porfolio_;
   MailBox* mail_box_;
   std::string master_account_id_;
   int order_id_seq_ = 0;

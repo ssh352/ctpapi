@@ -69,6 +69,7 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
       double trading_price,
       int trading_qty,
       TimeStamp timestamp = 0) const;
+  void LoggingVirtualPositions();
   std::unique_ptr<CTPTraderApi> trade_api_;
 
   LiveTradeMailBox* mail_box_;

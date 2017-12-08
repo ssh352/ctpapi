@@ -93,13 +93,6 @@ class CTPInstrumentBroker : public CTPPositionEffectStrategyDelegate {
 
   bool IsCtpOpenPositionEffect(CTPPositionEffect position_effect) const;
 
-  void HandleModifyOrderPrice(const std::string& order_id,
-                              double old_price,
-                              double new_price);
-
-  void HandleModifyOrderQty(const std::string& order_id,
-                            int old_qty,
-                            double new_price);
   void UnfrozenByCancelCloseOrder(const std::string& order_id);
   std::unordered_map<std::string, std::string> ctp_order_id_to_order_id_;
 

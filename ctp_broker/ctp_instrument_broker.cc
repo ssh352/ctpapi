@@ -1,5 +1,6 @@
 #include "ctp_instrument_broker.h"
 #include "hpt_core/order_util.h"
+#include "live_trade/live_trade_logging.h"
 CTPInstrumentBroker::CTPInstrumentBroker(
     CTPOrderDelegate* delegate,
     std::string instrument,
@@ -139,6 +140,7 @@ void CTPInstrumentBroker::HandleTraded(const std::string& order_id,
   (*it_find)->trading_price = trading_price;
   (*it_find)->status = (*it_find)->leaves_qty == 0 ? OrderStatus::kAllFilled
                                                    : OrderStatus::kActive;
+  (*it_find)->update_timestamp = timestamp;
   order_delegate_->ReturnOrderField(std::make_shared<OrderField>(*(*it_find)));
 }
 
@@ -188,6 +190,8 @@ void CTPInstrumentBroker::HandleOrderAction(const OrderAction& order_action) {
     BOOST_ASSERT(ctp_order_it != ctp_orders_.end());
     if (ctp_order_it == ctp_orders_.end() ||
         (*ctp_order_it)->status != OrderStatus::kActive) {
+      auto& log = BLog::get();
+      BOOST_LOG_SEV(log, SeverityLevel::kWarning) << "ActionOrder Reject!";
       continue;
     }
     order_delegate_->HandleCancelOrder(
@@ -270,16 +274,6 @@ void CTPInstrumentBroker::PosstionEffectStrategyHandleInputOrder(
   ctp_enter_order.qty = qty;
   BindOrderId(input_order_id, ctp_enter_order.order_id);
   order_delegate_->HandleEnterOrder(std::move(ctp_enter_order));
-}
-
-void CTPInstrumentBroker::HandleModifyOrderPrice(const std::string& order_id,
-                                                 double old_price,
-                                                 double new_price) {}
-
-void CTPInstrumentBroker::HandleModifyOrderQty(const std::string& order_id,
-                                               int old_qty,
-                                               double new_price) {
-  throw std::logic_error("The method or operation is not implemented.");
 }
 
 void CTPInstrumentBroker::UnfrozenByCancelCloseOrder(

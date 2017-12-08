@@ -47,6 +47,8 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                                    CompareCTPOrderField());
         if (it != ctp_orders_.end()) {
           (*it)->leaves_qty -= trading_qty;
+          (*it)->status = (*it)->leaves_qty == 0 ? OrderStatus::kAllFilled
+                                                 : OrderStatus::kAllFilled;
           signal_subscriber_.HandleRtnOrder(
               CTASignalAtom::value,
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
@@ -74,7 +76,6 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
       },
       [=](const std::string& instrument, const std::string& order_id,
           double trading_price, int trading_qty, TimeStamp timestamp) {
-        ++sync_rtn_order_count_;
         BOOST_ASSERT(ctp_orders_.find(order_id, HashCTPOrderField(),
                                       CompareCTPOrderField()) !=
                      ctp_orders_.end());
@@ -86,6 +87,8 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
               CTASignalAtom::value,
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
+
+        ++sync_rtn_order_count_;
       },
       [=](CheckHistoryRtnOrderIsDoneAtom, int last_check_size) {
         if (last_check_size != sync_rtn_order_count_) {
@@ -94,28 +97,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                        CheckHistoryRtnOrderIsDoneAtom::value,
                        sync_rtn_order_count_);
         } else {
-          auto& log = BLog::get();
-          BOOST_LOG_SEV(log, SeverityLevel::kInfo)
-              << "[CTA Sync History Order Sccuess]";
-          boost::log::record rec = log.open_record();
-          if (rec) {
-            boost::log::record_ostream s(rec);
-            s << "[Sync CTA Yesterday Pos]";
-            bool comma = false;
-            
-            for (const auto& pos : signal_subscriber_.GetVirtualPositions()) {
-              if (comma) {
-                s << ",";
-              }
-              s << "{"
-                << "(I)" << pos.instrument << ",(BS)"
-                << static_cast<int>(pos.order_direction) << ", (Q)"
-                << pos.quantity << "}";
-              comma = true;
-            }
-            s.flush();
-            log.push_record(boost::move(rec));
-          }
+          LoggingVirtualPositions();
           become(work_behavior);
           set_default_handler(caf::print_and_drop);
         }
@@ -210,4 +192,30 @@ void CAFCTAOrderSignalBroker::HandleExchangeStatus(
     ExchangeStatus exchange_status) {
   send(this, exchange_status);
   Send(exchange_status);
+}
+
+void CAFCTAOrderSignalBroker::LoggingVirtualPositions() {
+  auto& log = BLog::get();
+  boost::log::record rec = log.open_record();
+  if (rec) {
+    boost::log::record_ostream s(rec);
+    s << "[Sync CTA Virtual Positions]";
+    bool comma = false;
+
+    for (const auto& pos : signal_subscriber_.GetVirtualPositions()) {
+      if (pos.quantity <= 0) {
+        continue;
+      }
+      if (comma) {
+        s << ",";
+      }
+      s << "{"
+        << "(I)" << pos.instrument << ",(BS)"
+        << static_cast<int>(pos.order_direction) << ", (Q)" << pos.quantity
+        << "}";
+      comma = true;
+    }
+    s.flush();
+    log.push_record(boost::move(rec));
+  }
 }

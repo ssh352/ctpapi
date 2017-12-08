@@ -313,6 +313,34 @@ TEST_F(CTAOrderSignalScriberFixture,
   }
 }
 
+TEST_F(CTAOrderSignalScriberFixture, FillLockOrderAndReOpenOneSide) {
+  MasterNewOpenAndFill("0", OrderDirection::kBuy, 1.2, 4, 4);
+  MasterNewOpenAndFill("1", OrderDirection::kSell, 1.3, 3, 3);
+  MasterNewCloseAndFill("2", OrderDirection::kSell, 1.3, 4, 4);
+  MasterNewOpenAndFill("3", OrderDirection::kSell, 1.3, 1, 1);
+  MasterNewCloseOrder("4", OrderDirection::kBuy, 1.4, 2);
+  Clear();
+  MasterTradedOrder("4", 2);
+  {
+    auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
+    ASSERT_TRUE(params);
+    const auto& order = std::get<0>(*params);
+    const auto& position_qty = std::get<1>(*params);
+
+    EXPECT_EQ(2, order->trading_qty);
+    EXPECT_EQ(0, order->leaves_qty);
+    EXPECT_EQ(2, order->qty);
+    EXPECT_EQ(1.4, order->input_price);
+    EXPECT_EQ(OrderStatus::kAllFilled, order->status);
+    EXPECT_EQ(OrderDirection::kBuy, order->direction);
+    EXPECT_EQ(OrderDirection::kSell, order->position_effect_direction);
+    EXPECT_EQ(PositionEffect::kClose, order->position_effect);
+
+    EXPECT_EQ(2, position_qty.position);
+    EXPECT_EQ(0, position_qty.frozen);
+  }
+}
+
 TEST_F(CTAOrderSignalScriberFixture, CloseingRealAndVirtualBothLockPosition) {
   // READ: https://trello.com/c/AsimJQXc
   // TODO:
