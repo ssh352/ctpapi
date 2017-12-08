@@ -1,12 +1,12 @@
 CtaBroker:
-  # Server: tcp://ctp1-front3.citicsf.com:41205
-  # BrokerId: 66666
-  # UserId: 120301760
-  # Password: 140616
-  Server: tcp://180.168.146.187:10001
-  BrokerId: 9999
-  UserId: 053867
-  Password: 8661188
+  Server: tcp://ctp1-front3.citicsf.com:41205
+  BrokerId: 66666
+  UserId: 120301760
+  Password: 140616
+  # Server: tcp://180.168.146.187:10001
+  # BrokerId: 9999
+  # UserId: 053867
+  # Password: 8661188
 DataFeed:
   Server: tcp://180.166.11.33:41213
   BrokerId: 4200

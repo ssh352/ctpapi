@@ -211,3 +211,12 @@ std::shared_ptr<OrderField> SimplyPortfolio::GetOrder(
 
   return it->second;
 }
+
+std::vector<OrderPosition> SimplyPortfolio::GetPositions() const {
+  std::vector<OrderPosition> ret;
+  for (const auto& pos : positions_) {
+    ret.push_back(OrderPosition{pos.first.instrument, pos.first.direction,
+                                pos.second.qty()});
+  }
+  return ret;
+}

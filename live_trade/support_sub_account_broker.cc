@@ -65,11 +65,13 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
   caf::behavior sync_history_order = {
       [=](const std::shared_ptr<CTPOrderField>& order) {
         position_restorer_.HandleRtnOrder(order);
+        ++sync_history_rtn_order_count_;
       },
       [=](const std::string& instrument, const std::string& order_id,
           double trading_price, int trading_qty, TimeStamp timestamp) {
         position_restorer_.HandleTraded(order_id, trading_price, trading_qty,
                                         timestamp);
+        ++sync_history_rtn_order_count_;
       },
 
       [=](CheckHistoryRtnOrderIsDoneAtom, int last_time_check_count) {
@@ -126,7 +128,7 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
             }
             delayed_send(this, std::chrono::milliseconds(500),
                          CheckHistoryRtnOrderIsDoneAtom::value,
-                         sync_history_rtn_order_count_);
+                         -1);
             become(sync_history_order);
           }};
 }

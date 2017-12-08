@@ -4,6 +4,12 @@
   BrokerId: 9999
   UserId: 099344
   Password: a12345678
+- Name: ZX_120301760
+  Type: Local
+  Server: tcp://ctp1-front3.citicsf.com:41205
+  BrokerId: 66666
+  UserId: 120301760
+  Password: 140616
 - Name: Rohon_test
   Type: Remote
   RemoteServer: 127.0.0.1

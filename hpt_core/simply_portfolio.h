@@ -39,6 +39,8 @@ class SimplyPortfolio {
 
   std::vector<std::shared_ptr<OrderField> > UnfillCloseOrders() const;
 
+  std::vector<OrderPosition> GetPositions() const;
+
  private:
   struct PositionKey {
     std::string instrument;

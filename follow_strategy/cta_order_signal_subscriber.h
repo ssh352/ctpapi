@@ -58,6 +58,10 @@ class CTAOrderSignalSubscriber {
     DoHandleRtnOrder(order);
   }
 
+  std::vector<OrderPosition> GetVirtualPositions() const {
+    return inner_size_portfolio_.GetPositions();
+  }
+
  private:
   void HandleOpening(const std::shared_ptr<OrderField>& rtn_order) {
     OrderDirection opposite_direction =

@@ -97,6 +97,25 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
           auto& log = BLog::get();
           BOOST_LOG_SEV(log, SeverityLevel::kInfo)
               << "[CTA Sync History Order Sccuess]";
+          boost::log::record rec = log.open_record();
+          if (rec) {
+            boost::log::record_ostream s(rec);
+            s << "[Sync CTA Yesterday Pos]";
+            bool comma = false;
+            
+            for (const auto& pos : signal_subscriber_.GetVirtualPositions()) {
+              if (comma) {
+                s << ",";
+              }
+              s << "{"
+                << "(I)" << pos.instrument << ",(BS)"
+                << static_cast<int>(pos.order_direction) << ", (Q)"
+                << pos.quantity << "}";
+              comma = true;
+            }
+            s.flush();
+            log.push_record(boost::move(rec));
+          }
           become(work_behavior);
           set_default_handler(caf::print_and_drop);
         }
@@ -184,25 +203,6 @@ void CAFCTAOrderSignalBroker::HandleCtpLogon(int front_id, int session_id) {
 
 void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
     std::vector<OrderPosition> yesterday_positions) {
-  auto& log = BLog::get();
-  boost::log::record rec = log.open_record();
-  if (rec) {
-    boost::log::record_ostream s(rec);
-    s << "[Sync CTA Yesterday Pos]";
-    bool comma = false;
-    for (const auto& pos : yesterday_positions) {
-      if (comma) {
-        s << ",";
-      }
-      s << "{"
-        << "(I)" << pos.instrument << ",(BS)"
-        << static_cast<int>(pos.order_direction) << ", (Q)" << pos.quantity
-        << "}";
-      comma = true;
-    }
-    s.flush();
-    log.push_record(boost::move(rec));
-  }
   send(this, std::move(yesterday_positions));
 }
 
