@@ -36,6 +36,8 @@ class LocalCtpTradeApiProvider : public CtpTradeApiProvider,
 
   virtual void RequestYesterdayPosition() override;
 
+  virtual void HandleExchangeStatus(ExchangeStatus exchange_status) override;
+
  private:
   CtpTradeApiProvider::Delegate* delegate_ = NULL;
   std::unique_ptr<CTPTraderApi> trade_api_;

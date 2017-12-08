@@ -3,5 +3,5 @@
     "DelayOpenOrderAfterSeconds": 0,
     "WaitOptimalOpenPriceFillSeconds": 65,
     "OptimizeTickSize": 1
-  },
+  }
 }

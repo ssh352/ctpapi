@@ -24,6 +24,8 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
 
     virtual void HandleRspYesterdayPosition(
         std::vector<OrderPosition> yesterday_positions) = 0;
+
+    virtual void HandleExchangeStatus(ExchangeStatus exchange_status) = 0;
   };
   CTPTraderApi(Delegate* delegate, const std::string& ctp_flow_path);
 
@@ -109,6 +111,10 @@ class CTPTraderApi : public CThostFtdcTraderSpi {
       CThostFtdcRspInfoField* pRspInfo,
       int nRequestID,
       bool bIsLast);
+
+  virtual void OnRtnInstrumentStatus(
+      CThostFtdcInstrumentStatusField* pInstrumentStatus) override;
+
  private:
   void SettlementInfoConfirm();
 

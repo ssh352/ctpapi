@@ -53,3 +53,7 @@ void LocalCtpTradeApiProvider::CancelOrder(const CTPCancelOrder& cancel_order) {
 void LocalCtpTradeApiProvider::RequestYesterdayPosition() {
   trade_api_->RequestYesterdayPosition();
 }
+
+void LocalCtpTradeApiProvider::HandleExchangeStatus(
+    ExchangeStatus exchange_status) {
+}

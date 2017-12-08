@@ -52,8 +52,9 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
       },
-
-  };
+      [=](ExchangeStatus exchange_status) {
+        signal_subscriber_.HandleExchangeStatus(exchange_status);
+      }};
   caf::behavior sync_order_behaivor = {
       [=](const std::shared_ptr<CTPOrderField>& ctp_order) {
         auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
@@ -203,4 +204,10 @@ void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
     log.push_record(boost::move(rec));
   }
   send(this, std::move(yesterday_positions));
+}
+
+void CAFCTAOrderSignalBroker::HandleExchangeStatus(
+    ExchangeStatus exchange_status) {
+  send(this, exchange_status);
+  Send(exchange_status);
 }

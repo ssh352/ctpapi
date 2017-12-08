@@ -288,21 +288,22 @@ void CTPTraderApi::Connect(const std::string& server,
 void CTPTraderApi::OnErrRtnOrderInsert(CThostFtdcInputOrderField* pInputOrder,
                                        CThostFtdcRspInfoField* pRspInfo) {
   auto& log = BLog::get();
-  BOOST_LOG_SEV(log, SeverityLevel::kInfo) << "[ErrRtnORderInsert]" << "(A)" << pInputOrder->InvestorID
-    << ", (I)" << pInputOrder->InstrumentID
-    << ", (BS)" << pInputOrder->Direction
-    << ", (OC)" << pInputOrder->CombOffsetFlag[0]
-    << ", (P)" << pInputOrder->LimitPrice
-    << ", (Q)" << pInputOrder->VolumeTotalOriginal
-    << ", (M)" << pRspInfo->ErrorMsg;
-} 
+  BOOST_LOG_SEV(log, SeverityLevel::kInfo)
+      << "[ErrRtnORderInsert]"
+      << "(A)" << pInputOrder->InvestorID << ", (I)"
+      << pInputOrder->InstrumentID << ", (BS)" << pInputOrder->Direction
+      << ", (OC)" << pInputOrder->CombOffsetFlag[0] << ", (P)"
+      << pInputOrder->LimitPrice << ", (Q)" << pInputOrder->VolumeTotalOriginal
+      << ", (M)" << pRspInfo->ErrorMsg;
+}
 
 void CTPTraderApi::OnErrRtnOrderAction(CThostFtdcOrderActionField* pOrderAction,
                                        CThostFtdcRspInfoField* pRspInfo) {
   auto& log = BLog::get();
-  BOOST_LOG_SEV(log, SeverityLevel::kError) << "[ErrRtnOrderAction]" << "(O)" << pOrderAction->OrderRef
-    << ", (Sys)" << pOrderAction->OrderSysID
-    << ", (M)" << pRspInfo->ErrorMsg;
+  BOOST_LOG_SEV(log, SeverityLevel::kError)
+      << "[ErrRtnOrderAction]"
+      << "(O)" << pOrderAction->OrderRef << ", (Sys)"
+      << pOrderAction->OrderSysID << ", (M)" << pRspInfo->ErrorMsg;
 }
 
 void CTPTraderApi::OnRspQryInvestorPosition(
@@ -343,3 +344,10 @@ void CTPTraderApi::RequestYesterdayPosition() {
   //           << cta_api_->ReqQryInvestorPosition(&field, 0) << "\n";
 }
 
+void CTPTraderApi::OnRtnInstrumentStatus(
+    CThostFtdcInstrumentStatusField* pInstrumentStatus) {
+  delegate_->HandleExchangeStatus(pInstrumentStatus->InstrumentStatus ==
+                                          THOST_FTDC_IS_AuctionOrdering
+                                      ? ExchangeStatus::kNoTrading
+                                      : ExchangeStatus::kContinous);
+}

@@ -40,6 +40,8 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
   virtual void HandleRspYesterdayPosition(
       std::vector<OrderPosition> yesterday_positions) override;
 
+  virtual void HandleExchangeStatus(ExchangeStatus exchange_status) override;
+
  private:
   struct HashCTPOrderField {
     size_t operator()(const std::shared_ptr<CTPOrderField>& order) const {
