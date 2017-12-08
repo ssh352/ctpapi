@@ -98,14 +98,21 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
   std::string order_id = MakeCtpUniqueOrderId(
       pOrder->FrontID, pOrder->SessionID, pOrder->OrderRef);
 
+  auto order_field = std::make_shared<CTPOrderField>();
   if (order_sys_id_to_order_id_.find(
           {pOrder->ExchangeID, pOrder->OrderSysID}) ==
       order_sys_id_to_order_id_.end()) {
     order_sys_id_to_order_id_.insert(
         {{pOrder->ExchangeID, pOrder->OrderSysID}, order_id});
+    TimeStamp timestamp =
+        ptime_to_timestamp(boost::posix_time::microsec_clock::local_time());
+    order_field->input_timestamp = timestamp;
+    order_field->update_timestamp = timestamp;
+  } else {
+    order_field->update_timestamp =
+        ptime_to_timestamp(boost::posix_time::microsec_clock::local_time());
   }
 
-  auto order_field = std::make_shared<CTPOrderField>();
   // order_field->instrument_name = order->InstrumentName;
   order_field->instrument = pOrder->InstrumentID;
   order_field->exchange_id = pOrder->ExchangeID;
@@ -129,9 +136,6 @@ void CTPTraderApi::OnRtnOrder(CThostFtdcOrderField* pOrder) {
                                ? OrderDirection::kBuy
                                : OrderDirection::kSell;
   order_field->date = pOrder->InsertDate;
-  // order_field->input_timestamp = pOrder->InsertTime;
-  order_field->update_timestamp =
-      ptime_to_timestamp(boost::posix_time::microsec_clock::local_time());
 
   order_field->status = ParseTThostFtdcOrderStatus(pOrder);
   order_field->leaves_qty = pOrder->VolumeTotal;

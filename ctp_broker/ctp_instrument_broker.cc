@@ -41,6 +41,8 @@ void CTPInstrumentBroker::HandleRtnOrder(
       }
       (*it_find)->status = order->status;
       (*it_find)->leaves_qty -= order->trading_qty;
+      (*it_find)->input_timestamp = order->input_timestamp;
+      (*it_find)->update_timestamp = order->update_timestamp;
       BOOST_ASSERT((*it_find)->leaves_qty >= 0);
       order_delegate_->ReturnOrderField(
           std::make_shared<OrderField>(*(*it_find)));
@@ -90,6 +92,7 @@ void CTPInstrumentBroker::HandleRtnOrder(
       //(*it_find)->trading_qty = order->trading_qty;
       //(*it_find)->leaves_qty -= order->trading_qty;
       (*it_find)->status = order->status;
+      (*it_find)->update_timestamp = order->update_timestamp;
       BOOST_ASSERT((*it_find)->leaves_qty >= 0);
       order_delegate_->ReturnOrderField(
           std::make_shared<OrderField>(*(*it_find)));

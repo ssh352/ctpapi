@@ -1,11 +1,11 @@
 - Account: TangSheng
   Strategy: tangsheng.json
-  # Broker: SimNow_099344
-  Broker: ZX_120301760
+  Broker: SimNow_099344
+  # Broker: ZX_120301760
 - Account: ShunWuKong
   Strategy: wukong.json
-  Broker: ZX_120301760
-  # Broker: SimNow_099344
+  # Broker: ZX_120301760
+  Broker: SimNow_099344
 # - Account: ZhuBaJie
   # Strategy: zhubajie.json
   # Broker: SimNow_099344
