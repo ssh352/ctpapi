@@ -23,6 +23,7 @@
         '<(DEPTH)/third_party/sqlite/sqlite.gyp:*',
         '<(DEPTH)/third_party/yaml-cpp/yaml-cpp.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
+        '../bft_core/bft_core.gyp:*',
         '../strategies/strategies.gyp:strategies',
         '../follow_strategy/follow_strategy.gyp:follow_strategy',
         '../ctp_broker/ctp_broker.gyp:ctp_broker',

@@ -33,4 +33,5 @@ python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_pu
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_serialize_reader\ctp_serialize_reader.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi ctp_order_recorder\ctp_order_recorder.gyp
 python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi test_yaml\test_yaml.gyp
+python build\gyp_win.py --depth=. --no-circular-check -Ibuild\common.gypi bft_core\bft_core.gyp
 pause

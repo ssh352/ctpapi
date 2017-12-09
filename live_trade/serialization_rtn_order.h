@@ -6,6 +6,7 @@
 #include "caf/all.hpp"
 #include "common/api_struct.h"
 #include "live_trade_mail_box.h"
+#include "bft_core/channel_delegate.h"
 
 class SerializationCtaRtnOrder : public caf::event_based_actor {
  public:
