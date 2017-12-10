@@ -20,8 +20,7 @@ caf::behavior CAFDelayOpenStrategyAgent::make_behavior() {
   return caf_message_handler_;
 }
 
-void CAFDelayOpenStrategyAgent::Subscribe(
-    bft::MessageHandler handler) {
+void CAFDelayOpenStrategyAgent::Subscribe(bft::MessageHandler handler) {
   for (const auto& type_index : handler.TypeIndexs()) {
     live_trade_system_->Subscribe(env_id_, type_index, this);
   }

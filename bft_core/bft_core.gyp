@@ -5,7 +5,7 @@
   'targets' : [
   {
     'target_name' : 'bft_core',
-    'type' : 'static_library',
+    'type' : 'shared_library',
     'variables' : {
     },
     'sources' : [
@@ -15,15 +15,16 @@
       ['exclude', 'unittest/.*'],
     ],
     'dependencies' : [
-
+      '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_message',
     ],
     'defines' : [
+      'CORE_IMPLEMENTATION',
     ],
     'includes' : [
     ],
     'include_dirs' : [
       '..',
-      '<(DEPTH)/third_party/actor-framework/libcaf_core'
+      # '<(DEPTH)/third_party/actor-framework/libcaf_core'
     ],
   },
   ]

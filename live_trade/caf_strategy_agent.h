@@ -20,8 +20,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor,
 
   virtual caf::behavior make_behavior() override;
 
-  virtual void Subscribe(
-      bft::MessageHandler handler) override;
+  virtual void Subscribe(bft::MessageHandler handler) override;
 
   virtual void Send(bft::Message message) override;
 

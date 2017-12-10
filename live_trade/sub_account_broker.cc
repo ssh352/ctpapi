@@ -192,6 +192,6 @@ void CAFSubAccountBroker::InitMakeBehavior() {
         if (it != instrument_brokers_.end()) {
           it->second->HandleCancel(cancel);
         }
-      },
+      }
       );
 }

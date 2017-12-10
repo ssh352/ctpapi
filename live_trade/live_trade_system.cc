@@ -10,6 +10,7 @@ LiveTradeSystem::LiveTradeSystem() {
       typeid(std::tuple<std::shared_ptr<TickData>>));
   global_env_message_types_.insert(typeid(std::tuple<ExchangeStatus>));
   global_env_message_types_.insert(typeid(std::tuple<SerializationFlushAtom>));
+  global_env_message_types_.insert(typeid(std::tuple<CloseMarketNearAtom>));
 }
 
 void LiveTradeSystem::Subscribe(int env_id,
