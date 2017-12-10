@@ -31,7 +31,7 @@
 #include "caf_common/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "live_trade_broker_handler.h"
-#include "live_trade_mail_box.h"
+
 #include "ctp_rtn_order_subscriber.h"
 #include "follow_strategy/delay_open_strategy_agent.h"
 #include "local_ctp_trade_api_provider.h"
@@ -111,15 +111,11 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     }
 
     LiveTradeSystem live_trade_system;
-    // auto sub_acconts = {"foo"};
-    LiveTradeMailBox common_mail_box;
-
-    std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
     std::map<std::string, std::vector<std::pair<std::string, caf::actor>>>
         sub_actors;
     auto cta = system.spawn<CAFCTAOrderSignalBroker>(&live_trade_system);
 
-    system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
+    system.spawn<SerializationCtaRtnOrder>(&live_trade_system);
 
     std::unordered_set<std::string> close_today_cost_of_product_codes;
     // = {
@@ -133,7 +129,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     }
 
     for (const auto& account : sub_acconts) {
-      auto inner_mail_box = std::make_unique<LiveTradeMailBox>();
       pt::ptree strategy_config_pt;
       try {
         pt::read_json(account.strategy_config, strategy_config_pt);
@@ -142,20 +137,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         return 1;
       }
 
-      system.spawn<SerializationStrategyRtnOrder>(inner_mail_box.get(),
+      system.spawn<SerializationStrategyRtnOrder>(&live_trade_system,
                                                   account.name);
       // system.spawn<SerializationCtaRtnOrder>();
-      system.spawn<CAFDelayOpenStrategyAgent>(
-          &strategy_config_pt, &product_info_mananger, 
-          account.name,
-          inner_mail_box.get(),
-          &common_mail_box);
+      system.spawn<CAFDelayOpenStrategyAgent>(&strategy_config_pt,
+                                              &product_info_mananger,
+                                              account.name, &live_trade_system);
       sub_actors[account.broker].push_back(std::make_pair(
-          account.name,
-          system.spawn<CAFSubAccountBroker>(
-              inner_mail_box.get(), &common_mail_box, &product_info_mananger,
-              close_today_cost_of_product_codes, account.name)));
-      inner_mail_boxs.push_back(std::move(inner_mail_box));
+          account.name, system.spawn<CAFSubAccountBroker>(
+                            &live_trade_system, &product_info_mananger,
+                            close_today_cost_of_product_codes, account.name)));
     }
 
     YAML::Node broker_config = YAML::LoadFile("brokers.yaml");
@@ -173,7 +164,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         auto local_ctcp_trade_api_provider =
             std::make_shared<LocalCtpTradeApiProvider>();
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, local_ctcp_trade_api_provider,
+            &live_trade_system, local_ctcp_trade_api_provider,
             sub_actors[broker]));
         // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
         //                                      "66666", "120301760", "140616");
@@ -206,7 +197,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         }
 
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &common_mail_box, remote_ctp_trade_api_provider,
+            &live_trade_system, remote_ctp_trade_api_provider,
             sub_actors[broker]));
       } else {
         BOOST_ASSERT(false);
@@ -238,18 +229,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
                    live_config["DataFeed"]["UserId"].as<std::string>(),
                    live_config["DataFeed"]["Password"].as<std::string>());
 
-
-
-    // TODO: Release TradeAPI & MDAPI when exit 
+    // TODO: Release TradeAPI & MDAPI when exit
 
     std::string input;
     while (std::cin >> input) {
       if (input == "exit") {
-        common_mail_box.Send(SerializationFlushAtom::value);
-        std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
-                      [](const auto& mail_box) {
-                        mail_box->Send(SerializationFlushAtom::value);
-                      });
+        // TODO:
+        //std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
+        //              [](const auto& mail_box) {
+        //                mail_box->Send(SerializationFlushAtom::value);
+        //              });
         break;
       }
     }

@@ -6,16 +6,17 @@
 #include "caf/all.hpp"
 #include "ctp_trader_api.h"
 #include "common/api_struct.h"
-#include "live_trade_mail_box.h"
+
 #include "ctp_broker/ctp_position_restorer.h"
 #include "ctp_trade_api_provider.h"
+#include "live_trade_system.h"
 
 class SupportSubAccountBroker : public caf::event_based_actor,
                                 public CtpTradeApiProvider::Delegate {
  public:
   SupportSubAccountBroker(
       caf::actor_config& cfg,
-      LiveTradeMailBox* mail_box,
+      LiveTradeSystem* live_trade_system,
       std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider,
       const std::vector<std::pair<std::string, caf::actor> >& sub_accounts);
 
@@ -62,7 +63,7 @@ class SupportSubAccountBroker : public caf::event_based_actor,
                    std::string>;
   OrderIdBimap order_id_bimap_;
   std::unordered_map<std::string, caf::actor> sub_actors_;
-  LiveTradeMailBox* mail_box_;
+  LiveTradeSystem* live_trade_system_;
   std::shared_ptr<CtpTradeApiProvider> trader_api_;
   CtpPositionRestorer position_restorer_;
   int order_seq_ = 0;

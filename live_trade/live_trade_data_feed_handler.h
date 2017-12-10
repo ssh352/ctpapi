@@ -4,7 +4,7 @@
 #include "caf/all.hpp"
 #include "ctpapi/ThostFtdcMdApi.h"
 #include "hpt_core/time_util.h"
-#include "live_trade_mail_box.h"
+
 #include "common/api_struct.h"
 #include "caf_common/caf_atom_defines.h"
 #include "live_trade_system.h"
@@ -46,8 +46,6 @@ class LiveTradeDataFeedHandler : public caf::event_based_actor,
   virtual caf::behavior make_behavior() override;
 
  private:
-  LiveTradeMailBox* mail_box_;
-
   CThostFtdcMdApi* api_;
   std::string broker_id_;
   std::string user_id_;

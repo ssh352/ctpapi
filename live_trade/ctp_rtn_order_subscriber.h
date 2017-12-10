@@ -2,7 +2,7 @@
 #define LIVE_TRADE_CTP_RTN_ORDER_SUBSCRIBER_H
 #include "caf/all.hpp"
 #include "ctp_trader_api.h"
-#include "live_trade_mail_box.h"
+
 #include "caf_common/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "bft_core/channel_delegate.h"
@@ -74,8 +74,6 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
       TimeStamp timestamp = 0) const;
   void LoggingVirtualPositions();
   std::unique_ptr<CTPTraderApi> trade_api_;
-
-  LiveTradeMailBox* mail_box_;
 
   CTAOrderSignalSubscriber signal_subscriber_;
 

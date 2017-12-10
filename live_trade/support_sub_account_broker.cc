@@ -6,17 +6,20 @@
 
 SupportSubAccountBroker::SupportSubAccountBroker(
     caf::actor_config& cfg,
-    LiveTradeMailBox* mail_box,
+    LiveTradeSystem* live_trade_system,
     std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider,
     const std::vector<std::pair<std::string, caf::actor>>& sub_accounts)
     : caf::event_based_actor(cfg),
-      mail_box_(mail_box),
+      live_trade_system_(live_trade_system),
       trader_api_(ctp_trade_api_provider) {
   trader_api_->Init(this);
   // trader_api_ = std::make_unique<CTPTraderApi>(this, ".\\follow_account\\");
-  mail_box_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>), this);
-  mail_box_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>), this);
-  mail_box_->Subscribe(typeid(std::tuple<std::string, std::string>), this);
+  live_trade_system_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>),
+                                this);
+  live_trade_system_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>),
+                                this);
+  live_trade_system_->Subscribe(typeid(std::tuple<std::string, std::string>),
+                                this);
 
   for (const auto& sub_account : sub_accounts) {
     sub_actors_.insert({sub_account.first, sub_account.second});
@@ -127,8 +130,7 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
                   pos.instrument, pos.order_direction, pos.quantity);
             }
             delayed_send(this, std::chrono::milliseconds(500),
-                         CheckHistoryRtnOrderIsDoneAtom::value,
-                         -1);
+                         CheckHistoryRtnOrderIsDoneAtom::value, -1);
             become(sync_history_order);
           }};
 }

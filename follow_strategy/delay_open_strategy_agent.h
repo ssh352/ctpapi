@@ -3,23 +3,31 @@
 #include <boost/property_tree/ptree.hpp>
 #include "delayed_open_strategy_ex.h"
 #include "product_info_manager.h"
+#include "bft_core/channel_delegate.h"
+#include "live_trade/live_trade_system.h"
+#include "bft_core/make_message.h"
 
-template <typename MailBox, typename Strategy>
+template <typename Strategy>
 class DelayOpenStrategyAgent : public Strategy::Delegate {
  public:
-  DelayOpenStrategyAgent(MailBox* mail_box,
+  DelayOpenStrategyAgent(bft::ChannelDelegate* mail_box,
                          boost::property_tree::ptree* strategy_config,
                          ProductInfoMananger* product_info_mananger,
                          boost::log::sources::logger* log)
       : mail_box_(mail_box),
         strategy_(this, strategy_config, product_info_mananger, log) {
-    mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
-                         this);
-    mail_box_->Subscribe(&Strategy::HandleExchangeStatus, &strategy_);
-    mail_box_->Subscribe(&Strategy::HandleTick, &strategy_);
-    mail_box_->Subscribe(&Strategy::InitPosition, &strategy_);
-    mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleNearCloseMarket, this);
-    mail_box_->Subscribe(&DelayOpenStrategyAgent::HandleRtnOrder, this);
+    mail_box_->Subscribe(bft::MakeMessageHandler(
+        &DelayOpenStrategyAgent::HandleCTARtnOrderSignal, this));
+    mail_box_->Subscribe(
+        bft::MakeMessageHandler(&Strategy::HandleExchangeStatus, &strategy_));
+    mail_box_->Subscribe(
+        bft::MakeMessageHandler(&Strategy::HandleTick, &strategy_));
+    mail_box_->Subscribe(
+        bft::MakeMessageHandler(&Strategy::InitPosition, &strategy_));
+    mail_box_->Subscribe(bft::MakeMessageHandler(
+        &DelayOpenStrategyAgent::HandleNearCloseMarket, this));
+    mail_box_->Subscribe(
+        bft::MakeMessageHandler(&DelayOpenStrategyAgent::HandleRtnOrder, this));
   }
 
   void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& rtn_order,
@@ -79,7 +87,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
     waiting_reply_order_.push_back(OutstandingRequest{
         order.instrument, order.order_id, position_effect_direction, 0.0, 0,
         OutStandingEvent::kInputOrder});
-    mail_box_->Send(std::move(order));
+    mail_box_->Send(bft::MakeMessage(std::move(order)));
   }
 
   virtual void HandleCancelOrder(
@@ -89,7 +97,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
     waiting_reply_order_.push_back(
         OutstandingRequest{instrument, order_id, position_effect_direction, 0.0,
                            0, OutStandingEvent::kCancelOrder});
-    mail_box_->Send(CancelOrder{order_id, instrument});
+    mail_box_->Send(bft::MakeMessage(CancelOrder{order_id, instrument}));
   }
 
   virtual void HandleActionOrder(
@@ -99,7 +107,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
         action_order.instrument, action_order.order_id,
         position_effect_direction, action_order.new_price, action_order.new_qty,
         OutStandingEvent::kModifyPriceOrQtyOrBoth});
-    mail_box_->Send(std::move(action_order));
+    mail_box_->Send(bft::MakeMessage(std::move(action_order)));
   }
 
  private:
@@ -118,7 +126,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
     OutStandingEvent event_type;
   };
 
-  MailBox* mail_box_;
+  bft::ChannelDelegate* mail_box_;
   Strategy strategy_;
 
   std::vector<OutstandingRequest> waiting_reply_order_;

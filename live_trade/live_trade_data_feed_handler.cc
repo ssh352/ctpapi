@@ -58,7 +58,7 @@ LiveTradeDataFeedHandler::LiveTradeDataFeedHandler(
     : caf::event_based_actor(cfg), live_trade_system_(live_trade_system) {
   api_ = CThostFtdcMdApi::CreateFtdcMdApi();
   api_->RegisterSpi(this);
-  mail_box_->Subscribe(
+  live_trade_system_->Subscribe(
       typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>), this);
 }
 

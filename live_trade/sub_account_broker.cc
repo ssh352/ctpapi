@@ -4,17 +4,16 @@
 #include <boost/log/common.hpp>
 #include <boost/log/attributes.hpp>
 #include "caf_common/caf_atom_defines.h"
+#include "bft_core/make_message.h"
 
 CAFSubAccountBroker::CAFSubAccountBroker(
     caf::actor_config& cfg,
-    LiveTradeMailBox* inner_mail_box,
-    LiveTradeMailBox* common_mail_box,
+    LiveTradeSystem* live_trade_system,
     ProductInfoMananger* product_info_mananger,
     std::unordered_set<std::string> close_today_cost_of_product_codes,
     std::string account_id)
     : caf::event_based_actor(cfg),
-      inner_mail_box_(inner_mail_box),
-      common_mail_box_(common_mail_box),
+      live_trade_system_(live_trade_system),
       product_info_mananger_(product_info_mananger),
       close_today_cost_of_product_codes_(close_today_cost_of_product_codes),
       account_id_(std::move(account_id)) {
@@ -22,9 +21,9 @@ CAFSubAccountBroker::CAFSubAccountBroker(
       "log_tag", boost::log::attributes::constant<std::string>(account_id_));
   // inner_mail_box_->Subscrdibe(
   //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<InputOrder>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<CancelOrder>), this);
-  inner_mail_box_->Subscribe(typeid(std::tuple<OrderAction>), this);
+  live_trade_system_->Subscribe(typeid(std::tuple<InputOrder>), this);
+  live_trade_system_->Subscribe(typeid(std::tuple<CancelOrder>), this);
+  live_trade_system_->Subscribe(typeid(std::tuple<OrderAction>), this);
 }
 
 std::string CAFSubAccountBroker::GenerateOrderId() {
@@ -33,19 +32,19 @@ std::string CAFSubAccountBroker::GenerateOrderId() {
 
 void CAFSubAccountBroker::ReturnOrderField(
     const std::shared_ptr<OrderField>& order) {
-  inner_mail_box_->Send(order);
+  live_trade_system_->Send(env_id_, bft::MakeMessage(order));
 }
 
 void CAFSubAccountBroker::HandleCancelOrder(
     const CTPCancelOrder& cancel_order) {
-  common_mail_box_->Send(account_id_, cancel_order);
+  live_trade_system_->SendToNamed(account_id_, bft::MakeMessage(cancel_order));
   BOOST_LOG(log_) << "[SEND Cancel Order]"
                   << "(Id)" << cancel_order.order_id << ", (SysId)"
                   << cancel_order.order_sys_id;
 }
 
 void CAFSubAccountBroker::HandleEnterOrder(const CTPEnterOrder& enter_order) {
-  common_mail_box_->Send(account_id_, enter_order);
+  live_trade_system_->SendToNamed(account_id_, bft::MakeMessage(enter_order));
   BOOST_LOG(log_) << "[SEND Enter Order]"
                   << "(Id)" << enter_order.order_id << ", (I)"
                   << enter_order.instrument << ", (BS)"
@@ -132,7 +131,8 @@ caf::behavior CAFSubAccountBroker::make_behavior() {
           log_.push_record(std::move(rec));
         }
 
-        inner_mail_box_->Send(std::move(strategy_positions));
+        live_trade_system_->Send(
+            env_id_, bft::MakeMessage(std::move(strategy_positions)));
       },
       [=](const std::shared_ptr<CTPOrderField>& order) {
         auto it = instrument_brokers_.find(order->instrument);
