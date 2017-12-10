@@ -31,6 +31,6 @@ void CAFDelayOpenStrategyAgent::Subscribe(
   message_handlers_.insert({handler->TypeIndex(), std::move(handler)});
 }
 
-void CAFDelayOpenStrategyAgent::Send(std::shared_ptr<bft::Message> message) {
+void CAFDelayOpenStrategyAgent::Send(bft::Message message) {
   live_trade_system_->Send(env_id_, message);
 }

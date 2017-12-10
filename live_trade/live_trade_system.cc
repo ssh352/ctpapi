@@ -24,7 +24,7 @@ void LiveTradeSystem::Subscribe(int env_id,
   }
 }
 
-void LiveTradeSystem::Send(int env_id, std::shared_ptr<bft::Message> message) {
+void LiveTradeSystem::Send(int env_id, bft::Message message) {
   if (env_id == GetGlobalEnvionment()) {
     global_env_.Send(message);
   } else {
@@ -36,12 +36,12 @@ void LiveTradeSystem::Send(int env_id, std::shared_ptr<bft::Message> message) {
   }
 }
 
-void LiveTradeSystem::SendToGlobal(std::shared_ptr<bft::Message> message) {
+void LiveTradeSystem::SendToGlobal(bft::Message message) {
   global_env_.Send(message);
 }
 
 void LiveTradeSystem::SendToNamed(const std::string& named,
-                                  std::shared_ptr<bft::Message> message) {}
+                                  bft::Message message) {}
 
 int LiveTradeSystem::CreateEnvionment() {
   private_envs_.insert({next_env_id_, LiveTradeEnvironment()});

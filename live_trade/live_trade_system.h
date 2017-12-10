@@ -18,12 +18,11 @@ class LiveTradeSystem {
 
   void Subscribe(int env_id, std::type_index type_index, caf::actor actor);
 
-  void SendToNamed(const std::string& named,
-                   std::shared_ptr<bft::Message> message);
+  void SendToNamed(const std::string& named, bft::Message message);
 
-  void SendToGlobal(std::shared_ptr<bft::Message> message);
+  void SendToGlobal(bft::Message message);
 
-  void Send(int env_id, std::shared_ptr<bft::Message> message);
+  void Send(int env_id, bft::Message message);
 
  private:
   LiveTradeEnvironment global_env_;

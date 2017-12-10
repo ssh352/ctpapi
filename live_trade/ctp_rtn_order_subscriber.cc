@@ -218,6 +218,6 @@ void CAFCTAOrderSignalBroker::LoggingVirtualPositions() {
 void CAFCTAOrderSignalBroker::Subscribe(
     std::unique_ptr<bft::BasedMessageHandler> handler) {}
 
-void CAFCTAOrderSignalBroker::Send(std::shared_ptr<bft::Message> message) {
+void CAFCTAOrderSignalBroker::Send(bft::Message message) {
   live_trade_system_->Send(env_id_, message);
 }

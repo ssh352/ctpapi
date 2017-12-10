@@ -23,6 +23,7 @@
     ],
     'include_dirs' : [
       '..',
+      '<(DEPTH)/third_party/actor-framework/libcaf_core'
     ],
   },
   {

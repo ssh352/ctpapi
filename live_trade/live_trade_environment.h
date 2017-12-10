@@ -9,7 +9,8 @@
 class LiveTradeEnvironment {
  public:
   void Subscribe(std::type_index type_index, caf::actor actor);
-  void Send(const std::shared_ptr<bft::Message>& message);
+
+  void Send(bft::Message message);
 
  private:
   std::multimap<std::type_index, caf::actor> actors_;

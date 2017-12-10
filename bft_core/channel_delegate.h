@@ -9,7 +9,8 @@ namespace bft {
 class ChannelDelegate {
  public:
   virtual void Subscribe(std::unique_ptr<BasedMessageHandler> handler) = 0;
-  virtual void Send(std::shared_ptr<Message> message) = 0;
+
+  virtual void Send(Message message) = 0;
 };
 
 }  // namespace bft

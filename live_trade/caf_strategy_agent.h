@@ -23,7 +23,7 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor,
   virtual void Subscribe(
       std::unique_ptr<bft::BasedMessageHandler> handler) override;
 
-  virtual void Send(std::shared_ptr<bft::Message> message) override;
+  virtual void Send(bft::Message message) override;
 
  private:
   int env_id_;

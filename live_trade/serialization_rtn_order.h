@@ -16,7 +16,6 @@ class SerializationCtaRtnOrder : public caf::event_based_actor {
 
   virtual caf::behavior make_behavior() override;
 
-  void Do(int, std::string);
  private:
   LiveTradeSystem* mail_box_;
   std::ofstream file_;

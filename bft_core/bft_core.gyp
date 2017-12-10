@@ -5,7 +5,7 @@
   'targets' : [
   {
     'target_name' : 'bft_core',
-    'type' : 'none',
+    'type' : 'shared_library',
     'variables' : {
     },
     'sources' : [
@@ -23,6 +23,7 @@
     ],
     'include_dirs' : [
       '..',
+      '<(DEPTH)/third_party/actor-framework/libcaf_core'
     ],
   },
   ]

@@ -21,25 +21,12 @@ SerializationCtaRtnOrder::SerializationCtaRtnOrder(caf::actor_config& cfg,
 }
 
 caf::behavior SerializationCtaRtnOrder::make_behavior() {
-  // return {
-  //    [=](const std::shared_ptr<OrderField>& rtn_order,
-  //        const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
-  //    [=](SerializationFlushAtom) {
-  //  file_.flush();
-  //},
-  //};
-  //std::set<std::unique_ptr<bft::BasedMessageHandler>> handlers;
-  //auto handler = bft::MakeMessageHandler(
-  //    [](const std::shared_ptr<OrderField>& rtn_order, const CTAPositionQty&) {
-  //    });
-  return {[=](const std::shared_ptr<bft::Message>& message) { int i = 0; }};
+  return {
+      [=](const std::shared_ptr<OrderField>& rtn_order,
+          const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
+      [=](SerializationFlushAtom) { file_.flush(); },
+  };
 }
-
-void SerializationCtaRtnOrder::Do(int, std::string)
-{
-
-}
-
 SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
     caf::actor_config& cfg,
     LiveTradeSystem* live_trade_system,
@@ -61,9 +48,8 @@ SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
 }
 
 caf::behavior SerializationStrategyRtnOrder::make_behavior() {
-  // return {
-  //    [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
-  //    [=](SerializationFlushAtom) { file_.flush(); },
-  //};
-  return {[=](const std::shared_ptr<bft::Message>& message) { int i = 0; }};
+  return {
+      [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
+      [=](SerializationFlushAtom) { file_.flush(); },
+  };
 }
