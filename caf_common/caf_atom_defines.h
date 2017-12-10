@@ -1,6 +1,8 @@
 #ifndef LIVE_TRADE_CAF_ATOM_DEFINES_H
 #define LIVE_TRADE_CAF_ATOM_DEFINES_H
 #include "caf/all.hpp"
+#include "common/api_struct.h"
+#include "bft_core/message.h"
 
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using CtpConnectAtom = caf::atom_constant<caf::atom("ctpconnect")>;
@@ -32,13 +34,13 @@ CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<OrderField>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTAPositionQty)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CancelOrder)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(OrderAction)
-
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<CTPPositionField>)
 
 // CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::vector<OrderPosition>)
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(std::shared_ptr<CTPOrderField>)
 // CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTPEnterOrder)
 // CAF_ALLOW_UNSAFE_MESSAGE_TYPE(CTPCancelOrder)
+CAF_ALLOW_UNSAFE_MESSAGE_TYPE(bft::Message)
 
 
 template <class Inspector>

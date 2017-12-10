@@ -1,13 +1,14 @@
 #include "cta_order_signal_subscriber.h"
 #include "bft_core/make_message.h"
+#include "caf_common/caf_atom_defines.h"
 
 CTAOrderSignalSubscriber::CTAOrderSignalSubscriber(bft::ChannelDelegate* delegate)
 : mail_box_(delegate) {
   exchange_status_ = ExchangeStatus::kNoTrading;
-  mail_box_->Subscribe(bft::MakeMessageHandler(
-      &CTAOrderSignalSubscriber::HandleExchangeStatus, this));
-  mail_box_->Subscribe(
-      bft::MakeMessageHandler(&CTAOrderSignalSubscriber::HandleRtnOrder, this));
+  bft::MessageHandler message_handler;
+  message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleExchangeStatus, this);
+  message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleRtnOrder, this);
+  delegate->Subscribe(std::move(message_handler));
 }
 
 void CTAOrderSignalSubscriber::LoggingBindOrderId(

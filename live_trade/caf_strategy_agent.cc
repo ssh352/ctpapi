@@ -17,20 +17,17 @@ CAFDelayOpenStrategyAgent::CAFDelayOpenStrategyAgent(
 }
 
 caf::behavior CAFDelayOpenStrategyAgent::make_behavior() {
-  return {[=](const std::shared_ptr<bft::Message>& message) {
-    if (message_handlers_.find(message->TypeIndex()) !=
-        message_handlers_.end()) {
-      message_handlers_.at(message->TypeIndex())->ApplyMessage(*message);
-    }
-  }};
+  return caf_message_handler_;
 }
 
 void CAFDelayOpenStrategyAgent::Subscribe(
-    std::unique_ptr<bft::BasedMessageHandler> handler) {
-  live_trade_system_->Subscribe(env_id_, handler->TypeIndex(), this);
-  message_handlers_.insert({handler->TypeIndex(), std::move(handler)});
+    bft::MessageHandler handler) {
+  for (const auto& type_index : handler.TypeIndexs()) {
+    live_trade_system_->Subscribe(env_id_, type_index, this);
+  }
+  caf_message_handler_ = handler.message_handler();
 }
 
 void CAFDelayOpenStrategyAgent::Send(bft::Message message) {
-  live_trade_system_->Send(env_id_, message);
+  live_trade_system_->Send(env_id_, std::move(message));
 }

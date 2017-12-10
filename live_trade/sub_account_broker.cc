@@ -23,19 +23,10 @@ CAFSubAccountBroker::CAFSubAccountBroker(
       account_id_(std::move(account_id)) {
   log_.add_attribute(
       "log_tag", boost::log::attributes::constant<std::string>(account_id_));
-  // inner_mail_box_->Subscrdibe(
-  //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
-  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<InputOrder>), this);
-  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<CancelOrder>), this);
-  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<OrderAction>), this);
-  live_trade_system_->Subscribe(
-      env_id_, typeid(std::tuple<std::vector<CTPPositionField>>), this);
-  live_trade_system_->Subscribe(
-      env_id_, typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
-  live_trade_system_->Subscribe(
-      env_id_,
-      typeid(std::tuple<std::string&, std::string, double, int, TimeStamp>),
-      this);
+  InitMakeBehavior();
+  for (const auto& type_index : message_handler_.TypeIndexs()) {
+    live_trade_system_->Subscribe(env_id_, type_index, this);
+  }
 }
 
 std::string CAFSubAccountBroker::GenerateOrderId() {
@@ -112,7 +103,11 @@ void CAFSubAccountBroker::MakeCtpInstrumentBrokerIfNeed(
 }
 
 caf::behavior CAFSubAccountBroker::make_behavior() {
-  return {
+  return message_handler_.message_handler();
+}
+
+void CAFSubAccountBroker::InitMakeBehavior() {
+  message_handler_.Assign(
       [=](const std::vector<CTPPositionField>& positions) {
         for (const auto& pos : positions) {
           MakeCtpInstrumentBrokerIfNeed(pos.instrument);
@@ -198,5 +193,5 @@ caf::behavior CAFSubAccountBroker::make_behavior() {
           it->second->HandleCancel(cancel);
         }
       },
-  };
+      );
 }

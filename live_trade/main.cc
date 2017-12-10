@@ -92,6 +92,10 @@ struct SubAccount {
   std::string strategy_config;
   std::string broker;
 };
+class Foo {
+ public:
+  void Do(int) {}
+};
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {

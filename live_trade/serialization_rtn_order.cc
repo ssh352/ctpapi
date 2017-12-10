@@ -24,7 +24,9 @@ caf::behavior SerializationCtaRtnOrder::make_behavior() {
   return {
       [=](const std::shared_ptr<OrderField>& rtn_order,
           const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
-      [=](SerializationFlushAtom) { file_.flush(); },
+      [=](SerializationFlushAtom) { 
+    file_.flush(); 
+  },
   };
 }
 SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
@@ -50,6 +52,8 @@ SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
 caf::behavior SerializationStrategyRtnOrder::make_behavior() {
   return {
       [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
-      [=](SerializationFlushAtom) { file_.flush(); },
+      [=](SerializationFlushAtom) { 
+    file_.flush(); 
+  },
   };
 }

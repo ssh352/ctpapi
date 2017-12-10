@@ -3,55 +3,50 @@
 #include "bft_core/message.h"
 
 namespace bft {
-class BasedMessageHandler {
- public:
-  virtual void ApplyMessage(const Message& msg) = 0;
-  virtual std::type_index TypeIndex() = 0;
-  virtual ~BasedMessageHandler() {}
+
+template<typename TL>
+struct TypeListToTuple;
+
+template<typename... Ts>
+struct TypeListToTuple<caf::detail::type_list<Ts...>> {
+  using Type = std::tuple<std::decay_t<Ts>...>;
 };
 
-template <typename... Ts>
-class MessageHandler : public BasedMessageHandler {
+template <typename T>
+struct LambdaTrait {
+  using fun_trait = typename caf::detail::get_callable_trait<T>::type;
+  using ArgsType =
+      typename TypeListToTuple<typename fun_trait::arg_types>::Type;
+};
+
+class MessageHandler {
  public:
+  MessageHandler() = default;
+  ~MessageHandler() {}
+
+  template <typename... Ts>
+  void Assign(Ts&&... args) {
+    type_indexs_ = {typeid(typename LambdaTrait<Ts>::ArgsType)...};
+    message_handler_.assign(std::forward<Ts>(args)...);
+  }
+
   template <typename C, typename... Args>
-  MessageHandler(void (C::*fn)(Args...), C* ptr) {
-    fn_ = [ptr,fn](const Args&... args) { (ptr->*fn)(args...); };
+  void Subscribe(void (C::*fn)(Args...), C* ptr) {
+    message_handler_ = message_handler_.or_else(
+        [fn, ptr](const Args&... args) { (ptr->*fn)(args...); });
+    type_indexs_.push_back(typeid(std::tuple<std::decay_t<Args>...>));
   }
 
-  MessageHandler(std::function<void(const Ts&...)> fn) : fn_(fn) {}
-  virtual void ApplyMessage(const Message& msg) override {
-    ApplyImpl(msg, std::make_index_sequence<sizeof...(Ts)>());
+  const std::vector<std::type_index>& TypeIndexs() const {
+    return type_indexs_;
   }
 
-  virtual std::type_index TypeIndex() override {
-    return typeid(std::tuple<Ts...>);
-  }
+  caf::message_handler message_handler() const { return message_handler_; }
 
  private:
-  template <size_t... Is>
-  void ApplyImpl(const Message& msg, std::index_sequence<Is...>) {
-    fn_(Get<Is>(msg)...);
-  }
-  template <size_t N>
-  const auto& Get(const Message& msg) {
-    using T =
-        typename std::tuple_element<N, std::tuple<std::decay_t<Ts>...>>::type;
-    return *reinterpret_cast<const T*>(msg.Get(N));
-  }
-  std::function<void(const Ts&...)> fn_;
+  std::vector<std::type_index> type_indexs_;
+  caf::message_handler message_handler_;
 };
-
-template <typename C, typename... Args>
-std::unique_ptr<BasedMessageHandler> MakeMessageHandler(void (C::*fn)(Args...),
-                                                        C* ptr) {
-  return std::make_unique<MessageHandler<Args...>>(fn, ptr);
-}
-
-//template <typename R, typename... Args>
-//std::unique_ptr<BasedMessageHandler> MakeMessageHandler(R (*)(Args...)) {
-//  return std::make_unique<MessageHandler<Args...>>(fn, ptr);
-//}
-
 }  // namespace bft
 
 #endif  // BFT_CORE_MESSAGE_HANDLER_H

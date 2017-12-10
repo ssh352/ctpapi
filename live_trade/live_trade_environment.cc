@@ -1,7 +1,6 @@
 #include "live_trade_environment.h"
 #include <boost/assert.hpp>
 
-CAF_ALLOW_UNSAFE_MESSAGE_TYPE(bft::Message)
 
 void LiveTradeEnvironment::Subscribe(std::type_index type_index,
                                      caf::actor actor) {

@@ -41,8 +41,7 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
 
   virtual void HandleExchangeStatus(ExchangeStatus exchange_status) override;
 
-  virtual void Subscribe(
-      std::unique_ptr<bft::BasedMessageHandler> handler) override;
+  virtual void Subscribe(bft::MessageHandler handler) override;
 
   virtual void Send(bft::Message message) override;
 

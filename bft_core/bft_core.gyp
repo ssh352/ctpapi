@@ -5,7 +5,7 @@
   'targets' : [
   {
     'target_name' : 'bft_core',
-    'type' : 'shared_library',
+    'type' : 'static_library',
     'variables' : {
     },
     'sources' : [

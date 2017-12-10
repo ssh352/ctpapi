@@ -26,10 +26,10 @@ void LiveTradeSystem::Subscribe(int env_id,
 
 void LiveTradeSystem::Send(int env_id, bft::Message message) {
   if (env_id == GetGlobalEnvionment()) {
-    global_env_.Send(message);
+    global_env_.Send(std::move(message));
   } else {
     if (private_envs_.find(env_id) != private_envs_.end()) {
-      private_envs_.at(env_id).Send(message);
+      private_envs_.at(env_id).Send(std::move(message));
     } else {
       BOOST_ASSERT(false);
     }
@@ -37,11 +37,21 @@ void LiveTradeSystem::Send(int env_id, bft::Message message) {
 }
 
 void LiveTradeSystem::SendToGlobal(bft::Message message) {
-  global_env_.Send(message);
+  global_env_.Send(std::move(message));
 }
 
 void LiveTradeSystem::SendToNamed(const std::string& named,
-                                  bft::Message message) {}
+                                  bft::Message message) {
+  if (env_names_.find(named) == env_names_.end()) {
+    return;
+  }
+
+  if (private_envs_.find(env_names_[named]) != private_envs_.end()) {
+    private_envs_.at(env_names_[named]).Send(std::move(message));
+  } else {
+    BOOST_ASSERT(false);
+  }
+}
 
 int LiveTradeSystem::CreateEnvionment() {
   private_envs_.insert({next_env_id_, LiveTradeEnvironment()});

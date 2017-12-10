@@ -16,18 +16,16 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
                          boost::log::sources::logger* log)
       : mail_box_(mail_box),
         strategy_(this, strategy_config, product_info_mananger, log) {
-    mail_box_->Subscribe(bft::MakeMessageHandler(
-        &DelayOpenStrategyAgent::HandleCTARtnOrderSignal, this));
-    mail_box_->Subscribe(
-        bft::MakeMessageHandler(&Strategy::HandleExchangeStatus, &strategy_));
-    mail_box_->Subscribe(
-        bft::MakeMessageHandler(&Strategy::HandleTick, &strategy_));
-    mail_box_->Subscribe(
-        bft::MakeMessageHandler(&Strategy::InitPosition, &strategy_));
-    mail_box_->Subscribe(bft::MakeMessageHandler(
-        &DelayOpenStrategyAgent::HandleNearCloseMarket, this));
-    mail_box_->Subscribe(
-        bft::MakeMessageHandler(&DelayOpenStrategyAgent::HandleRtnOrder, this));
+    bft::MessageHandler message_handler;
+    message_handler.Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
+                             this);
+    message_handler.Subscribe(&Strategy::HandleExchangeStatus, &strategy_);
+    message_handler.Subscribe(&Strategy::HandleTick, &strategy_);
+    message_handler.Subscribe(&Strategy::InitPosition, &strategy_);
+    message_handler.Subscribe(&DelayOpenStrategyAgent::HandleNearCloseMarket,
+                             this);
+    message_handler.Subscribe(&DelayOpenStrategyAgent::HandleRtnOrder, this);
+    mail_box_->Subscribe(std::move(message_handler));
   }
 
   void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& rtn_order,

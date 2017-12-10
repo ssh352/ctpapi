@@ -9,6 +9,7 @@
 #include "ctp_broker/ctp_instrument_broker.h"
 #include "follow_strategy/product_info_manager.h"
 #include "live_trade_system.h"
+#include "bft_core/message_handler.h"
 
 class CAFSubAccountBroker : public caf::event_based_actor,
                             public CTPOrderDelegate {
@@ -34,6 +35,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
       const std::shared_ptr<OrderField>& order) override;
 
  private:
+  void InitMakeBehavior();
   std::string GenerateOrderId();
   LiveTradeSystem* live_trade_system_;
   std::unordered_map<std::string, std::unique_ptr<CTPInstrumentBroker>>
@@ -45,6 +47,7 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   ProductInfoMananger* product_info_mananger_;
   boost::log::sources::logger log_;
   int env_id_;
+  bft::MessageHandler message_handler_;
 };
 
 #endif  // LIVE_TRADE_SUB_ACCOUNT_BROKER_H
