@@ -15,21 +15,23 @@ class CAFDelayOpenStrategyAgent : public caf::event_based_actor,
                             boost::property_tree::ptree* strategy_config,
                             ProductInfoMananger* product_info_mananger,
                             const std::string& account_id,
-                            LiveTradeSystem* live_trade_system);
+                            LiveTradeSystem* live_trade_system,
+                            int env_id);
 
   virtual caf::behavior make_behavior() override;
 
- private:
-  boost::log::sources::logger log_;
-  LiveTradeSystem* live_trade_system_;
-  caf::message_handler message_handler_;
-  DelayOpenStrategyAgent<OptimalOpenPriceStrategy> agent_;
-
- public:
   virtual void Subscribe(
       std::unique_ptr<bft::BasedMessageHandler> handler) override;
 
   virtual void Send(std::shared_ptr<bft::Message> message) override;
+
+ private:
+  int env_id_;
+  boost::log::sources::logger log_;
+  LiveTradeSystem* live_trade_system_;
+  std::unique_ptr<DelayOpenStrategyAgent<OptimalOpenPriceStrategy> > agent_;
+  std::map<std::type_index, std::unique_ptr<bft::BasedMessageHandler> >
+      message_handlers_;
 };
 
 #endif  // LIVE_TRADE_CAF_STRATEGY_AGENT_H

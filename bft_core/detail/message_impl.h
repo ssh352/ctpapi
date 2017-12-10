@@ -32,11 +32,11 @@ struct VoidPtrAccess {
   }
 };
 
-
 template <typename... Ts>
 class MessageImpl : public Message {
  public:
-  MessageImpl(Ts&&... args) : data_(std::forward<Ts>(args)...) {}
+  template <typename... Us>
+  MessageImpl(Us&&... args) : data_(std::forward<Us>(args)...) {}
 
   using DataType = std::tuple<Ts...>;
   virtual const void* Get(size_t pos) const noexcept override {
@@ -60,12 +60,11 @@ class MessageImpl : public Message {
     }
   }
 
-
   virtual std::type_index TypeIndex() const noexcept override {
     return typeid(DataType);
   }
 
-private:
+ private:
   template <class F, size_t N>
   auto rec_dispatch(size_t, F& f, tup_ptr_access_pos<N, N>) const
       -> decltype(f(std::declval<int&>())) {

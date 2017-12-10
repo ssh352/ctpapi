@@ -16,8 +16,10 @@ class CAFSubAccountBroker : public caf::event_based_actor,
   CAFSubAccountBroker(
       caf::actor_config& cfg,
       LiveTradeSystem* live_trade_system,
+      int env_id,
       ProductInfoMananger* product_info_mananger,
       std::unordered_set<std::string> close_today_cost_of_product_codes,
+      std::string broker_id,
       std::string account_id);
 
   virtual caf::behavior make_behavior() override;
@@ -33,11 +35,11 @@ class CAFSubAccountBroker : public caf::event_based_actor,
 
  private:
   std::string GenerateOrderId();
-  caf::actor ctp_actor_;
   LiveTradeSystem* live_trade_system_;
   std::unordered_map<std::string, std::unique_ptr<CTPInstrumentBroker>>
       instrument_brokers_;
   std::unordered_set<std::string> close_today_cost_of_product_codes_;
+  std::string broker_id_;
   std::string account_id_;
   int order_seq_ = 0;
   ProductInfoMananger* product_info_mananger_;

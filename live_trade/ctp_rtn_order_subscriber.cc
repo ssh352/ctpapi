@@ -5,21 +5,14 @@
 
 CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(
     caf::actor_config& cfg,
-    LiveTradeSystem* live_trade_system)
+    LiveTradeSystem* live_trade_system,
+    int env_id)
     : caf::event_based_actor(cfg),
       live_trade_system_(live_trade_system),
+      env_id_(env_id),
       signal_subscriber_(this) {
   ClearUpCTPFolwDirectory(".\\cta\\");
   trade_api_ = std::make_unique<CTPTraderApi>(this, ".\\cta\\");
-  // TODO:tempare hard code
-  // signal_subscriber_.AddPosition("MA801", OrderDirection::kBuy, 9);
-  // signal_subscriber_.AddPosition("c1801", OrderDirection::kBuy, 12);
-  // signal_subscriber_.AddPosition("cs1801", OrderDirection::kBuy, 20);
-  // signal_subscriber_.AddPosition("cu1801", OrderDirection::kSell, 1);
-  // signal_subscriber_.AddPosition("l1801", OrderDirection::kBuy, 2);
-  // signal_subscriber_.AddPosition("p1805", OrderDirection::kBuy, 2);
-  // signal_subscriber_.AddPosition("p1801", OrderDirection::kSell, 4);
-  // signal_subscriber_.AddPosition("pp1801", OrderDirection::kBuy, 6);
 }
 
 caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
@@ -226,5 +219,5 @@ void CAFCTAOrderSignalBroker::Subscribe(
     std::unique_ptr<bft::BasedMessageHandler> handler) {}
 
 void CAFCTAOrderSignalBroker::Send(std::shared_ptr<bft::Message> message) {
-  // TODO:
+  live_trade_system_->Send(env_id_, message);
 }

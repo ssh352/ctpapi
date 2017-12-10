@@ -95,27 +95,32 @@ struct SubAccount {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
+
+  //auto t = std::make_tuple(100);
   InitLogging();
   ProductInfoMananger product_info_mananger;
   product_info_mananger.LoadFile("product_info.json");
   try {
     YAML::Node config = YAML::LoadFile("accounts.yaml");
     std::vector<SubAccount> sub_acconts;
+    std::set<std::string> sub_accountnames;
     for (YAML::const_iterator it = config.begin(); it != config.end(); ++it) {
       auto node = it->as<YAML::Node>();
       SubAccount account;
       account.name = node["Account"].as<std::string>();
       account.strategy_config = node["Strategy"].as<std::string>();
       account.broker = node["Broker"].as<std::string>();
+      sub_accountnames.insert(account.name);
       sub_acconts.push_back(account);
     }
 
     LiveTradeSystem live_trade_system;
-    std::map<std::string, std::vector<std::pair<std::string, caf::actor>>>
-        sub_actors;
-    auto cta = system.spawn<CAFCTAOrderSignalBroker>(&live_trade_system);
+    std::set<std::string> enable_brokers;
+    auto cta = system.spawn<CAFCTAOrderSignalBroker>(
+        &live_trade_system, live_trade_system.GetGlobalEnvionment());
 
-    system.spawn<SerializationCtaRtnOrder>(&live_trade_system);
+    system.spawn<SerializationCtaRtnOrder>(
+        &live_trade_system, live_trade_system.GetGlobalEnvionment());
 
     std::unordered_set<std::string> close_today_cost_of_product_codes;
     // = {
@@ -129,6 +134,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     }
 
     for (const auto& account : sub_acconts) {
+      int env_id = live_trade_system.CreateNamedEnvionment(account.name);
       pt::ptree strategy_config_pt;
       try {
         pt::read_json(account.strategy_config, strategy_config_pt);
@@ -136,17 +142,18 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         std::cout << "Read Confirg File Error:" << err.what() << "\n";
         return 1;
       }
+      enable_brokers.insert(account.broker);
 
-      system.spawn<SerializationStrategyRtnOrder>(&live_trade_system,
+      system.spawn<SerializationStrategyRtnOrder>(&live_trade_system, env_id,
                                                   account.name);
       // system.spawn<SerializationCtaRtnOrder>();
-      system.spawn<CAFDelayOpenStrategyAgent>(&strategy_config_pt,
-                                              &product_info_mananger,
-                                              account.name, &live_trade_system);
-      sub_actors[account.broker].push_back(std::make_pair(
-          account.name, system.spawn<CAFSubAccountBroker>(
-                            &live_trade_system, &product_info_mananger,
-                            close_today_cost_of_product_codes, account.name)));
+      system.spawn<CAFDelayOpenStrategyAgent>(
+          &strategy_config_pt, &product_info_mananger, account.name,
+          &live_trade_system, env_id);
+
+      system.spawn<CAFSubAccountBroker>(
+          &live_trade_system, env_id, &product_info_mananger,
+          close_today_cost_of_product_codes, account.broker, account.name);
     }
 
     YAML::Node broker_config = YAML::LoadFile("brokers.yaml");
@@ -155,7 +162,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
          it != broker_config.end(); ++it) {
       auto item = it->as<YAML::Node>();
       std::string broker = item["Name"].as<std::string>();
-      if (sub_actors.find(broker) == sub_actors.end()) {
+      if (enable_brokers.find(broker) == enable_brokers.end()) {
         continue;
       }
       std::string type = item["Type"].as<std::string>();
@@ -164,8 +171,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         auto local_ctcp_trade_api_provider =
             std::make_shared<LocalCtpTradeApiProvider>();
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &live_trade_system, local_ctcp_trade_api_provider,
-            sub_actors[broker]));
+            &live_trade_system, live_trade_system.CreateNamedEnvionment(broker),
+            sub_accountnames, local_ctcp_trade_api_provider));
         // local_ctcp_trade_api_provider.Connect("tcp://ctp1-front3.citicsf.com:41205",
         //                                      "66666", "120301760", "140616");
         local_ctcp_trade_api_provider->Connect(
@@ -197,15 +204,16 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         }
 
         brokers.push_back(system.spawn<SupportSubAccountBroker>(
-            &live_trade_system, remote_ctp_trade_api_provider,
-            sub_actors[broker]));
+            &live_trade_system, live_trade_system.CreateNamedEnvionment(broker),
+            sub_accountnames, remote_ctp_trade_api_provider));
       } else {
         BOOST_ASSERT(false);
       }
     }
 
     //////////////////////////////////////////////////////////////////////////
-    auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&live_trade_system);
+    auto data_feed = system.spawn<LiveTradeDataFeedHandler>(
+        &live_trade_system, live_trade_system.GetGlobalEnvionment());
     // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
     //             "tcp://180.168.146.187:10001", "9999", "099344",
     //             "a12345678");
@@ -235,7 +243,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     while (std::cin >> input) {
       if (input == "exit") {
         // TODO:
-        //std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
+        // std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
         //              [](const auto& mail_box) {
         //                mail_box->Send(SerializationFlushAtom::value);
         //              });

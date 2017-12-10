@@ -4,15 +4,19 @@
 #include "common_util.h"
 #include "live_trade_system.h"
 SerializationCtaRtnOrder::SerializationCtaRtnOrder(caf::actor_config& cfg,
-                                                   LiveTradeSystem* mail_box)
+                                                   LiveTradeSystem* mail_box,
+                                                   int env_id)
     : event_based_actor(cfg),
       mail_box_(mail_box),
+      env_id_(env_id),
       file_(MakeFileNameWithDateTimeSubfix("daily_serialization", "cta", "bin"),
             std::ios_base::binary),
       oa_(file_) {
   mail_box_->Subscribe(
-      typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>), this);
-  mail_box_->Subscribe(typeid(std::tuple<SerializationFlushAtom>), this);
+      env_id_, typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>),
+      this);
+  mail_box_->Subscribe(env_id_, typeid(std::tuple<SerializationFlushAtom>),
+                       this);
 }
 
 caf::behavior SerializationCtaRtnOrder::make_behavior() {
@@ -26,17 +30,21 @@ caf::behavior SerializationCtaRtnOrder::make_behavior() {
 SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
     caf::actor_config& cfg,
     LiveTradeSystem* live_trade_system,
+    int env_id,
     std::string account_id)
     : event_based_actor(cfg),
       live_trade_system_(live_trade_system),
+      env_id_(env_id),
       account_id_(std::move(account_id)),
       file_(MakeFileNameWithDateTimeSubfix("daily_serialization",
                                            account_id_,
                                            "bin"),
             std::ios_base::binary),
       oa_(file_) {
-  live_trade_system_->Subscribe(typeid(std::tuple<std::shared_ptr<OrderField> >), this);
-  live_trade_system_->Subscribe(typeid(std::tuple<SerializationFlushAtom>), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::shared_ptr<OrderField> >), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<SerializationFlushAtom>), this);
 }
 
 caf::behavior SerializationStrategyRtnOrder::make_behavior() {

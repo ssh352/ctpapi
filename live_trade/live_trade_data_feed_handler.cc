@@ -1,6 +1,20 @@
 #include "live_trade_data_feed_handler.h"
 #include "bft_core/make_message.h"
 
+LiveTradeDataFeedHandler::LiveTradeDataFeedHandler(
+    caf::actor_config& cfg,
+    LiveTradeSystem* live_trade_system,
+    int env_id)
+    : caf::event_based_actor(cfg),
+      live_trade_system_(live_trade_system),
+      env_id_(env_id) {
+  api_ = CThostFtdcMdApi::CreateFtdcMdApi();
+  api_->RegisterSpi(this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>),
+      this);
+}
+
 void LiveTradeDataFeedHandler::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                                           int nRequestID,
                                           bool bIsLast) {}
@@ -51,16 +65,6 @@ void LiveTradeDataFeedHandler::Connect(const std::string& server,
                                        std::string broker_id,
                                        std::string user_id,
                                        std::string password) {}
-
-LiveTradeDataFeedHandler::LiveTradeDataFeedHandler(
-    caf::actor_config& cfg,
-    LiveTradeSystem* live_trade_system)
-    : caf::event_based_actor(cfg), live_trade_system_(live_trade_system) {
-  api_ = CThostFtdcMdApi::CreateFtdcMdApi();
-  api_->RegisterSpi(this);
-  live_trade_system_->Subscribe(
-      typeid(std::tuple<std::shared_ptr<OrderField>, CTAPositionQty>), this);
-}
 
 caf::behavior LiveTradeDataFeedHandler::make_behavior() {
   return {

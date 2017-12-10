@@ -15,7 +15,8 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
                                 public bft::ChannelDelegate {
  public:
   CAFCTAOrderSignalBroker(caf::actor_config& cfg,
-                          LiveTradeSystem* live_trade_system);
+                          LiveTradeSystem* live_trade_system,
+                          int env_id);
 
   void Connect(const std::string& server,
                const std::string& broker_id,
@@ -83,6 +84,7 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
       ctp_orders_;
   int sync_rtn_order_count_ = 0;
   LiveTradeSystem* live_trade_system_;
+  int env_id_;
 };
 
 #endif  // LIVE_TRADE_CTP_RTN_ORDER_SUBSCRIBER_H

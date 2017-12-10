@@ -9,6 +9,8 @@
 class LiveTradeCafActor : public caf::event_based_actor,
                           private bft::ChannelDelegate {
  public:
+  LiveTradeCafActor(caf::actor_config& cfg, int env_id);
+
   virtual caf::behavior make_behavior() override;
 
  private:

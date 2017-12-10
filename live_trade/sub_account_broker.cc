@@ -9,21 +9,33 @@
 CAFSubAccountBroker::CAFSubAccountBroker(
     caf::actor_config& cfg,
     LiveTradeSystem* live_trade_system,
+    int env_id,
     ProductInfoMananger* product_info_mananger,
     std::unordered_set<std::string> close_today_cost_of_product_codes,
+    std::string broker_id,
     std::string account_id)
     : caf::event_based_actor(cfg),
       live_trade_system_(live_trade_system),
+      env_id_(env_id),
       product_info_mananger_(product_info_mananger),
       close_today_cost_of_product_codes_(close_today_cost_of_product_codes),
+      broker_id_(std::move(broker_id)),
       account_id_(std::move(account_id)) {
   log_.add_attribute(
       "log_tag", boost::log::attributes::constant<std::string>(account_id_));
   // inner_mail_box_->Subscrdibe(
   //    typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
-  live_trade_system_->Subscribe(typeid(std::tuple<InputOrder>), this);
-  live_trade_system_->Subscribe(typeid(std::tuple<CancelOrder>), this);
-  live_trade_system_->Subscribe(typeid(std::tuple<OrderAction>), this);
+  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<InputOrder>), this);
+  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<CancelOrder>), this);
+  live_trade_system_->Subscribe(env_id_, typeid(std::tuple<OrderAction>), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::vector<CTPPositionField>>), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::shared_ptr<CTPOrderField>>), this);
+  live_trade_system_->Subscribe(
+      env_id_,
+      typeid(std::tuple<std::string&, std::string, double, int, TimeStamp>),
+      this);
 }
 
 std::string CAFSubAccountBroker::GenerateOrderId() {
@@ -37,14 +49,16 @@ void CAFSubAccountBroker::ReturnOrderField(
 
 void CAFSubAccountBroker::HandleCancelOrder(
     const CTPCancelOrder& cancel_order) {
-  live_trade_system_->SendToNamed(account_id_, bft::MakeMessage(cancel_order));
+  live_trade_system_->SendToNamed(broker_id_,
+                                  bft::MakeMessage(account_id_, cancel_order));
   BOOST_LOG(log_) << "[SEND Cancel Order]"
                   << "(Id)" << cancel_order.order_id << ", (SysId)"
                   << cancel_order.order_sys_id;
 }
 
 void CAFSubAccountBroker::HandleEnterOrder(const CTPEnterOrder& enter_order) {
-  live_trade_system_->SendToNamed(account_id_, bft::MakeMessage(enter_order));
+  live_trade_system_->SendToNamed(broker_id_,
+                                  bft::MakeMessage(account_id_, enter_order));
   BOOST_LOG(log_) << "[SEND Enter Order]"
                   << "(Id)" << enter_order.order_id << ", (I)"
                   << enter_order.instrument << ", (BS)"

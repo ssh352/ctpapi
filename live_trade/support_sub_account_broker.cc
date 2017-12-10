@@ -3,27 +3,27 @@
 #include <boost/format.hpp>
 #include "caf_common/caf_atom_defines.h"
 #include "util.h"
+#include "bft_core/make_message.h"
 
 SupportSubAccountBroker::SupportSubAccountBroker(
     caf::actor_config& cfg,
     LiveTradeSystem* live_trade_system,
-    std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider,
-    const std::vector<std::pair<std::string, caf::actor>>& sub_accounts)
+    int env_id,
+    std::set<std::string> sub_accounts,
+    std::shared_ptr<CtpTradeApiProvider> ctp_trade_api_provider)
     : caf::event_based_actor(cfg),
       live_trade_system_(live_trade_system),
+      env_id_(env_id),
+      sub_actors_(std::move(sub_accounts)),
       trader_api_(ctp_trade_api_provider) {
   trader_api_->Init(this);
   // trader_api_ = std::make_unique<CTPTraderApi>(this, ".\\follow_account\\");
-  live_trade_system_->Subscribe(typeid(std::tuple<std::string, CTPEnterOrder>),
-                                this);
-  live_trade_system_->Subscribe(typeid(std::tuple<std::string, CTPCancelOrder>),
-                                this);
-  live_trade_system_->Subscribe(typeid(std::tuple<std::string, std::string>),
-                                this);
-
-  for (const auto& sub_account : sub_accounts) {
-    sub_actors_.insert({sub_account.first, sub_account.second});
-  }
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::string, CTPEnterOrder>), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::string, CTPCancelOrder>), this);
+  live_trade_system_->Subscribe(
+      env_id_, typeid(std::tuple<std::string, std::string>), this);
 }
 
 caf::behavior SupportSubAccountBroker::make_behavior() {
@@ -32,21 +32,18 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
         auto it = order_id_bimap_.right.find(order->order_id);
         if (it != order_id_bimap_.right.end()) {
           order->order_id = it->second.order_id;
-          auto actor_it = sub_actors_.find(it->second.sub_account_id);
-          if (actor_it != sub_actors_.end()) {
-            send(actor_it->second, order);
-          }
+          live_trade_system_->SendToNamed(it->second.sub_account_id,
+                                          bft::MakeMessage(order));
         }
       },
       [=](const std::string& instrument, const std::string& order_id,
           double trading_price, int trading_qty, TimeStamp timestamp) {
         auto it = order_id_bimap_.right.find(order_id);
         if (it != order_id_bimap_.right.end()) {
-          auto actor_it = sub_actors_.find(it->second.sub_account_id);
-          if (actor_it != sub_actors_.end()) {
-            send(actor_it->second, instrument, it->second.order_id,
-                 trading_price, trading_qty, timestamp);
-          }
+          live_trade_system_->SendToNamed(
+              it->second.sub_account_id,
+              bft::MakeMessage(instrument, it->second.order_id, trading_price,
+                               trading_qty, timestamp));
         }
       },
       [=](const std::string& account_id, const CTPEnterOrder& enter_order) {
@@ -106,7 +103,8 @@ caf::behavior SupportSubAccountBroker::make_behavior() {
 
           for (const auto& item : sub_actors_) {
             BOOST_ASSERT(sub_positions.size() > 0);
-            send(item.second, sub_positions.back());
+            live_trade_system_->SendToNamed(
+                item, bft::MakeMessage(sub_positions.back()));
             sub_positions.pop_back();
           }
           set_default_handler(NULL);

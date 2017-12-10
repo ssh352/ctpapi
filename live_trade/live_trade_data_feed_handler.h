@@ -12,7 +12,9 @@
 class LiveTradeDataFeedHandler : public caf::event_based_actor,
                                  public CThostFtdcMdSpi {
  public:
-  LiveTradeDataFeedHandler(caf::actor_config& cfg, LiveTradeSystem* live_trade_system);
+  LiveTradeDataFeedHandler(caf::actor_config& cfg,
+                           LiveTradeSystem* live_trade_system,
+                           int env_id);
 
   void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& rtn_order,
                                const CTAPositionQty& position_qty);
@@ -52,6 +54,7 @@ class LiveTradeDataFeedHandler : public caf::event_based_actor,
   std::string password_;
   std::set<std::string> instruments_;
   LiveTradeSystem* live_trade_system_;
+  int env_id_;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_DATA_FEED_HANDLER_H

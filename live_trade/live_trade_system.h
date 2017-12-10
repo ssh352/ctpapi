@@ -8,11 +8,18 @@
 
 class LiveTradeSystem {
  public:
+   LiveTradeSystem();
 
-  void Subscribe(std::type_index type_index, caf::actor actor);
+  int CreateEnvionment();
 
+  int CreateNamedEnvionment(const std::string& name);
 
-  void SendToNamed(const std::string& named, std::shared_ptr<bft::Message> message);
+  int GetGlobalEnvionment() const;
+
+  void Subscribe(int env_id, std::type_index type_index, caf::actor actor);
+
+  void SendToNamed(const std::string& named,
+                   std::shared_ptr<bft::Message> message);
 
   void SendToGlobal(std::shared_ptr<bft::Message> message);
 
@@ -20,7 +27,10 @@ class LiveTradeSystem {
 
  private:
   LiveTradeEnvironment global_env_;
+  std::set<std::type_index> global_env_message_types_;
+  std::map<std::string, int> env_names_;
   std::map<int, LiveTradeEnvironment> private_envs_;
+  int next_env_id_= 1;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_SYSTEM_H
