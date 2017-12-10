@@ -1,4 +1,5 @@
 #include "live_trade_data_feed_handler.h"
+#include "bft_core/make_message.h"
 
 void LiveTradeDataFeedHandler::OnRspError(CThostFtdcRspInfoField* pRspInfo,
                                           int nRequestID,
@@ -17,7 +18,7 @@ void LiveTradeDataFeedHandler::OnRtnDepthMarketData(
   tick->tick->last_price = pDepthMarketData->LastPrice;
   tick->tick->timestamp =
       ptime_to_timestamp(boost::posix_time::microsec_clock::local_time());
-  mail_box_->Send(std::move(tick));
+  live_trade_system_->SendToGlobal(bft::MakeMessage(std::move(tick)));
 }
 
 void LiveTradeDataFeedHandler::OnRspUserLogout(
@@ -51,9 +52,10 @@ void LiveTradeDataFeedHandler::Connect(const std::string& server,
                                        std::string user_id,
                                        std::string password) {}
 
-LiveTradeDataFeedHandler::LiveTradeDataFeedHandler(caf::actor_config& cfg,
-                                                   LiveTradeMailBox* mail_box)
-    : caf::event_based_actor(cfg), mail_box_(mail_box) {
+LiveTradeDataFeedHandler::LiveTradeDataFeedHandler(
+    caf::actor_config& cfg,
+    LiveTradeSystem* live_trade_system)
+    : caf::event_based_actor(cfg), live_trade_system_(live_trade_system) {
   api_ = CThostFtdcMdApi::CreateFtdcMdApi();
   api_->RegisterSpi(this);
   mail_box_->Subscribe(

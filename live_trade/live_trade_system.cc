@@ -9,3 +9,6 @@ void LiveTradeSystem::Send(int env_id, std::shared_ptr<bft::Message> message) {
   }
 }
 
+void LiveTradeSystem::SendToGlobal(std::shared_ptr<bft::Message> message) {
+  global_env_.Send(message);
+}

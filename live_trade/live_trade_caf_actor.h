@@ -13,7 +13,6 @@ class LiveTradeCafActor : public caf::event_based_actor,
 
  private:
   virtual void Subscribe(
-      std::type_index type_index,
       std::unique_ptr<bft::BasedMessageHandler> handler) override;
 
   virtual void Send(std::shared_ptr<bft::Message> message) override;

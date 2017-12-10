@@ -6,15 +6,14 @@
 #include "live_trade_environment.h"
 
 class LiveTradeSystem {
-public:
+ public:
+  void SendToGlobal(std::shared_ptr<bft::Message> message);
+
   void Send(int env_id, std::shared_ptr<bft::Message> message);
 
-private:
+ private:
   LiveTradeEnvironment global_env_;
   std::map<int, LiveTradeEnvironment> private_envs_;
 };
 
-#endif // LIVE_TRADE_LIVE_TRADE_SYSTEM_H
-
-
-
+#endif  // LIVE_TRADE_LIVE_TRADE_SYSTEM_H

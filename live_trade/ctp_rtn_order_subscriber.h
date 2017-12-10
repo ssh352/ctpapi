@@ -5,11 +5,17 @@
 #include "live_trade_mail_box.h"
 #include "caf_common/caf_atom_defines.h"
 #include "follow_strategy/cta_order_signal_subscriber.h"
+#include "bft_core/channel_delegate.h"
+#include "bft_core/message.h"
+#include "bft_core/message_handler.h"
+#include "live_trade_system.h"
 
 class CAFCTAOrderSignalBroker : public caf::event_based_actor,
-                                public CTPTraderApi::Delegate {
+                                public CTPTraderApi::Delegate,
+                                public bft::ChannelDelegate {
  public:
-  CAFCTAOrderSignalBroker(caf::actor_config& cfg, LiveTradeMailBox* mail_box);
+  CAFCTAOrderSignalBroker(caf::actor_config& cfg,
+                          LiveTradeSystem* live_trade_system);
 
   void Connect(const std::string& server,
                const std::string& broker_id,
@@ -27,20 +33,17 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
                                    int trading_qty,
                                    TimeStamp timestamp) override;
 
-  template <typename... Ts>
-  void Send(Ts&&... args) {
-    mail_box_->Send(std::forward<Ts>(args)...);
-  }
-
-  template <typename... Ts>
-  void Subscribe(Ts...) {}
-
   virtual void HandleCtpLogon(int front_id, int session_id) override;
 
   virtual void HandleRspYesterdayPosition(
       std::vector<OrderPosition> yesterday_positions) override;
 
   virtual void HandleExchangeStatus(ExchangeStatus exchange_status) override;
+
+  virtual void Subscribe(
+      std::unique_ptr<bft::BasedMessageHandler> handler) override;
+
+  virtual void Send(std::shared_ptr<bft::Message> message) override;
 
  private:
   struct HashCTPOrderField {
@@ -74,13 +77,14 @@ class CAFCTAOrderSignalBroker : public caf::event_based_actor,
 
   LiveTradeMailBox* mail_box_;
 
-  CTAOrderSignalSubscriber<CAFCTAOrderSignalBroker> signal_subscriber_;
+  CTAOrderSignalSubscriber signal_subscriber_;
 
   boost::unordered_set<std::shared_ptr<CTPOrderField>,
                        HashCTPOrderField,
                        CompareCTPOrderField>
       ctp_orders_;
   int sync_rtn_order_count_ = 0;
+  LiveTradeSystem* live_trade_system_;
 };
 
 #endif  // LIVE_TRADE_CTP_RTN_ORDER_SUBSCRIBER_H

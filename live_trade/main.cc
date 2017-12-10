@@ -109,13 +109,15 @@ int caf_main(caf::actor_system& system, const config& cfg) {
       account.broker = node["Broker"].as<std::string>();
       sub_acconts.push_back(account);
     }
+
+    LiveTradeSystem live_trade_system;
     // auto sub_acconts = {"foo"};
     LiveTradeMailBox common_mail_box;
 
     std::vector<std::unique_ptr<LiveTradeMailBox>> inner_mail_boxs;
     std::map<std::string, std::vector<std::pair<std::string, caf::actor>>>
         sub_actors;
-    auto cta = system.spawn<CAFCTAOrderSignalBroker>(&common_mail_box);
+    auto cta = system.spawn<CAFCTAOrderSignalBroker>(&live_trade_system);
 
     system.spawn<SerializationCtaRtnOrder>(&common_mail_box);
 
@@ -212,7 +214,7 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&common_mail_box);
+    auto data_feed = system.spawn<LiveTradeDataFeedHandler>(&live_trade_system);
     // caf::anon_send(support_sub_account_broker, CtpConnectAtom::value,
     //             "tcp://180.168.146.187:10001", "9999", "099344",
     //             "a12345678");

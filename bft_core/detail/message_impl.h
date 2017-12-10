@@ -60,7 +60,12 @@ class MessageImpl : public Message {
     }
   }
 
- private:
+
+  virtual std::type_index TypeIndex() const noexcept override {
+    return typeid(DataType);
+  }
+
+private:
   template <class F, size_t N>
   auto rec_dispatch(size_t, F& f, tup_ptr_access_pos<N, N>) const
       -> decltype(f(std::declval<int&>())) {

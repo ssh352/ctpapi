@@ -1,11 +1,13 @@
 #include "ctp_rtn_order_subscriber.h"
 #include "live_trade_logging.h"
 #include "common_util.h"
+#include "bft_core/make_message.h"
 
-CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(caf::actor_config& cfg,
-                                                 LiveTradeMailBox* mail_box)
+CAFCTAOrderSignalBroker::CAFCTAOrderSignalBroker(
+    caf::actor_config& cfg,
+    LiveTradeSystem* live_trade_system)
     : caf::event_based_actor(cfg),
-      mail_box_(mail_box),
+      live_trade_system_(live_trade_system),
       signal_subscriber_(this) {
   ClearUpCTPFolwDirectory(".\\cta\\");
   trade_api_ = std::make_unique<CTPTraderApi>(this, ".\\cta\\");
@@ -27,11 +29,11 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
         auto& it = ctp_orders_.find(ctp_order->order_id, HashCTPOrderField(),
                                     CompareCTPOrderField());
         if (it == ctp_orders_.end()) {
-          signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
+          signal_subscriber_.HandleRtnOrder(CTASignalAtom(),
                                             MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.insert(ctp_order);
         } else if (ctp_order->status == OrderStatus::kCanceled) {
-          signal_subscriber_.HandleRtnOrder(CTASignalAtom::value,
+          signal_subscriber_.HandleRtnOrder(CTASignalAtom(),
                                             MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.erase(it);
           ctp_orders_.insert(ctp_order);
@@ -50,7 +52,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
           (*it)->status = (*it)->leaves_qty == 0 ? OrderStatus::kAllFilled
                                                  : OrderStatus::kAllFilled;
           signal_subscriber_.HandleRtnOrder(
-              CTASignalAtom::value,
+              CTASignalAtom(),
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
       },
@@ -63,11 +65,11 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
                                     CompareCTPOrderField());
         if (it == ctp_orders_.end()) {
           signal_subscriber_.HandleSyncHistoryRtnOrder(
-              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+              CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.insert(ctp_order);
         } else if (ctp_order->status == OrderStatus::kCanceled) {
           signal_subscriber_.HandleSyncHistoryRtnOrder(
-              CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+              CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0));
           ctp_orders_.erase(it);
           ctp_orders_.insert(ctp_order);
         } else {
@@ -84,7 +86,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
         if (it != ctp_orders_.end()) {
           (*it)->leaves_qty -= trading_qty;
           signal_subscriber_.HandleSyncHistoryRtnOrder(
-              CTASignalAtom::value,
+              CTASignalAtom(),
               MakeOrderField(*it, trading_price, trading_qty, timestamp));
         }
 
@@ -111,7 +113,7 @@ caf::behavior CAFCTAOrderSignalBroker::make_behavior() {
         trade_api_->Connect(server, broker_id, user_id, password);
       },
       [=](const std::vector<OrderPosition>& quantitys) {
-        signal_subscriber_.HandleSyncYesterdayPosition(CTASignalAtom::value,
+        signal_subscriber_.HandleSyncYesterdayPosition(CTASignalAtom(),
                                                        quantitys);
         become(sync_order_behaivor);
         delayed_send(this, std::chrono::milliseconds(500),
@@ -191,7 +193,7 @@ void CAFCTAOrderSignalBroker::HandleRspYesterdayPosition(
 void CAFCTAOrderSignalBroker::HandleExchangeStatus(
     ExchangeStatus exchange_status) {
   send(this, exchange_status);
-  Send(exchange_status);
+  Send(bft::MakeMessage(exchange_status));
 }
 
 void CAFCTAOrderSignalBroker::LoggingVirtualPositions() {
@@ -218,4 +220,11 @@ void CAFCTAOrderSignalBroker::LoggingVirtualPositions() {
     s.flush();
     log.push_record(boost::move(rec));
   }
+}
+
+void CAFCTAOrderSignalBroker::Subscribe(
+    std::unique_ptr<bft::BasedMessageHandler> handler) {}
+
+void CAFCTAOrderSignalBroker::Send(std::shared_ptr<bft::Message> message) {
+  // TODO:
 }

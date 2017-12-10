@@ -10,7 +10,6 @@
 #include <iostream>
 #include <thread>
 #include "ctpapi/ThostFtdcUserApiStruct.h"
-using CTASignalAtom = int;
 #include "follow_strategy/cta_order_signal_subscriber.h"
 #include "common/api_struct.h"
 #include "hpt_core/time_util.h"
@@ -275,11 +274,11 @@ void BackRoolRtnOrder() {
   //                     CompareCTPOrderField());
   // if (it == ctp_orders_.end()) {
   //  signal_subscriber_.HandleCTASignalOrder(
-  //      CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+  //      CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0));
   //  ctp_orders_.insert(ctp_order);
   //} else if (ctp_order->status == OrderStatus::kCanceled) {
   //  signal_subscriber_.HandleCTASignalOrder(
-  //      CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+  //      CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0));
   //  ctp_orders_.erase(it);
   //  ctp_orders_.insert(ctp_order);
   //} else {
@@ -322,7 +321,7 @@ void BackRoolRtnOrder() {
       }
 
       // signal_subscriber_.HandleCTASignalOrder(
-      // CTASignalAtom::value, MakeOrderField(ctp_order, 0.0, 0));
+      // CTASignalAtom(), MakeOrderField(ctp_order, 0.0, 0));
     }
   } catch (boost::archive::archive_exception& err) {
     std::cout << "Done" << err.what() << "\n";

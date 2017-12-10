@@ -7,9 +7,8 @@ caf::behavior LiveTradeCafActor::make_behavior() {
 }
 
 void LiveTradeCafActor::Subscribe(
-    std::type_index type_index,
     std::unique_ptr<bft::BasedMessageHandler> handler) {
-  handlers_.insert({type_index, std::move(handler)});
+  handlers_.insert({handler->TypeIndex(), std::move(handler)});
 }
 
 void LiveTradeCafActor::Send(std::shared_ptr<bft::Message> message) {

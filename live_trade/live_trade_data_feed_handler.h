@@ -7,11 +7,12 @@
 #include "live_trade_mail_box.h"
 #include "common/api_struct.h"
 #include "caf_common/caf_atom_defines.h"
+#include "live_trade_system.h"
 
 class LiveTradeDataFeedHandler : public caf::event_based_actor,
                                  public CThostFtdcMdSpi {
  public:
-  LiveTradeDataFeedHandler(caf::actor_config& cfg, LiveTradeMailBox* mail_box);
+  LiveTradeDataFeedHandler(caf::actor_config& cfg, LiveTradeSystem* live_trade_system);
 
   void HandleCTARtnOrderSignal(const std::shared_ptr<OrderField>& rtn_order,
                                const CTAPositionQty& position_qty);
@@ -52,6 +53,7 @@ class LiveTradeDataFeedHandler : public caf::event_based_actor,
   std::string user_id_;
   std::string password_;
   std::set<std::string> instruments_;
+  LiveTradeSystem* live_trade_system_;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_DATA_FEED_HANDLER_H

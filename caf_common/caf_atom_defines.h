@@ -1,7 +1,7 @@
 #ifndef LIVE_TRADE_CAF_ATOM_DEFINES_H
 #define LIVE_TRADE_CAF_ATOM_DEFINES_H
+#include "caf/all.hpp"
 
-using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using CtpConnectAtom = caf::atom_constant<caf::atom("ctpconnect")>;
 using CloseMarketNearAtom = caf::atom_constant<caf::atom("nearclose")>;

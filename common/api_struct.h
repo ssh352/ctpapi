@@ -178,4 +178,8 @@ struct ProductInfo {
   std::string exchange;
 };
 
+struct CTASignalAtom {
+};
+
+
 #endif  // COMMON_API_STRUCT_H

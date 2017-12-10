@@ -34,3 +34,5 @@ xcuserdata/
 
 .ropeproject
 *.vspx
+*.log
+*.bin
