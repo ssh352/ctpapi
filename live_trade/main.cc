@@ -95,8 +95,7 @@ struct SubAccount {
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
-
-  //auto t = std::make_tuple(100);
+  // auto t = std::make_tuple(100);
   InitLogging();
   ProductInfoMananger product_info_mananger;
   product_info_mananger.LoadFile("product_info.json");
@@ -242,11 +241,8 @@ int caf_main(caf::actor_system& system, const config& cfg) {
     std::string input;
     while (std::cin >> input) {
       if (input == "exit") {
-        // TODO:
-        // std::for_each(inner_mail_boxs.begin(), inner_mail_boxs.end(),
-        //              [](const auto& mail_box) {
-        //                mail_box->Send(SerializationFlushAtom::value);
-        //              });
+        live_trade_system.SendToGlobal(
+            bft::MakeMessage(SerializationFlushAtom::value));
         break;
       }
     }

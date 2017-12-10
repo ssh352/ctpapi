@@ -12,7 +12,7 @@ class LiveTradeEnvironment {
   void Send(const std::shared_ptr<bft::Message>& message);
 
  private:
-  std::map<std::type_index, caf::actor> actors_;
+  std::multimap<std::type_index, caf::actor> actors_;
 };
 
 #endif  // LIVE_TRADE_LIVE_TRADE_ENVIRONMENT_H

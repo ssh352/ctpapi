@@ -47,6 +47,11 @@ std::unique_ptr<BasedMessageHandler> MakeMessageHandler(void (C::*fn)(Args...),
   return std::make_unique<MessageHandler<Args...>>(fn, ptr);
 }
 
+//template <typename R, typename... Args>
+//std::unique_ptr<BasedMessageHandler> MakeMessageHandler(R (*)(Args...)) {
+//  return std::make_unique<MessageHandler<Args...>>(fn, ptr);
+//}
+
 }  // namespace bft
 
 #endif  // BFT_CORE_MESSAGE_HANDLER_H

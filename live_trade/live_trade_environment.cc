@@ -9,8 +9,11 @@ void LiveTradeEnvironment::Subscribe(std::type_index type_index,
 }
 
 void LiveTradeEnvironment::Send(const std::shared_ptr<bft::Message>& message) {
-  if (actors_.find(message->TypeIndex()) != actors_.end()) {
-    anon_send(actors_.at(message->TypeIndex()), message);
+  auto range = actors_.equal_range(message->TypeIndex());
+  if (range.first != range.second) {
+    for (auto it = range.first; it != range.second; ++it) {
+      caf::anon_send(it->second, message);
+    }
   } else {
     BOOST_ASSERT(false);
   }

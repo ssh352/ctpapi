@@ -3,6 +3,7 @@
 #include "common/serialization_util.h"
 #include "common_util.h"
 #include "live_trade_system.h"
+#include "bft_core/message_handler.h"
 SerializationCtaRtnOrder::SerializationCtaRtnOrder(caf::actor_config& cfg,
                                                    LiveTradeSystem* mail_box,
                                                    int env_id)
@@ -20,11 +21,23 @@ SerializationCtaRtnOrder::SerializationCtaRtnOrder(caf::actor_config& cfg,
 }
 
 caf::behavior SerializationCtaRtnOrder::make_behavior() {
-  return {
-      [=](const std::shared_ptr<OrderField>& rtn_order,
-          const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
-      [=](SerializationFlushAtom) { file_.flush(); },
-  };
+  // return {
+  //    [=](const std::shared_ptr<OrderField>& rtn_order,
+  //        const CTAPositionQty& position_qty) { oa_ << *rtn_order; },
+  //    [=](SerializationFlushAtom) {
+  //  file_.flush();
+  //},
+  //};
+  //std::set<std::unique_ptr<bft::BasedMessageHandler>> handlers;
+  //auto handler = bft::MakeMessageHandler(
+  //    [](const std::shared_ptr<OrderField>& rtn_order, const CTAPositionQty&) {
+  //    });
+  return {[=](const std::shared_ptr<bft::Message>& message) { int i = 0; }};
+}
+
+void SerializationCtaRtnOrder::Do(int, std::string)
+{
+
 }
 
 SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
@@ -42,14 +55,15 @@ SerializationStrategyRtnOrder::SerializationStrategyRtnOrder(
             std::ios_base::binary),
       oa_(file_) {
   live_trade_system_->Subscribe(
-      env_id_, typeid(std::tuple<std::shared_ptr<OrderField> >), this);
+      env_id_, typeid(std::tuple<std::shared_ptr<OrderField>>), this);
   live_trade_system_->Subscribe(
       env_id_, typeid(std::tuple<SerializationFlushAtom>), this);
 }
 
 caf::behavior SerializationStrategyRtnOrder::make_behavior() {
-  return {
-      [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
-      [=](SerializationFlushAtom) { file_.flush(); },
-  };
+  // return {
+  //    [=](const std::shared_ptr<OrderField>& order) { oa_ << *order; },
+  //    [=](SerializationFlushAtom) { file_.flush(); },
+  //};
+  return {[=](const std::shared_ptr<bft::Message>& message) { int i = 0; }};
 }
