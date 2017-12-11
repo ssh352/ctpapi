@@ -9,6 +9,9 @@
 #include "common/api_struct.h"
 #include "hpt_core/tick_series_data_base.h"
 #include "hpt_core/order_util.h"
+#include "bft_core/make_message.h"
+#include "bft_core/channel_delegate.h"
+#include "caf_common/caf_atom_defines.h"
 
 struct LimitOrder {
   std::string instrument;
@@ -39,19 +42,21 @@ class ComparePrice {
  private:
   KeyCompare compare_;
 };
-template <class MailBox>
+
 class SimulatedExecutionHandler {
  public:
-  SimulatedExecutionHandler(MailBox* mail_box,
+  SimulatedExecutionHandler(bft::ChannelDelegate* mail_box,
                             bool cancel_limit_order_when_switch_trade_date)
-      : mail_box_(mail_box),
+      : channel_delegate_(mail_box),
         cancel_limit_order_when_switch_trade_date_(
             cancel_limit_order_when_switch_trade_date) {
-    mail_box_->Subscribe(&SimulatedExecutionHandler::HandleTick, this);
-    mail_box_->Subscribe(&SimulatedExecutionHandler::HandlerInputOrder, this);
-    mail_box_->Subscribe(&SimulatedExecutionHandler::HandleCancelOrder, this);
-    mail_box_->Subscribe(&SimulatedExecutionHandler::HandleActionOrder, this);
-    mail_box_->Subscribe(&SimulatedExecutionHandler::BeforeTrading, this);
+    bft::MessageHandler handler;
+    handler.Subscribe(&SimulatedExecutionHandler::HandleTick, this);
+    handler.Subscribe(&SimulatedExecutionHandler::HandlerInputOrder, this);
+    handler.Subscribe(&SimulatedExecutionHandler::HandleCancelOrder, this);
+    handler.Subscribe(&SimulatedExecutionHandler::HandleActionOrder, this);
+    handler.Subscribe(&SimulatedExecutionHandler::BeforeTrading, this);
+    channel_delegate_->Subscribe(std::move(handler));
   }
 
   void BeforeTrading(const BeforeTradingAtom&,
@@ -131,7 +136,7 @@ class SimulatedExecutionHandler {
     order->update_timestamp =
         (current_tick_ != nullptr ? current_tick_->timestamp : 0);
     orders_.insert(order);
-    mail_box_->Send(std::move(order));
+    channel_delegate_->Send(bft::MakeMessage(std::move(order)));
   }
 
   void HandleCancelOrder(const BacktestingAtom&,
@@ -267,7 +272,7 @@ class SimulatedExecutionHandler {
 
     orders_.insert(order);
 
-    mail_box_->Send(std::move(order));
+    channel_delegate_->Send(bft::MakeMessage(std::move(order)));
   }
 
  private:
@@ -298,7 +303,7 @@ class SimulatedExecutionHandler {
   };
 
   std::shared_ptr<Tick> current_tick_;
-  MailBox* mail_box_;
+  bft::ChannelDelegate* channel_delegate_;
   uint64_t order_id_seq_ = 0.0;
   std::multiset<LimitOrder, ComparePrice<std::greater<double>>>
       long_limit_orders_;

@@ -8,33 +8,49 @@ using BacktestingAtom = int;
 #include "backtesting/execution_handler.h"
 #include "backtesting/backtesting_mail_box.h"
 #include "unittest_helper.h"
+#include "bft_core/channel_delegate.h"
 
 class UnittestMailBox {
  public:
   UnittestMailBox() {}
-  template <typename CLASS, typename... ARG>
-  void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
-    std::function<void(ARG...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
-    subscribers_.insert({typeid(std::tuple<ARG...>), std::move(fn)});
+
+  class ChannelDelegateImpl : public bft::ChannelDelegate {
+   public:
+    virtual void Subscribe(bft::MessageHandler handler) override {
+      message_handler_ = std::move(handler);
+    }
+
+    virtual void Send(bft::Message message) override {
+      message_handler_.message_handler()(message.caf_message());
+    }
+
+   private:
+    bft::MessageHandler message_handler_;
+  };
+
+  void Subscribe(bft::MessageHandler handler)  {
+    impl_.Subscribe(std::move(handler));
   }
 
-  template <typename... ARG>
-  void Send(const ARG&... arg) {
-    auto range = subscribers_.equal_range(typeid(std::tuple<const ARG&...>));
-    for (auto it = range.first; it != range.second; ++it) {
-      boost::any_cast<std::function<void(const ARG&...)>>(it->second)(arg...);
-    }
+  template<typename... Ts>
+  void Send(Ts&&... args) {
+    impl_.Send(bft::MakeMessage(std::forward<Ts>(args)...));
+  }
+
+  bft::ChannelDelegate* Impl() {
+    return &impl_;
   }
 
  private:
-  std::unordered_multimap<std::type_index, boost::any> subscribers_;
-  // std::list<std::function<void(void)>>* callable_queue_;
+   ChannelDelegateImpl impl_;
 };
 
 class TestEventFactory {
  public:
   TestEventFactory(UnittestMailBox* mail_box) : mail_box_(mail_box) {
-    mail_box_->Subscribe(&TestEventFactory::EnqueueRtnOrderEvent, this);
+    bft::MessageHandler handler;
+    handler.Subscribe(&TestEventFactory::EnqueueRtnOrderEvent, this);
+    mail_box_->Subscribe(std::move(handler));
   }
 
   void EnqueueRtnOrderEvent(const std::shared_ptr<OrderField>& order) {
@@ -69,7 +85,7 @@ auto MakeInputOrder(std::string instrument,
 TEST(BacktestingExecutionHandler, OpenBuyOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
+  SimulatedExecutionHandler execution_handler(mail_box.Impl(), true);
 
   mail_box.Send(BacktestingAtom(),
                 MakeInputOrder("S1", PositionEffect::kOpen,
@@ -131,9 +147,10 @@ TEST(BacktestingExecutionHandler, OpenBuyOrder) {
 TEST(BacktestingExecutionHandler, OpenSellOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
+  SimulatedExecutionHandler execution_handler(mail_box.Impl(), true);
 
-  mail_box.Send(BacktestingAtom(),MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),
+                MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kSell, 1.1, 10, 0));
   {
     auto order = event_factory.PopupRntOrder();
@@ -144,7 +161,8 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
     EXPECT_EQ(0, order->trading_qty);
   }
 
-  mail_box.Send(BacktestingAtom(), MakeInputOrder("S1", PositionEffect::kOpen,
+  mail_box.Send(BacktestingAtom(),
+                MakeInputOrder("S1", PositionEffect::kOpen,
                                OrderDirection::kSell, 0.9, 10, 0));
 
   {
@@ -191,7 +209,7 @@ TEST(BacktestingExecutionHandler, OpenSellOrder) {
 TEST(BacktestingExecutionHandler, CancelOrder) {
   UnittestMailBox mail_box;
   TestEventFactory event_factory(&mail_box);
-  SimulatedExecutionHandler<UnittestMailBox> execution_handler(&mail_box, true);
+  SimulatedExecutionHandler execution_handler(mail_box.Impl(), true);
 
   mail_box.Send(BacktestingAtom(),
                 MakeInputOrder("S1", PositionEffect::kOpen,

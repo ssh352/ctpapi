@@ -6,6 +6,7 @@
 #include "bft_core/channel_delegate.h"
 #include "live_trade/live_trade_system.h"
 #include "bft_core/make_message.h"
+#include "caf_common/caf_atom_defines.h"
 
 template <typename Strategy>
 class DelayOpenStrategyAgent : public Strategy::Delegate {
@@ -75,7 +76,7 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
     }
   }
 
-  void HandleNearCloseMarket(const CloseMarketNearAtom&) {
+  void HandleNearCloseMarket(CloseMarketNearAtom) {
     strategy_.HandleNearCloseMarket();
   }
 

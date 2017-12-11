@@ -20,7 +20,7 @@ class CORE_EXPORT Message {
 
   std::type_index TypeIndex() const noexcept;
 
-  const caf::message& caf_message() const;
+  caf::message& caf_message();
 
  private:
   class CORE_EXPORT std::type_index;

@@ -41,7 +41,7 @@ class MessageHandler {
     return type_indexs_;
   }
 
-  caf::message_handler message_handler() const { return message_handler_; }
+  caf::message_handler& message_handler() { return message_handler_; }
 
  private:
   std::vector<std::type_index> type_indexs_;

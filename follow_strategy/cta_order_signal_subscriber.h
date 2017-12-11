@@ -13,21 +13,22 @@
 #include "hpt_core/simply_portfolio.h"
 #include "bft_core/channel_delegate.h"
 #include "common/api_struct.h"
+#include "caf_common/caf_atom_defines.h"
 
 
 class CTAOrderSignalSubscriber  {
  public:
   CTAOrderSignalSubscriber(bft::ChannelDelegate* delegate);
   // CTASignal
-  void HandleSyncYesterdayPosition(const CTASignalAtom&,
+  void HandleSyncYesterdayPosition( CTASignalAtom,
                                    const std::vector<OrderPosition>& positions);
 
-  void HandleSyncHistoryRtnOrder(const CTASignalAtom&,
+  void HandleSyncHistoryRtnOrder( CTASignalAtom,
                                  const std::shared_ptr<OrderField>& order);
 
   void HandleExchangeStatus(ExchangeStatus exchange_status);
 
-  void HandleRtnOrder(const CTASignalAtom& cta_signal_atom,
+  void HandleRtnOrder(CTASignalAtom cta_signal_atom,
                       const std::shared_ptr<OrderField>& order);
 
   std::vector<OrderPosition> GetVirtualPositions() const;

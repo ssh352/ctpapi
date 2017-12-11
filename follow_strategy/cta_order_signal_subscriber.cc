@@ -1,6 +1,7 @@
 #include "cta_order_signal_subscriber.h"
 #include "bft_core/make_message.h"
 #include "caf_common/caf_atom_defines.h"
+#include "common/api_struct.h"
 
 CTAOrderSignalSubscriber::CTAOrderSignalSubscriber(
     bft::ChannelDelegate* delegate)
@@ -330,7 +331,7 @@ std::vector<OrderPosition> CTAOrderSignalSubscriber::GetVirtualPositions()
 }
 
 void CTAOrderSignalSubscriber::HandleRtnOrder(
-    const CTASignalAtom& cta_signal_atom,
+    CTASignalAtom cta_signal_atom,
     const std::shared_ptr<OrderField>& order) {
   BOOST_LOG(log_) << "[RECV RtnOrder]"
                   << "(ID)" << order->order_id << ",(I)" << order->instrument_id
@@ -353,7 +354,7 @@ void CTAOrderSignalSubscriber::HandleExchangeStatus(
 }
 
 void CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder(
-    const CTASignalAtom&,
+    CTASignalAtom,
     const std::shared_ptr<OrderField>& order) {
   on_process_sync_order_ = true;
   master_portfolio_.HandleOrder(order);
@@ -362,7 +363,7 @@ void CTAOrderSignalSubscriber::HandleSyncHistoryRtnOrder(
 }
 
 void CTAOrderSignalSubscriber::HandleSyncYesterdayPosition(
-    const CTASignalAtom&,
+    CTASignalAtom,
     const std::vector<OrderPosition>& positions) {
   std::set<std::string> instruments;
   for (const auto& position : positions) {

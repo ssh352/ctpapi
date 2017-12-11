@@ -8,50 +8,33 @@
 #include <boost/log/sources/logger.hpp>
 #include "gtest/gtest.h"
 #include "common/api_struct.h"
+#include "bft_core/channel_delegate.h"
+#include "bft_core/make_message.h"
+#include "caf_common/caf_atom_defines.h"
 
-struct CTASignalAtom {
-  static const CTASignalAtom value;
-};
-struct BeforeTradingAtom {
-  static const BeforeTradingAtom value;
-};
-struct BeforeCloseMarketAtom {
-  static const BeforeCloseMarketAtom value;
-};
-
-struct CloseMarketNearAtom {
-  static const CloseMarketNearAtom value;
-};
-
-class UnittestMailBox {
+class UnittestMailBox : public bft::ChannelDelegate {
  public:
   UnittestMailBox() {}
-  template <typename CLASS, typename... ARG>
-  void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
-    std::function<void(std::decay_t<ARG>...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
-    subscribers_.insert({typeid(std::tuple<std::decay_t<ARG>...>), std::move(fn)});
+
+  virtual void Subscribe(bft::MessageHandler handler) {
+    handler_ = handler_.or_else(handler.message_handler());
   }
 
-  template <typename... ARG>
-  void Send(ARG&&... arg) {
-    auto range = subscribers_.equal_range(
-        typeid(std::tuple<std::decay_t<ARG>...>));
-    for (auto it = range.first; it != range.second; ++it) {
-      boost::any_cast<std::function<void(std::decay_t<ARG>...)>>(it->second)(arg...);
-    }
+  virtual void Send(bft::Message message) {
+    handler_(message.caf_message());
   }
-
  private:
-  std::unordered_multimap<std::type_index, boost::any> subscribers_;
-  // std::list<std::function<void(void)>>* callable_queue_;
+   caf::message_handler handler_;
 };
 
 class StrategyFixture : public testing::Test {
  public:
   StrategyFixture(std::string account_id) : account_id_(std::move(account_id)) {
-    mail_box_.Subscribe(&StrategyFixture::HandleInputOrder, this);
-    mail_box_.Subscribe(&StrategyFixture::HandleCancelOrder, this);
-    mail_box_.Subscribe(&StrategyFixture::HandleActionOrder, this);
+    bft::MessageHandler handler;
+    handler.Subscribe(&StrategyFixture::HandleInputOrder, this);
+    handler.Subscribe(&StrategyFixture::HandleCancelOrder, this);
+    handler.Subscribe(&StrategyFixture::HandleActionOrder, this);
+    mail_box_.Subscribe(std::move(handler));
   }
 
   template <typename T, typename... Args>
@@ -63,7 +46,7 @@ class StrategyFixture : public testing::Test {
 
   template <typename... Args>
   void Send(Args&&... args) {
-    mail_box_.Send(std::forward<Args>(args)...);
+    mail_box_.Send(bft::MakeMessage(std::forward<Args>(args)...));
   }
 
   void Clear() { event_queues_.clear(); }

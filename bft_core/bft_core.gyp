@@ -20,6 +20,9 @@
     'defines' : [
       'CORE_IMPLEMENTATION',
     ],
+    'export_dependent_settings': [
+      '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_core',
+    ],
     'includes' : [
     ],
     'include_dirs' : [

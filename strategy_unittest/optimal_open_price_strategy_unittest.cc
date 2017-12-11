@@ -44,7 +44,7 @@ class TestOptimalOpenPriceWithOutDelayOpenSeconds
     }
     product_info_mananger_.Load(product_info_pt);
     CreateStrategy<
-        DelayOpenStrategyAgent<UnittestMailBox, OptimalOpenPriceStrategy> >(
+        DelayOpenStrategyAgent<OptimalOpenPriceStrategy> >(
         &pt_, &product_info_mananger_, &log_);
     Send(ExchangeStatus::kContinous);
   }

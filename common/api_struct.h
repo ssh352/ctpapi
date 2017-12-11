@@ -177,9 +177,4 @@ struct ProductInfo {
   double tick_size;
   std::string exchange;
 };
-
-struct CTASignalAtom {
-};
-
-
 #endif  // COMMON_API_STRUCT_H

@@ -10,7 +10,7 @@ std::type_index bft::Message::TypeIndex() const noexcept {
   return type_index_;
 }
 
-const caf::message& Message::caf_message() const {
+caf::message& Message::caf_message() {
   return message_;
 }
 

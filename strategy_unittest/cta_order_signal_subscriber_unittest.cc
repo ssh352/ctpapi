@@ -11,8 +11,10 @@ static const std::string defalut_instrument_id = "default instrument";
 class CTAOrderSignalScriberFixture : public StrategyFixture {
  public:
   CTAOrderSignalScriberFixture() : StrategyFixture("slave") {
-    mail_box_.Subscribe(&CTAOrderSignalScriberFixture::HandleCTARtnOrderSignal,
-                        this);
+    bft::MessageHandler handler;
+    handler.Subscribe(&CTAOrderSignalScriberFixture::HandleCTARtnOrderSignal,
+                      this);
+    mail_box_.Subscribe(std::move(handler));
   }
   void MasterNewOpenAndFill(const std::string& order_id,
                             OrderDirection position_effect_direction,
@@ -73,7 +75,7 @@ class CTAOrderSignalScriberFixture : public StrategyFixture {
   }
 
   virtual void SetUp() override {
-    CreateStrategy<CTAOrderSignalSubscriber<UnittestMailBox> >();
+    CreateStrategy<CTAOrderSignalSubscriber>();
     Send(ExchangeStatus::kContinous);
   }
 };

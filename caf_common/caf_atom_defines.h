@@ -7,6 +7,7 @@
 using IdleAtom = caf::atom_constant<caf::atom("idle")>;
 using CtpConnectAtom = caf::atom_constant<caf::atom("ctpconnect")>;
 using CloseMarketNearAtom = caf::atom_constant<caf::atom("nearclose")>;
+using CTASignalAtom = caf::atom_constant<caf::atom("cta")>;
 
 using TickContainer = std::vector<std::pair<std::shared_ptr<Tick>, int64_t>>;
 using CTASignalContainer =

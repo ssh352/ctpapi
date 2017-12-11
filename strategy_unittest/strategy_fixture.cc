@@ -148,12 +148,3 @@ void StrategyFixture::SendAndClearPendingReplyRtnOrder() {
 
   pending_reply_new_rtn_orders_.clear();
 }
-
-
-const CTASignalAtom CTASignalAtom::value;
-
-const BeforeTradingAtom BeforeTradingAtom::value;
-
-const BeforeCloseMarketAtom BeforeCloseMarketAtom::value;
-
-const CloseMarketNearAtom CloseMarketNearAtom::value;

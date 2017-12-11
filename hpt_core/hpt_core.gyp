@@ -36,6 +36,8 @@
       ],
       'dependencies' : [
         'hpt_core',
+		    '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_core',
+        '../bft_core/bft_core.gyp:bft_core',
         '<(DEPTH)/testing/gtest.gyp:gtest',
         '<(DEPTH)/testing/gtest.gyp:gtest_main',
       ],
