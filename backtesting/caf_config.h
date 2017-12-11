@@ -5,16 +5,6 @@
 
 class config : public caf::actor_system_config {
  public:
-  int force_close_before_close_market = 5;
-  bool enable_logging = false;
-  bool run_benchmark = false;
-  bool cancel_limit_order_when_switch_trade_date = false;
-  std::string strategy_config_file = "";
-  std::string instrument_infos_file = "";
-  std::string ts_db = "";
-  std::string cta_transaction_db = "";
-  std::string backtesting_from_datetime = "";
-  std::string backtesting_to_datetime = "";
   std::string out_dir = "";
 
   config();

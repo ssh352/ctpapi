@@ -16,6 +16,7 @@
 
 caf::behavior RunStrategy(caf::event_based_actor* self,
                           caf::actor coor,
+                          ProductInfoMananger* product_info_mananger,
                           bool cancel_limit_order_when_switch_trade_date) {
   return {[=](const std::string& market, const std::string& instrument,
               const std::string& out_dir, const StrategyParam& strategy_param,
@@ -35,11 +36,9 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
     std::string csv_file_prefix = str(boost::format("%s") % instrument);
     BacktestingMailBox mail_box(&callable_queue);
 
-    RtnOrderToCSV order_to_csv(&mail_box, out_dir,
-                                                   csv_file_prefix);
-    BacktestingCTASignalBrokerEx
-        backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
-                                       instrument);
+    RtnOrderToCSV order_to_csv(&mail_box, out_dir, csv_file_prefix);
+    BacktestingCTASignalBrokerEx backtesting_cta_signal_broker_(
+        &mail_box, cta_signal_container, instrument);
 
     std::string instrument_code =
         instrument.substr(0, instrument.find_first_of("0123456789"));
@@ -54,19 +53,18 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
     // strategy(
     //    &mail_box, std::move(strategy_params), &log);
 
-    ProductInfoMananger product_info_mananger;
     boost::property_tree::ptree strategy_config_pt;
 
-    //std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
+    // std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
     //    strategy_params;
-    //strategy_params.insert(
+    // strategy_params.insert(
     //    {instrument_code,
     //     OptimalOpenPriceStrategy::StrategyParam{
     //         strategy_param.delay_open_order_after_seconds,
     //         strategy_param.wait_optimal_open_price_fill_seconds,
     //         strategy_param.price_offset}});
-    DelayOpenStrategyAgent<OptimalOpenPriceStrategy>
-        strategy(&mail_box, &strategy_config_pt, &product_info_mananger, &log);
+    DelayOpenStrategyAgent<OptimalOpenPriceStrategy> strategy(
+        &mail_box, &strategy_config_pt, product_info_mananger, &log);
 
     SimulatedExecutionHandler execution_handler(
         &mail_box, cancel_limit_order_when_switch_trade_date);

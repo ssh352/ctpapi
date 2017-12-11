@@ -1,0 +1,121 @@
+﻿{
+  "backtesting" : [
+    "ma705"
+  ],
+  "a": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 4
+  },
+  "al": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 20
+  },
+  "bu": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 4
+  },
+  "c": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "cf": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 20
+  },
+  "cs": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "cu": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 30
+  },
+  "fg": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "i": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "j": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "jd": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 4
+  },
+  "jm": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "l": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 10
+  },
+  "m": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "ma": {
+      "DelayOpenOrderAfterSeconds": 540,
+      "PriceOffset": 4
+  },
+  "ni": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 50
+  },
+  "oi": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 6
+  },
+  "p": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 6
+  },
+  "pp": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 10
+  },
+  "rb": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 5
+  },
+  "rm": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 2
+  },
+  "ru": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 20
+  },
+  "sm": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 10
+  },
+  "sr": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 4
+  },
+  "ta": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 6
+  },
+  "v": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 10
+  },
+  "y": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 6
+  },
+  "zc": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 1
+  },
+  "zn": {
+      "DelayOpenOrderAfterSeconds": 60,
+      "PriceOffset": 30
+  }
+}

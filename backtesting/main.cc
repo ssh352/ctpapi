@@ -28,6 +28,8 @@
 #include "run_strategy.h"
 #include "run_benchmark.h"
 #include "caf_coordinator.h"
+#include "follow_strategy/product_info_manager.h"
+#include "yaml-cpp/yaml.h"
 
 namespace pt = boost::property_tree;
 
@@ -83,8 +85,7 @@ void InitLogging(bool enable_logging) {
       //                    << "]: " << expr::smessage);
 
       // core->add_sink(sink);
-  } 
-  {
+  } {
     boost::shared_ptr<sinks::text_multifile_backend> backend =
         boost::make_shared<sinks::text_multifile_backend>();
     // Set up the file naming pattern
@@ -108,49 +109,26 @@ void InitLogging(bool enable_logging) {
 }
 
 int caf_main(caf::actor_system& system, const config& cfg) {
-  InitLogging(cfg.enable_logging);
-  pt::ptree ins_infos_pt;
-  try {
-    pt::read_json(cfg.instrument_infos_file, ins_infos_pt);
-  } catch (pt::ptree_error& err) {
-    std::cout << "Read Confirg File Error:" << err.what() << "\n";
-    return 1;
-  }
-
-  pt::ptree strategy_config_pt;
-  try {
-    pt::read_json(cfg.strategy_config_file, strategy_config_pt);
-  } catch (pt::ptree_error& err) {
-    std::cout << "Read Confirg File Error:" << err.what() << "\n";
-    return 1;
-  }
+  YAML::Node backtesting_cfg = YAML::LoadFile("backtesting.yaml");
+  InitLogging(backtesting_cfg["EnableLogging"].as<bool>());
+  ProductInfoMananger product_info_mananger;
+  product_info_mananger.LoadFile("product_info.json");
 
   using hrc = std::chrono::high_resolution_clock;
   auto beg = hrc::now();
   auto instruments =
       std::make_shared<std::list<std::pair<std::string, std::string>>>();
 
-  // if (cfg.instrument.empty()) {
-  //  std::for_each(
-  //      g_instrument_market_set.begin(), g_instrument_market_set.end(),
-  //      [&instruments](const auto& item) {
-  //        instruments->emplace_back(std::make_pair(item.second, item.first));
-  //      });
-  //} else {
-  //  instruments->emplace_back(std::make_pair(
-  //      g_instrument_market_set[cfg.instrument], cfg.instrument));
-  //}
-
-  auto coor =
-      system.spawn(Coordinator, &ins_infos_pt, &strategy_config_pt, &cfg);
+  auto coor = system.spawn(Coordinator, &backtesting_cfg, cfg.out_dir);
   std::cout << "start\n";
   for (size_t i = 0; i < 16; ++i) {
-    if (cfg.run_benchmark) {
+    if (backtesting_cfg["RunBenchmark"].as<bool>()) {
       auto actor = system.spawn(RunBenchmark, coor);
       caf::anon_send(coor, IdleAtom::value, actor);
     } else {
-      auto actor = system.spawn(RunStrategy, coor,
-                                cfg.cancel_limit_order_when_switch_trade_date);
+      auto actor = system.spawn(
+          RunStrategy, coor, &product_info_mananger,
+          backtesting_cfg["CancelLimitOrderWhenSwitchTradeDate"].as<bool>());
       caf::anon_send(coor, IdleAtom::value, actor);
     }
   }
