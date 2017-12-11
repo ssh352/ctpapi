@@ -15,7 +15,7 @@
       ['exclude', 'unittest/.*'],
     ],
     'dependencies' : [
-      '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_message',
+      '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_core',
     ],
     'defines' : [
       'CORE_IMPLEMENTATION',

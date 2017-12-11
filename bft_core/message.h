@@ -7,9 +7,13 @@
 namespace bft {
 class CORE_EXPORT Message {
  public:
+  Message(Message&&) = default;
+
   template <typename... Ts>
-  Message(Ts&&... args) : type_index_(typeid(std::tuple<std::decay_t<Ts>...>)) {
-    message_ = caf::make_message(std::forward<Ts>(args)...);
+  Message(Ts&&... args)
+      : type_index_(typeid(std::tuple<std::decay_t<Ts>...>)),
+        message_(caf::make_message(std::forward<Ts>(args)...)) {
+
   }
 
   ~Message();
