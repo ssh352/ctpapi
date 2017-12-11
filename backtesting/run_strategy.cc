@@ -1,7 +1,7 @@
 #include "run_strategy.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/log/sources/logger.hpp>
-#include "atom_defines.h"
+
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "backtesting_cta_signal_broker_ex.h"
 #include "hpt_core/portfolio_handler.h"
@@ -35,9 +35,9 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
     std::string csv_file_prefix = str(boost::format("%s") % instrument);
     BacktestingMailBox mail_box(&callable_queue);
 
-    RtnOrderToCSV<BacktestingMailBox> order_to_csv(&mail_box, out_dir,
+    RtnOrderToCSV order_to_csv(&mail_box, out_dir,
                                                    csv_file_prefix);
-    BacktestingCTASignalBrokerEx<BacktestingMailBox>
+    BacktestingCTASignalBrokerEx
         backtesting_cta_signal_broker_(&mail_box, cta_signal_container,
                                        instrument);
 
@@ -54,26 +54,29 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
     // strategy(
     //    &mail_box, std::move(strategy_params), &log);
 
-    std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
-        strategy_params;
-    strategy_params.insert(
-        {instrument_code,
-         OptimalOpenPriceStrategy::StrategyParam{
-             strategy_param.delay_open_order_after_seconds,
-             strategy_param.wait_optimal_open_price_fill_seconds,
-             strategy_param.price_offset}});
-    DelayOpenStrategyAgent<BacktestingMailBox, OptimalOpenPriceStrategy>
-        strategy(&mail_box, std::move(strategy_params), &log);
+    ProductInfoMananger product_info_mananger;
+    boost::property_tree::ptree strategy_config_pt;
 
-    SimulatedExecutionHandler<BacktestingMailBox> execution_handler(
+    //std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
+    //    strategy_params;
+    //strategy_params.insert(
+    //    {instrument_code,
+    //     OptimalOpenPriceStrategy::StrategyParam{
+    //         strategy_param.delay_open_order_after_seconds,
+    //         strategy_param.wait_optimal_open_price_fill_seconds,
+    //         strategy_param.price_offset}});
+    DelayOpenStrategyAgent<OptimalOpenPriceStrategy>
+        strategy(&mail_box, &strategy_config_pt, &product_info_mananger, &log);
+
+    SimulatedExecutionHandler execution_handler(
         &mail_box, cancel_limit_order_when_switch_trade_date);
 
-    PortfolioHandler<BacktestingMailBox> portfolio_handler_(
+    PortfolioHandler portfolio_handler_(
         init_cash, &mail_box, std::move(instrument), out_dir, csv_file_prefix,
         strategy_param.margin_rate, strategy_param.constract_multiple,
         strategy_param.cost_basis, true);
 
-    PriceHandler<BacktestingMailBox> price_handler(
+    PriceHandler price_handler(
         instrument, &running, &mail_box, std::move(tick_container),
         cancel_order_after_minute * 60, cancel_order_after_minute * 60);
 

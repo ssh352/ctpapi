@@ -5,29 +5,18 @@
 #include <typeindex>
 #include <list>
 #include <functional>
+#include "bft_core/channel_delegate.h"
 
-class BacktestingMailBox {
+class BacktestingMailBox : public bft::ChannelDelegate {
  public:
-  BacktestingMailBox(std::list<std::function<void(void)>>* callable_queue)
-      : callable_queue_(callable_queue) {}
-  template <typename CLASS, typename... ARG>
-  void Subscribe(void (CLASS::*pfn)(ARG...), CLASS* c) {
-    std::function<void(ARG...)> fn = [=](ARG... arg) { (c->*pfn)(arg...); };
-    subscribers_.insert({typeid(std::tuple<ARG...>), std::move(fn)});
-  }
+  BacktestingMailBox(std::list<std::function<void(void)>>* callable_queue);
 
-  template <typename... ARG>
-  void Send(const ARG&... arg) {
-    auto range = subscribers_.equal_range(typeid(std::tuple<const ARG&...>));
-    for (auto it = range.first; it != range.second; ++it) {
-      callable_queue_->push_back(std::bind(
-          boost::any_cast<std::function<void(const ARG&...)>>(it->second),
-          arg...));
-    }
-  }
+  virtual void Subscribe(bft::MessageHandler handler) override;
+
+  virtual void Send(bft::Message message) override;
 
  private:
-  std::unordered_multimap<std::type_index, boost::any> subscribers_;
+  std::unordered_multimap<std::type_index, bft::MessageHandler> subscribers_;
   std::list<std::function<void(void)>>* callable_queue_;
 };
 

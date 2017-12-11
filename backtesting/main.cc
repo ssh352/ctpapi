@@ -8,7 +8,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include "caf/all.hpp"
-#include "atom_defines.h"
+
 #include "common/api_struct.h"
 #include "hpt_core/backtesting/price_handler.h"
 #include "hpt_core/backtesting/backtesting_mail_box.h"

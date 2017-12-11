@@ -23,6 +23,10 @@ using RemoteCTPConnectAtom = caf::atom_constant<caf::atom("rectpcon")>;
 using SerializeCtaAtom = caf::atom_constant<caf::atom("ser_cta")>;
 using SerializeStrategyAtom = caf::atom_constant<caf::atom("ser_stg")>;
 using SerializationFlushAtom = caf::atom_constant<caf::atom("seflush")>;
+using BacktestingAtom = caf::atom_constant<caf::atom("bt")>;
+using BeforeCloseMarketAtom =  caf::atom_constant<caf::atom("becm")>;
+using BeforeTradingAtom = caf::atom_constant<caf::atom("bet")>;
+using DaySettleAtom = caf::atom_constant<caf::atom("dayset")>;
 
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(TickContainer)

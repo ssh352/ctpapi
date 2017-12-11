@@ -16,6 +16,7 @@
         ['exclude', 'unittest/.*'],
       ],
       'dependencies' : [
+		'../bft_core/bft_core.gyp:bft_core',
       ],
       'defines' : [
         'H5_BUILT_AS_DYNAMIC_LIB',
@@ -37,7 +38,6 @@
       'dependencies' : [
         'hpt_core',
 		    '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:libcaf_core',
-        '../bft_core/bft_core.gyp:bft_core',
         '<(DEPTH)/testing/gtest.gyp:gtest',
         '<(DEPTH)/testing/gtest.gyp:gtest_main',
       ],

@@ -12,6 +12,7 @@
         '<!@(python ../build/glob_files.py . *.h *.cc)',
       ],
       'dependencies' : [
+        '<(DEPTH)/third_party/actor-framework/libcaf_core/libcaf_core.gyp:*',
         '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
         '../hpt_core/hpt_core.gyp:hpt_core',
         '../strategies/strategies.gyp:strategies',

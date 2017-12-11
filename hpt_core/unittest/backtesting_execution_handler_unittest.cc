@@ -1,10 +1,6 @@
 
 #include "gtest/gtest.h"
 #include <list>
-
-using BeforeTradingAtom = int;
-using BacktestingAtom = int;
-
 #include "backtesting/execution_handler.h"
 #include "backtesting/backtesting_mail_box.h"
 #include "unittest_helper.h"

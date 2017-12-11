@@ -2,47 +2,26 @@
 #define FOLLOW_STRATEGY_CTA_TRADED_STRATEGY_H
 #include "common/api_struct.h"
 #include "hpt_core/order_util.h"
-template <class MailBox>
+#include "bft_core/channel_delegate.h"
+#include "caf_common/caf_atom_defines.h"
 class CTATradedStrategy {
  public:
-  CTATradedStrategy(MailBox* mail_box) : mail_box_(mail_box) {
-    mail_box_->Subscribe(&CTATradedStrategy::HandleCTASignal, this);
-    mail_box_->Subscribe(&CTATradedStrategy::HandleCTASignalEx, this);
-    mail_box_->Subscribe(&CTATradedStrategy::HandleTick, this);
-  }
+  CTATradedStrategy(bft::ChannelDelegate* mail_box);
 
-  void HandleTick(const std::shared_ptr<TickData>& tick) {
-    last_tick_ = tick->tick;
-  }
+  void HandleTick(const std::shared_ptr<TickData>& tick);
 
   void HandleCTASignal(const std::shared_ptr<OrderField>& order,
-                       const CTAPositionQty&) {
-    if (order->status == OrderStatus::kAllFilled) {
-      mail_box_->Send(InputOrder{order->instrument_id, GenerateOrderId(),
-                                       order->position_effect, order->direction,
-                                       order->input_price, order->qty,
-                                       last_tick_->timestamp});
-    }
-  }
+                       const CTAPositionQty&);
 
-  void HandleCTASignalEx(const CTASignalAtom&,
-                         const std::shared_ptr<OrderField>& order) {
-    if (order->status == OrderStatus::kAllFilled) {
-      mail_box_->Send(InputOrder{order->instrument_id, GenerateOrderId(),
-                                       order->position_effect, order->direction,
-                                       order->input_price, order->qty,
-                                       last_tick_->timestamp});
-    }
-  }
+  void HandleCTASignalEx(CTASignalAtom,
+                         const std::shared_ptr<OrderField>& order);
 
  private:
-  std::string GenerateOrderId() {
-    return boost::lexical_cast<std::string>(order_id_seq_++);
-  }
+  std::string GenerateOrderId();
 
   std::shared_ptr<Tick> last_tick_;
   int order_id_seq_ = 0;
-  MailBox* mail_box_;
+  bft::ChannelDelegate* mail_box_;
 };
 
 #endif  // FOLLOW_STRATEGY_CTA_TRADED_STRATEGY_H

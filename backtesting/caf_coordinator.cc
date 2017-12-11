@@ -1,10 +1,11 @@
 #include "caf_coordinator.h"
 #include <chrono>
 #include "hdf5.h"
-#include "atom_defines.h"
+
 #include "common/api_struct.h"
 #include "hpt_core/time_series_reader.h"
 #include "backtesting_defines.h"
+#include "caf_common/caf_atom_defines.h"
 
 auto ReadTickTimeSeries(const char* hdf_file,
                         const std::string& market,
