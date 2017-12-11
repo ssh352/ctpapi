@@ -2,11 +2,13 @@
 #include "bft_core/make_message.h"
 #include "caf_common/caf_atom_defines.h"
 
-CTAOrderSignalSubscriber::CTAOrderSignalSubscriber(bft::ChannelDelegate* delegate)
-: mail_box_(delegate) {
+CTAOrderSignalSubscriber::CTAOrderSignalSubscriber(
+    bft::ChannelDelegate* delegate)
+    : mail_box_(delegate) {
   exchange_status_ = ExchangeStatus::kNoTrading;
   bft::MessageHandler message_handler;
-  message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleExchangeStatus, this);
+  message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleExchangeStatus,
+                            this);
   message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleRtnOrder, this);
   delegate->Subscribe(std::move(message_handler));
 }
@@ -38,7 +40,7 @@ void CTAOrderSignalSubscriber::Send(std::shared_ptr<OrderField> order,
                   << order->leaves_qty << ", (TP)" << order->trading_price
                   << ", (TQty)" << order->trading_qty << ", (Pos)"
                   << pos_qty.position << ", (F)" << pos_qty.frozen;
-   mail_box_->Send(bft::MakeMessage(order, pos_qty));
+  mail_box_->Send(bft::MakeMessage(order, pos_qty));
 }
 
 void CTAOrderSignalSubscriber::HandleTradedOrder(
@@ -330,7 +332,7 @@ std::vector<OrderPosition> CTAOrderSignalSubscriber::GetVirtualPositions()
 void CTAOrderSignalSubscriber::HandleRtnOrder(
     const CTASignalAtom& cta_signal_atom,
     const std::shared_ptr<OrderField>& order) {
-  BOOST_LOG(log_) << "RECV RtnOrder:"
+  BOOST_LOG(log_) << "[RECV RtnOrder]"
                   << "(ID)" << order->order_id << ",(I)" << order->instrument_id
                   << ", (BS)" << static_cast<int>(order->direction) << ", (OC)"
                   << static_cast<int>(order->direction) << ", (P)"
@@ -343,6 +345,10 @@ void CTAOrderSignalSubscriber::HandleRtnOrder(
 
 void CTAOrderSignalSubscriber::HandleExchangeStatus(
     ExchangeStatus exchange_status) {
+  BOOST_LOG(log_) << "[RECV Exchange Status]"
+                  << (exchange_status == ExchangeStatus::kNoTrading
+                          ? "NoTrading"
+                          : "Continous");
   exchange_status_ = exchange_status;
 }
 

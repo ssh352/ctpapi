@@ -350,6 +350,11 @@ void CTPTraderApi::RequestYesterdayPosition() {
 
 void CTPTraderApi::OnRtnInstrumentStatus(
     CThostFtdcInstrumentStatusField* pInstrumentStatus) {
+  auto& log = BLog::get();
+  BOOST_LOG_SEV(log, SeverityLevel::kInfo)
+      << "[OnRtnInstrumentStatus]"
+      << "(I)" << pInstrumentStatus->InstrumentID << ",(Status)"
+      << pInstrumentStatus->InstrumentStatus;
   delegate_->HandleExchangeStatus(pInstrumentStatus->InstrumentStatus ==
                                           THOST_FTDC_IS_AuctionOrdering
                                       ? ExchangeStatus::kNoTrading

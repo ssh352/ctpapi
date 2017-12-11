@@ -42,7 +42,7 @@ void CAFSubAccountBroker::HandleCancelOrder(
     const CTPCancelOrder& cancel_order) {
   live_trade_system_->SendToNamed(broker_id_,
                                   bft::MakeMessage(account_id_, cancel_order));
-  BOOST_LOG(log_) << "[SEND Cancel Order]"
+  BOOST_LOG(log_) << "[SEND CTP Cancel Order]"
                   << "(Id)" << cancel_order.order_id << ", (SysId)"
                   << cancel_order.order_sys_id;
 }
@@ -50,7 +50,7 @@ void CAFSubAccountBroker::HandleCancelOrder(
 void CAFSubAccountBroker::HandleEnterOrder(const CTPEnterOrder& enter_order) {
   live_trade_system_->SendToNamed(broker_id_,
                                   bft::MakeMessage(account_id_, enter_order));
-  BOOST_LOG(log_) << "[SEND Enter Order]"
+  BOOST_LOG(log_) << "[SEND CTP Enter Order]"
                   << "(Id)" << enter_order.order_id << ", (I)"
                   << enter_order.instrument << ", (BS)"
                   << static_cast<int>(enter_order.direction) << ", (OC)"
@@ -162,21 +162,8 @@ void CAFSubAccountBroker::InitMakeBehavior() {
       [=](const InputOrder& order) {
         MakeCtpInstrumentBrokerIfNeed(order.instrument);
         instrument_brokers_.at(order.instrument)->HandleInputOrder(order);
-        BOOST_LOG(log_) << "[RECV Input Order]"
-                        << "(Id)" << order.order_id << ",(I)"
-                        << order.instrument << ", (BS)"
-                        << static_cast<int>(order.direction) << ", (OC)"
-                        << static_cast<int>(order.position_effect) << ", (P)"
-                        << order.price << ", (Q)" << order.qty;
       },
       [=](const OrderAction& action_order) {
-        BOOST_LOG(log_) << "[RECV Action Order]"
-                        << "(Id)" << action_order.order_id << ", (I)"
-                        << action_order.instrument << ", (NewP)"
-                        << action_order.new_price << ", (OldP)"
-                        << action_order.old_price << ", (NewQ)"
-                        << action_order.new_qty << ", (OldQ)"
-                        << action_order.old_qty;
         auto it = instrument_brokers_.find(action_order.instrument);
         BOOST_ASSERT(it != instrument_brokers_.end());
         if (it != instrument_brokers_.end()) {
@@ -184,9 +171,6 @@ void CAFSubAccountBroker::InitMakeBehavior() {
         }
       },
       [=](const CancelOrder& cancel) {
-        BOOST_LOG(log_) << "[RECV Cancel Order]"
-                        << "(Id)" << cancel.order_id << ", (I)"
-                        << cancel.instrument;
         auto it = instrument_brokers_.find(cancel.instrument);
         BOOST_ASSERT(it != instrument_brokers_.end());
         if (it != instrument_brokers_.end()) {
