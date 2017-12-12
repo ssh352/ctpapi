@@ -97,6 +97,19 @@ void CTPInstrumentBroker::HandleRtnOrder(
       order_delegate_->ReturnOrderField(
           std::make_shared<OrderField>(*(*it_find)));
     }
+    std::string order_id;
+    if (ctp_order_id_to_order_id_.find(order->order_id) !=
+        ctp_order_id_to_order_id_.end()) {
+      order_id = ctp_order_id_to_order_id_.at(order->order_id);
+      ctp_order_id_to_order_id_.erase(order->order_id);
+    } 
+    auto range = order_id_to_ctp_order_id_.equal_range(order_id);
+    for (auto it = range.first; it != range.second; ++it) {
+      if (it->second == order->order_id) {
+        order_id_to_ctp_order_id_.erase(it);
+        break;
+      }
+    }
   } else {
   }
 }
