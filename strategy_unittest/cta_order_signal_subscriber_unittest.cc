@@ -782,7 +782,7 @@ TEST_F(CTAOrderSignalScriberFixture, CancelCloseOrder) {
 }
 
 TEST_F(CTAOrderSignalScriberFixture, AuctionDuringNewOpen) {
-  Send(ExchangeStatus::kNoTrading);
+  Send(ExchangeStatus::kAuctionOrding);
   MasterNewOpenOrder("0", OrderDirection::kBuy, 88.8, 10);
 
   auto params = PopupRntOrder<std::shared_ptr<OrderField>, CTAPositionQty>();
@@ -807,7 +807,7 @@ TEST_F(CTAOrderSignalScriberFixture, AuctionDuringNewOpen) {
 TEST_F(CTAOrderSignalScriberFixture, AuctionDuringOverOppositionNewOpen) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 5, 5);
   Clear();
-  Send(ExchangeStatus::kNoTrading);
+  Send(ExchangeStatus::kAuctionOrding);
   MasterNewOpenOrder("1", OrderDirection::kSell, 80.1, 8);
 
   {
@@ -855,7 +855,7 @@ TEST_F(CTAOrderSignalScriberFixture, AuctionDuringCloseLockOrder) {
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 5, 5);
   MasterNewOpenAndFill("1", OrderDirection::kSell, 78.1, 5, 5);
   Clear();
-  Send(ExchangeStatus::kNoTrading);
+  Send(ExchangeStatus::kAuctionOrding);
   MasterNewCloseOrder("2", OrderDirection::kSell, 80.1, 5);
 
   {

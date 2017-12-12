@@ -43,8 +43,7 @@ class TestOptimalOpenPriceWithOutDelayOpenSeconds
       product_info_pt.add_child(default_product_code, child);
     }
     product_info_mananger_.Load(product_info_pt);
-    CreateStrategy<
-        DelayOpenStrategyAgent<OptimalOpenPriceStrategy> >(
+    CreateStrategy<DelayOpenStrategyAgent<OptimalOpenPriceStrategy> >(
         &pt_, &product_info_mananger_, &log_);
     Send(ExchangeStatus::kContinous);
   }
@@ -130,7 +129,7 @@ TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, PartiallyActionOrder) {
 }
 
 TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AuctionDuringNewOpen) {
-  Send(ExchangeStatus::kNoTrading);
+  Send(ExchangeStatus::kAuctionOrding);
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   auto input_order = PopupRntOrder<InputOrder>();
   ASSERT_TRUE(input_order);
@@ -142,9 +141,56 @@ TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AuctionDuringNewOpen) {
 }
 
 TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AuctionDuringOpened) {
-  Send(ExchangeStatus::kNoTrading);
+  Send(ExchangeStatus::kAuctionOrding);
   MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
   Clear();
   MasterTradedOrder("0", 10, 10, 0);
   ASSERT_FALSE(PopupRntOrder<InputOrder>());
+}
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds, AcutionOrderOpenedDuringNoTrading) {
+  Send(ExchangeStatus::kAuctionOrding);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  Clear();
+  Send(ExchangeStatus::kNoTrading);
+  MasterTradedOrder("0", 10, 10, 0);
+  ASSERT_FALSE(PopupRntOrder<InputOrder>());
+}
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds,
+       AuctionOrdingDuringCancelOrder) {
+  Send(ExchangeStatus::kAuctionOrding);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  Clear();
+  MasterCancelOrder("0");
+  auto cancel_order = PopupRntOrder<CancelOrder>();
+  ASSERT_TRUE(cancel_order);
+  EXPECT_EQ("0", cancel_order->order_id);
+}
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds,
+       CancelAuctionOrderAfterkContinous) {
+  Send(ExchangeStatus::kAuctionOrding);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 10, 0, 0);
+  Clear();
+  Send(ExchangeStatus::kContinous);
+  MasterCancelOrder("0");
+  auto cancel_order = PopupRntOrder<CancelOrder>();
+  ASSERT_TRUE(cancel_order);
+  EXPECT_EQ("0", cancel_order->order_id);
+}
+
+TEST_F(TestOptimalOpenPriceWithOutDelayOpenSeconds,
+       CTACloseAuctionPosAndStrategyCancelAuctionOrder) {
+  Send(ExchangeStatus::kAuctionOrding);
+  MasterNewOpenOrder("0", OrderDirection::kBuy, 1.1, 1, 0, 0);
+  Send(ExchangeStatus::kNoTrading);
+  MasterTradedOrder("0", 1, 1, 0);
+  Send(ExchangeStatus::kContinous);
+  MasterNewCloseOrder("1", OrderDirection::kSell, 1.2, 1, 1, 1);
+  Clear();
+  MasterTradedOrder("1", 1, 0, 0);
+  auto cancel_order = PopupRntOrder<CancelOrder>();
+  ASSERT_TRUE(cancel_order);
+  EXPECT_EQ("0", cancel_order->order_id);
 }

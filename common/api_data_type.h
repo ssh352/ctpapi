@@ -41,6 +41,6 @@ enum class CommissionType { kFixed, kRate };
 
 enum class TradingTime { kUndefined, kDay, kNight };
 
-enum class ExchangeStatus { kNoTrading, kContinous };
+enum class ExchangeStatus { kAuctionOrding, kNoTrading, kContinous };
 
 #endif  // COMMON_API_DATA_TYPE_H

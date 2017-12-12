@@ -6,7 +6,7 @@
 CTAOrderSignalSubscriber::CTAOrderSignalSubscriber(
     bft::ChannelDelegate* delegate)
     : mail_box_(delegate) {
-  exchange_status_ = ExchangeStatus::kNoTrading;
+  exchange_status_ = ExchangeStatus::kAuctionOrding;
   bft::MessageHandler message_handler;
   message_handler.Subscribe(&CTAOrderSignalSubscriber::HandleExchangeStatus,
                             this);
@@ -225,7 +225,7 @@ void CTAOrderSignalSubscriber::HandleCloseing(
     map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
     virtual_porfolio_.HandleOrder(order);
     LoggingBindOrderId(rtn_order->order_id, order->order_id);
-    if (exchange_status_ == ExchangeStatus::kNoTrading) {
+    if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
       Send(std::move(order),
            GetCTAPositionQty(rtn_order->instrument_id, rtn_order->direction));
     }
@@ -254,7 +254,7 @@ void CTAOrderSignalSubscriber::HandleCloseing(
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       virtual_porfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
-      if (exchange_status_ == ExchangeStatus::kNoTrading) {
+      if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
         Send(std::move(order),
              GetCTAPositionQty(rtn_order->instrument_id,
                                rtn_order->position_effect_direction));
@@ -294,7 +294,7 @@ void CTAOrderSignalSubscriber::HandleOpening(
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, open_order));
       virtual_porfolio_.HandleOrder(open_order);
       LoggingBindOrderId(rtn_order->order_id, open_order->order_id);
-      if (exchange_status_ == ExchangeStatus::kNoTrading) {
+      if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
         Send(std::move(open_order),
              GetCTAPositionQty(rtn_order->instrument_id, rtn_order->direction));
       }
@@ -317,7 +317,7 @@ void CTAOrderSignalSubscriber::HandleOpening(
     map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
     virtual_porfolio_.HandleOrder(order);
     LoggingBindOrderId(rtn_order->order_id, order->order_id);
-    if (exchange_status_ == ExchangeStatus::kNoTrading) {
+    if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
       Send(std::move(order),
            GetCTAPositionQty(rtn_order->instrument_id,
                              rtn_order->position_effect_direction));
@@ -347,7 +347,7 @@ void CTAOrderSignalSubscriber::HandleRtnOrder(
 void CTAOrderSignalSubscriber::HandleExchangeStatus(
     ExchangeStatus exchange_status) {
   BOOST_LOG(log_) << "[RECV Exchange Status]"
-                  << (exchange_status == ExchangeStatus::kNoTrading
+                  << (exchange_status == ExchangeStatus::kAuctionOrding
                           ? "NoTrading"
                           : "Continous");
   exchange_status_ = exchange_status;

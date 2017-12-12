@@ -11,7 +11,7 @@ OptimalOpenPriceStrategy::OptimalOpenPriceStrategy(
       product_info_mananger_(product_info_mananger),
       log_(log),
       last_timestamp_(TimeStampToPtime(0)) {
-  exchange_status_ = ExchangeStatus::kNoTrading;
+  exchange_status_ = ExchangeStatus::kAuctionOrding;
   log_->add_attribute("UniformTimeStamp", last_timestamp_);
   for (const auto& pt : *strategy_config) {
     try {
@@ -184,14 +184,15 @@ void OptimalOpenPriceStrategy::HandleCanceled(
                    << static_cast<int>(rtn_order->position_effect) << ",(P)"
                    << rtn_order->input_price << ",(Q)" << rtn_order->qty;
   if (rtn_order->position_effect == PositionEffect::kOpen) {
-    return;
+    BOOST_LOG(*log_)
+        << "[CTA cancel opening order should be open during auction]";
   }
-  auto it = cta_to_strategy_closing_order_id_.find(rtn_order->order_id);
-  if (it != cta_to_strategy_closing_order_id_.end()) {
+  auto it = connect_active_order_ids_.find(rtn_order->order_id);
+  if (it != connect_active_order_ids_.end()) {
     auto order = portfolio_.GetOrder(it->second);
     HandleCancelOrder(order->instrument_id, order->order_id,
                       order->position_effect_direction);
-    cta_to_strategy_closing_order_id_.erase(it);
+    connect_active_order_ids_.erase(it);
   }
 }
 
@@ -291,7 +292,7 @@ void OptimalOpenPriceStrategy::HandleCloseing(
   if (position_qty.position == position_qty.frozen && closeable_qty > 0) {
     // Close All
     std::string order_id = GenerateOrderId();
-    cta_to_strategy_closing_order_id_.insert(
+    connect_active_order_ids_.insert(
         std::make_pair(rtn_order->order_id, order_id));
 
     BOOST_LOG(*log_) << "[CTA Close All Pos]"
@@ -306,7 +307,7 @@ void OptimalOpenPriceStrategy::HandleCloseing(
                      rtn_order->position_effect_direction);
   } else if (rtn_order->qty <= closeable_qty) {
     std::string order_id = GenerateOrderId();
-    cta_to_strategy_closing_order_id_.insert(
+    connect_active_order_ids_.insert(
         std::make_pair(rtn_order->order_id, order_id));
     BOOST_LOG(*log_) << "[CTA close and <= closeable]"
                      << "(I)" << rtn_order->instrument_id;
@@ -320,7 +321,7 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 
   } else if (closeable_qty > 0) {
     std::string order_id = GenerateOrderId();
-    cta_to_strategy_closing_order_id_.insert(
+    connect_active_order_ids_.insert(
         std::make_pair(rtn_order->order_id, order_id));
     BOOST_LOG(*log_) << "[CTA close and > closeable]"
                      << "(I)" << rtn_order->instrument_id;
@@ -336,7 +337,7 @@ void OptimalOpenPriceStrategy::HandleCloseing(
 void OptimalOpenPriceStrategy::HandleOpened(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  if (exchange_status_ == ExchangeStatus::kNoTrading) {
+  if (exchange_status_ != ExchangeStatus::kContinous) {
     return;
   }
   BOOST_LOG(*log_) << "[RECV CTA Opened]"
@@ -371,9 +372,10 @@ void OptimalOpenPriceStrategy::HandleOpened(
 void OptimalOpenPriceStrategy::HandleOpening(
     const std::shared_ptr<const OrderField>& rtn_order,
     const CTAPositionQty& position_qty) {
-  if (exchange_status_ == ExchangeStatus::kNoTrading) {
+  if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
     // Auction during
     std::string order_id = GenerateOrderId();
+    connect_active_order_ids_.insert({rtn_order->order_id, order_id});
     HandleEnterOrder(
         InputOrder{rtn_order->instrument_id, order_id, PositionEffect::kOpen,
                    rtn_order->position_effect_direction, rtn_order->input_price,
@@ -687,7 +689,7 @@ void OptimalOpenPriceStrategy::HandleExchangeStatus(
     ExchangeStatus exchange_status) {
   exchange_status_ = exchange_status;
   BOOST_LOG(*log_) << "[RECV Exchange Status]"
-                   << (exchange_status == ExchangeStatus::kNoTrading
+                   << (exchange_status == ExchangeStatus::kAuctionOrding
                            ? "NoTrading"
                            : "Continous");
 }

@@ -357,6 +357,6 @@ void CTPTraderApi::OnRtnInstrumentStatus(
       << pInstrumentStatus->InstrumentStatus;
   delegate_->HandleExchangeStatus(pInstrumentStatus->InstrumentStatus ==
                                           THOST_FTDC_IS_AuctionOrdering
-                                      ? ExchangeStatus::kNoTrading
+                                      ? ExchangeStatus::kAuctionOrding
                                       : ExchangeStatus::kContinous);
 }

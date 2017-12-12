@@ -134,7 +134,7 @@ class OptimalOpenPriceStrategy {
 
   std::list<InputOrder> pending_delayed_open_order_;
   std::list<OptimalOpenOrder> optimal_open_price_orders_;
-  std::map<std::string, std::string> cta_to_strategy_closing_order_id_;
+  std::map<std::string, std::string> connect_active_order_ids_;
   SimplyPortfolio portfolio_;
   StrategyParam default_param_;
   std::unordered_map<std::string, StrategyParam> instrument_params_;
