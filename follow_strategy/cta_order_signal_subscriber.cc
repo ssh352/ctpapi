@@ -215,9 +215,13 @@ void CTAOrderSignalSubscriber::HandleOpened(
 
 void CTAOrderSignalSubscriber::HandleCloseing(
     const std::shared_ptr<OrderField>& rtn_order) {
+  int closeable_before_this_closeing =
+      master_portfolio_.GetPositionCloseableQty(
+          rtn_order->instrument_id, rtn_order->position_effect_direction) +
+      rtn_order->qty;
   int opposition_closeable = master_portfolio_.GetPositionCloseableQty(
       rtn_order->instrument_id, rtn_order->direction);
-  if (opposition_closeable >= rtn_order->qty) {
+  if (closeable_before_this_closeing <= opposition_closeable) {
     auto order = std::make_shared<OrderField>(*rtn_order);
     order->order_id = GenerateOrderId();
     order->position_effect_direction = rtn_order->direction;
@@ -230,35 +234,45 @@ void CTAOrderSignalSubscriber::HandleCloseing(
            GetCTAPositionQty(rtn_order->instrument_id, rtn_order->direction));
     }
   } else {
-    int close = rtn_order->qty - opposition_closeable;
-    if (close > 0) {
+    int virtual_position =
+        closeable_before_this_closeing - opposition_closeable;
+    if (rtn_order->qty > virtual_position) {
+      {
+        auto order = std::make_shared<OrderField>(*rtn_order);
+        order->order_id = GenerateOrderId();
+        order->qty = virtual_position;
+        order->leaves_qty = virtual_position;
+        map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
+        virtual_porfolio_.HandleOrder(order);
+        LoggingBindOrderId(rtn_order->order_id, order->order_id);
+        Send(std::move(order),
+             GetCTAPositionQty(rtn_order->instrument_id,
+                               rtn_order->position_effect_direction));
+      }
+      {
+        auto order = std::make_shared<OrderField>(*rtn_order);
+        order->order_id = GenerateOrderId();
+        order->qty = rtn_order->qty - virtual_position;
+        order->leaves_qty = rtn_order->qty - virtual_position;
+        order->position_effect_direction = rtn_order->direction;
+        order->position_effect = PositionEffect::kOpen;
+        map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
+        virtual_porfolio_.HandleOrder(order);
+        LoggingBindOrderId(rtn_order->order_id, order->order_id);
+        if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
+          Send(std::move(order), GetCTAPositionQty(rtn_order->instrument_id,
+                                                   rtn_order->direction));
+        }
+      }
+    } else {
       auto order = std::make_shared<OrderField>(*rtn_order);
       order->order_id = GenerateOrderId();
-      order->qty = close;
-      order->leaves_qty = close;
       map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
       virtual_porfolio_.HandleOrder(order);
       LoggingBindOrderId(rtn_order->order_id, order->order_id);
       Send(std::move(order),
            GetCTAPositionQty(rtn_order->instrument_id,
                              rtn_order->position_effect_direction));
-    }
-    int open = rtn_order->qty - std::max<int>(close, 0);
-    if (open > 0) {
-      auto order = std::make_shared<OrderField>(*rtn_order);
-      order->order_id = GenerateOrderId();
-      order->qty = open;
-      order->leaves_qty = open;
-      order->position_effect_direction = rtn_order->direction;
-      order->position_effect = PositionEffect::kOpen;
-      map_order_ids_.insert(std::make_pair(rtn_order->order_id, order));
-      virtual_porfolio_.HandleOrder(order);
-      LoggingBindOrderId(rtn_order->order_id, order->order_id);
-      if (exchange_status_ == ExchangeStatus::kAuctionOrding) {
-        Send(std::move(order),
-             GetCTAPositionQty(rtn_order->instrument_id,
-                               rtn_order->position_effect_direction));
-      }
     }
   }
 }
