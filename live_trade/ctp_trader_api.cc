@@ -355,8 +355,20 @@ void CTPTraderApi::OnRtnInstrumentStatus(
       << "[OnRtnInstrumentStatus]"
       << "(I)" << pInstrumentStatus->InstrumentID << ",(Status)"
       << pInstrumentStatus->InstrumentStatus;
-  delegate_->HandleExchangeStatus(pInstrumentStatus->InstrumentStatus ==
-                                          THOST_FTDC_IS_AuctionOrdering
-                                      ? ExchangeStatus::kAuctionOrding
-                                      : ExchangeStatus::kContinous);
+  if (strcmp(pInstrumentStatus->ExchangeID, "CZCE") == 0 ||
+      strcmp(pInstrumentStatus->ExchangeID, "SHFE") == 0 ||
+      strcmp(pInstrumentStatus->ExchangeID, "DCE") == 0) {
+    ExchangeStatus exchange_status = ExchangeStatus::kNoTrading;
+    switch (pInstrumentStatus->InstrumentStatus) {
+      case THOST_FTDC_IS_AuctionOrdering:
+        exchange_status = ExchangeStatus::kAuctionOrding;
+        break;
+      case THOST_FTDC_IS_Continous:
+        exchange_status = ExchangeStatus::kContinous;
+        break;
+      default:
+        break;
+    }
+    delegate_->HandleExchangeStatus(exchange_status);
+  }
 }
