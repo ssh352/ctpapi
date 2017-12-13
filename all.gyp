@@ -13,7 +13,6 @@
         './ctp_broker/ctp_broker.gyp:*',
         './hpt_core/hpt_core.gyp:*',
         './live_trade/live_trade.gyp:*',
-        './strategies/strategies.gyp:*',
         './strategy_unittest/strategy_unittest.gyp:*',
       ],
     },
