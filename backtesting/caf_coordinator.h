@@ -5,7 +5,6 @@
 #include <boost/property_tree/ptree.hpp>
 #include "caf_config.h"
 #include "yaml-cpp/yaml.h"
-namespace pt = boost::property_tree;
 caf::behavior Coordinator(caf::event_based_actor* self,
                           YAML::Node* cfg,
                           std::string out_dir);

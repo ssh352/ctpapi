@@ -5,8 +5,6 @@
 #include <boost/format.hpp>
 #include <boost/assign.hpp>
 #include <boost/any.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include "caf/all.hpp"
 
 #include "common/api_struct.h"

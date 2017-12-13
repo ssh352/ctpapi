@@ -1,6 +1,8 @@
 #include "run_strategy.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/log/sources/logger.hpp>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include "hpt_core/backtesting/backtesting_mail_box.h"
 #include "backtesting_cta_signal_broker_ex.h"
@@ -18,10 +20,20 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
                           caf::actor coor,
                           ProductInfoMananger* product_info_mananger,
                           bool cancel_limit_order_when_switch_trade_date) {
-  return {[=](const std::string& market, const std::string& instrument,
-              const std::string& out_dir, const StrategyParam& strategy_param,
+  return {[=](const std::string& instrument,
+              const std::string& out_dir,
+              const std::string& strategy_config_file,
+              const StrategyParam& strategy_param,
               int cancel_order_after_minute, TickContainer tick_container,
               CTASignalContainer cta_signal_container) {
+    boost::property_tree::ptree pt;
+    try {
+      boost::property_tree::read_json(strategy_config_file, pt);
+    } catch (boost::property_tree::ptree_error& err) {
+      std::cout << "Read Confirg File Error:" << err.what() << "\n";
+      return;
+    }
+
     using hrc = std::chrono::high_resolution_clock;
     auto beg = hrc::now();
     boost::log::sources::logger log;
@@ -44,27 +56,8 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
         instrument.substr(0, instrument.find_first_of("0123456789"));
     boost::algorithm::to_lower(instrument_code);
 
-    // std::unordered_map<std::string, DelayedOpenStrategyEx::StrategyParam>
-    //    strategy_params;
-    // strategy_params.insert(
-    //    {instrument_code, DelayedOpenStrategyEx::StrategyParam{
-    //                          delay_open_after_seconds, price_offset_rate}});
-    // DelayOpenStrategyAgent<BacktestingMailBox, DelayedOpenStrategyEx>
-    // strategy(
-    //    &mail_box, std::move(strategy_params), &log);
-
-    boost::property_tree::ptree strategy_config_pt;
-
-    // std::unordered_map<std::string, OptimalOpenPriceStrategy::StrategyParam>
-    //    strategy_params;
-    // strategy_params.insert(
-    //    {instrument_code,
-    //     OptimalOpenPriceStrategy::StrategyParam{
-    //         strategy_param.delay_open_order_after_seconds,
-    //         strategy_param.wait_optimal_open_price_fill_seconds,
-    //         strategy_param.price_offset}});
     DelayOpenStrategyAgent<OptimalOpenPriceStrategy> strategy(
-        &mail_box, &strategy_config_pt, product_info_mananger, &log);
+        &mail_box, &pt, product_info_mananger, &log);
 
     SimulatedExecutionHandler execution_handler(
         &mail_box, cancel_limit_order_when_switch_trade_date);
@@ -88,7 +81,7 @@ caf::behavior RunStrategy(caf::event_based_actor* self,
       }
     }
     self->send(coor, IdleAtom::value, self);
-    caf::aout(self) << market << ":" << instrument << " espces:"
+    caf::aout(self) << instrument << " espces:"
                     << std::chrono::duration_cast<std::chrono::milliseconds>(
                            hrc::now() - beg)
                            .count()

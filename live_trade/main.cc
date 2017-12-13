@@ -92,10 +92,6 @@ struct SubAccount {
   std::string strategy_config;
   std::string broker;
 };
-class Foo {
- public:
-  void Do(int) {}
-};
 
 namespace pt = boost::property_tree;
 int caf_main(caf::actor_system& system, const config& cfg) {
@@ -126,8 +122,6 @@ int caf_main(caf::actor_system& system, const config& cfg) {
         &live_trade_system, live_trade_system.GetGlobalEnvionment());
 
     std::unordered_set<std::string> close_today_cost_of_product_codes;
-    // = {
-    //"fg", "i", "j", "jm", "ma", "ni", "pb", "rb", "sf", "sm", "zc", "zn"};
     YAML::Node live_config = YAML::LoadFile("live_trade.yaml");
     YAML::Node sub_config =
         live_config["CostTodayProductCodes"].as<YAML::Node>();

@@ -1,11 +1,16 @@
 #include "caf_coordinator.h"
 #include <chrono>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include "yaml-cpp/yaml.h"
 #include "hdf5.h"
 
 #include "common/api_struct.h"
 #include "hpt_core/time_series_reader.h"
 #include "backtesting_defines.h"
 #include "caf_common/caf_atom_defines.h"
+
+namespace pt = boost::property_tree;
 
 auto ReadTickTimeSeries(const char* hdf_file,
                         const std::string& market,
@@ -123,11 +128,11 @@ caf::behavior Coordinator(caf::event_based_actor* self,
   auto instrument_strategy_params =
       std::make_shared<std::list<StrategyParam>>();
 
-  for (const auto& pt : strategy_config_pt.get_child("backtesting")) {
+  for (YAML::const_iterator it = (*cfg)["Instruments"].as<YAML::Node>().begin();
+       it != (*cfg)["Instruments"].as<YAML::Node>().end(); ++it) {
     try {
       StrategyParam param;
-      param.instrument = pt.second.get_value<std::string>();
-
+      param.instrument = it->as<std::string>();
       std::string instrument_code = param.instrument.substr(
           0, param.instrument.find_first_of("0123456789"));
       boost::algorithm::to_lower(instrument_code);
@@ -149,30 +154,24 @@ caf::behavior Coordinator(caf::event_based_actor* self,
           instrument_code + ".CostBasis.CloseCommission");
       param.cost_basis.close_today_commission = ins_infos_pt.get<double>(
           instrument_code + ".CostBasis.CloseTodayCommission");
-      param.delay_open_order_after_seconds = strategy_config_pt.get<int>(
-          instrument_code + ".DelayOpenOrderAfterSeconds");
-      param.wait_optimal_open_price_fill_seconds = strategy_config_pt.get<int>(
-          instrument_code + ".WaitOptimalOpenPriceFillSeconds");
-      param.price_offset =
-          strategy_config_pt.get<double>(instrument_code + ".PriceOffset");
       instrument_strategy_params->push_back(std::move(param));
 
     } catch (pt::ptree_error& err) {
-      std::cout << "Read Confirg File Error:" << pt.first << ":" << err.what()
-                << "\n";
+      std::cout << "Read Confirg File Error:" << err.what() << "\n";
       return {};
     }
   }
 
-  return {[=](IdleAtom, caf::actor work) {
+  return {
+    [=](IdleAtom, caf::actor work) {
     do {
       if (instrument_strategy_params->empty()) {
         break;
       }
-      auto instrument_with_market = instrument_strategy_params->front();
+      auto instrument_info = instrument_strategy_params->front();
       instrument_strategy_params->pop_front();
-      std::string market = instrument_with_market.market;
-      std::string instrument = instrument_with_market.instrument;
+      std::string instrument = instrument_info.instrument;
+      std::string market = instrument_info.market;
 
       using hrc = std::chrono::high_resolution_clock;
       auto tick_container = ReadTickTimeSeries(
@@ -184,7 +183,7 @@ caf::behavior Coordinator(caf::event_based_actor* self,
         continue;
       }
       self->send(
-          work, market, instrument, out_dir, instrument_with_market,
+          work, instrument, out_dir, strategy_config_file, instrument_info,
           force_close_before_close_market, std::move(tick_container),
           ReadCTAOrderSignalTimeSeries(ts_cta_signal_path.c_str(), instrument,
                                        datetime_from, datetime_to));
@@ -194,5 +193,6 @@ caf::behavior Coordinator(caf::event_based_actor* self,
     if (instrument_strategy_params->empty()) {
       self->quit();
     }
-  }};
+  }
+  };
 }

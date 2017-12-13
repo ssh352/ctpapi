@@ -8,9 +8,6 @@ struct StrategyParam {
   double margin_rate;
   int constract_multiple;
   CostBasis cost_basis;
-  int delay_open_order_after_seconds;
-  int wait_optimal_open_price_fill_seconds;
-  double price_offset;
 };
 
 CAF_ALLOW_UNSAFE_MESSAGE_TYPE(StrategyParam)

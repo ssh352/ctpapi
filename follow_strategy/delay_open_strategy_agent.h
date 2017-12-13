@@ -19,12 +19,12 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
         strategy_(this, strategy_config, product_info_mananger, log) {
     bft::MessageHandler message_handler;
     message_handler.Subscribe(&DelayOpenStrategyAgent::HandleCTARtnOrderSignal,
-                             this);
+                              this);
     message_handler.Subscribe(&Strategy::HandleExchangeStatus, &strategy_);
     message_handler.Subscribe(&Strategy::HandleTick, &strategy_);
     message_handler.Subscribe(&Strategy::InitPosition, &strategy_);
     message_handler.Subscribe(&DelayOpenStrategyAgent::HandleNearCloseMarket,
-                             this);
+                              this);
     message_handler.Subscribe(&DelayOpenStrategyAgent::HandleRtnOrder, this);
     mail_box_->Subscribe(std::move(message_handler));
   }
@@ -56,14 +56,16 @@ class DelayOpenStrategyAgent : public Strategy::Delegate {
             try_handing_signals;
         auto it_erase = std::remove_if(
             pending_cta_signal_queue_.begin(), pending_cta_signal_queue_.end(),
-            [&rtn_order](const auto& cta_signal) {
-              return cta_signal.first->instrument_id ==
-                         rtn_order->instrument_id &&
-                     cta_signal.first->position_effect_direction ==
-                         rtn_order->position_effect_direction;
+            [&rtn_order, &try_handing_signals](const auto& cta_signal) {
+              if (cta_signal.first->instrument_id == rtn_order->instrument_id &&
+                  cta_signal.first->position_effect_direction ==
+                      rtn_order->position_effect_direction) {
+                try_handing_signals.emplace_back(cta_signal.first,
+                                                 cta_signal.second);
+                return true;
+              }
+              return false;
             });
-        std::copy(it_erase, pending_cta_signal_queue_.end(),
-                  std::back_inserter(try_handing_signals));
         pending_cta_signal_queue_.erase(it_erase,
                                         pending_cta_signal_queue_.end());
         waiting_reply_order_.erase(it);

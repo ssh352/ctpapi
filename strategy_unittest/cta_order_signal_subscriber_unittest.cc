@@ -668,6 +668,7 @@ TEST_F(CTAOrderSignalScriberFixture,
   MasterNewOpenAndFill("0", OrderDirection::kBuy, 88.8, 10, 10);
   MasterNewOpenAndFill("1", OrderDirection::kSell, 81.1, 7, 7);
   MasterNewCloseOrder("2", OrderDirection::kSell, 80.1, 10);
+  MasterNewCloseOrder("fdlaskjfdkslajfkldsajf", OrderDirection::kSell, 11.1, 10);
   Clear();
   MasterTradedOrder("2", 5);
   {
