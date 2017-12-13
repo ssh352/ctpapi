@@ -7,7 +7,8 @@
         'win_characterset%': 2,
       },
       'sources' : [
-       '<!@(python ../../../build/glob_files.py caf src *.hpp)',
+       '<!@(python ../../../build/glob_files.py caf *.hpp)',
+       '<!@(python ../../../build/glob_files.py src *.cpp)',
       ],
       'dependencies' : [
         '../libcaf_core/libcaf_core.gyp:*',
@@ -25,7 +26,12 @@
             4267,
           ],
         }]
-      ]
+      ],
+      'all_dependent_settings': {
+        'include_dirs': [
+          '.',
+        ],
+      },
     },
   ]
 }

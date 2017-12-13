@@ -6,7 +6,8 @@
     'variables' : {
     },
     'sources' : [
-       '<!@(python ../../../build/glob_files.py caf src *.hpp)',
+       '<!@(python ../../../build/glob_files.py caf *.hpp)',
+       '<!@(python ../../../build/glob_files.py src *.cpp)',
     ],
     'dependencies' : [
       'libcaf_build_config',

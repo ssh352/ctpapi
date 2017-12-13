@@ -17,7 +17,7 @@
     'dependencies' : [
       '<(DEPTH)/third_party/actor-framework/libcaf_io/libcaf_io.gyp:*',
 # '<(DEPTH)/third_party/ctpapi/ctpapi.gyp:*',
-      '<(DEPTH)/third_party/rohon/rohon.gyp:*',
+      '<(DEPTH)/third_party/rohon_ctp/rohon.gyp:*',
       '../hpt_core/hpt_core.gyp:hpt_core',
 # '../caf_ctp/caf_ctp.gyp:*',
     ],
