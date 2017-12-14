@@ -1,4 +1,0 @@
-#ifndef FOLLOW_TRADE_SERVER_UTIL_H
-#define FOLLOW_TRADE_SERVER_UTIL_H
-#include <string>
-#endif  // FOLLOW_TRADE_SERVER_UTIL_H

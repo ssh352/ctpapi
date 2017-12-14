@@ -6,7 +6,7 @@
 /build/*.pyc
 
 ## visual studio
-.vs
+/.vs
 *.VC.db
 *.vcxproj
 *.filters
@@ -32,7 +32,3 @@ xcuserdata/
 #CTP
 *.con
 
-.ropeproject
-*.vspx
-*.log
-*.bin

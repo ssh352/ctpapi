@@ -1,7 +1,0 @@
-{
-  "default": {
-    "DelayOpenOrderAfterSeconds": 0,
-    "WaitOptimalOpenPriceFillSeconds": 5,
-    "OptimizeTickSize": 1
-  }
-}
